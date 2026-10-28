@@ -1,0 +1,18 @@
+# secrets and real content
+.env
+.env.*
+!.env.example
+content.real*
+content.real.*.json
+*.enc
+assets_real/
+
+# python
+__pycache__/
+.venv/
+.pytest_cache/
+.coverage
+
+# node
+node_modules/
+frontend/dist/
