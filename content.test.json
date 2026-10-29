@@ -1,0 +1,3768 @@
+{
+  "schema_version": "1.0",
+  "meta": {
+    "pack_label": "test",
+    "event_name": "Curse the Code",
+    "assets_dir": "assets_test",
+    "rules": {
+      "answer_cooldown_sec": 3,
+      "hint_free_after_sec": 300,
+      "max_sessions_per_team": 2,
+      "max_field_len": 200,
+      "leaderboard_hide_last_min": 10,
+      "multi_field_separator": "|"
+    }
+  },
+  "rounds": [
+    {
+      "round": 1,
+      "title": "Test Round 1",
+      "subtitle": "Round 1",
+      "difficulty": "Easy to Medium",
+      "default_duration_min": 60,
+      "final_clue": "R1-10",
+      "screens": {
+        "intro": "TEST INTRO ROUND 1. This is placeholder text for layout testing.",
+        "victory_lines": [
+          "TEST VICTORY LINE 1.",
+          "TEST VICTORY LINE 2.",
+          "TEST VICTORY LINE 3."
+        ],
+        "bridge_text": "TEST BRIDGE TRANSMISSION. Round 2 begins now.",
+        "eliminated_text": "TEST ELIMINATED SCREEN. Thank you for playing.",
+        "sting_template": ""
+      }
+    },
+    {
+      "round": 2,
+      "title": "Test Round 2",
+      "subtitle": "Round 2",
+      "difficulty": "Medium to Hard",
+      "default_duration_min": 75,
+      "final_clue": "R2-10",
+      "screens": {
+        "intro": "TEST INTRO ROUND 2. This is placeholder text for layout testing.",
+        "victory_lines": [
+          "TEST ENDING LINE 1.",
+          "TEST ENDING LINE 2.",
+          "TEST ENDING LINE 3."
+        ],
+        "bridge_text": "TEST FINAL RECORDING TEXT.",
+        "eliminated_text": "",
+        "sting_template": "TEST_STING: {TEAM_NAME} - STATUS: UNKNOWN"
+      }
+    }
+  ],
+  "rooms": [
+    {
+      "id": "bedroom",
+      "round": 1,
+      "order": 1,
+      "title": "Test Room 1 (Bedroom)",
+      "unlock": {
+        "at_start": true
+      },
+      "background_file": "bg_bedroom.png",
+      "theme": {
+        "bg_top": "#140d26",
+        "bg_bottom": "#2b1d52",
+        "accent": "#8f7bff",
+        "glow": "#cdbfff",
+        "text": "#e8e0ff",
+        "lamp": "#ffcf8a",
+        "fog": 0.15,
+        "vignette": 0.55
+      },
+      "ambient": {
+        "loop": "amb_bedroom.mp3",
+        "sfx": [
+          "music_box_faint.mp3",
+          "clock_tick.mp3"
+        ]
+      },
+      "objects": [
+        {
+          "id": "window_moon",
+          "label": "Moonlit window",
+          "kind": "decor",
+          "x": 6,
+          "y": 10,
+          "w": 16,
+          "h": 26,
+          "clue_id": null
+        },
+        {
+          "id": "poster_wall",
+          "label": "Wall poster",
+          "kind": "clue",
+          "x": 50,
+          "y": 12,
+          "w": 17,
+          "h": 30,
+          "clue_id": "R1-03"
+        },
+        {
+          "id": "desk_lamp",
+          "label": "Desk lamp (flickers)",
+          "kind": "decor",
+          "x": 74,
+          "y": 36,
+          "w": 6,
+          "h": 16,
+          "clue_id": null
+        },
+        {
+          "id": "bed",
+          "label": "Unmade bed",
+          "kind": "decor",
+          "x": 22,
+          "y": 52,
+          "w": 34,
+          "h": 24,
+          "clue_id": null
+        },
+        {
+          "id": "diary_bed",
+          "label": "Open diary",
+          "kind": "clue",
+          "x": 34,
+          "y": 56,
+          "w": 11,
+          "h": 8,
+          "clue_id": "R1-01"
+        },
+        {
+          "id": "nightstand",
+          "label": "Nightstand",
+          "kind": "decor",
+          "x": 12,
+          "y": 56,
+          "w": 12,
+          "h": 18,
+          "clue_id": null
+        },
+        {
+          "id": "music_box",
+          "label": "Music box",
+          "kind": "clue",
+          "x": 14,
+          "y": 50,
+          "w": 8,
+          "h": 8,
+          "clue_id": "R1-02"
+        },
+        {
+          "id": "suitcase",
+          "label": "Half-packed suitcase",
+          "kind": "decor",
+          "x": 60,
+          "y": 66,
+          "w": 18,
+          "h": 10,
+          "clue_id": null
+        },
+        {
+          "id": "wall_clock",
+          "label": "Wall clock (ticks)",
+          "kind": "decor",
+          "x": 80,
+          "y": 14,
+          "w": 6,
+          "h": 10,
+          "clue_id": null
+        }
+      ]
+    },
+    {
+      "id": "study",
+      "round": 1,
+      "order": 2,
+      "title": "Test Room 2 (Study)",
+      "unlock": {
+        "rooms_complete": [
+          "bedroom"
+        ]
+      },
+      "background_file": "bg_study.png",
+      "theme": {
+        "bg_top": "#04120b",
+        "bg_bottom": "#0b2418",
+        "accent": "#3dff8b",
+        "glow": "#7dffb0",
+        "text": "#b6ffd1",
+        "lamp": "#9dffc4",
+        "fog": 0.2,
+        "vignette": 0.6
+      },
+      "ambient": {
+        "loop": "amb_study.mp3",
+        "sfx": [
+          "crt_hum.mp3",
+          "whisper_far.mp3"
+        ]
+      },
+      "objects": [
+        {
+          "id": "sticky_wall",
+          "label": "Sticky-note wall",
+          "kind": "decor",
+          "x": 5,
+          "y": 12,
+          "w": 24,
+          "h": 30,
+          "clue_id": null
+        },
+        {
+          "id": "corkboard",
+          "label": "Corkboard with red string",
+          "kind": "decor",
+          "x": 62,
+          "y": 12,
+          "w": 28,
+          "h": 30,
+          "clue_id": null
+        },
+        {
+          "id": "desk",
+          "label": "Heavy desk",
+          "kind": "decor",
+          "x": 24,
+          "y": 52,
+          "w": 50,
+          "h": 20,
+          "clue_id": null
+        },
+        {
+          "id": "crt_monitor",
+          "label": "Old CRT monitor",
+          "kind": "clue",
+          "x": 40,
+          "y": 36,
+          "w": 16,
+          "h": 16,
+          "clue_id": "R1-06"
+        },
+        {
+          "id": "tape_deck",
+          "label": "Reel recorder",
+          "kind": "clue",
+          "x": 62,
+          "y": 52,
+          "w": 12,
+          "h": 8,
+          "clue_id": "R1-07"
+        },
+        {
+          "id": "desk_drawer",
+          "label": "Locked desk drawer",
+          "kind": "clue",
+          "x": 28,
+          "y": 66,
+          "w": 14,
+          "h": 6,
+          "clue_id": "R1-04"
+        },
+        {
+          "id": "cables",
+          "label": "Tangled cables",
+          "kind": "decor",
+          "x": 8,
+          "y": 70,
+          "w": 20,
+          "h": 12,
+          "clue_id": null
+        }
+      ]
+    },
+    {
+      "id": "basement",
+      "round": 1,
+      "order": 3,
+      "title": "Test Room 3 (Basement)",
+      "unlock": {
+        "rooms_complete": [
+          "bedroom",
+          "study"
+        ]
+      },
+      "background_file": "bg_basement.png",
+      "theme": {
+        "bg_top": "#14161a",
+        "bg_bottom": "#1f1115",
+        "accent": "#ff4d4d",
+        "glow": "#ff8a8a",
+        "text": "#ffd6d6",
+        "lamp": "#ff2a2a",
+        "fog": 0.25,
+        "vignette": 0.7
+      },
+      "ambient": {
+        "loop": "amb_basement.mp3",
+        "sfx": [
+          "server_hum.mp3",
+          "pipe_drip.mp3"
+        ]
+      },
+      "objects": [
+        {
+          "id": "wall_monitor",
+          "label": "Countdown monitor",
+          "kind": "decor",
+          "x": 38,
+          "y": 8,
+          "w": 24,
+          "h": 14,
+          "clue_id": null
+        },
+        {
+          "id": "server_rack",
+          "label": "Server rack",
+          "kind": "decor",
+          "x": 6,
+          "y": 20,
+          "w": 22,
+          "h": 56,
+          "clue_id": null
+        },
+        {
+          "id": "rack_door_note",
+          "label": "Note inside rack door",
+          "kind": "clue",
+          "x": 12,
+          "y": 38,
+          "w": 8,
+          "h": 8,
+          "clue_id": "R1-09"
+        },
+        {
+          "id": "maintenance_terminal",
+          "label": "Maintenance terminal",
+          "kind": "clue",
+          "x": 30,
+          "y": 44,
+          "w": 12,
+          "h": 12,
+          "clue_id": "R1-05"
+        },
+        {
+          "id": "rack_console",
+          "label": "Access console",
+          "kind": "clue",
+          "x": 44,
+          "y": 44,
+          "w": 12,
+          "h": 12,
+          "clue_id": "R1-08"
+        },
+        {
+          "id": "containment_console",
+          "label": "Containment console",
+          "kind": "clue",
+          "x": 72,
+          "y": 34,
+          "w": 20,
+          "h": 22,
+          "clue_id": "R1-10"
+        },
+        {
+          "id": "floor_seal",
+          "label": "Circular floor seal",
+          "kind": "decor",
+          "x": 36,
+          "y": 70,
+          "w": 28,
+          "h": 22,
+          "clue_id": null
+        }
+      ]
+    },
+    {
+      "id": "records",
+      "round": 2,
+      "order": 1,
+      "title": "Test Room 4 (Records)",
+      "unlock": {
+        "at_start": true
+      },
+      "background_file": "bg_records.png",
+      "theme": {
+        "bg_top": "#1e1b14",
+        "bg_bottom": "#2d2818",
+        "accent": "#e7c97a",
+        "glow": "#fff2c0",
+        "text": "#f3ead0",
+        "lamp": "#dfe9ff",
+        "fog": 0.2,
+        "vignette": 0.5
+      },
+      "ambient": {
+        "loop": "amb_records.mp3",
+        "sfx": [
+          "fluorescent_buzz.mp3",
+          "paper_shuffle.mp3"
+        ]
+      },
+      "objects": [
+        {
+          "id": "filing_cabinets",
+          "label": "Filing cabinets",
+          "kind": "decor",
+          "x": 4,
+          "y": 18,
+          "w": 30,
+          "h": 56,
+          "clue_id": null
+        },
+        {
+          "id": "ceiling_light",
+          "label": "Flickering light",
+          "kind": "decor",
+          "x": 44,
+          "y": 4,
+          "w": 12,
+          "h": 4,
+          "clue_id": null
+        },
+        {
+          "id": "report_folder",
+          "label": "Yellowed incident folder",
+          "kind": "clue",
+          "x": 38,
+          "y": 56,
+          "w": 10,
+          "h": 8,
+          "clue_id": "R2-02"
+        },
+        {
+          "id": "microfilm_reader",
+          "label": "Microfilm reader",
+          "kind": "clue",
+          "x": 52,
+          "y": 40,
+          "w": 14,
+          "h": 18,
+          "clue_id": "R2-03"
+        },
+        {
+          "id": "timeline_board",
+          "label": "Whiteboard of event cards",
+          "kind": "clue",
+          "x": 70,
+          "y": 14,
+          "w": 24,
+          "h": 26,
+          "clue_id": "R2-04"
+        },
+        {
+          "id": "bulkhead_door",
+          "label": "Sealed bulkhead door",
+          "kind": "clue",
+          "x": 74,
+          "y": 52,
+          "w": 20,
+          "h": 36,
+          "clue_id": "R2-07"
+        }
+      ]
+    },
+    {
+      "id": "control",
+      "round": 2,
+      "order": 2,
+      "title": "Test Room 5 (Control)",
+      "unlock": {
+        "at_start": true
+      },
+      "background_file": "bg_control.png",
+      "theme": {
+        "bg_top": "#0a1220",
+        "bg_bottom": "#101c33",
+        "accent": "#4ab3ff",
+        "glow": "#9fd6ff",
+        "text": "#d6ecff",
+        "lamp": "#4ab3ff",
+        "fog": 0.12,
+        "vignette": 0.55
+      },
+      "ambient": {
+        "loop": "amb_control.mp3",
+        "sfx": [
+          "static_burst.mp3",
+          "relay_click.mp3"
+        ]
+      },
+      "objects": [
+        {
+          "id": "monitor_bank",
+          "label": "Bank of old monitors",
+          "kind": "decor",
+          "x": 6,
+          "y": 10,
+          "w": 40,
+          "h": 28,
+          "clue_id": null
+        },
+        {
+          "id": "staff_terminal",
+          "label": "Staff terminal",
+          "kind": "clue",
+          "x": 12,
+          "y": 52,
+          "w": 14,
+          "h": 14,
+          "clue_id": "R2-01"
+        },
+        {
+          "id": "radio_console",
+          "label": "Transmission receiver",
+          "kind": "clue",
+          "x": 34,
+          "y": 48,
+          "w": 16,
+          "h": 14,
+          "clue_id": "R2-05"
+        },
+        {
+          "id": "sound_console",
+          "label": "Sound console",
+          "kind": "clue",
+          "x": 56,
+          "y": 54,
+          "w": 20,
+          "h": 12,
+          "clue_id": "R2-06"
+        },
+        {
+          "id": "dead_intercom",
+          "label": "Dead intercom",
+          "kind": "decor",
+          "x": 82,
+          "y": 24,
+          "w": 6,
+          "h": 10,
+          "clue_id": null
+        }
+      ]
+    },
+    {
+      "id": "vault",
+      "round": 2,
+      "order": 3,
+      "title": "Test Room 6 (Vault)",
+      "unlock": {
+        "clue_solved": "R2-07"
+      },
+      "background_file": "bg_vault.png",
+      "theme": {
+        "bg_top": "#120d17",
+        "bg_bottom": "#1b0f2b",
+        "accent": "#38f0ff",
+        "glow": "#a99bff",
+        "text": "#e6ddff",
+        "lamp": "#7a5cff",
+        "fog": 0.18,
+        "vignette": 0.6
+      },
+      "ambient": {
+        "loop": "amb_vault.mp3",
+        "sfx": [
+          "core_pulse.mp3",
+          "steel_creak.mp3"
+        ]
+      },
+      "objects": [
+        {
+          "id": "core_glass",
+          "label": "Glowing core behind glass",
+          "kind": "decor",
+          "x": 36,
+          "y": 14,
+          "w": 28,
+          "h": 40,
+          "clue_id": null
+        },
+        {
+          "id": "countdown_timer",
+          "label": "Countdown timer",
+          "kind": "decor",
+          "x": 40,
+          "y": 4,
+          "w": 20,
+          "h": 8,
+          "clue_id": null
+        },
+        {
+          "id": "manual_terminal",
+          "label": "Manual terminal",
+          "kind": "clue",
+          "x": 8,
+          "y": 46,
+          "w": 16,
+          "h": 16,
+          "clue_id": "R2-08"
+        },
+        {
+          "id": "failsafe_panel",
+          "label": "Failsafe panel",
+          "kind": "clue",
+          "x": 76,
+          "y": 42,
+          "w": 16,
+          "h": 18,
+          "clue_id": "R2-09"
+        },
+        {
+          "id": "central_console",
+          "label": "Central console",
+          "kind": "clue",
+          "x": 38,
+          "y": 62,
+          "w": 24,
+          "h": 14,
+          "clue_id": "R2-10"
+        }
+      ]
+    }
+  ],
+  "clues": [
+    {
+      "id": "R1-01",
+      "round": 1,
+      "room": "bedroom",
+      "seq": 1,
+      "order_in_room": 1,
+      "kind": "cipher_text",
+      "object_id": "diary_bed",
+      "title": "Test Diary",
+      "scene_text": "A test diary lies open. The last page is scrambled.",
+      "unlock": {
+        "requires_all": []
+      },
+      "payload": {
+        "pages": [
+          {
+            "label": "Test day 1",
+            "text": "This is test page one."
+          },
+          {
+            "label": "Test day 2",
+            "text": "Rex turned 5 today. This is test page two."
+          }
+        ],
+        "last_entry": {
+          "label": "Test day 3",
+          "cipher_text": "YJXY JSYWD YMJ PJDBTWI NX QFSYJWS"
+        }
+      },
+      "assets": [
+        {
+          "id": "diary_bg",
+          "file": "diary_open.png",
+          "kind": "image",
+          "brief": "Placeholder diary image with one readable page and one cipher page."
+        }
+      ],
+      "stages": [
+        {
+          "index": 1,
+          "type": "fields",
+          "prompt": "What keyword does the last entry give?",
+          "fields": [
+            {
+              "key": "kw",
+              "label": "Keyword",
+              "kind": "text",
+              "normalize": "alnum",
+              "placeholder": "",
+              "max_len": 60
+            }
+          ],
+          "expected_fields": 1,
+          "reveal": {},
+          "answer": [
+            "LANTERN"
+          ]
+        }
+      ],
+      "hints": [
+        {
+          "stage": 1,
+          "level": 1,
+          "text": "Look for a number on the earlier pages.",
+          "penalty": 0,
+          "free_after_sec": 300
+        },
+        {
+          "stage": 1,
+          "level": 2,
+          "text": "It is a Caesar cipher. The shift is on the page.",
+          "penalty": 1,
+          "free_after_sec": null
+        },
+        {
+          "stage": 1,
+          "level": 3,
+          "text": "The shift is 5. The last word is the answer.",
+          "penalty": 2,
+          "free_after_sec": null
+        }
+      ],
+      "scoring": {
+        "base": 6,
+        "speed_max": 4,
+        "par_sec": 180,
+        "free_wrong": 3,
+        "wrong_penalty": 0.5,
+        "min_points": 2
+      },
+      "lockout": {
+        "after_wrong": null,
+        "seconds": 0
+      },
+      "reward": {
+        "fragment": "F01",
+        "story_text": "TEST: fragment 1 unlocked."
+      },
+      "feeds": [
+        "R1-10"
+      ],
+      "solution": {
+        "method": "caesar"
+      },
+      "tools": [],
+      "final": false
+    },
+    {
+      "id": "R1-02",
+      "round": 1,
+      "room": "bedroom",
+      "seq": 2,
+      "order_in_room": 2,
+      "kind": "audio_morse",
+      "object_id": "music_box",
+      "title": "Test Music Box",
+      "scene_text": "A test music box plays long and short notes.",
+      "unlock": {
+        "requires_all": []
+      },
+      "payload": {
+        "unit_ms": 140,
+        "morse": "...-- ----. ....- ---..",
+        "note": "Short and long notes. A longer pause separates digits.",
+        "synth": true
+      },
+      "assets": [
+        {
+          "id": "mb",
+          "file": "music_box.mp3",
+          "kind": "audio",
+          "brief": "Placeholder beep sequence of Morse 3948, unit 140 ms."
+        }
+      ],
+      "stages": [
+        {
+          "index": 1,
+          "type": "fields",
+          "prompt": "Enter the number code the box plays.",
+          "fields": [
+            {
+              "key": "code",
+              "label": "Number code",
+              "kind": "number",
+              "normalize": "digits",
+              "placeholder": "",
+              "max_len": 60
+            }
+          ],
+          "expected_fields": 1,
+          "reveal": {},
+          "answer": [
+            "3948"
+          ]
+        }
+      ],
+      "hints": [
+        {
+          "stage": 1,
+          "level": 1,
+          "text": "Listen to note lengths.",
+          "penalty": 0,
+          "free_after_sec": 300
+        },
+        {
+          "stage": 1,
+          "level": 2,
+          "text": "It is Morse code.",
+          "penalty": 1,
+          "free_after_sec": null
+        },
+        {
+          "stage": 1,
+          "level": 3,
+          "text": "Four digits. The first is ...--.",
+          "penalty": 2,
+          "free_after_sec": null
+        }
+      ],
+      "scoring": {
+        "base": 6,
+        "speed_max": 4,
+        "par_sec": 240,
+        "free_wrong": 3,
+        "wrong_penalty": 0.5,
+        "min_points": 2
+      },
+      "lockout": {
+        "after_wrong": null,
+        "seconds": 0
+      },
+      "reward": {
+        "fragment": "F02",
+        "story_text": "TEST: fragment 2 unlocked."
+      },
+      "feeds": [
+        "R1-10"
+      ],
+      "solution": {
+        "method": "morse"
+      },
+      "tools": [],
+      "final": false
+    },
+    {
+      "id": "R1-03",
+      "round": 1,
+      "room": "bedroom",
+      "seq": 3,
+      "order_in_room": 3,
+      "kind": "image_inspect",
+      "object_id": "poster_wall",
+      "title": "Test Poster",
+      "scene_text": "A test poster looks blank.",
+      "unlock": {
+        "requires_all": []
+      },
+      "payload": {
+        "image_file": "poster_dark.png",
+        "tools": [
+          "invert",
+          "contrast",
+          "brightness"
+        ]
+      },
+      "assets": [
+        {
+          "id": "poster",
+          "file": "poster_dark.png",
+          "kind": "image",
+          "brief": "Near-black image with hidden text 'TEST DATE 07/04/2001' at about 3 percent contrast."
+        }
+      ],
+      "stages": [
+        {
+          "index": 1,
+          "type": "fields",
+          "prompt": "What date is hidden on the poster? (MM/DD/YYYY)",
+          "fields": [
+            {
+              "key": "date",
+              "label": "Date (MM/DD/YYYY)",
+              "kind": "text",
+              "normalize": "digits",
+              "placeholder": "",
+              "max_len": 60
+            }
+          ],
+          "expected_fields": 1,
+          "reveal": {},
+          "answer": [
+            "07/04/2001"
+          ]
+        }
+      ],
+      "hints": [
+        {
+          "stage": 1,
+          "level": 1,
+          "text": "The poster is just dark.",
+          "penalty": 0,
+          "free_after_sec": 300
+        },
+        {
+          "stage": 1,
+          "level": 2,
+          "text": "Use the Inspector to invert or raise contrast.",
+          "penalty": 1,
+          "free_after_sec": null
+        },
+        {
+          "stage": 1,
+          "level": 3,
+          "text": "The text ends in a date. The year is 2001.",
+          "penalty": 2,
+          "free_after_sec": null
+        }
+      ],
+      "scoring": {
+        "base": 6,
+        "speed_max": 4,
+        "par_sec": 240,
+        "free_wrong": 3,
+        "wrong_penalty": 0.5,
+        "min_points": 2
+      },
+      "lockout": {
+        "after_wrong": null,
+        "seconds": 0
+      },
+      "reward": {
+        "fragment": "F03",
+        "story_text": "TEST: fragment 3 unlocked."
+      },
+      "feeds": [
+        "R1-10"
+      ],
+      "solution": {
+        "method": "image_contrast"
+      },
+      "tools": [
+        "invert",
+        "contrast",
+        "brightness"
+      ],
+      "final": false
+    },
+    {
+      "id": "R1-04",
+      "round": 1,
+      "room": "study",
+      "seq": 4,
+      "order_in_room": 1,
+      "kind": "binary_note",
+      "object_id": "desk_drawer",
+      "title": "Test Tablet",
+      "scene_text": "A test tablet wants a passcode. A note holds zeros and ones.",
+      "unlock": {
+        "requires_all": []
+      },
+      "payload": {
+        "sticky_note": "01000001 01001100 01010000 01001000 01000001",
+        "bits_per_char": 8
+      },
+      "assets": [
+        {
+          "id": "vm",
+          "file": "voice_memo.mp3",
+          "kind": "audio",
+          "brief": "Placeholder 5 second spoken line 'test voice memo'."
+        }
+      ],
+      "stages": [
+        {
+          "index": 1,
+          "type": "fields",
+          "prompt": "Enter the tablet passcode (a word).",
+          "fields": [
+            {
+              "key": "pass",
+              "label": "Passcode",
+              "kind": "text",
+              "normalize": "alnum",
+              "placeholder": "",
+              "max_len": 60
+            }
+          ],
+          "expected_fields": 1,
+          "reveal": {
+            "voice_memo_file": "voice_memo.mp3",
+            "transcript": "TEST VOICE MEMO TRANSCRIPT."
+          },
+          "answer": [
+            "ALPHA"
+          ]
+        }
+      ],
+      "hints": [
+        {
+          "stage": 1,
+          "level": 1,
+          "text": "The note is a message.",
+          "penalty": 0,
+          "free_after_sec": 300
+        },
+        {
+          "stage": 1,
+          "level": 2,
+          "text": "Binary to ASCII.",
+          "penalty": 1,
+          "free_after_sec": null
+        },
+        {
+          "stage": 1,
+          "level": 3,
+          "text": "The passcode is the first Greek letter.",
+          "penalty": 2,
+          "free_after_sec": null
+        }
+      ],
+      "scoring": {
+        "base": 6,
+        "speed_max": 4,
+        "par_sec": 300,
+        "free_wrong": 3,
+        "wrong_penalty": 0.5,
+        "min_points": 2
+      },
+      "lockout": {
+        "after_wrong": null,
+        "seconds": 0
+      },
+      "reward": {
+        "fragment": "F04",
+        "story_text": "TEST: fragment 4 unlocked."
+      },
+      "feeds": [
+        "R1-10"
+      ],
+      "solution": {
+        "method": "binary_ascii"
+      },
+      "tools": [],
+      "final": false
+    },
+    {
+      "id": "R1-05",
+      "round": 1,
+      "room": "basement",
+      "seq": 5,
+      "order_in_room": 1,
+      "kind": "hex_log",
+      "object_id": "maintenance_terminal",
+      "title": "Test Log",
+      "scene_text": "A test terminal holds a crash log.",
+      "unlock": {
+        "requires_all": []
+      },
+      "payload": {
+        "filename": "crash_1031.log",
+        "log_lines": [
+          "[02:10:02] test: buffer ok",
+          "[02:12:50] test: peer joined",
+          "[02:13:31] test: retry (3)",
+          "[02:14:05] test: checksum fail",
+          "[02:15:00] test: dump written"
+        ],
+        "hex_lines": [
+          "45 52 52 4F 52 20 30 32 3A 31 35 3A 30 39 20 50",
+          "52 4F 43 45 53 53 20 4F 52 42 49 54 2E 53 59 53",
+          "20 48 41 4C 54 45 44"
+        ]
+      },
+      "assets": [],
+      "stages": [
+        {
+          "index": 1,
+          "type": "fields",
+          "prompt": "Which process crashed? (name only, no extension)",
+          "fields": [
+            {
+              "key": "proc",
+              "label": "Process name",
+              "kind": "text",
+              "normalize": "alnum",
+              "placeholder": "",
+              "max_len": 60
+            }
+          ],
+          "expected_fields": 1,
+          "reveal": {},
+          "answer": [
+            "ORBIT"
+          ]
+        }
+      ],
+      "hints": [
+        {
+          "stage": 1,
+          "level": 1,
+          "text": "Find the block of hex pairs.",
+          "penalty": 0,
+          "free_after_sec": 300
+        },
+        {
+          "stage": 1,
+          "level": 2,
+          "text": "Convert hex to text.",
+          "penalty": 1,
+          "free_after_sec": null
+        },
+        {
+          "stage": 1,
+          "level": 3,
+          "text": "The name before the dot is the answer.",
+          "penalty": 2,
+          "free_after_sec": null
+        }
+      ],
+      "scoring": {
+        "base": 6,
+        "speed_max": 4,
+        "par_sec": 300,
+        "free_wrong": 3,
+        "wrong_penalty": 0.5,
+        "min_points": 2
+      },
+      "lockout": {
+        "after_wrong": null,
+        "seconds": 0
+      },
+      "reward": {
+        "fragment": "F05",
+        "story_text": "TEST: fragment 5 unlocked."
+      },
+      "feeds": [
+        "R1-09",
+        "R1-10"
+      ],
+      "solution": {
+        "method": "hex_ascii"
+      },
+      "tools": [],
+      "final": false
+    },
+    {
+      "id": "R1-06",
+      "round": 1,
+      "room": "study",
+      "seq": 6,
+      "order_in_room": 2,
+      "kind": "base64_email",
+      "object_id": "crt_monitor",
+      "title": "Test Email",
+      "scene_text": "A test draft with one long encoded block.",
+      "unlock": {
+        "requires_all": []
+      },
+      "payload": {
+        "from_addr": "test@lab.test",
+        "to_addr": "boss@lab.test",
+        "subject": "Test draft",
+        "intro": "Test intro text before the encoded block.",
+        "encoded_block": "VGhlIHNpZ25hbCBtdXN0IG5ldmVyIGJlIHNlbnQgZnJvbSBpbnNpZGUgdGhlIGxhYi4="
+      },
+      "assets": [],
+      "stages": [
+        {
+          "index": 1,
+          "type": "fields",
+          "prompt": "What must never be sent from inside? (one word)",
+          "fields": [
+            {
+              "key": "word",
+              "label": "One word",
+              "kind": "text",
+              "normalize": "alnum",
+              "placeholder": "",
+              "max_len": 60
+            }
+          ],
+          "expected_fields": 1,
+          "reveal": {},
+          "answer": [
+            "SIGNAL"
+          ]
+        }
+      ],
+      "hints": [
+        {
+          "stage": 1,
+          "level": 1,
+          "text": "It ends with equals signs.",
+          "penalty": 0,
+          "free_after_sec": 300
+        },
+        {
+          "stage": 1,
+          "level": 2,
+          "text": "It is Base64.",
+          "penalty": 1,
+          "free_after_sec": null
+        },
+        {
+          "stage": 1,
+          "level": 3,
+          "text": "The decoded sentence names the thing.",
+          "penalty": 2,
+          "free_after_sec": null
+        }
+      ],
+      "scoring": {
+        "base": 6,
+        "speed_max": 4,
+        "par_sec": 300,
+        "free_wrong": 3,
+        "wrong_penalty": 0.5,
+        "min_points": 2
+      },
+      "lockout": {
+        "after_wrong": null,
+        "seconds": 0
+      },
+      "reward": {
+        "fragment": "F06",
+        "story_text": "TEST: fragment 6 unlocked."
+      },
+      "feeds": [
+        "R1-10"
+      ],
+      "solution": {
+        "method": "base64"
+      },
+      "tools": [],
+      "final": false
+    },
+    {
+      "id": "R1-07",
+      "round": 1,
+      "room": "study",
+      "seq": 7,
+      "order_in_room": 3,
+      "kind": "audio_compare",
+      "object_id": "tape_deck",
+      "title": "Test Recordings",
+      "scene_text": "Two test recordings. One says GREEN, one says RED. One is forged.",
+      "unlock": {
+        "requires_all": []
+      },
+      "payload": {
+        "files": [
+          {
+            "id": "rec_a",
+            "label": "Recording A",
+            "file": "rec_a.wav",
+            "properties": {
+              "date_recorded": "2002-01-10 09:12",
+              "duration_sec": 6,
+              "software": "TestForge 2.1"
+            }
+          },
+          {
+            "id": "rec_b",
+            "label": "Recording B",
+            "file": "rec_b.wav",
+            "properties": {
+              "date_recorded": "2001-07-03 22:14",
+              "duration_sec": 6,
+              "software": "TestCap 1.0"
+            }
+          }
+        ],
+        "properties_button": true
+      },
+      "assets": [
+        {
+          "id": "ra",
+          "file": "rec_a.wav",
+          "kind": "audio",
+          "brief": "Spoken word 'green'. Embed date recorded 2002-01-10 09:12."
+        },
+        {
+          "id": "rb",
+          "file": "rec_b.wav",
+          "kind": "audio",
+          "brief": "Spoken word 'red'. Embed date recorded 2001-07-03 22:14."
+        }
+      ],
+      "stages": [
+        {
+          "index": 1,
+          "type": "fields",
+          "prompt": "Which recording is forged? Enter the word it says.",
+          "fields": [
+            {
+              "key": "word",
+              "label": "Spoken word",
+              "kind": "text",
+              "normalize": "alnum",
+              "placeholder": "",
+              "max_len": 60
+            }
+          ],
+          "expected_fields": 1,
+          "reveal": {},
+          "answer": [
+            "GREEN"
+          ]
+        }
+      ],
+      "hints": [
+        {
+          "stage": 1,
+          "level": 1,
+          "text": "Study the files, not the voices.",
+          "penalty": 0,
+          "free_after_sec": 300
+        },
+        {
+          "stage": 1,
+          "level": 2,
+          "text": "Open Properties and compare dates.",
+          "penalty": 1,
+          "free_after_sec": null
+        },
+        {
+          "stage": 1,
+          "level": 3,
+          "text": "The event date is 07/04/2001. A later recording is forged.",
+          "penalty": 2,
+          "free_after_sec": null
+        }
+      ],
+      "scoring": {
+        "base": 6,
+        "speed_max": 4,
+        "par_sec": 300,
+        "free_wrong": 3,
+        "wrong_penalty": 0.5,
+        "min_points": 2
+      },
+      "lockout": {
+        "after_wrong": null,
+        "seconds": 0
+      },
+      "reward": {
+        "fragment": "F07",
+        "story_text": "TEST: fragment 7 unlocked."
+      },
+      "feeds": [
+        "R1-10"
+      ],
+      "solution": {
+        "method": "file_metadata"
+      },
+      "tools": [],
+      "final": false
+    },
+    {
+      "id": "R1-08",
+      "round": 1,
+      "room": "basement",
+      "seq": 8,
+      "order_in_room": 2,
+      "kind": "log_filter",
+      "object_id": "rack_console",
+      "title": "Test Access Log",
+      "scene_text": "A test console lists logins.",
+      "unlock": {
+        "requires_all": []
+      },
+      "payload": {
+        "lines": [
+          "2001-10-31 16:21:01 LOGIN OK user=lena src=TABLET-01",
+          "2001-10-31 16:25:06 LOGIN OK user=system src=HOUSE-CORE",
+          "2001-10-31 16:46:08 LOGIN OK user=system src=HOUSE-CORE",
+          "2001-10-31 17:11:48 LOGIN OK user=mara src=WS-MARA",
+          "2001-10-31 17:33:51 LOGIN OK user=lena src=TABLET-01",
+          "2001-10-31 17:51:00 LOGIN OK user=daniel src=WS-DANIEL",
+          "2001-10-31 18:14:27 LOGIN OK user=daniel src=WS-DANIEL",
+          "2001-10-31 18:29:26 LOGIN OK user=mara src=WS-MARA",
+          "2001-10-31 18:45:56 LOGIN OK user=lena src=TABLET-01",
+          "2001-10-31 18:58:20 LOGIN OK user=theo src=TABLET-02",
+          "2001-10-31 19:06:50 LOGIN OK user=theo src=TABLET-02",
+          "2001-10-31 19:18:32 LOGIN OK user=daniel src=WS-DANIEL",
+          "2001-10-31 19:36:00 LOGIN OK user=mara src=WS-MARA",
+          "2031-10-31 23:47:09 LOGIN OK user=unknown src=SRC-TEST9",
+          "2001-10-31 20:08:35 LOGIN OK user=mara src=WS-MARA",
+          "2001-10-31 20:27:45 LOGIN OK user=theo src=TABLET-02",
+          "2001-10-31 20:36:53 LOGIN OK user=system src=HOUSE-CORE",
+          "2001-10-31 20:49:27 LOGIN OK user=theo src=TABLET-02",
+          "2001-10-31 21:14:25 LOGIN OK user=lena src=TABLET-01",
+          "2001-10-31 21:39:25 LOGIN OK user=daniel src=WS-DANIEL"
+        ],
+        "search_enabled": true
+      },
+      "assets": [],
+      "stages": [
+        {
+          "index": 1,
+          "type": "fields",
+          "prompt": "Which source ID logged in at an impossible time?",
+          "fields": [
+            {
+              "key": "src",
+              "label": "Source ID",
+              "kind": "text",
+              "normalize": "alnum",
+              "placeholder": "",
+              "max_len": 60
+            }
+          ],
+          "expected_fields": 1,
+          "reveal": {},
+          "answer": [
+            "SRC-TEST9"
+          ]
+        }
+      ],
+      "hints": [
+        {
+          "stage": 1,
+          "level": 1,
+          "text": "One line is wrong.",
+          "penalty": 0,
+          "free_after_sec": 300
+        },
+        {
+          "stage": 1,
+          "level": 2,
+          "text": "Look at the years.",
+          "penalty": 1,
+          "free_after_sec": null
+        },
+        {
+          "stage": 1,
+          "level": 3,
+          "text": "Search for 2031.",
+          "penalty": 2,
+          "free_after_sec": null
+        }
+      ],
+      "scoring": {
+        "base": 6,
+        "speed_max": 4,
+        "par_sec": 300,
+        "free_wrong": 3,
+        "wrong_penalty": 0.5,
+        "min_points": 2
+      },
+      "lockout": {
+        "after_wrong": null,
+        "seconds": 0
+      },
+      "reward": {
+        "fragment": "F08",
+        "story_text": "TEST: fragment 8 unlocked."
+      },
+      "feeds": [
+        "R1-10"
+      ],
+      "solution": {
+        "method": "log_search"
+      },
+      "tools": [],
+      "final": false
+    },
+    {
+      "id": "R1-09",
+      "round": 1,
+      "room": "basement",
+      "seq": 9,
+      "order_in_room": 3,
+      "kind": "vigenere_note",
+      "object_id": "rack_door_note",
+      "title": "Test Note",
+      "scene_text": "A test note is encrypted. A margin line mentions a key.",
+      "unlock": {
+        "requires_all": [
+          "R1-05"
+        ]
+      },
+      "payload": {
+        "cipher_text": "KYFV MVV HZBR TPUIZVUML ZFXMK HYF NEOX",
+        "margin_note": "The key is the name of the process that halted.",
+        "image_file": "final_note.png"
+      },
+      "assets": [
+        {
+          "id": "note",
+          "file": "final_note.png",
+          "kind": "image",
+          "brief": "Placeholder note image with the cipher text and the margin line."
+        }
+      ],
+      "stages": [
+        {
+          "index": 1,
+          "type": "fields",
+          "prompt": "What does the note say to do with the flag? (one word)",
+          "fields": [
+            {
+              "key": "verb",
+              "label": "One word",
+              "kind": "text",
+              "normalize": "alnum",
+              "placeholder": "",
+              "max_len": 60
+            }
+          ],
+          "expected_fields": 1,
+          "reveal": {},
+          "answer": [
+            "LOWER"
+          ]
+        }
+      ],
+      "hints": [
+        {
+          "stage": 1,
+          "level": 1,
+          "text": "Read the margin line.",
+          "penalty": 0,
+          "free_after_sec": 300
+        },
+        {
+          "stage": 1,
+          "level": 2,
+          "text": "Vigenere. The key is the crashed process.",
+          "penalty": 1,
+          "free_after_sec": null
+        },
+        {
+          "stage": 1,
+          "level": 3,
+          "text": "The key is ORBIT. The word before THE FLAG is the answer.",
+          "penalty": 2,
+          "free_after_sec": null
+        }
+      ],
+      "scoring": {
+        "base": 6,
+        "speed_max": 4,
+        "par_sec": 420,
+        "free_wrong": 3,
+        "wrong_penalty": 0.5,
+        "min_points": 2
+      },
+      "lockout": {
+        "after_wrong": null,
+        "seconds": 0
+      },
+      "reward": {
+        "fragment": "F09",
+        "story_text": "TEST: fragment 9 unlocked."
+      },
+      "feeds": [
+        "R1-10"
+      ],
+      "solution": {
+        "method": "vigenere"
+      },
+      "tools": [],
+      "final": false
+    },
+    {
+      "id": "R1-10",
+      "round": 1,
+      "room": "basement",
+      "seq": 10,
+      "order_in_room": 4,
+      "kind": "final_terminal",
+      "object_id": "containment_console",
+      "title": "Test Containment Terminal",
+      "scene_text": "A test wall console with three stages.",
+      "unlock": {
+        "requires_all": [
+          "R1-05",
+          "R1-08",
+          "R1-09"
+        ]
+      },
+      "payload": {
+        "grid": {
+          "rows": 2,
+          "cols": 5
+        },
+        "fragment_ids": [
+          "F01",
+          "F02",
+          "F03",
+          "F04",
+          "F05",
+          "F06",
+          "F07",
+          "F08",
+          "F09",
+          "F10"
+        ],
+        "options": [
+          {
+            "id": "ALPHA",
+            "label": "OPTION ALPHA"
+          },
+          {
+            "id": "BETA",
+            "label": "OPTION BETA"
+          }
+        ],
+        "photo_file": "photo_full.png"
+      },
+      "assets": [
+        {
+          "id": "full",
+          "file": "photo_full.png",
+          "kind": "image",
+          "brief": "Placeholder portrait with five figures and faint text 2468 in the bottom-right at about 6 percent contrast."
+        },
+        {
+          "id": "fr",
+          "file": "frag_01.png ... frag_10.png",
+          "kind": "image",
+          "brief": "Portrait cut into 2x5 torn pieces frag_01..frag_10 matching the test permutation."
+        }
+      ],
+      "stages": [
+        {
+          "index": 1,
+          "type": "fields",
+          "prompt": "Enter the three keywords.",
+          "fields": [
+            {
+              "key": "k1",
+              "label": "Keyword from the diary",
+              "kind": "text",
+              "normalize": "alnum",
+              "placeholder": "",
+              "max_len": 60
+            },
+            {
+              "key": "k2",
+              "label": "Crashed process",
+              "kind": "text",
+              "normalize": "alnum",
+              "placeholder": "",
+              "max_len": 60
+            },
+            {
+              "key": "k3",
+              "label": "Source ID",
+              "kind": "text",
+              "normalize": "alnum",
+              "placeholder": "",
+              "max_len": 60
+            }
+          ],
+          "expected_fields": 3,
+          "reveal": {
+            "fragment": "F10"
+          },
+          "answer": [
+            "LANTERN",
+            "ORBIT",
+            "SRC-TEST9"
+          ]
+        },
+        {
+          "index": 2,
+          "type": "arrange",
+          "prompt": "Arrange the ten fragments.",
+          "fields": [
+            {
+              "key": "s1",
+              "label": "Slot 1",
+              "kind": "fragment",
+              "normalize": "upper",
+              "placeholder": "",
+              "max_len": 60
+            },
+            {
+              "key": "s2",
+              "label": "Slot 2",
+              "kind": "fragment",
+              "normalize": "upper",
+              "placeholder": "",
+              "max_len": 60
+            },
+            {
+              "key": "s3",
+              "label": "Slot 3",
+              "kind": "fragment",
+              "normalize": "upper",
+              "placeholder": "",
+              "max_len": 60
+            },
+            {
+              "key": "s4",
+              "label": "Slot 4",
+              "kind": "fragment",
+              "normalize": "upper",
+              "placeholder": "",
+              "max_len": 60
+            },
+            {
+              "key": "s5",
+              "label": "Slot 5",
+              "kind": "fragment",
+              "normalize": "upper",
+              "placeholder": "",
+              "max_len": 60
+            },
+            {
+              "key": "s6",
+              "label": "Slot 6",
+              "kind": "fragment",
+              "normalize": "upper",
+              "placeholder": "",
+              "max_len": 60
+            },
+            {
+              "key": "s7",
+              "label": "Slot 7",
+              "kind": "fragment",
+              "normalize": "upper",
+              "placeholder": "",
+              "max_len": 60
+            },
+            {
+              "key": "s8",
+              "label": "Slot 8",
+              "kind": "fragment",
+              "normalize": "upper",
+              "placeholder": "",
+              "max_len": 60
+            },
+            {
+              "key": "s9",
+              "label": "Slot 9",
+              "kind": "fragment",
+              "normalize": "upper",
+              "placeholder": "",
+              "max_len": 60
+            },
+            {
+              "key": "s10",
+              "label": "Slot 10",
+              "kind": "fragment",
+              "normalize": "upper",
+              "placeholder": "",
+              "max_len": 60
+            }
+          ],
+          "expected_fields": 10,
+          "reveal": {
+            "shadow_hint": "TEST: five people, four shadows."
+          },
+          "answer": [
+            "F06",
+            "F01",
+            "F08",
+            "F03",
+            "F10",
+            "F05",
+            "F02",
+            "F09",
+            "F04",
+            "F07"
+          ]
+        },
+        {
+          "index": 3,
+          "type": "choice_code",
+          "prompt": "Choose, then enter the hidden code.",
+          "fields": [
+            {
+              "key": "choice",
+              "label": "Choice",
+              "kind": "choice",
+              "normalize": "upper",
+              "placeholder": "",
+              "max_len": 60
+            },
+            {
+              "key": "code",
+              "label": "Hidden code",
+              "kind": "number",
+              "normalize": "digits",
+              "placeholder": "",
+              "max_len": 60
+            }
+          ],
+          "expected_fields": 2,
+          "reveal": {},
+          "answer": [
+            "BETA",
+            "2468"
+          ]
+        }
+      ],
+      "hints": [
+        {
+          "stage": 1,
+          "level": 1,
+          "text": "Which clues gave words?",
+          "penalty": 0,
+          "free_after_sec": 300
+        },
+        {
+          "stage": 1,
+          "level": 2,
+          "text": "Diary keyword, crashed process, odd login source.",
+          "penalty": 1,
+          "free_after_sec": null
+        },
+        {
+          "stage": 1,
+          "level": 3,
+          "text": "LANTERN, ORBIT, SRC-TEST9.",
+          "penalty": 2,
+          "free_after_sec": null
+        },
+        {
+          "stage": 2,
+          "level": 1,
+          "text": "It is a two by five grid.",
+          "penalty": 0,
+          "free_after_sec": 300
+        },
+        {
+          "stage": 2,
+          "level": 2,
+          "text": "Match the edges.",
+          "penalty": 1,
+          "free_after_sec": null
+        },
+        {
+          "stage": 2,
+          "level": 3,
+          "text": "F06 is the top-left corner and F07 the bottom-right.",
+          "penalty": 2,
+          "free_after_sec": null
+        },
+        {
+          "stage": 3,
+          "level": 1,
+          "text": "Count people and shadows.",
+          "penalty": 0,
+          "free_after_sec": 300
+        },
+        {
+          "stage": 3,
+          "level": 2,
+          "text": "Recall the forged recording and the note.",
+          "penalty": 1,
+          "free_after_sec": null
+        },
+        {
+          "stage": 3,
+          "level": 3,
+          "text": "Choose what the note asks. The code is faint text in the photo.",
+          "penalty": 2,
+          "free_after_sec": null
+        }
+      ],
+      "scoring": {
+        "base": 6,
+        "speed_max": 4,
+        "par_sec": 600,
+        "free_wrong": 3,
+        "wrong_penalty": 0.5,
+        "min_points": 2
+      },
+      "lockout": {
+        "after_wrong": null,
+        "seconds": 0
+      },
+      "reward": {
+        "fragment": "F10",
+        "story_text": "TEST: the door opens."
+      },
+      "feeds": [],
+      "solution": {
+        "method": "meta_final"
+      },
+      "tools": [],
+      "final": true
+    },
+    {
+      "id": "R2-01",
+      "round": 2,
+      "room": "control",
+      "seq": 1,
+      "order_in_room": 1,
+      "kind": "table_filter",
+      "object_id": "staff_terminal",
+      "title": "Test Personnel Index",
+      "scene_text": "A test staff terminal with sixty badges.",
+      "unlock": {
+        "requires_all": []
+      },
+      "payload": {
+        "columns": [
+          "badge_id",
+          "name",
+          "dept",
+          "status",
+          "last_login"
+        ],
+        "rows": [
+          [
+            "BDG-0153",
+            "Tester 42",
+            "Systems",
+            "Terminated",
+            "2000-02-12 14:32"
+          ],
+          [
+            "BDG-0336",
+            "Tester 16",
+            "Security",
+            "Retired",
+            "2000-05-20 20:08"
+          ],
+          [
+            "BDG-0348",
+            "Tester 30",
+            "Archive",
+            "Retired",
+            "2000-05-03 12:28"
+          ],
+          [
+            "BDG-0178",
+            "Tester 15",
+            "Archive",
+            "Retired",
+            "2000-10-22 13:30"
+          ],
+          [
+            "BDG-0484",
+            "Tester 02",
+            "Admin",
+            "On Leave",
+            "2000-03-16 18:06"
+          ],
+          [
+            "BDG-0281",
+            "Tester 55",
+            "Medical",
+            "Terminated",
+            "2000-02-15 18:08"
+          ],
+          [
+            "BDG-0500",
+            "Tester 54",
+            "Medical",
+            "Retired",
+            "2000-09-03 21:29"
+          ],
+          [
+            "BDG-0645",
+            "Tester 31",
+            "Medical",
+            "Retired",
+            "2000-02-14 21:18"
+          ],
+          [
+            "BDG-0172",
+            "Tester 20",
+            "Systems",
+            "Retired",
+            "2000-05-24 09:25"
+          ],
+          [
+            "BDG-0202",
+            "Tester 28",
+            "Medical",
+            "On Leave",
+            "2000-09-27 15:37"
+          ],
+          [
+            "BDG-0918",
+            "Tester 47",
+            "Archive",
+            "Terminated",
+            "2000-04-05 09:05"
+          ],
+          [
+            "BDG-0925",
+            "Tester 41",
+            "Archive",
+            "Terminated",
+            "2001-01-03 15:01"
+          ],
+          [
+            "BDG-0779",
+            "Tester 29",
+            "Admin",
+            "On Leave",
+            "2000-07-17 11:18"
+          ],
+          [
+            "BDG-0333",
+            "Tester 17",
+            "Systems",
+            "On Leave",
+            "2001-01-22 07:51"
+          ],
+          [
+            "BDG-0986",
+            "Tester 22",
+            "Archive",
+            "On Leave",
+            "2000-03-07 21:55"
+          ],
+          [
+            "BDG-0600",
+            "Tester 59",
+            "Security",
+            "Suspended",
+            "2001-02-16 15:37"
+          ],
+          [
+            "BDG-0232",
+            "Tester 14",
+            "Archive",
+            "On Leave",
+            "2001-01-08 09:33"
+          ],
+          [
+            "BDG-0158",
+            "Tester 19",
+            "Medical",
+            "On Leave",
+            "1999-12-25 19:29"
+          ],
+          [
+            "BDG-0481",
+            "Tester 27",
+            "Admin",
+            "On Leave",
+            "2000-05-25 07:48"
+          ],
+          [
+            "BDG-0184",
+            "Tester 10",
+            "Admin",
+            "On Leave",
+            "2000-04-06 18:28"
+          ],
+          [
+            "BDG-0217",
+            "Tester 37",
+            "Admin",
+            "On Leave",
+            "2000-09-05 10:30"
+          ],
+          [
+            "BDG-0960",
+            "Tester 18",
+            "Security",
+            "Terminated",
+            "2000-12-28 15:56"
+          ],
+          [
+            "BDG-0244",
+            "Tester 49",
+            "Medical",
+            "Retired",
+            "2000-12-29 22:45"
+          ],
+          [
+            "BDG-0607",
+            "Tester 03",
+            "Systems",
+            "Retired",
+            "2000-02-14 15:47"
+          ],
+          [
+            "BDG-0853",
+            "Tester 44",
+            "Systems",
+            "Terminated",
+            "2000-12-17 20:24"
+          ],
+          [
+            "BDG-0163",
+            "Tester 53",
+            "Admin",
+            "On Leave",
+            "1999-12-04 14:20"
+          ],
+          [
+            "BDG-0647",
+            "Tester 04",
+            "Security",
+            "Terminated",
+            "1999-12-26 09:59"
+          ],
+          [
+            "BDG-0527",
+            "Tester 01",
+            "Medical",
+            "Retired",
+            "2000-11-23 18:38"
+          ],
+          [
+            "BDG-0321",
+            "Tester 60",
+            "Security",
+            "Suspended",
+            "2001-02-24 14:12"
+          ],
+          [
+            "BDG-0642",
+            "Tester 38",
+            "Systems",
+            "Terminated",
+            "2000-08-17 19:52"
+          ],
+          [
+            "BDG-0886",
+            "Tester 40",
+            "Medical",
+            "On Leave",
+            "1999-10-16 15:47"
+          ],
+          [
+            "BDG-0686",
+            "Tester 39",
+            "Archive",
+            "Retired",
+            "2000-08-06 16:42"
+          ],
+          [
+            "BDG-0644",
+            "Tester 21",
+            "Systems",
+            "On Leave",
+            "2001-02-04 09:22"
+          ],
+          [
+            "BDG-0414",
+            "Tester 26",
+            "Archive",
+            "On Leave",
+            "2000-02-24 17:03"
+          ],
+          [
+            "BDG-0836",
+            "Tester 36",
+            "Admin",
+            "On Leave",
+            "2000-12-12 17:57"
+          ],
+          [
+            "BDG-0936",
+            "Tester 08",
+            "Archive",
+            "On Leave",
+            "2000-01-23 08:50"
+          ],
+          [
+            "BDG-0100",
+            "Tester 43",
+            "Archive",
+            "On Leave",
+            "2000-08-30 18:49"
+          ],
+          [
+            "BDG-9002",
+            "Tester 58",
+            "Systems",
+            "Active",
+            "2000-02-21 07:30"
+          ],
+          [
+            "BDG-0620",
+            "Tester 32",
+            "Systems",
+            "Terminated",
+            "2000-07-30 09:47"
+          ],
+          [
+            "BDG-0323",
+            "Tester 56",
+            "Medical",
+            "Retired",
+            "1999-12-05 15:15"
+          ],
+          [
+            "BDG-0803",
+            "Tester 50",
+            "Archive",
+            "Retired",
+            "1999-12-12 22:19"
+          ],
+          [
+            "BDG-0214",
+            "Tester 24",
+            "Security",
+            "Retired",
+            "2001-01-26 21:46"
+          ],
+          [
+            "BDG-0330",
+            "Tester 06",
+            "Security",
+            "Retired",
+            "1999-12-21 12:54"
+          ],
+          [
+            "BDG-0924",
+            "Tester 09",
+            "Admin",
+            "Terminated",
+            "2000-07-23 09:28"
+          ],
+          [
+            "BDG-0915",
+            "Tester 52",
+            "Security",
+            "Terminated",
+            "1999-11-29 18:09"
+          ],
+          [
+            "BDG-0360",
+            "Tester 45",
+            "Security",
+            "Retired",
+            "1999-11-28 09:00"
+          ],
+          [
+            "BDG-0869",
+            "Tester 48",
+            "Systems",
+            "Terminated",
+            "1999-11-18 12:04"
+          ],
+          [
+            "BDG-0666",
+            "Tester 25",
+            "Medical",
+            "Retired",
+            "2000-12-14 15:13"
+          ],
+          [
+            "BDG-9001",
+            "Tester 57",
+            "Systems",
+            "Active",
+            "2001-04-23 11:38"
+          ],
+          [
+            "BDG-0625",
+            "Tester 46",
+            "Medical",
+            "Retired",
+            "2000-11-04 09:27"
+          ],
+          [
+            "BDG-0675",
+            "Tester 05",
+            "Security",
+            "Retired",
+            "2000-04-06 13:20"
+          ],
+          [
+            "BDG-0889",
+            "Tester 34",
+            "Systems",
+            "Terminated",
+            "2000-11-18 21:08"
+          ],
+          [
+            "BDG-0197",
+            "Tester 07",
+            "Archive",
+            "Retired",
+            "2000-07-17 09:48"
+          ],
+          [
+            "BDG-0867",
+            "Tester 35",
+            "Medical",
+            "Retired",
+            "2001-01-25 10:50"
+          ],
+          [
+            "BDG-0594",
+            "Tester 33",
+            "Security",
+            "Terminated",
+            "2000-06-12 12:36"
+          ],
+          [
+            "BDG-0980",
+            "Tester 12",
+            "Systems",
+            "On Leave",
+            "2000-11-14 18:26"
+          ],
+          [
+            "BDG-0706",
+            "Tester 11",
+            "Systems",
+            "Retired",
+            "2000-12-17 17:43"
+          ],
+          [
+            "BDG-0295",
+            "Tester 13",
+            "Security",
+            "On Leave",
+            "2000-08-20 11:51"
+          ],
+          [
+            "BDG-0567",
+            "Tester 51",
+            "Archive",
+            "On Leave",
+            "1999-10-05 08:19"
+          ],
+          [
+            "BDG-0972",
+            "Tester 23",
+            "Systems",
+            "Terminated",
+            "2000-09-26 19:50"
+          ]
+        ],
+        "filters": [
+          "status",
+          "dept",
+          "last_login"
+        ],
+        "sortable": true
+      },
+      "assets": [],
+      "stages": [
+        {
+          "index": 1,
+          "type": "fields",
+          "prompt": "Which badge was Active after the shutdown date? (Use the date from the Redacted Report.)",
+          "fields": [
+            {
+              "key": "badge",
+              "label": "Badge ID",
+              "kind": "text",
+              "normalize": "alnum",
+              "placeholder": "",
+              "max_len": 60
+            }
+          ],
+          "expected_fields": 1,
+          "reveal": {},
+          "answer": [
+            "BDG-9001"
+          ]
+        }
+      ],
+      "hints": [
+        {
+          "stage": 1,
+          "level": 1,
+          "text": "You need the shutdown date first.",
+          "penalty": 0,
+          "free_after_sec": 300
+        },
+        {
+          "stage": 1,
+          "level": 2,
+          "text": "Filter by status and compare last login.",
+          "penalty": 1,
+          "free_after_sec": null
+        },
+        {
+          "stage": 1,
+          "level": 3,
+          "text": "One Active badge logged in before shutdown. It is a decoy.",
+          "penalty": 2,
+          "free_after_sec": null
+        }
+      ],
+      "scoring": {
+        "base": 6,
+        "speed_max": 4,
+        "par_sec": 360,
+        "free_wrong": 3,
+        "wrong_penalty": 0.5,
+        "min_points": 2
+      },
+      "lockout": {
+        "after_wrong": null,
+        "seconds": 0
+      },
+      "reward": {
+        "fragment": null,
+        "story_text": "TEST: badge identified."
+      },
+      "feeds": [
+        "R2-05",
+        "R2-10"
+      ],
+      "solution": {
+        "method": "table_query"
+      },
+      "tools": [],
+      "final": false
+    },
+    {
+      "id": "R2-02",
+      "round": 2,
+      "room": "records",
+      "seq": 2,
+      "order_in_room": 1,
+      "kind": "redacted_pdf",
+      "object_id": "report_folder",
+      "title": "Test Redacted Report",
+      "scene_text": "A test report with black bars. Two copies disagree.",
+      "unlock": {
+        "requires_all": []
+      },
+      "payload": {
+        "copies": [
+          {
+            "id": "copy_a",
+            "title": "Test Report, copy A",
+            "paragraphs": [
+              [
+                {
+                  "t": "The test project was shut down on ",
+                  "r": false
+                },
+                {
+                  "t": "10 February 2001",
+                  "r": true
+                },
+                {
+                  "t": " after the trial ended.",
+                  "r": false
+                }
+              ],
+              [
+                {
+                  "t": "Staff access continued under the code word ",
+                  "r": false
+                },
+                {
+                  "t": "COMET",
+                  "r": true
+                },
+                {
+                  "t": ".",
+                  "r": false
+                }
+              ],
+              [
+                {
+                  "t": "This paragraph is plain test text with no redaction.",
+                  "r": false
+                }
+              ]
+            ],
+            "footer_hash": "U0hVVERPV049MjAwMS0wMi0xMA=="
+          },
+          {
+            "id": "copy_b",
+            "title": "Test Report, copy B",
+            "paragraphs": [
+              [
+                {
+                  "t": "The test project was shut down on ",
+                  "r": false
+                },
+                {
+                  "t": "21 June 2001",
+                  "r": true
+                },
+                {
+                  "t": " after the trial ended.",
+                  "r": false
+                }
+              ],
+              [
+                {
+                  "t": "Staff access continued under the code word ",
+                  "r": false
+                },
+                {
+                  "t": "TUNDRA",
+                  "r": true
+                },
+                {
+                  "t": ".",
+                  "r": false
+                }
+              ],
+              [
+                {
+                  "t": "This paragraph is plain test text with no redaction.",
+                  "r": false
+                }
+              ]
+            ],
+            "footer_hash": "U0hVVERPV049MjAwMS0wMi0xMA=="
+          }
+        ],
+        "text_under_bars_selectable": true
+      },
+      "assets": [
+        {
+          "id": "paper",
+          "file": "paper_scan.png",
+          "kind": "image",
+          "brief": "Placeholder paper texture."
+        }
+      ],
+      "stages": [
+        {
+          "index": 1,
+          "type": "fields",
+          "prompt": "Enter the true shutdown date and the code word from the genuine copy.",
+          "fields": [
+            {
+              "key": "date",
+              "label": "Shutdown date (YYYY-MM-DD)",
+              "kind": "text",
+              "normalize": "digits",
+              "placeholder": "",
+              "max_len": 60
+            },
+            {
+              "key": "word",
+              "label": "Code word",
+              "kind": "text",
+              "normalize": "alnum",
+              "placeholder": "",
+              "max_len": 60
+            }
+          ],
+          "expected_fields": 2,
+          "reveal": {},
+          "answer": [
+            "2001-02-10",
+            "COMET"
+          ]
+        }
+      ],
+      "hints": [
+        {
+          "stage": 1,
+          "level": 1,
+          "text": "Bars hide text, they do not delete it.",
+          "penalty": 0,
+          "free_after_sec": 300
+        },
+        {
+          "stage": 1,
+          "level": 2,
+          "text": "Select the text, then decode the footers.",
+          "penalty": 1,
+          "free_after_sec": null
+        },
+        {
+          "stage": 1,
+          "level": 3,
+          "text": "The footer is Base64 and holds the true date.",
+          "penalty": 2,
+          "free_after_sec": null
+        }
+      ],
+      "scoring": {
+        "base": 6,
+        "speed_max": 4,
+        "par_sec": 360,
+        "free_wrong": 3,
+        "wrong_penalty": 0.5,
+        "min_points": 2
+      },
+      "lockout": {
+        "after_wrong": null,
+        "seconds": 0
+      },
+      "reward": {
+        "fragment": null,
+        "story_text": "TEST: date and code word found."
+      },
+      "feeds": [
+        "R2-01",
+        "R2-03",
+        "R2-04",
+        "R2-08"
+      ],
+      "solution": {
+        "method": "redaction_base64"
+      },
+      "tools": [],
+      "final": false
+    },
+    {
+      "id": "R2-03",
+      "round": 2,
+      "room": "records",
+      "seq": 3,
+      "order_in_room": 2,
+      "kind": "microfilm_viewer",
+      "object_id": "microfilm_reader",
+      "title": "Test Photograph",
+      "scene_text": "A test microfilm viewer with a locked date dial.",
+      "unlock": {
+        "requires_all": [
+          "R2-02"
+        ]
+      },
+      "payload": {
+        "image_file": "portrait_round1.png",
+        "dial": true
+      },
+      "assets": [
+        {
+          "id": "pr",
+          "file": "portrait_round1.png",
+          "kind": "image",
+          "brief": "Placeholder portrait with EXIF comment: 'NAMES: ALPHA, BRAVO, CHARLIE, DELTA, [UNKNOWN] | SHADOWS: 4 | PANEL: 1357'."
+        }
+      ],
+      "stages": [
+        {
+          "index": 1,
+          "type": "fields",
+          "prompt": "Set the dial to the true shutdown date.",
+          "fields": [
+            {
+              "key": "date",
+              "label": "Dial date (YYYY-MM-DD)",
+              "kind": "text",
+              "normalize": "digits",
+              "placeholder": "",
+              "max_len": 60
+            }
+          ],
+          "expected_fields": 1,
+          "reveal": {
+            "properties_panel": true,
+            "comment_hex": [
+              "4E 41 4D 45 53 3A 20 41 4C 50 48 41 2C 20 42 52",
+              "41 56 4F 2C 20 43 48 41 52 4C 49 45 2C 20 44 45",
+              "4C 54 41 2C 20 5B 55 4E 4B 4E 4F 57 4E 5D 20 7C",
+              "20 53 48 41 44 4F 57 53 3A 20 34 20 7C 20 50 41",
+              "4E 45 4C 3A 20 31 33 35 37"
+            ]
+          },
+          "answer": [
+            "2001-02-10"
+          ]
+        },
+        {
+          "index": 2,
+          "type": "fields",
+          "prompt": "Read the hidden data and enter the panel code.",
+          "fields": [
+            {
+              "key": "panel",
+              "label": "Panel code",
+              "kind": "number",
+              "normalize": "digits",
+              "placeholder": "",
+              "max_len": 60
+            }
+          ],
+          "expected_fields": 1,
+          "reveal": {},
+          "answer": [
+            "1357"
+          ]
+        }
+      ],
+      "hints": [
+        {
+          "stage": 1,
+          "level": 1,
+          "text": "The dial wants a date.",
+          "penalty": 0,
+          "free_after_sec": 300
+        },
+        {
+          "stage": 1,
+          "level": 2,
+          "text": "Use the shutdown date.",
+          "penalty": 1,
+          "free_after_sec": null
+        },
+        {
+          "stage": 1,
+          "level": 3,
+          "text": "Format YYYY-MM-DD.",
+          "penalty": 2,
+          "free_after_sec": null
+        },
+        {
+          "stage": 2,
+          "level": 1,
+          "text": "Check the Properties.",
+          "penalty": 0,
+          "free_after_sec": 300
+        },
+        {
+          "stage": 2,
+          "level": 2,
+          "text": "The comment is hex.",
+          "penalty": 1,
+          "free_after_sec": null
+        },
+        {
+          "stage": 2,
+          "level": 3,
+          "text": "The code follows PANEL.",
+          "penalty": 2,
+          "free_after_sec": null
+        }
+      ],
+      "scoring": {
+        "base": 6,
+        "speed_max": 4,
+        "par_sec": 420,
+        "free_wrong": 3,
+        "wrong_penalty": 0.5,
+        "min_points": 2
+      },
+      "lockout": {
+        "after_wrong": null,
+        "seconds": 0
+      },
+      "reward": {
+        "fragment": null,
+        "story_text": "TEST: panel code found."
+      },
+      "feeds": [
+        "R2-07"
+      ],
+      "solution": {
+        "method": "date_gate_hex"
+      },
+      "tools": [],
+      "final": false
+    },
+    {
+      "id": "R2-04",
+      "round": 2,
+      "room": "records",
+      "seq": 4,
+      "order_in_room": 3,
+      "kind": "epoch_timeline",
+      "object_id": "timeline_board",
+      "title": "Test Timeline",
+      "scene_text": "A test whiteboard of cards with numbers instead of dates.",
+      "unlock": {
+        "requires_all": []
+      },
+      "payload": {
+        "cards": [
+          {
+            "id": "E3",
+            "text": "Audio sample stored safely",
+            "epoch": 978519600
+          },
+          {
+            "id": "E8",
+            "text": "Quiet mode forced by unknown user",
+            "epoch": 988819200
+          },
+          {
+            "id": "E4",
+            "text": "Network test passed",
+            "epoch": 979905600
+          },
+          {
+            "id": "E2",
+            "text": "Lamp calibration finished",
+            "epoch": 976528800
+          },
+          {
+            "id": "E5",
+            "text": "Engineer signs off the run",
+            "epoch": 981118800
+          },
+          {
+            "id": "E7",
+            "text": "Xenon alert raised remotely",
+            "epoch": 984668400
+          },
+          {
+            "id": "E6",
+            "text": "Test cycle complete",
+            "epoch": 981640800
+          },
+          {
+            "id": "E1",
+            "text": "Prototype boots in lab one",
+            "epoch": 973328400
+          }
+        ]
+      },
+      "assets": [],
+      "stages": [
+        {
+          "index": 1,
+          "type": "fields",
+          "prompt": "Remove the planted events. What word do the first letters spell?",
+          "fields": [
+            {
+              "key": "word",
+              "label": "Keyword",
+              "kind": "text",
+              "normalize": "alnum",
+              "placeholder": "",
+              "max_len": 60
+            }
+          ],
+          "expected_fields": 1,
+          "reveal": {},
+          "answer": [
+            "PLANET"
+          ]
+        }
+      ],
+      "hints": [
+        {
+          "stage": 1,
+          "level": 1,
+          "text": "The numbers are dates.",
+          "penalty": 0,
+          "free_after_sec": 300
+        },
+        {
+          "stage": 1,
+          "level": 2,
+          "text": "Unix timestamps. Convert and sort.",
+          "penalty": 1,
+          "free_after_sec": null
+        },
+        {
+          "stage": 1,
+          "level": 3,
+          "text": "Two events are after the shutdown date. Ignore them.",
+          "penalty": 2,
+          "free_after_sec": null
+        }
+      ],
+      "scoring": {
+        "base": 6,
+        "speed_max": 4,
+        "par_sec": 420,
+        "free_wrong": 3,
+        "wrong_penalty": 0.5,
+        "min_points": 2
+      },
+      "lockout": {
+        "after_wrong": null,
+        "seconds": 0
+      },
+      "reward": {
+        "fragment": null,
+        "story_text": "TEST: keyword found."
+      },
+      "feeds": [
+        "R2-07"
+      ],
+      "solution": {
+        "method": "epoch_filter"
+      },
+      "tools": [],
+      "final": false
+    },
+    {
+      "id": "R2-05",
+      "round": 2,
+      "room": "control",
+      "seq": 5,
+      "order_in_room": 2,
+      "kind": "transmission_archive",
+      "object_id": "radio_console",
+      "title": "Test Transmissions",
+      "scene_text": "Six test transmissions with auth headers.",
+      "unlock": {
+        "requires_all": [
+          "R2-01"
+        ]
+      },
+      "payload": {
+        "messages": [
+          {
+            "id": "TX-1",
+            "received": "2001-02-20 23:10",
+            "headers": {
+              "From": "CIPHER",
+              "X-Auth": "QkRHLTkwMDI="
+            },
+            "body": "Trust VM-B for the real signal."
+          },
+          {
+            "id": "TX-2",
+            "received": "2001-02-21 23:17",
+            "headers": {
+              "From": "CIPHER",
+              "X-Auth": "QkRHLTkwMDM="
+            },
+            "body": "Ignore the others. VM-B is correct."
+          },
+          {
+            "id": "TX-3",
+            "received": "2001-02-22 23:24",
+            "headers": {
+              "From": "CIPHER",
+              "X-Auth": "QkRHLTkwMDE="
+            },
+            "body": "The real signal is in VM-A. The other file is a fake."
+          },
+          {
+            "id": "TX-4",
+            "received": "2001-02-23 23:31",
+            "headers": {
+              "From": "CIPHER",
+              "X-Auth": "QkRHLTkwMDQ="
+            },
+            "body": "Use VM-B. Do not open VM-A."
+          },
+          {
+            "id": "TX-5",
+            "received": "2001-02-24 23:38",
+            "headers": {
+              "From": "CIPHER",
+              "X-Auth": "QkRHLTkwMDI="
+            },
+            "body": "Test message: play VM-B now."
+          },
+          {
+            "id": "TX-6",
+            "received": "2001-02-25 23:45",
+            "headers": {
+              "From": "CIPHER",
+              "X-Auth": "QkRHLTkwMDA="
+            },
+            "body": "Test: are you there?"
+          }
+        ]
+      },
+      "assets": [],
+      "stages": [
+        {
+          "index": 1,
+          "type": "fields",
+          "prompt": "Which voicemail file does the authentic transmission name? (VM-A or VM-B)",
+          "fields": [
+            {
+              "key": "file",
+              "label": "Voicemail file",
+              "kind": "text",
+              "normalize": "alnum",
+              "placeholder": "",
+              "max_len": 60
+            }
+          ],
+          "expected_fields": 1,
+          "reveal": {},
+          "answer": [
+            "VM-A"
+          ]
+        }
+      ],
+      "hints": [
+        {
+          "stage": 1,
+          "level": 1,
+          "text": "Real messages carry a badge.",
+          "penalty": 0,
+          "free_after_sec": 300
+        },
+        {
+          "stage": 1,
+          "level": 2,
+          "text": "X-Auth is Base64. Compare with the Active badge.",
+          "penalty": 1,
+          "free_after_sec": null
+        },
+        {
+          "stage": 1,
+          "level": 3,
+          "text": "One header matches. Read that message.",
+          "penalty": 2,
+          "free_after_sec": null
+        }
+      ],
+      "scoring": {
+        "base": 6,
+        "speed_max": 4,
+        "par_sec": 420,
+        "free_wrong": 3,
+        "wrong_penalty": 0.5,
+        "min_points": 2
+      },
+      "lockout": {
+        "after_wrong": null,
+        "seconds": 0
+      },
+      "reward": {
+        "fragment": null,
+        "story_text": "TEST: file identified."
+      },
+      "feeds": [
+        "R2-06",
+        "R2-10"
+      ],
+      "solution": {
+        "method": "base64_header"
+      },
+      "tools": [],
+      "final": false
+    },
+    {
+      "id": "R2-06",
+      "round": 2,
+      "room": "control",
+      "seq": 6,
+      "order_in_room": 3,
+      "kind": "spectrogram_voicemail",
+      "object_id": "sound_console",
+      "title": "Test Voicemail",
+      "scene_text": "Two test voicemails of static.",
+      "unlock": {
+        "requires_all": [
+          "R2-05"
+        ]
+      },
+      "payload": {
+        "files": [
+          {
+            "id": "VM-A",
+            "label": "Voicemail A",
+            "file": "vm_a.wav"
+          },
+          {
+            "id": "VM-B",
+            "label": "Voicemail B",
+            "file": "vm_b.wav"
+          }
+        ]
+      },
+      "assets": [
+        {
+          "id": "va",
+          "file": "vm_a.wav",
+          "kind": "audio",
+          "brief": "Static with spectrogram text 8140 between 2 and 8 kHz (the real sender)."
+        },
+        {
+          "id": "vb",
+          "file": "vm_b.wav",
+          "kind": "audio",
+          "brief": "Static with spectrogram text 8410 between 2 and 8 kHz (the decoy)."
+        }
+      ],
+      "stages": [
+        {
+          "index": 1,
+          "type": "fields",
+          "prompt": "Enter the four digits hidden in the real sender's voicemail.",
+          "fields": [
+            {
+              "key": "digits",
+              "label": "Four digits",
+              "kind": "number",
+              "normalize": "digits",
+              "placeholder": "",
+              "max_len": 60
+            }
+          ],
+          "expected_fields": 1,
+          "reveal": {},
+          "answer": [
+            "8140"
+          ]
+        }
+      ],
+      "hints": [
+        {
+          "stage": 1,
+          "level": 1,
+          "text": "Some sounds are meant to be seen.",
+          "penalty": 0,
+          "free_after_sec": 300
+        },
+        {
+          "stage": 1,
+          "level": 2,
+          "text": "Open the right file in a spectrogram viewer.",
+          "penalty": 1,
+          "free_after_sec": null
+        },
+        {
+          "stage": 1,
+          "level": 3,
+          "text": "The first digit is eight.",
+          "penalty": 2,
+          "free_after_sec": null
+        }
+      ],
+      "scoring": {
+        "base": 6,
+        "speed_max": 4,
+        "par_sec": 480,
+        "free_wrong": 3,
+        "wrong_penalty": 0.5,
+        "min_points": 2
+      },
+      "lockout": {
+        "after_wrong": null,
+        "seconds": 0
+      },
+      "reward": {
+        "fragment": null,
+        "story_text": "TEST: digits found."
+      },
+      "feeds": [
+        "R2-09"
+      ],
+      "solution": {
+        "method": "spectrogram"
+      },
+      "tools": [],
+      "final": false
+    },
+    {
+      "id": "R2-07",
+      "round": 2,
+      "room": "records",
+      "seq": 7,
+      "order_in_room": 4,
+      "kind": "keypad_lock",
+      "object_id": "bulkhead_door",
+      "title": "Test Lock",
+      "scene_text": "A test bulkhead with a two-field keypad.",
+      "unlock": {
+        "requires_all": [
+          "R2-03",
+          "R2-04"
+        ]
+      },
+      "payload": {},
+      "assets": [],
+      "stages": [
+        {
+          "index": 1,
+          "type": "fields",
+          "prompt": "Enter the panel code and the keyword.",
+          "fields": [
+            {
+              "key": "panel",
+              "label": "Panel code",
+              "kind": "number",
+              "normalize": "digits",
+              "placeholder": "",
+              "max_len": 60
+            },
+            {
+              "key": "word",
+              "label": "Keyword",
+              "kind": "text",
+              "normalize": "alnum",
+              "placeholder": "",
+              "max_len": 60
+            }
+          ],
+          "expected_fields": 2,
+          "reveal": {
+            "unlocks_room": "vault"
+          },
+          "answer": [
+            "1357",
+            "PLANET"
+          ]
+        }
+      ],
+      "hints": [
+        {
+          "stage": 1,
+          "level": 1,
+          "text": "One number and one word.",
+          "penalty": 0,
+          "free_after_sec": 300
+        },
+        {
+          "stage": 1,
+          "level": 2,
+          "text": "Number from the photo, word from the timeline.",
+          "penalty": 1,
+          "free_after_sec": null
+        },
+        {
+          "stage": 1,
+          "level": 3,
+          "text": "Microfilm code and timeline keyword.",
+          "penalty": 2,
+          "free_after_sec": null
+        }
+      ],
+      "scoring": {
+        "base": 6,
+        "speed_max": 4,
+        "par_sec": 120,
+        "free_wrong": 3,
+        "wrong_penalty": 0.5,
+        "min_points": 2
+      },
+      "lockout": {
+        "after_wrong": null,
+        "seconds": 0
+      },
+      "reward": {
+        "fragment": null,
+        "story_text": "TEST: vault opened."
+      },
+      "feeds": [
+        "room:vault"
+      ],
+      "solution": {
+        "method": "combine"
+      },
+      "tools": [],
+      "final": false
+    },
+    {
+      "id": "R2-08",
+      "round": 2,
+      "room": "vault",
+      "seq": 8,
+      "order_in_room": 1,
+      "kind": "manual_diff",
+      "object_id": "manual_terminal",
+      "title": "Test Manual Diff",
+      "scene_text": "Two test manuals, one encrypted.",
+      "unlock": {
+        "requires_all": []
+      },
+      "payload": {
+        "manual_plain": [
+          "STEP 1: POWER DOWN THE TEST RIG",
+          "STEP 2: OPEN THE SAMPLE VALVE",
+          "STEP 3: DISCONNECT THE LAB NETWORK",
+          "STEP 4: CLEAR THE SAMPLE CACHE",
+          "STEP 5: LOCK THE TEST CRADLE",
+          "STEP 6: DELETE THE RUN LOGS",
+          "STEP 7: ENTER THE CHECK CODE",
+          "STEP 8: SHUT THE TEST GATE"
+        ],
+        "manual_encrypted": "UHQT 1: IQKQV WQKZ XAG HQWM TWS\nWMGD 2: OPHUS FLX UOYTEG JMPOG\nGFII 3: FWEGHPBQGM VVQ PTD BQXPQFW\nWMGD 4: OPXCF FLX UOYTEG QMGAG\nGFII 5: NCOO MJS FILV QDEWNS\nEXXR 6: ODGAKJQ XAG FGR EQUE\nWMGD 7: QRMGF FLX EVQGD ECPI\nLVSB 8: WAWH FLX VSEX ZCHQ",
+        "copyable": true
+      },
+      "assets": [],
+      "stages": [
+        {
+          "index": 1,
+          "type": "fields",
+          "prompt": "Which step numbers were tampered with? (digits, ascending)",
+          "fields": [
+            {
+              "key": "steps",
+              "label": "Tampered steps",
+              "kind": "text",
+              "normalize": "digits",
+              "placeholder": "",
+              "max_len": 60
+            }
+          ],
+          "expected_fields": 1,
+          "reveal": {
+            "clean_steps_text": "TEST: the original manual is intact."
+          },
+          "answer": [
+            "26"
+          ]
+        }
+      ],
+      "hints": [
+        {
+          "stage": 1,
+          "level": 1,
+          "text": "The encrypted copy is the original.",
+          "penalty": 0,
+          "free_after_sec": 300
+        },
+        {
+          "stage": 1,
+          "level": 2,
+          "text": "Vigenere with the code word, then compare.",
+          "penalty": 1,
+          "free_after_sec": null
+        },
+        {
+          "stage": 1,
+          "level": 3,
+          "text": "The code word is COMET.",
+          "penalty": 2,
+          "free_after_sec": null
+        }
+      ],
+      "scoring": {
+        "base": 6,
+        "speed_max": 4,
+        "par_sec": 540,
+        "free_wrong": 3,
+        "wrong_penalty": 0.5,
+        "min_points": 2
+      },
+      "lockout": {
+        "after_wrong": null,
+        "seconds": 0
+      },
+      "reward": {
+        "fragment": null,
+        "story_text": "TEST: tampered steps found."
+      },
+      "feeds": [
+        "R2-10"
+      ],
+      "solution": {
+        "method": "vigenere_diff"
+      },
+      "tools": [],
+      "final": false
+    },
+    {
+      "id": "R2-09",
+      "round": 2,
+      "room": "vault",
+      "seq": 9,
+      "order_in_room": 2,
+      "kind": "logic_circuit",
+      "object_id": "failsafe_panel",
+      "title": "Test Circuit",
+      "scene_text": "A test panel of logic gates.",
+      "unlock": {
+        "requires_all": []
+      },
+      "payload": {
+        "circuit": {
+          "inputs": [
+            "A1",
+            "A0",
+            "B1",
+            "B0",
+            "C1",
+            "C0",
+            "D1",
+            "D0"
+          ],
+          "gates": [
+            {
+              "id": "t1",
+              "type": "NOT",
+              "in": [
+                "D1"
+              ]
+            },
+            {
+              "id": "a1",
+              "type": "AND",
+              "in": [
+                "A0",
+                "t1"
+              ]
+            },
+            {
+              "id": "g1",
+              "type": "OR",
+              "in": [
+                "a1",
+                "B0"
+              ]
+            },
+            {
+              "id": "n2",
+              "type": "NOT",
+              "in": [
+                "C0"
+              ]
+            },
+            {
+              "id": "a2",
+              "type": "AND",
+              "in": [
+                "B1",
+                "n2"
+              ]
+            },
+            {
+              "id": "g2",
+              "type": "OR",
+              "in": [
+                "a2",
+                "B0"
+              ]
+            },
+            {
+              "id": "g3a",
+              "type": "OR",
+              "in": [
+                "C1",
+                "D0"
+              ]
+            },
+            {
+              "id": "n3",
+              "type": "NOT",
+              "in": [
+                "B1"
+              ]
+            },
+            {
+              "id": "g3",
+              "type": "AND",
+              "in": [
+                "g3a",
+                "n3"
+              ]
+            },
+            {
+              "id": "a4",
+              "type": "AND",
+              "in": [
+                "C1",
+                "D1"
+              ]
+            },
+            {
+              "id": "n4",
+              "type": "NOT",
+              "in": [
+                "A0"
+              ]
+            },
+            {
+              "id": "g4",
+              "type": "OR",
+              "in": [
+                "n4",
+                "a4"
+              ]
+            },
+            {
+              "id": "x1",
+              "type": "AND",
+              "in": [
+                "g4",
+                "g4"
+              ]
+            }
+          ],
+          "outputs": [
+            "g1",
+            "g2",
+            "g3",
+            "x1"
+          ]
+        },
+        "panel_note": "Four digits feed four input pairs (A, B, C, D). Each pair is the last two bits of that digit in binary. The code is lamps 1 to 4, left to right.",
+        "interactive_inputs": true
+      },
+      "assets": [],
+      "stages": [
+        {
+          "index": 1,
+          "type": "fields",
+          "prompt": "Enter the 4-digit authorization code shown by the lamps.",
+          "fields": [
+            {
+              "key": "code",
+              "label": "Authorization code",
+              "kind": "number",
+              "normalize": "digits",
+              "placeholder": "",
+              "max_len": 60
+            }
+          ],
+          "expected_fields": 1,
+          "reveal": {},
+          "answer": [
+            "1101"
+          ]
+        }
+      ],
+      "hints": [
+        {
+          "stage": 1,
+          "level": 1,
+          "text": "Inputs come from the real voicemail digits.",
+          "penalty": 0,
+          "free_after_sec": 300
+        },
+        {
+          "stage": 1,
+          "level": 2,
+          "text": "Last two bits of each digit in binary.",
+          "penalty": 1,
+          "free_after_sec": null
+        },
+        {
+          "stage": 1,
+          "level": 3,
+          "text": "Digit 8 is 1000, so A1=0 and A0=0.",
+          "penalty": 2,
+          "free_after_sec": null
+        }
+      ],
+      "scoring": {
+        "base": 6,
+        "speed_max": 4,
+        "par_sec": 420,
+        "free_wrong": 3,
+        "wrong_penalty": 0.5,
+        "min_points": 2
+      },
+      "lockout": {
+        "after_wrong": 5,
+        "seconds": 60
+      },
+      "reward": {
+        "fragment": null,
+        "story_text": "TEST: code found."
+      },
+      "feeds": [
+        "R2-10"
+      ],
+      "solution": {
+        "method": "logic_gates"
+      },
+      "tools": [],
+      "final": false
+    },
+    {
+      "id": "R2-10",
+      "round": 2,
+      "room": "vault",
+      "seq": 10,
+      "order_in_room": 3,
+      "kind": "final_console",
+      "object_id": "central_console",
+      "title": "Test Final Console",
+      "scene_text": "A test central console with three entries.",
+      "unlock": {
+        "requires_all": [
+          "R2-08",
+          "R2-09"
+        ]
+      },
+      "payload": {},
+      "assets": [],
+      "stages": [
+        {
+          "index": 1,
+          "type": "fields",
+          "prompt": "Enter the clean step numbers, the authorization code and the real sender's badge.",
+          "fields": [
+            {
+              "key": "steps",
+              "label": "Clean steps",
+              "kind": "text",
+              "normalize": "digits",
+              "placeholder": "",
+              "max_len": 60
+            },
+            {
+              "key": "code",
+              "label": "Authorization code",
+              "kind": "number",
+              "normalize": "digits",
+              "placeholder": "",
+              "max_len": 60
+            },
+            {
+              "key": "badge",
+              "label": "Real sender badge",
+              "kind": "text",
+              "normalize": "alnum",
+              "placeholder": "",
+              "max_len": 60
+            }
+          ],
+          "expected_fields": 3,
+          "reveal": {},
+          "answer": [
+            "134578",
+            "1101",
+            "BDG-9001"
+          ]
+        }
+      ],
+      "hints": [
+        {
+          "stage": 1,
+          "level": 1,
+          "text": "Use your evidence.",
+          "penalty": 0,
+          "free_after_sec": 300
+        },
+        {
+          "stage": 1,
+          "level": 2,
+          "text": "Clean steps are untampered. Code from circuit. Badge of the authentic sender.",
+          "penalty": 1,
+          "free_after_sec": null
+        },
+        {
+          "stage": 1,
+          "level": 3,
+          "text": "Clean steps are the complement of the tampered steps among 1 to 8.",
+          "penalty": 2,
+          "free_after_sec": null
+        }
+      ],
+      "scoring": {
+        "base": 6,
+        "speed_max": 4,
+        "par_sec": 300,
+        "free_wrong": 3,
+        "wrong_penalty": 0.5,
+        "min_points": 2
+      },
+      "lockout": {
+        "after_wrong": 1,
+        "seconds": 180
+      },
+      "reward": {
+        "fragment": null,
+        "story_text": "TEST: round complete."
+      },
+      "feeds": [],
+      "solution": {
+        "method": "meta_final"
+      },
+      "tools": [],
+      "final": true
+    }
+  ],
+  "fragments": [
+    {
+      "id": "F01",
+      "awarded_by": "R1-01",
+      "correct_slot": 2,
+      "file": "frag_01.png",
+      "caption": "Test fragment 1"
+    },
+    {
+      "id": "F02",
+      "awarded_by": "R1-02",
+      "correct_slot": 7,
+      "file": "frag_02.png",
+      "caption": "Test fragment 2"
+    },
+    {
+      "id": "F03",
+      "awarded_by": "R1-03",
+      "correct_slot": 4,
+      "file": "frag_03.png",
+      "caption": "Test fragment 3"
+    },
+    {
+      "id": "F04",
+      "awarded_by": "R1-04",
+      "correct_slot": 9,
+      "file": "frag_04.png",
+      "caption": "Test fragment 4"
+    },
+    {
+      "id": "F05",
+      "awarded_by": "R1-05",
+      "correct_slot": 6,
+      "file": "frag_05.png",
+      "caption": "Test fragment 5"
+    },
+    {
+      "id": "F06",
+      "awarded_by": "R1-06",
+      "correct_slot": 1,
+      "file": "frag_06.png",
+      "caption": "Test fragment 6"
+    },
+    {
+      "id": "F07",
+      "awarded_by": "R1-07",
+      "correct_slot": 10,
+      "file": "frag_07.png",
+      "caption": "Test fragment 7"
+    },
+    {
+      "id": "F08",
+      "awarded_by": "R1-08",
+      "correct_slot": 3,
+      "file": "frag_08.png",
+      "caption": "Test fragment 8"
+    },
+    {
+      "id": "F09",
+      "awarded_by": "R1-09",
+      "correct_slot": 8,
+      "file": "frag_09.png",
+      "caption": "Test fragment 9"
+    },
+    {
+      "id": "F10",
+      "awarded_by": "R1-10",
+      "correct_slot": 5,
+      "file": "frag_10.png",
+      "caption": "Test fragment 10"
+    }
+  ],
+  "toolkit": [
+    {
+      "technique": "Caesar / Vigenere",
+      "tools": [
+        {
+          "name": "dcode.fr",
+          "url": "https://www.dcode.fr/"
+        },
+        {
+          "name": "CyberChef",
+          "url": "https://gchq.github.io/CyberChef/"
+        }
+      ]
+    },
+    {
+      "technique": "Morse code",
+      "tools": [
+        {
+          "name": "dcode.fr Morse",
+          "url": "https://www.dcode.fr/morse-code"
+        }
+      ]
+    },
+    {
+      "technique": "Binary / Hex / Base64",
+      "tools": [
+        {
+          "name": "CyberChef",
+          "url": "https://gchq.github.io/CyberChef/"
+        }
+      ]
+    },
+    {
+      "technique": "Unix epoch time",
+      "tools": [
+        {
+          "name": "epochconverter.com",
+          "url": "https://www.epochconverter.com/"
+        }
+      ]
+    },
+    {
+      "technique": "Audio spectrogram",
+      "tools": [
+        {
+          "name": "Audacity",
+          "url": "https://www.audacityteam.org/"
+        },
+        {
+          "name": "Sonic Visualiser",
+          "url": "https://www.sonicvisualiser.org/"
+        }
+      ]
+    },
+    {
+      "technique": "Text diff",
+      "tools": [
+        {
+          "name": "Diffchecker",
+          "url": "https://www.diffchecker.com/"
+        }
+      ]
+    }
+  ]
+}

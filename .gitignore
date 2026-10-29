@@ -2,11 +2,11 @@
 .env
 .env.*
 !.env.example
-content.real*
+content.live*
 content.real.*.json
 *.enc
 assets_real/
-
+answerkey.live.md
 # python
 __pycache__/
 .venv/
