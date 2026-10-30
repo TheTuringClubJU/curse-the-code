@@ -322,12 +322,18 @@ class LoginService:
                 print("Error updating forced logout in DB:", e)
             finally:
                 conn.close()
-        else:
-            active_sessions = cls.get_active_sessions(team["id"])
-            for s in active_sessions:
+
+        # Always update memory cache as well
+        active_sessions = cls.get_active_sessions(team["id"])
+        for s in active_sessions:
+            s["ended_at"] = now
+            s["ended_reason"] = "forced_logout"
+            if not conn:
+                count += 1
+        for s in SESSIONS_DB.values():
+            if s["team_id"] == team["id"]:
                 s["ended_at"] = now
                 s["ended_reason"] = "forced_logout"
-                count += 1
 
         cls.record_event(team["id"], "forced_logout", {"sessions_ended": count, "ip": ip})
         return {
@@ -352,12 +358,15 @@ class LoginService:
                         SELECT s.*, t.id as t_id, t.name as t_name, t.members, t.contact, t.is_active
                         FROM team_sessions s
                         JOIN teams t ON t.id = s.team_id
-                        WHERE s.token_hash = %s AND s.ended_at IS NULL AND s.expires_at > now()
+                        WHERE s.token_hash = %s
                         """,
                         (t_hash,)
                     )
                     row = cur.fetchone()
                     if row:
+                        if row["ended_at"] is not None or row["expires_at"] <= now or not row["is_active"]:
+                            return None
+
                         cur.execute(
                             "UPDATE team_sessions SET last_seen_at = %s, expires_at = %s WHERE id = %s",
                             (now, now + timedelta(hours=12), row["id"])
