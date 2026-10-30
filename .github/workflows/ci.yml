@@ -34,9 +34,6 @@ jobs:
       DATABASE_URL: postgresql://test:test@localhost:5432/ctc_test
       CONTENT_FILE: content.test.json
       ASSETS_DIR: assets_test
-      ANSWER_PEPPER: test-pepper-not-secret
-      JWT_SECRET: test-jwt-secret-ci
-      ADMIN_KEY: test-admin-key
       PYTHONPATH: .
 
     steps:
