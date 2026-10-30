@@ -3,6 +3,7 @@
   "meta": {
     "pack_label": "test",
     "event_name": "Curse the Code",
+    "answer_salt": "b68810eda0a40da7499f5a4e8e54bdb7",
     "assets_dir": "assets_test",
     "rules": {
       "answer_cooldown_sec": 3,
@@ -678,10 +679,11 @@
             }
           ],
           "expected_fields": 1,
-          "reveal": {},
-          "answer": [
+          "answer_hash": "248ff280ef7cd9ef9b65c86d0a6bb84f2f4aefb56e2b7e93f9f812a4f569a2a0",
+          "answer_plain": [
             "LANTERN"
-          ]
+          ],
+          "reveal": {}
         }
       ],
       "hints": [
@@ -775,10 +777,11 @@
             }
           ],
           "expected_fields": 1,
-          "reveal": {},
-          "answer": [
+          "answer_hash": "6468c3da9f747c0542f206f307a4cb005f8fb93d41d7fca9cf008ca1fe30f282",
+          "answer_plain": [
             "3948"
-          ]
+          ],
+          "reveal": {}
         }
       ],
       "hints": [
@@ -874,10 +877,11 @@
             }
           ],
           "expected_fields": 1,
-          "reveal": {},
-          "answer": [
+          "answer_hash": "99d506da82e8e5642dc7e3ef12ecd87e44036fd29baf3773d1691b21f2110caa",
+          "answer_plain": [
             "07/04/2001"
-          ]
+          ],
+          "reveal": {}
         }
       ],
       "hints": [
@@ -973,13 +977,14 @@
             }
           ],
           "expected_fields": 1,
+          "answer_hash": "150930910faa8f4844123cbd3f9dd4ebe1ff1876fbb132df0656dbcabd86fdab",
+          "answer_plain": [
+            "ALPHA"
+          ],
           "reveal": {
             "voice_memo_file": "voice_memo.mp3",
             "transcript": "TEST VOICE MEMO TRANSCRIPT."
-          },
-          "answer": [
-            "ALPHA"
-          ]
+          }
         }
       ],
       "hints": [
@@ -1075,10 +1080,11 @@
             }
           ],
           "expected_fields": 1,
-          "reveal": {},
-          "answer": [
+          "answer_hash": "dc9c44bd1210f26897a6f8ce897ea32029c6171ec7b270dfb5ecf6b4df4de3d4",
+          "answer_plain": [
             "ORBIT"
-          ]
+          ],
+          "reveal": {}
         }
       ],
       "hints": [
@@ -1167,10 +1173,11 @@
             }
           ],
           "expected_fields": 1,
-          "reveal": {},
-          "answer": [
+          "answer_hash": "e4e0e0a8e2592cad7312c4902297245d41a2f061389389555af8045d5ee52940",
+          "answer_plain": [
             "SIGNAL"
-          ]
+          ],
+          "reveal": {}
         }
       ],
       "hints": [
@@ -1289,10 +1296,11 @@
             }
           ],
           "expected_fields": 1,
-          "reveal": {},
-          "answer": [
+          "answer_hash": "7331cbf4fcc0accf53e6ed34c522c09987329f479cdd729b723a3564b45ae333",
+          "answer_plain": [
             "GREEN"
-          ]
+          ],
+          "reveal": {}
         }
       ],
       "hints": [
@@ -1398,10 +1406,11 @@
             }
           ],
           "expected_fields": 1,
-          "reveal": {},
-          "answer": [
+          "answer_hash": "5a6f526ec6aeee9116d730746a10c08ba42c9e55cebe270426c667358cb780d7",
+          "answer_plain": [
             "SRC-TEST9"
-          ]
+          ],
+          "reveal": {}
         }
       ],
       "hints": [
@@ -1496,10 +1505,11 @@
             }
           ],
           "expected_fields": 1,
-          "reveal": {},
-          "answer": [
+          "answer_hash": "043c438b265cf7c89db73d8fd85806ef9594c58b7054b0f4f82dda081640f1e0",
+          "answer_plain": [
             "LOWER"
-          ]
+          ],
+          "reveal": {}
         }
       ],
       "hints": [
@@ -1642,14 +1652,15 @@
             }
           ],
           "expected_fields": 3,
-          "reveal": {
-            "fragment": "F10"
-          },
-          "answer": [
+          "answer_hash": "350245f5612d1efc6a6f5e77d4ca65eb1eaef3db8ebf751d6cc73461c61a34ff",
+          "answer_plain": [
             "LANTERN",
             "ORBIT",
             "SRC-TEST9"
-          ]
+          ],
+          "reveal": {
+            "fragment": "F10"
+          }
         },
         {
           "index": 2,
@@ -1738,10 +1749,8 @@
             }
           ],
           "expected_fields": 10,
-          "reveal": {
-            "shadow_hint": "TEST: five people, four shadows."
-          },
-          "answer": [
+          "answer_hash": "64cb50fc61c9573e84947295011e23d95ec7ed0ed8a0f4a81a5230227f22291a",
+          "answer_plain": [
             "F06",
             "F01",
             "F08",
@@ -1752,7 +1761,10 @@
             "F09",
             "F04",
             "F07"
-          ]
+          ],
+          "reveal": {
+            "shadow_hint": "TEST: five people, four shadows."
+          }
         },
         {
           "index": 3,
@@ -1777,11 +1789,12 @@
             }
           ],
           "expected_fields": 2,
-          "reveal": {},
-          "answer": [
+          "answer_hash": "f06391a54cbabab72a1cf2fd6a4e94f50346f8cfd711d576ef9448c3443c1c03",
+          "answer_plain": [
             "BETA",
             "2468"
-          ]
+          ],
+          "reveal": {}
         }
       ],
       "hints": [
@@ -2339,10 +2352,11 @@
             }
           ],
           "expected_fields": 1,
-          "reveal": {},
-          "answer": [
+          "answer_hash": "ab1c03f2665e99a5d994a9170fcd43c934eab0eeadac8fac8f84fe37e9aed493",
+          "answer_plain": [
             "BDG-9001"
-          ]
+          ],
+          "reveal": {}
         }
       ],
       "hints": [
@@ -2526,11 +2540,12 @@
             }
           ],
           "expected_fields": 2,
-          "reveal": {},
-          "answer": [
+          "answer_hash": "c8c955ab84e6c639dad864b905d63de6f1d12e5f180804025a75a9e3ef3fe547",
+          "answer_plain": [
             "2001-02-10",
             "COMET"
-          ]
+          ],
+          "reveal": {}
         }
       ],
       "hints": [
@@ -2627,6 +2642,10 @@
             }
           ],
           "expected_fields": 1,
+          "answer_hash": "53621d3fde1ce7d246c9e5c327c47442978b70bdc1a90fcb890b8885b873429c",
+          "answer_plain": [
+            "2001-02-10"
+          ],
           "reveal": {
             "properties_panel": true,
             "comment_hex": [
@@ -2636,10 +2655,7 @@
               "20 53 48 41 44 4F 57 53 3A 20 34 20 7C 20 50 41",
               "4E 45 4C 3A 20 31 33 35 37"
             ]
-          },
-          "answer": [
-            "2001-02-10"
-          ]
+          }
         },
         {
           "index": 2,
@@ -2656,10 +2672,11 @@
             }
           ],
           "expected_fields": 1,
-          "reveal": {},
-          "answer": [
+          "answer_hash": "be7b33a35f96a6ad58f80a0eb29906a8cec3efa444233494c631c61b98870cf6",
+          "answer_plain": [
             "1357"
-          ]
+          ],
+          "reveal": {}
         }
       ],
       "hints": [
@@ -2805,10 +2822,11 @@
             }
           ],
           "expected_fields": 1,
-          "reveal": {},
-          "answer": [
+          "answer_hash": "c4a881ed025a33ad6d6094b78890af3a6add878712efd69f98569056e1f00566",
+          "answer_plain": [
             "PLANET"
-          ]
+          ],
+          "reveal": {}
         }
       ],
       "hints": [
@@ -2949,10 +2967,11 @@
             }
           ],
           "expected_fields": 1,
-          "reveal": {},
-          "answer": [
+          "answer_hash": "8f8f66c6f8843faee0139109357c494c2cc257166e2a3b19076e8164022c02b0",
+          "answer_plain": [
             "VM-A"
-          ]
+          ],
+          "reveal": {}
         }
       ],
       "hints": [
@@ -3063,10 +3082,11 @@
             }
           ],
           "expected_fields": 1,
-          "reveal": {},
-          "answer": [
+          "answer_hash": "c5e009c79cce5e18c14e2a8e8249aa8e8f3772edf0a11cc5d67a264d7098ff9e",
+          "answer_plain": [
             "8140"
-          ]
+          ],
+          "reveal": {}
         }
       ],
       "hints": [
@@ -3159,13 +3179,14 @@
             }
           ],
           "expected_fields": 2,
-          "reveal": {
-            "unlocks_room": "vault"
-          },
-          "answer": [
+          "answer_hash": "86c7053aa3ef9491da54c42e907f68d64e7c493daf4eb217cf4baac46de9f6cc",
+          "answer_plain": [
             "1357",
             "PLANET"
-          ]
+          ],
+          "reveal": {
+            "unlocks_room": "vault"
+          }
         }
       ],
       "hints": [
@@ -3260,12 +3281,13 @@
             }
           ],
           "expected_fields": 1,
+          "answer_hash": "3ecec412eaf9f2f574e4b6d15ddc7efd6978a10af4d42d56ecb5132afd4e3116",
+          "answer_plain": [
+            "26"
+          ],
           "reveal": {
             "clean_steps_text": "TEST: the original manual is intact."
-          },
-          "answer": [
-            "26"
-          ]
+          }
         }
       ],
       "hints": [
@@ -3470,10 +3492,11 @@
             }
           ],
           "expected_fields": 1,
-          "reveal": {},
-          "answer": [
+          "answer_hash": "4aa6a3dfcb33bb38d963a4caabfd27796d45687ea3270f74f919d153cd0498cf",
+          "answer_plain": [
             "1101"
-          ]
+          ],
+          "reveal": {}
         }
       ],
       "hints": [
@@ -3574,12 +3597,13 @@
             }
           ],
           "expected_fields": 3,
-          "reveal": {},
-          "answer": [
+          "answer_hash": "ad5fabdbfd98bb60680434f9ad62e8088f89f1bdf51a1336ffadf3ca7871593a",
+          "answer_plain": [
             "134578",
             "1101",
             "BDG-9001"
-          ]
+          ],
+          "reveal": {}
         }
       ],
       "hints": [

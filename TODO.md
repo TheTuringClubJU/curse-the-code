@@ -1,176 +1,202 @@
-# Curse the Code: Build TODO (simplified)
+# Curse the Code: Build TODO
 
-One college event. Fixed teams, two rounds, manual round control by the organisers. Tags: **BE** backend, **FE** frontend, **ADM** admin, **AST** assets, **QA** tests. Tick a box when done and reviewed.
+Every task has an ID so work can be split by person later. Tags: **BE** backend, **FE** frontend, **ADM** admin panel, **AST** assets, **QA** tests. Tick the box when a task is done and reviewed.
 
-**Project rule:** if a feature doesn't (1) let teams play the game, (2) keep results correct, or (3) give organisers a control they need live, it is not in the first release.
-
-**Server rule:** the server decides answers, timing, unlocks, scores and ranks. The browser only displays and sends requests. The expected answer is never sent to the browser.
-
-**Simplifications decided (do not re-add):**
-- Passwords are plain text in the DB (only organisers can reach it). Reset = one SQL `UPDATE`.
-- Clue answers are plain text in the server-only content file. No salt, no HMAC, no hashes.
-- Session ids are random UUIDs, stored as is. No token hashing, no login-attempt tracking, no lockouts, no rate limits.
-- No admin roles, no admin-management UI, no audit log, no event log, no announcements, no score-adjustment table, no fingerprinting, no content reload.
-- No pause, extend, or auto-end. The admin clicks Start and End. Nothing else changes round state.
-- Ending a round signs out every team in that round (section 2.7). Progress, scores and qualification are never touched; organiser sessions are never touched.
-- Teams, organisers, password resets and score fixes are plain SQL (examples at the bottom of `schema.sql`).
-- Score has one source of truth: `SUM(team_clues.score)`. Fragments and room status are derived, not stored.
-- No request-id replay. Double scoring is prevented by a per-team lock plus the "already solved" check.
+**Rule for every module:** the server decides everything (answers, timing, unlocks, scores, ranks). The browser only displays and sends requests. Nothing secret is ever sent to the browser.
 
 ## 1. Content file (the only source of game content)
 
-Everything (rooms, clues, questions, hints, answers, story text, scoring rules, fragments, toolkit) is in one JSON file named by the `CONTENT_FILE` env var. Same format for `content.live.json` and `content.test.json`. Story, clues, rooms, hints and scoring are unchanged; only the answer field changed (below).
+The whole game (rooms, clues, questions, hints, answers, story text, scoring rules, fragments, toolkit card) lives in one JSON file. The server never reads clue content from anywhere else. The file to use is named in one environment variable, `CONTENT_FILE`. Changing that variable and restarting is all it takes to switch content. All content files share one format, so the same code runs with any of them.
+
+### 1.1 Content file format (what every file contains)
 
 | Key | What it holds |
 | --- | --- |
-| `meta` | pack\_label, event\_name, assets\_dir, rules (cooldown 3 s, free hint after 300 s, max sessions per team 2, max field length 200) |
-| `rounds[]` | round, title, subtitle, difficulty, default\_duration\_min (display only), final\_clue, screens (intro, victory\_lines, bridge\_text, eliminated\_text, sting\_template) |
-| `rooms[]` | id, round, order, title, unlock rule, background\_file, theme, ambient audio, objects[] |
-| `clues[]` | id, round, room, seq, kind, object\_id, title, scene\_text, unlock.requires\_all, payload, assets[], stages[], hints[], scoring, lockout, reward, final |
-| `stages[]` | index, type (`fields`, `arrange`, `choice_code`), prompt, fields[], expected\_fields, **`answer`**, reveal |
+| `meta` | pack\_label, event\_name, answer\_salt, assets\_dir (asset folder name), rules (cooldown 3 s, free hint after 300 s, max sessions per team 2, max field length 200, hide scores in the last 10 min) |
+| `rounds[]` | round number, title, subtitle, difficulty, default\_duration\_min, final\_clue, screens (intro, victory\_lines, bridge\_text, eliminated\_text, sting\_template) |
+| `rooms[]` | id, round, order, title, unlock rule, background\_file, theme (colours), ambient audio, objects\[\] (id, label, kind, x, y, w, h in percent of the scene, clue\_id or null) |
+| `clues[]` | id, round, room, seq, order\_in\_room, kind, object\_id, title, scene\_text, unlock.requires\_all, payload (what the player sees), assets\[\], stages\[\], hints\[\], scoring, lockout, reward, feeds, solution.method, tools, final |
+| `stages[]` (inside a clue) | index, type (fields, arrange, choice\_code), prompt, fields\[\] (key, label, kind, normalize, placeholder, max\_len), expected\_fields, answer\_hash, answer\_plain (null in secret files), reveal |
 | `fragments[]` | id F01 to F10, awarded\_by, correct\_slot, file, caption |
-| `toolkit[]` | techniques and free tool links |
+| `toolkit[]` | technique and free tool links shown on the toolkit card |
 
-**`answer`** is a list of strings, one per field (or per slot for `arrange`, or `[option, code]` for `choice_code`). Example: `"answer": ["BASEMENT", "HOLLOW", "SRC-0477"]`.
+Solving rule: normalise each field (`upper`, `alnum`, `digits`), join fields with `|`, then HMAC-SHA256 with `meta.answer_salt` over `clue_id:stage:joined_value`, compared in constant time with `answer_hash`.
 
-**Comparison rule:** normalise the player's field and the stored answer the same way (`upper`, `alnum`, `digits` as set on the field), then compare field by field. Order matters. Plain `==`.
+### 1.2 Tasks
 
-- [ ] **BE-01** Read `CONTENT_FILE` at startup; refuse to boot if unset, missing or invalid JSON. Log the file name and `pack_label` only (never answers).
-- [ ] **BE-02** Validate on boot with a short checklist: every round has exactly 10 clues; every clue has at least one stage with an `answer` of the right length; every `object_id`, `requires_all` id and fragment award points at something that exists; no dependency cycle. Boot fails with a readable list of problems.
-- [ ] **BE-03** Build derived data once at boot: clue by id, clues by room, clue count per room, final clue per round.
-- [ ] **BE-04** Public projection function used for every response that carries content: removes `answer`, `solution`, `feeds`, unused `hints`, and each `reveal` until its stage is solved.
-- [ ] **BE-05** Asset endpoint: login required, serves only from `meta.assets_dir`, blocks path traversal, only for clues the team has unlocked. Use the framework's file response (it gives content type and Range for audio).
+- [ ] **BE-01** Read `CONTENT_FILE` at startup. Refuse to boot if it is unset, missing, unreadable or not valid JSON. Log the file name, `meta.pack_label` and the first 8 characters of its SHA-256. Never log answers or hashes.
+- [ ] **BE-02** Load rules, rounds, rooms, clues, fragments and toolkit only from that file. The asset folder comes from `meta.assets_dir`. No other setting may change game content.
+- [ ] **BE-03** Validate on boot against `content_schema.json`: exactly 10 clues per round; every clue has at least one stage; every stage has 3 hint levels; every `object_id` exists in its room; every `clue_id` on an object exists; every `requires_all` id exists; no dependency cycles; every fragment is awarded by an existing clue; every `answer_hash` is 64 hex characters; every room unlock rule references real rooms or clues. Boot fails with a readable list of problems.
+- [ ] **BE-04** Build and cache derived data at boot: clue by id, clues by room, clue count per room, dependency graph, topological order check, final clue per round.
+- [ ] **BE-05** Public projection function: removes `answer_hash`, `answer_plain`, `solution`, `feeds`, unused `hints`, and every `reveal` until its stage is solved. Everything sent to a browser goes through this function.
+- [ ] **BE-06** Admin-triggered content reload, allowed only while no round is live.
+- [ ] **BE-07** Record the content fingerprint when a round starts. If the file changes while a round is live, block submissions and show a loud admin warning until an admin confirms.
+- [ ] **BE-08** Asset endpoint serves files from the folder named in `meta.assets_dir`. A team may fetch an asset only if it has unlocked the owning room and clue. Block path traversal, set the correct content type, support HTTP Range for audio, and send `Cache-Control: private`.
 
 ## 2. Backend
 
-### 2.1 Login and sessions
+### 2.1 Team login and sessions (BE-10 to BE-19)
 
-- [ ] **BE-10** `POST /api/auth/login` (`team_name`, `password`). Name is case-insensitive; password is a plain compare. Wrong name or password returns one generic message. Success sets an HTTP-only cookie holding the session id.
-- [ ] **BE-11** Max active sessions per team = `meta.rules.max_sessions_per_team`. Over the limit returns `SESSION_LIMIT` with the count so the login page can offer "log out everywhere".
-- [ ] **BE-12** `POST /api/auth/logout`: ends the current session.
-- [ ] **BE-13** `POST /api/auth/logout-all` (`team_name`, `password`, no session needed): ends every active session of that team, returns how many. Zero sessions is a success. Never touches progress or scores.
-- [ ] **BE-14** `GET /api/auth/me`: team and active session count.
-- [ ] **BE-15** A session is valid while `ended_at IS NULL`. An ended session returns `SESSION_ENDED` with a `reason` (`logout`, `forced`, `round_ended`) read from `team_sessions.ended_reason`. Session check runs before any round or clue check, so a signed-out team always gets `SESSION_ENDED`, never `ROUND_CLOSED`.
-- [ ] **BE-16** Disabled teams (`is_active = false`) cannot log in. Teams may log in before a round starts (lobby).
+- [ ] **BE-10** `POST /api/auth/login` with `team_name` and `password`. Team name is case-insensitive. Passwords are hashed with argon2 or bcrypt. A wrong name or password returns one generic message. Success sets an HTTP-only session cookie and returns the team summary.
+- [ ] **BE-11** Limit active sessions per team to `meta.rules.max_sessions_per_team`. If the team is already at the limit, login is refused with `SESSION_LIMIT`, returning the number of active sessions and their device labels, so the frontend can offer the Logout option.
+- [ ] **BE-12** `POST /api/auth/logout` (signed in): ends the current session only.
+- [ ] **BE-13** `POST /api/auth/logout-all` (not signed in): body `team_name` and `password`. After verifying them, ends every active session of that team and returns how many were ended. It never changes progress, scores or timers. It is idempotent (zero sessions is a success), uses the same generic errors and the same rate limits as login.
+- [ ] **BE-14** `GET /api/auth/me` returns the team, the session and the number of active sessions.
+- [ ] **BE-15** Sessions last 12 hours with sliding expiry. Tokens are stored hashed. A revoked or expired token returns `SESSION_ENDED` and the frontend returns to login with a message.
+- [ ] **BE-16** Disabled or disqualified teams cannot log in and see a clear message with the organiser contact.
+- [ ] **BE-17** Teams can log in before a round starts and wait in the lobby.
+- [ ] **BE-18** Brute-force protection: 8 failed attempts lock that team name for 5 minutes, and 20 failures per IP per 10 minutes lock the IP. Responses still look the same.
+- [ ] **BE-19** Every login, logout, forced logout and refused login is recorded in the event log.
 
-### 2.2 Game state
+### 2.2 Game state (BE-20 to BE-26)
 
-- [ ] **BE-20** `GET /api/state` returns in one call: server time, round status and `started_at`, the team's round summary (score hidden when `hide_scores`), every room of the current round with `locked`, `unlock_hint`, total and solved clue counts, object states (locked, open, solved), unlocked clues in public form, `current_stage`, hint availability per stage, lockout end times, collected fragments, qualification status. Room counts come from the content file and progress, never hardcoded.
-- [ ] **BE-21** `GET /api/time` returns server time in ms for the frontend clock offset.
-- [ ] **BE-22** `GET /api/clues/{id}` returns the clue only if unlocked, plus the `reveal` of solved stages and the story text once solved. Locked room or clue returns 403 (`ROOM_LOCKED`, `CLUE_LOCKED`) with a spoiler-free hint.
-- [ ] **BE-23** A team with no row in the current round gets `NOT_IN_ROUND` (frontend shows the eliminated screen).
-- [ ] **BE-24** `/api/state` also returns `phase` for the team, computed from the two round statuses and the team's rows: `waiting_r1` (Round 1 pending), `r1_live`, `r1_ended_pending` (Round 1 ended, qualification not run), `qualified_waiting_r2` (in the Round 2 set, Round 2 pending), `eliminated` (not in the Round 2 set, once qualification has run), `r2_live`, `r2_ended`. The frontend picks the screen from `phase` only.
-- [ ] **BE-25** How the two rounds stay separate. `rounds` has two fixed rows (1 and 2). `current_round` is computed on every request from those two rows (cheap, no cache): **2** if Round 2 is `live` or `ended`, otherwise **1**. (Between rounds it stays 1, read-only, and `phase` decides the screen.) Every query that reads progress filters by round: `team_rounds` is keyed `(team_id, round)`, and `team_clues` carries `round` and clue ids are globally unique (`R1-01` vs `R2-01`). A submit or asset request looks the clue up in the content file, takes its round, and rejects unless that round is `live` and the team has a `team_rounds` row for it. Round 1 data is never deleted or overwritten when Round 2 starts.
+- [ ] **BE-20** `GET /api/state` returns in one call: server time, round status and `ends_at`, seconds remaining, the team's round summary (score hidden when `hide_scores` is on), every room of the current round with `locked`, `unlock_hint`, `total_clues`, `solved_clues`, and its objects with their state (locked, open, solved), the unlocked clues in public form, `current_stage` per clue, hint availability per stage, lockout end times, collected fragments, active announcements and qualification status.
+- [ ] **BE-21** Room clue counts come from the content file and recorded progress. They are never hardcoded.
+- [ ] **BE-22** Support `ETag` and `If-None-Match` on `/api/state` so 5-second polling is cheap.
+- [ ] **BE-23** `GET /api/time` returns server time in milliseconds for clock-offset correction.
+- [ ] **BE-24** `GET /api/clues/{id}` returns the clue only if unlocked. After a stage is solved it also returns that stage's `reveal` and the clue's story text.
+- [ ] **BE-25** Locked rooms or clues return 403 with a reason code (`ROOM_LOCKED`, `CLUE_LOCKED`) and a short, spoiler-free hint such as "needs a date".
+- [ ] **BE-26** Teams not in the current round receive `NOT_IN_ROUND` and the frontend shows the eliminated screen.
 
-### 2.3 Unlock engine
+### 2.3 Unlock engine (BE-30 to BE-35)
 
-- [ ] **BE-30** Room rules: `at_start`, `rooms_complete: [ids]`, `clue_solved: id`. Clue rule: all `requires_all` solved and its room open. Room and clue status is computed from `team_clues` plus the content file.
-- [ ] **BE-31** On round start (one transaction): Round 1 creates `team_rounds` for every active team; Round 2 uses the `team_rounds` rows that qualification already created (never adds teams). Then insert `team_clues` for clues with no requirements, `unlocked_at = started_at`.
-- [ ] **BE-32** After each solved clue: insert newly unlocked `team_clues` with `unlocked_at = solve time`. Safe to run twice (`ON CONFLICT DO NOTHING`).
+- [ ] **BE-30** Room rules: `at_start`, `rooms_complete: [ids]`, `clue_solved: id`.
+- [ ] **BE-31** Clue rule: `requires_all` ids must be solved, and the clue's room must be open.
+- [ ] **BE-32** When a round starts: create round state for every eligible team, open the `at_start` rooms, unlock clues with no requirements, and set `unlocked_at` to the round start time.
+- [ ] **BE-33** After each fully solved clue: re-evaluate rooms and clues; set `unlocked_at` to the server solve time; mark a room complete when all its clues are solved.
+- [ ] **BE-34** The engine is idempotent. Running it twice never creates duplicates.
+- [ ] **BE-35** Round 2 state is created only for qualified teams.
 
-### 2.4 Submit
+### 2.4 Submit (BE-40 to BE-55)
 
-`POST /api/clues/{id}/submit` with `stage` and `fields[]`.
+`POST /api/clues/{id}/submit` with `request_id` (UUID), `stage`, `fields[]`.
 
-- [ ] **BE-40** Take a per-team lock (`pg_advisory_xact_lock(team_id)`) around the whole submit so two requests from one team never run together.
-- [ ] **BE-41** The backend rejects unless the round is `live` (`ROUND_NOT_STARTED`, `ROUND_CLOSED`), the clue is unlocked (`CLUE_LOCKED`), and the clue is not already solved (`ALREADY_SOLVED`, no penalty, original points returned).
-- [ ] **BE-42** 3-second cooldown after a wrong answer (`TOO_FAST` with `retry_after_sec`), plus the clue's own lockout from the content file (`LOCKED` with `retry_after_sec`). Both read from `team_clues`, so they survive refresh.
-- [ ] **BE-43** Input checks: `stage` equals `current_stage`; field count equals `expected_fields`; strings only, max length from the content, no control characters.
-- [ ] **BE-44** Compare using the rule in section 1. For `arrange`: exactly 10 distinct fragment ids, all owned by the team (owned = reward of a solved clue), compared with the answer order.
-- [ ] **BE-45** Wrong: bump `wrong_attempts`, set `last_wrong_at`, apply lockout if the clue defines one, return generic `WRONG`. Never say which field was wrong.
-- [ ] **BE-46** Correct non-final stage: `current_stage + 1`, return `STAGE_CORRECT` with the reveal.
-- [ ] **BE-47** Correct final stage: compute points, set `solved_at` and `score`, run the unlock engine, set `team_rounds.finished_at` if it was the round's final clue, return `CORRECT` with points and newly unlocked rooms/clues. Use the server clock at processing time.
-- [ ] **BE-48** Insert a `submissions` row for every attempt (fields, result, points).
+- [ ] **BE-40** Serialise all work for one team: two simultaneous requests from the same team run one after the other, never together. Other teams are not slowed.
+- [ ] **BE-41** Idempotency: if `request_id` was already processed for this team, return the stored response unchanged, with no second scoring.
+- [ ] **BE-42** Reject unless the round is `live` (`ROUND_CLOSED`, `ROUND_PAUSED`, `ROUND_NOT_STARTED`). A request that reached the server before `ends_at` is honoured.
+- [ ] **BE-43** Reject locked clues (`CLUE_LOCKED`) and already solved clues (`ALREADY_SOLVED`, no penalty).
+- [ ] **BE-44** Enforce the 3-second cooldown after a wrong answer on a clue (`TOO_FAST` with `retry_after_sec`) and the clue's own lockout (`LOCKED` with `retry_after_sec`).
+- [ ] **BE-45** Validate input: `stage` equals the clue's current stage; field count equals `expected_fields`; every field is a string at most `max_len` long; no control characters.
+- [ ] **BE-46** Normalise each field by its `normalize` setting, join with `|`, hash, compare in constant time.
+- [ ] **BE-47** For `arrange` stages: exactly 10 distinct fragment ids, all owned by the team.
+- [ ] **BE-48** Wrong answer: increment wrong attempts, set `last_wrong_at`, apply a lockout if the clue defines one, respond `WRONG` with generic text. Never say which field was wrong.
+- [ ] **BE-49** Correct non-final stage: advance the stage, respond `STAGE_CORRECT` with that stage's reveal.
+- [ ] **BE-50** Correct final stage: compute points, mark solved, award the fragment, update totals, run the unlock engine, set `finished_at` if it was the round's final clue, respond `CORRECT` with points and newly unlocked rooms and clues.
+- [ ] **BE-51** Store every submission with raw input, result, points, response and server timestamp.
+- [ ] **BE-52** Use the server clock at the moment of processing, not the time the request arrived in the queue.
+- [ ] **BE-53** Per-team cap of 30 submissions per minute across all clues (`RATE_LIMITED`).
+- [ ] **BE-54** Late duplicate after a clue is solved returns `ALREADY_SOLVED` with the original points.
+- [ ] **BE-55** The final clue of a round never leaks whether individual fields were right.
 
-### 2.5 Scoring (unchanged rules)
+### 2.5 Scoring (BE-60 to BE-64)
 
-- [ ] **BE-60** Clue points = `base` (6) + `speed` (0 to 4) - hint penalties - wrong-attempt penalties, never below `min_points` (2), rounded to 2 decimals.
-- [ ] **BE-61** Speed: full `speed_max` up to `par_sec`, then linear to 0 at double `par_sec`. Time runs from `unlocked_at` to server solve time.
-- [ ] **BE-62** Hint penalties: level 1 = 0, level 2 = 1, level 3 = 2 (from the content `hints[].penalty`).
-- [ ] **BE-63** Wrong attempts: first `free_wrong` (3) free, then `wrong_penalty` (0.5) each.
-- [ ] **BE-64** Round score is `SUM(team_clues.score)`. No cached total. Manual fix = edit the `team_clues` row.
+- [ ] **BE-60** Per clue: `base` (6) plus `speed` (0 to 4) minus hint penalties minus wrong-attempt penalties, never below `min_points` (2), rounded to 2 decimals.
+- [ ] **BE-61** Speed: full `speed_max` up to `par_sec`; then falls in a straight line to 0 at double `par_sec`. Elapsed time runs from the clue's `unlocked_at` to the server solve time.
+- [ ] **BE-62** Hint penalties: level 1 costs 0, level 2 costs 1, level 3 costs 2.
+- [ ] **BE-63** Wrong attempts: the first 3 are free, then 0.5 each.
+- [ ] **BE-64** Round total equals the sum of clue scores plus admin adjustments. Provide a recompute function that can rebuild totals from clue scores.
 
-### 2.6 Hints
+### 2.6 Hints (BE-70 to BE-74)
 
-- [ ] **BE-70** `POST /api/clues/{id}/hint` (`stage`, `level`). Levels in order 1, 2, 3. Level 1 is free and opens `free_after_sec` (300) after the stage became available (`HINT_NOT_READY` with seconds left). Asking again for a used level returns the same text at no cost. Hint text is only sent after use. `/api/state` reports used hints and the next level per stage. Insert into `hint_usage` under the team lock.
+- [ ] **BE-70** `POST /api/clues/{id}/hint` with `request_id`, `stage`, `level`. Levels must be taken in order (1, then 2, then 3).
+- [ ] **BE-71** Level 1 is free and becomes available `free_after_sec` (300) after the stage became available. Before that it returns `HINT_NOT_READY` with seconds left.
+- [ ] **BE-72** Levels 2 and 3 are available once the previous level was taken. Asking for a hint already taken returns the same text at no extra cost.
+- [ ] **BE-73** Hints are idempotent by `request_id`. Hint text is only ever sent after use.
+- [ ] **BE-74** `/api/state` reports per stage: hints used, next level, and seconds until level 1.
 
-### 2.7 Round control (manual only)
+### 2.7 Round control (BE-80 to BE-86)
 
-- [ ] **BE-80** Admin **Start** (`live`): set `started_at`, run the unlock engine for all eligible teams in one transaction.
-- [ ] **BE-81** Admin **End** (round `n`), one transaction, all or nothing:
-  1. `UPDATE rounds SET status='ended', ended_at=now() WHERE round=n AND status='live'` (zero rows = already ended or not live: return the current state, change nothing; safe to click twice).
-  2. `UPDATE team_sessions SET ended_at=now(), ended_reason='round_ended' WHERE ended_at IS NULL AND team_id IN (SELECT team_id FROM team_rounds WHERE round=n)`.
-  3. Commit, return how many teams and sessions were ended.
+- [ ] **BE-80** Admin start sets `starts_at`, `ends_at = start + duration` (default from the content file, overridable) and runs the unlock engine for all eligible teams at the same instant.
+- [ ] **BE-81** Pause records the pause moment and rejects submissions. Resume moves `ends_at` forward by the paused time.
+- [ ] **BE-82** End closes the round immediately.
+- [ ] **BE-83** Extend adds minutes to `ends_at`.
+- [ ] **BE-84** Round 2 cannot start until qualification has run.
+- [ ] **BE-85** Toggle `hide_scores`; also switch on automatically for the final `leaderboard_hide_last_min` minutes.
+- [ ] **BE-86** A scheduler marks a round `ended` when `ends_at` passes, so state stays correct even if no request arrives.
 
-  Touches only `rounds` and `team_sessions`. It never writes `team_rounds`, `team_clues`, `submissions`, `hint_usage` or any score, so progress, scores, `finished_at` and qualification stay exactly as they were. `admin_sessions` is never touched, so organisers stay signed in. Round 1 End signs out all Round 1 teams (including ones that will not qualify); Round 2 End signs out only Round 2 teams. Signed-out teams can log in again at any time (lobby, standings, eliminated screen).
-- [ ] **BE-81b** Race safety between End and submit/hint. Inside the submit and hint transactions, after taking the team lock, run `SELECT status FROM rounds WHERE round=n FOR SHARE` and reject with `ROUND_CLOSED` unless `live`. End's `UPDATE` on that row waits for in-flight submits and blocks new ones until it commits. Result: every submit is either fully committed before End (counts normally) or sees `ended` and is rejected. No submit can be accepted after End commits, and none is half-applied. Do not rely on the status read at the start of the request.
-- [ ] **BE-82** Round 2 cannot start until qualification has been run (at least one Round 2 `team_rounds` row exists). Round 1 must be `ended` before qualification can run.
-- [ ] **BE-83** The countdown shown to teams is `started_at + default_duration_min` and is display only. Hitting zero changes nothing on the server; the round runs until an admin ends it.
-- [ ] **BE-84** Admin toggle **hide scores** on the public leaderboard (replaces the automatic last-10-minutes rule).
+### 2.8 Leaderboard and qualification (BE-90 to BE-96)
 
-### 2.8 Leaderboard and qualification
+- [ ] **BE-90** Rank by clues solved (more first), then score (higher first), then last solved time (earlier first), then team id. Teams that finished the round always rank above those that did not.
+- [ ] **BE-91** Only correct solves move `last_solved_at`.
+- [ ] **BE-92** Public leaderboard shows names and ranks, and scores unless hidden. The admin leaderboard always shows exact scores and times to the millisecond.
+- [ ] **BE-93** Cache the leaderboard for 3 seconds. Include the requesting team's own rank.
+- [ ] **BE-94** Preview qualification: `GET /admin/rounds/1/qualify/preview?top=N` lists the teams that would go through.
+- [ ] **BE-95** Qualify: select the top N teams by leaderboard ranking (clues solved, then highest score, then earliest solve time) regardless of whether all 10 clues were completed. Running it twice changes nothing.
+- [ ] **BE-96** Disqualified teams are excluded from ranking and qualification.
 
-- [ ] **BE-90** Rank with the `v_leaderboard` view: finished teams first, then clues solved, score, earlier last solve, team id. Disabled teams are excluded. Public leaderboard hides scores when `hide_scores`; the admin view always shows exact scores and times.
-- [ ] **BE-91** Qualification by organiser-chosen N. The admin types N; the backend works out who goes through.
-  - `GET /admin/qualify/preview?top=N`: returns the teams that would qualify, in rank order, plus the cutoff (rank N, the first team out, and their score), and the total team count. Writes nothing.
-  - `POST /admin/qualify?top=N`: in one transaction, take the Round 1 `v_leaderboard` order (finished teams first, then clues solved, score, earlier last solve, team id), keep the first N active teams, make **exactly those** teams the Round 2 set (insert their Round 2 `team_rounds` rows, delete Round 2 rows of anyone else), and return the list. The order has a final team-id tie-break, so the cutoff always yields exactly N teams (or all teams if N is larger).
-  - Validation: N is an integer from 1 up to the number of active teams (else `BAD_INPUT`). Round 1 must be `ended` and Round 2 must still be `pending` (else 409 with a clear message). Disabled teams are never selected.
-  - Running it again with the same or a different N before Round 2 starts simply recomputes the set; the result depends only on Round 1 data and N. Once Round 2 starts it is locked.
-  - Round 2 access is only for teams in that set: they get Round 2 state, clues and assets; everyone else gets `NOT_IN_ROUND` (eliminated screen). Round 1 data of every team is untouched.
+### 2.9 Announcements, errors and safety (BE-100 to BE-110)
 
-### 2.9 Errors
-
-- [ ] **BE-100** One error format: `{ "code", "message", "retry_after_sec" }`. Codes: `BAD_INPUT`, `UNAUTHENTICATED`, `SESSION_ENDED` (with `reason`), `SESSION_LIMIT`, `BAD_CREDENTIALS`, `ACCOUNT_DISABLED`, `ROUND_NOT_STARTED`, `ROUND_CLOSED`, `NOT_IN_ROUND`, `ROOM_LOCKED`, `CLUE_LOCKED`, `ALREADY_SOLVED`, `WRONG`, `TOO_FAST`, `LOCKED`, `HINT_NOT_READY`.
-- [ ] **BE-101** Never log submitted answers. CORS limited to the event site. `GET /health` returns status and pack label only.
+- [ ] **BE-100** Announcements: create, list active, expire. They appear in `/api/state`.
+- [ ] **BE-101** One error format everywhere: `{ "code": "...", "message": "...", "retry_after_sec": n }`.
+- [ ] **BE-102** Error codes: `BAD_INPUT`, `UNAUTHENTICATED`, `SESSION_ENDED`, `SESSION_LIMIT`, `BAD_CREDENTIALS`, `ACCOUNT_DISABLED`, `RATE_LIMITED`, `ROUND_NOT_STARTED`, `ROUND_PAUSED`, `ROUND_CLOSED`, `NOT_IN_ROUND`, `ROOM_LOCKED`, `CLUE_LOCKED`, `ALREADY_SOLVED`, `WRONG`, `TOO_FAST`, `LOCKED`, `HINT_NOT_READY`, `CONTENT_MISMATCH`, `SERVER_BUSY`.
+- [ ] **BE-103** Never log submitted answers or hashes to the console. Attach a request id to every response and log line.
+- [ ] **BE-104** Security headers, CORS limited to the event site, request body size limit, and parameterised queries only.
+- [ ] **BE-105** `GET /health` returns status and content label only (no counts or secrets).
+- [ ] **BE-106** Graceful handling of a temporary storage outage: one automatic retry, then `SERVER_BUSY`, never a half-applied submission.
 
 ## 3. Frontend (React)
 
-Look, story, rooms, clue content and colours are the full original design (restored below, object by object). What stays simplified is only the mechanics of a few clue tools, marked **(simplified)**.
+### 3.1 App shell and shared behaviour
 
-### 3.1 Shell
+- [ ] **FE-01** Routes: `/login`, `/lobby`, `/play` (map), `/play/room/:roomId`, `/play/room/:roomId/clue/:clueId`, `/leaderboard`, `/finale/:round`, `/eliminated`. Unknown routes go to `/play` when signed in, otherwise `/login`.
+- [ ] **FE-02** API client: one function for every call, adds a fresh `request_id` per user action, 10-second timeout, up to 2 automatic retries that reuse the same `request_id`, and maps every server error code to a message (table in FE-160).
+- [ ] **FE-03** State polling: call `/api/state` every 5 seconds with the `ETag`; pause polling while the tab is hidden and refresh immediately when it becomes visible again.
+- [ ] **FE-04** Clock: on load, call `/api/time` three times, take the median offset, and drive every countdown from server time plus offset, never the device clock.
+- [ ] **FE-05** Global toast system (top-right, auto-dismiss 4 s, errors stay 6 s, max 3 stacked).
+- [ ] **FE-06** Global handling of `SESSION_ENDED`: clear local state and go to `/login` with the banner "You were signed out. Sign in again; your progress is safe."
+- [ ] **FE-07** Fonts: headings in "Special Elite", terminal text in "VT323", body in "IBM Plex Mono", all with real fallback stacks. Base colours: background `#07060b`, panel `#0e0c14`, border `#3a2a55`, text `#e9e4f5`, event accent pumpkin `#ff7a1a`.
+- [ ] **FE-08** Never keep answers, hashes or unrevealed hints in the browser. Never put tokens in local storage (session is an HTTP-only cookie).
+- [ ] **FE-09** Desktop-first (1280 x 720 target). Works down to 1024 wide. Below 900 wide show a notice: "Use a laptop or tablet for the best experience" but still allow play.
+- [ ] **FE-10** Accessibility: every hotspot is a button with a text label, full keyboard navigation (Tab, Enter, Esc), visible focus ring in the room's accent colour, `prefers-reduced-motion` turns off flicker and glitch effects.
+- [ ] **FE-11** Audio manager: starts after the first user click, one ambient loop per room with a 1-second crossfade, a global mute button that remembers its state for the session.
+- [ ] **FE-12** Glitch effect component (used for transitions): 300 ms RGB split plus horizontal slice jitter, triggered from code.
 
-- [ ] **FE-01** Routes: `/login`, `/lobby`, `/play`, `/play/room/:roomId`, `/play/room/:roomId/clue/:clueId`, `/leaderboard`, `/finale/:round`, `/eliminated`. Unknown routes go to `/play` when signed in, else `/login`.
-- [ ] **FE-02** One API client: 10 s timeout, maps every error code to a message (FE-160), disables buttons while a request runs.
-- [ ] **FE-03** Poll `/api/state` every 5 s; pause while the tab is hidden, refresh when visible.
-- [ ] **FE-04** Clock: call `/api/time` once on load, keep the offset, drive countdowns from server time.
-- [ ] **FE-05** Toasts (top-right, auto-dismiss).
-- [ ] **FE-06** `SESSION_ENDED` from any call (poll, submit, hint, asset) clears local state, stops polling and goes to `/login`. Banner by `reason`: `round_ended` shows "The round has ended. You were signed out. Sign in to see your results; your progress is saved."; otherwise "You were signed out. Sign in again; your progress is safe." Any in-flight submit that fails this way must not show a wrong-answer message. The 5 s poll is what catches a team that is idle at the moment of End.
-- [ ] **FE-07** Fonts: "Special Elite" (headings), "VT323" (terminal), "IBM Plex Mono" (body). Colours: background `#07060b`, panel `#0e0c14`, border `#3a2a55`, text `#e9e4f5`, accent `#ff7a1a`.
-- [ ] **FE-08** Never keep answers or unrevealed hints in the browser. The session lives in an HTTP-only cookie.
-- [ ] **FE-09** Desktop-first (1280 x 720), works down to 1024 wide.
-- [ ] **FE-10** Basics: hotspots are buttons with text labels, Tab/Enter/Esc work, `prefers-reduced-motion` turns off flicker and glitch.
-- [ ] **FE-11** Audio manager: starts only after the first user click; one ambient loop per room with a 1-second crossfade; random per-room sound effects as listed in the room table; a tension layer that speeds up in the last 5 minutes of the round; UI sounds (hover tick, panel open, correct chime, wrong buzz, room unlock, fragment slide), all short and mutable; a visible global mute button that remembers its state for the session.
-
-### 3.2 Login (`/login`)
+### 3.2 Event login page (`/login`)
 
 **Look:** full-screen near-black `#07060b` with a slow drifting dust-mote layer and faint CRT scanlines. Top centre: the title "CURSE THE CODE" in Special Elite, 56 px, pumpkin `#ff7a1a`, with a slow flicker once every 6 to 9 seconds. Under it, a smaller line: "Hollow House opens at midnight" in `#8f7bff`. Centre: a 420 px wide panel `#0e0c14` with a 1 px border `#3a2a55` and a soft purple glow. Bottom: a small line with the event and club name. A flickering jack-o'-lantern line-art icon sits to the left of the panel on wide screens.
 
-**Panel layout:** a two-option switch at the top: **SIGN IN** (default) and **LOGOUT**. Below it, the form for the selected option. Fields have the show/hide eye on the password, a spinner on the button while pending, autofocus on team name. The page never reveals whether a team name exists.
+**Panel layout:** a two-option switch at the top: **SIGN IN** (default) and **LOGOUT**. Below it, the form for the selected option.
 
-- [ ] **FE-20** SIGN IN (default) and LOGOUT switch. Sign in: team name, password, "ENTER THE HOUSE". Enter submits; button disabled while pending.
-- [ ] **FE-21** Errors in red under the form: bad credentials, disabled team ("Contact the organisers").
-- [ ] **FE-22** LOGOUT form: team name + password, button "LOG OUT THIS TEAM", note "Signs this team out everywhere. Your progress and timer are not affected." On success show "N session(s) ended. You can sign in now." and switch back to SIGN IN with the team name kept.
-- [ ] **FE-23** On `SESSION_LIMIT` show "Your team is already signed in on N devices" and a button that switches to the LOGOUT form with the name prefilled.
-- [ ] **FE-24** Already signed in: `/login` redirects to `/play` (or `/lobby`). Top bar has Sign out (single session) with a confirm dialog.
+- [ ] **FE-20** SIGN IN form: fields "Team name" and "Password" (show/hide eye button), primary button "ENTER THE HOUSE". Enter key submits. The button shows a spinner and is disabled while the request runs. Autofocus on team name.
+- [ ] **FE-21** Errors appear under the form in red `#ff5a5a`: bad credentials ("Team name or password is wrong"), locked ("Too many attempts. Try again in 4:32" with a live countdown), disabled team ("This team is disabled. Contact the organisers.").
+- [ ] **FE-22** LOGOUT form (reached by the switch, or by the button in the session-limit message): fields "Team name" and "Password", button "LOG OUT THIS TEAM", and a one-line explanation: "Signs this team out everywhere. Your progress and timer are not affected."
+- [ ] **FE-23** After a logout request succeeds, show a green confirmation "N session(s) ended. You can sign in now.", clear the password, and switch back to SIGN IN with the team name kept.
+- [ ] **FE-24** Session-limit case: when sign-in returns `SESSION_LIMIT`, show "Your team is already signed in on N devices" with the device labels and a button "Log out this team everywhere", which switches to the LOGOUT form with the team name prefilled.
+- [ ] **FE-25** If the team is already signed in on this device, `/login` redirects to `/play` (or `/lobby` when no round is live).
+- [ ] **FE-26** A signed-in user sees a "Sign out" button in the top bar (calls the single-session logout) and a confirmation dialog: "Sign out? Your progress is saved and the timer keeps running."
+- [ ] **FE-27** The login page never reveals whether a team name exists.
 
-### 3.3 Lobby, top bar, map, room scene
+### 3.3 Lobby (`/lobby`)
 
-- [ ] **FE-30** Lobby (`/lobby`): centre card with the team name, the round title and a status line ("Waiting for the organisers to start Round 1" / "You are through to Round 2. Waiting for the organisers to start."), a pulsing candle icon and low ambient audio. Buttons: **How scoring works** (modal: 10 points per clue, 6 base plus up to 4 speed, hint and wrong-answer penalties), **Toolkit** (opens the toolkit card), **Sign out**. When the round goes live, play the round intro and move to `/play` automatically.
-- [ ] **FE-40** Top bar (all game screens): left, round title. Centre, countdown `MM:SS`: turns amber under 10 minutes and pulses red under 5; at zero it shows `00:00` and nothing else happens (display only). Right: overall progress "5 of 10 clues", score (shows "?" when scores are hidden), mute button, Toolkit button, Leaderboard button, Sign out.
+- [ ] **FE-30** Shown when no round is live for the team. Centre card: team name, the round title and a status line ("Waiting for the organisers to start Round 1" / "Round 2 starts soon" / "Round paused"). A pulsing candle icon and low ambient audio.
+- [ ] **FE-32** Buttons: "How scoring works" (modal with the rules: 10 points per clue, 6 base plus up to 4 speed, hint and wrong-answer penalties), "Toolkit" (opens the toolkit card), "Sign out".
+- [ ] **FE-33** When the state says the round went live, play the round intro (FE-90) and move to `/play` automatically.
+
+### 3.4 Top bar (all game screens)
+
+- [ ] **FE-40** Left: round title. Centre: countdown `MM:SS`, turns amber under 10 minutes and pulses red under 5. Right: overall progress "5 of 10 clues", score (hidden with "?" when scores are hidden), a mute button, a Toolkit button, a Leaderboard button, Sign out.
 - [ ] **FE-41** Round 1 only: a fragment tray under the bar with 10 slots (F01 to F10). Empty slots are dark outlines; collected fragments show their thumbnail with a small slide-in animation when awarded.
-- [ ] **FE-50** Map hub (`/play`). **Round 1 map:** a dark cutaway of Hollow House with three rooms stacked (Bedroom top, Study middle, Basement bottom), connected by a staircase line. **Round 2 map:** an underground blueprint (blue-black `#0a1220` with cyan `#4ab3ff` line work) with the Records Archive and Control Room side by side and the Containment Vault below them behind a bulkhead.
-- [ ] **FE-51** Each room is a card with a thumbnail (the room's `background_file`), the title and the clue count from the server ("Lena's Bedroom, 1 of 3 solved"). Locked rooms show a padlock, the total ("The Basement, 4 clues, locked") and a short unlock hint from the server. Finished rooms show a green "COMPLETE" badge. Card border and glow use the room's `theme.accent` and `theme.glow`. Hover lifts the card 4 px and brightens the glow. Clicking a locked room shakes it and shows a toast with the unlock hint.
-- [ ] **FE-52** Round header strip under the top bar: "5 of 10 clues solved" with a segmented progress bar (10 segments).
-- [ ] **FE-53** When a room unlocks, play a 1-second unlock animation on its card (padlock cracks open) and a toast "The Study is open." 
-- [ ] **FE-60** One reusable `RoomScene` component driven by the room's content (background, theme, objects, ambient). The six rooms must not have separate code paths. It draws a 16:9 stage, letterboxed to fit. Background: the room's `background_file`, with a gradient fallback from `theme.bg_top` to `theme.bg_bottom` if the image is missing, plus a vignette (`theme.vignette`) and a fog layer (`theme.fog`).
-- [ ] **FE-61** Objects are absolutely positioned from the percentages in the content file (`x`, `y`, `w`, `h` of the stage). Decor objects are not interactive; clue objects are buttons. Hotspot states: **open** (faint outline in the accent colour at 25 percent, brightens on hover with the object's label tooltip), **solved** (dimmed with a small tick), **locked** (padlock icon, tooltip with the unlock hint). Tab cycles open hotspots in `seq` order; Esc closes the clue panel.
-- [ ] **FE-62** Room header: back arrow to the map, room title, "Clues solved: 2 of 3" (count from the server); a "COMPLETE" badge replaces it when all clues are solved. Entering a room crossfades the ambient audio and plays the room's sound effects at random intervals (every 20 to 60 seconds).
-- [ ] **FE-63** Effects as small shared components, each respecting reduced-motion: `Flicker` (target object, interval range), `Scanlines`, `Vignette`, `DustMotes`, `Fog`, `Pulse`, `StaticBurst`. A debug overlay (toggled with a key) draws every object's rectangle and id to align art with hotspots.
-- [ ] **FE-64** **Placeholder mode (everything playable with zero art).** The content already has all 39 objects with label, kind, `x`, `y`, `w`, `h`. Draw order is decor first, then clue objects on top (the diary sits on the bed, the drawer and recorder on the desk, the note on the rack, on purpose). For each object the scene looks for `obj_<object_id>.png` or `.svg` in the assets folder; if it exists it is drawn at the object's rectangle, otherwise a **placeholder** is drawn there: a rounded box in the room's `theme.accent` at low opacity with the object's `label` centred (clue objects solid border, decor dashed border, solved clues ticked, locked ones padlocked). A missing `background_file` falls back to the theme gradient. Hotspots, states, tooltips and the clue panel behave identically with art or placeholders, so UI work never waits for art.
-- [ ] **FE-65** **Map art drawn in code, no asset files needed.** Round 1 map and Round 2 map (FE-50) are inline SVG/CSS: room rectangles, staircase line, blueprint grid, bulkhead, in the colours from the spec. Room cards use the room's `background_file` as thumbnail, falling back to its theme gradient.
-- [ ] **FE-66** Dev tools: the debug overlay (FE-63) plus a `?placeholders=1` switch that forces placeholder mode even when art exists, to check hotspot alignment against the real art.
+- [ ] **FE-42** Announcement banner slot above the bar.
 
-### 3.3b Room looks (visual spec, object by object)
+### 3.5 Map hub (`/play`)
+
+- [ ] **FE-50** Round 1 map: a dark cutaway of Hollow House with three rooms stacked (Bedroom top, Study middle, Basement bottom), connected by a staircase line. Round 2 map: an underground blueprint (blue-black `#0a1220` with cyan `#4ab3ff` line work) with the Records Archive and Control Room side by side and the Containment Vault below them behind a bulkhead.
+- [ ] **FE-51** Each room is a card with: thumbnail (the room's `background_file`), title, and the clue count read from the server ("Lena's Bedroom, 1 of 3 solved"). Locked rooms show a padlock, the total ("The Basement, 4 clues, locked") and a short unlock hint from the server. Finished rooms show a green "COMPLETE" badge.
+- [ ] **FE-52** Card border and glow use the room's `theme.accent` and `theme.glow`. Hover lifts the card 4 px and brightens the glow. Clicking a locked room shakes it and shows a toast with the unlock hint.
+- [ ] **FE-53** Round header strip under the top bar: "5 of 10 clues solved" with a segmented progress bar (10 segments).
+- [ ] **FE-54** When a room unlocks, play a 1-second unlock animation on its card (padlock cracks open) and a toast "The Study is open."
+
+### 3.6 Room scene renderer (`/play/room/:roomId`)
+
+- [ ] **FE-60** Draw the room as a 16:9 stage, letterboxed to fit. Background: the room's `background_file`, with a gradient fallback from `theme.bg_top` to `theme.bg_bottom` if the image is missing. Add a vignette (`theme.vignette`) and a fog layer (`theme.fog`).
+- [ ] **FE-61** Objects are absolutely positioned using the percentages in the content file (`x`, `y`, `w`, `h` of the stage). Decor objects are not interactive. Clue objects are buttons.
+- [ ] **FE-62** Hotspot states: **open** (faint outline in the accent colour at 25 percent, brightens on hover with the object's label tooltip), **solved** (dimmed with a small tick), **locked** (padlock icon, tooltip with the unlock hint).
+- [ ] **FE-63** Room header: back arrow to the map, room title, and "Clues solved: 2 of 3" (the count comes from the server). A "COMPLETE" badge replaces it when all clues are solved.
+- [ ] **FE-64** Entering a room crossfades the ambient audio and plays the room's sound effects at random intervals (every 20 to 60 seconds).
+- [ ] **FE-65** Clicking a clue hotspot opens the Clue Panel (3.8) over the stage. Esc or the close button returns to the stage.
+- [ ] **FE-66** Pressing Tab cycles through open hotspots in `seq` order.
+
+### 3.7 Room looks (visual spec)
 
 Colours below are the theme values in the content file. Object positions are percentages of the stage and also come from the content file.
 
@@ -183,158 +209,626 @@ Colours below are the theme values in the content file. Object positions are per
 | **The Control Room** (Round 2) | Blue-black monitors. Gradient `#0a1220` to `#101c33`, accent `#4ab3ff`, glow `#9fd6ff`, text `#d6ecff`. | Monitor wall flickers with static, scanline overlay, occasional full-screen static burst (200 ms). | Bank of old monitors (top left, 6/10). Staff terminal (12/52). Transmission receiver with dials and a cassette slot (34/48). Sound console with faders and a small screen (56/54). Dead intercom on the right wall (82/24). | Static bursts, relay clicks, a faint radio voice that cuts out. |
 | **The Containment Vault** (Round 2) | Steel and violet core. Gradient `#120d17` to `#1b0f2b`, accent `#38f0ff`, glow `#a99bff`, text `#e6ddff`. | The core behind glass pulses violet `#7a5cff` about once per second; glow brightens as the countdown falls. | Glowing core behind thick glass (centre, 36/14). Countdown timer above it (40/4). Manual terminal on the left (8/46). Failsafe panel on the right (76/42). Central console in the foreground (38/62). Ring of locked panels around the core. | Low core pulse, steel creaks. |
 
-- [ ] **FE-70** The Basement's wall monitor shows the live round countdown (same server-offset clock as the top bar). The Vault's countdown timer above the core does the same and its core glow brightens as the time falls.
-- [ ] **FE-71** Theme values (colours, lighting, effect list, ambient audio) are read from each room's content entry, so tuning a room never needs code changes.
+- [ ] **FE-70** Build one reusable `RoomScene` component driven by the room's content (background, theme, objects, ambient). The six rooms must not have separate code paths.
+- [ ] **FE-71** Effects as small components: `Flicker` (target object, interval range), `Scanlines`, `Vignette`, `DustMotes`, `Fog`, `Pulse`, `StaticBurst`. Each respects reduced-motion.
+- [ ] **FE-72** A debug overlay (toggled with a key) draws every object's rectangle and id, to align art with hotspots quickly.
 
-### 3.4 Clue panel and clue screens
+### 3.8 Clue panel (shared layout and behaviour)
 
-- [ ] **FE-80** Shared clue panel: a modal over the stage, about 80 percent of the width and height, bordered in the room's accent colour, opening with a 200 ms zoom from the clicked object's position. Left 60 percent: the **artifact viewer** specific to the clue. Right 40 percent: clue title, `scene_text`, the stage prompt, the input fields, the Submit button, the hint ladder, and a line showing wrong attempts so far. Footer: clue id and "Stage 1 of 3" for multi-stage clues. Built from the clue's `kind`, all text read from the content (nothing hardcoded). Esc or the close button returns to the stage.
-- [ ] **FE-81** Solved clues reopen read-only (artifact, story text, reveal, no input).
-- [ ] **FE-82** Any text a player might want to decode is selectable and has a **Copy** button.
-- [ ] **FE-83** On a correct final stage: success overlay "CLUE SOLVED" (plus the points when scores are visible), the story text typed out at 30 characters per second, the fragment sliding into the tray (Round 1), and notices for anything newly unlocked.
-- [ ] **FE-84** Submit behaviour: button disabled with a spinner while pending. `WRONG` shakes the panel and keeps the text. `TOO_FAST` shows "Wait 3s" on the button. `LOCKED` shows an overlay with a countdown that comes from the server. `ALREADY_SOLVED` closes the input. `STAGE_CORRECT` moves to the next stage. The browser only checks empty fields and length.
-- [ ] **FE-85** Hint drawer: three rungs per stage ("Nudge (free)" with countdown, "Method (-1 point)", "Big help (-2 points)"), locked until the previous rung is used, confirm before a paid hint, revealed hints stay visible. Penalties are read from the content.
+- [ ] **FE-80** The clue panel is a modal over the stage, about 80 percent of the width and height, bordered in the room's accent colour. Left 60 percent: the **artifact viewer** specific to the clue. Right 40 percent: clue title, `scene_text`, the stage prompt, the input fields, the Submit button, the hint ladder, and a line showing wrong attempts so far. Footer: clue id and "Stage 1 of 3" for multi-stage clues.
+- [ ] **FE-81** The panel is built from the clue's `kind`. One component per kind (listed below). The panel reads fields, labels and prompts from the content, so no clue text is hardcoded.
+- [ ] **FE-82** Solved clues reopen in a read-only review mode that shows the artifact, the story text and the reveal, but no input.
+- [ ] **FE-83** Every artifact that contains text a player may want to decode offers a **Copy** button, and the text itself is selectable. Never render puzzle text only as an image unless the clue requires it (poster, photo, spectrogram).
+- [ ] **FE-84** On a correct final stage show a success overlay: "CLUE SOLVED" (plus the points when scores are visible), the story text typed out at 30 characters per second, the fragment sliding into the tray (Round 1), and notices for anything newly unlocked.
+- [ ] **FE-85** Hotspot to panel animation: 200 ms zoom from the object's position.
 
-**Clue screens (all 20 clues and their puzzles are unchanged).** Each is a thin view over `payload` using shared pieces: text block, image, audio player, input fields.
+### 3.9 Clue screens, all 20 (what each looks like and how it works)
 
-Round 1, Bedroom
-- [ ] **FE-100 R1-01 Lena's Diary** (`cipher_text`). Click the open diary on the bed. Panel shows a two-page diary spread on aged paper `#e9dcc0` with a handwriting font. Left page: the first dated entry; right page: the second. A page-turn arrow reveals the last entry: `last_entry.cipher_text` in smudged ink, grouped in the original word spacing. Copy button on the last page. One text field. Success: the diary cover opens and Fragment 1 slides out.
-- [ ] **FE-101 R1-02 Music Box** (`audio_morse`). Click the music box on the nightstand. Panel shows the open box with a spinning ballerina and a **Play** button, a waveform, and a speed switch (Normal, Slow). The browser synthesises the melody from `morse` at `unit_ms` per unit: short note equals one unit, long note three units, a longer gap between digits. No dots or dashes are shown on screen. One numeric field. Success: a false bottom clicks open and Fragment 2 appears.
-- [ ] **FE-102 R1-03 Torn Poster** (`image_inspect`). Click the dark poster. Panel shows `image_file` nearly black, with a small **Inspector** toolbar: **Invert** toggle, **Contrast** slider (100 to 400 percent) and Reset (browser filters only). **(simplified: no brightness slider, zoom or pan.)** One field with the format hint in the prompt. Success: the poster corner peels away and Fragment 3 is revealed.
+Each entry lists the object the player clicks, what the panel shows, what the player does, and what appears on success. Data in square brackets comes from the clue's `payload`.
 
-Round 1, Study
-- [ ] **FE-103 R1-04 Lena's Tablet** (`binary_note`). Click the desk drawer; it slides open to show a cracked tablet. Panel shows the tablet lock screen with a keyboard-style passcode box. A **Turn over** button flips the tablet to show a yellow sticky note with `sticky_note` groups of eight bits on separate lines. After the correct passcode the tablet unlocks and a voice-memo app opens with a play button and the transcript from the stage reveal. Success also gives Fragment 4.
-- [ ] **FE-104 R1-06 The Unsent Email** (`base64_email`). Click the old CRT monitor. Panel shows a mail window in green on black: Drafts folder, From and To lines, Subject, the intro line, and below it `encoded_block` in a monospace block that wraps. Copy button. One text field. Success: the draft gains a paperclip and Fragment 6 opens as an attachment.
-- [ ] **FE-105 R1-07 Two Recordings** (`audio_compare`). Click the reel recorder. Panel shows two reels labelled Recording A and Recording B, each with Play, a scrub bar and a waveform, and a **Properties** button. Properties opens a small dialog listing `properties`: date recorded, duration, software. A field asks for the spoken word. Success: the forged reel cracks and Fragment 7 slides out of its cover art.
+#### Round 1, Lena's Bedroom (3 clues)
 
-Round 1, Basement
-- [ ] **FE-106 R1-05 Corrupted Log** (`hex_log`). Click the maintenance terminal. Panel shows a green terminal window titled `filename`. It prints `log_lines` with timestamps, then a block of hex lines `hex_lines` with an offset column. Selectable, with a Copy button. One text field. Success: the printer clicks and Fragment 5 prints out.
-- [ ] **FE-107 R1-08 Server Access Log** (`log_filter`). Click the access console. Panel shows the 20 log lines in a terminal window with Copy. **(simplified: no built-in search box; players use the browser's find or their own tools.)** One text field. Success: the rack monitor flashes and Fragment 8 appears.
-- [ ] **FE-108 R1-09 The Family's Final Note** (`vigenere_note`). Click the note taped inside the rack door. Panel shows `image_file` aged paper with the cipher text laid over it in handwriting, and a smudged margin line `margin_note` at the bottom. Copy button for the cipher text. One text field. Success: the note falls open and Fragment 9 drops from the hinge. This clue unlocks only after R1-05 is solved.
+- [ ] **FE-100 R1-01 Lena's Diary** (`cipher_text`). Click the open diary on the bed. Panel shows a two-page diary spread on aged paper `#e9dcc0` with a handwriting font. Left page: the first dated entry; right page: the second. A page-turn arrow reveals the last entry: \[last\_entry.cipher\_text\] in smudged ink, grouped in the original word spacing. Copy button on the last page. One text field. Success: the diary cover opens and Fragment 1 slides out.
+- [ ] **FE-101 R1-02 Music Box** (`audio_morse`). Click the music box on the nightstand. Panel shows the open box with a spinning ballerina and a **Play** button, a waveform, and a speed switch (Normal, Slow). The browser synthesises the melody from \[morse\] at \[unit\_ms\] per unit: short note equals one unit, long note three units, a longer gap between digits. No dots or dashes are shown on screen. One numeric field. Success: a false bottom clicks open and Fragment 2 appears.
+- [ ] **FE-102 R1-03 Torn Poster** (`image_inspect`). Click the dark poster. Panel shows \[image\_file\] nearly black, with an **Inspector** toolbar: Invert toggle, Contrast slider (100 to 400 percent), Brightness slider, Reset, and mouse-wheel zoom with drag to pan. Filters run in the browser on the image only. One field with the format hint in the prompt. Success: the poster corner peels away and Fragment 3 is revealed.
+
+#### Round 1, Daniel's Study (3 clues)
+
+- [ ] **FE-103 R1-04 Lena's Tablet** (`binary_note`). Click the desk drawer; it slides open to show a cracked tablet. Panel shows the tablet lock screen with a keyboard-style passcode box. A **Turn over** button flips the tablet to show a yellow sticky note with \[sticky\_note\] groups of eight bits on separate lines. After the correct passcode the tablet unlocks and a voice-memo app opens with a play button and the transcript from the stage reveal. Success also gives Fragment 4.
+- [ ] **FE-104 R1-06 The Unsent Email** (`base64_email`). Click the old CRT monitor. Panel shows a mail window in green on black: Drafts folder, From and To lines, Subject, the intro line, and below it \[encoded\_block\] in a monospace block that wraps. Copy button. One text field. Success: the draft gains a paperclip and Fragment 6 opens as an attachment.
+- [ ] **FE-105 R1-07 Two Recordings** (`audio_compare`). Click the reel recorder. Panel shows two reels labelled Recording A and Recording B, each with Play, a scrub bar and a waveform, and a **Properties** button. Properties opens a small dialog listing \[properties\]: date recorded, duration, software. A field asks for the spoken word. Success: the forged reel cracks and Fragment 7 slides out of its cover art.
+
+#### Round 1, The Basement (4 clues)
+
+- [ ] **FE-106 R1-05 Corrupted Log** (`hex_log`). Click the maintenance terminal. Panel shows a green terminal window titled \[filename\]. It prints \[log\_lines\] with timestamps, then a block of hex lines \[hex\_lines\] with an offset column. Selectable, with a Copy button. One text field. Success: the printer clicks and Fragment 5 prints out.
+- [ ] **FE-107 R1-08 Server Access Log** (`log_filter`). Click the access console. Panel shows the 20 log lines in a terminal, a **Search** box (case-insensitive, highlights matches, shows "3 matches"), and Copy. One text field. Success: the rack monitor flashes and Fragment 8 appears.
+- [ ] **FE-108 R1-09 The Family's Final Note** (`vigenere_note`). Click the note taped inside the rack door. Panel shows \[image\_file\] aged paper with the cipher text laid over it in handwriting, and a smudged margin line \[margin\_note\] at the bottom. Copy button for the cipher text. One text field. Success: the note falls open and Fragment 9 drops from the hinge. This clue unlocks only after R1-05 is solved.
 - [ ] **FE-109 R1-10 Containment Terminal** (`final_terminal`, 3 stages). Click the containment console. The panel is full width.
   - **Stage 1:** a keyword screen with three labelled fields (diary keyword, crashed process, source ID). Success drops Fragment 10 into the tray.
-  - **Stage 2:** the **Arrange board**. Top: a 2 by 5 grid of slots numbered faintly 1 to 10. Bottom: the tray with the ten collected fragments as thumbnails with their captions on hover. Click a fragment and then a slot (keyboard and touch friendly); drag and drop is a bonus. Dropping on or clicking a filled slot swaps. A **Reset** button clears the grid and a **Lock in** button submits. On success the pieces snap together with a glowing seam and the full photograph appears.
+  - **Stage 2:** the **Arrange board**. Top: a 2 by 5 grid of slots numbered faintly 1 to 10. Bottom: the tray with the ten collected fragments as thumbnails with their captions on hover. Drag a fragment into a slot, or click a fragment and then a slot (keyboard and touch friendly). Dropping on a filled slot swaps. A **Reset** button clears the grid and a **Lock in** button submits. On success the pieces snap together with a glowing seam and the full photograph appears.
   - **Stage 3:** the photograph at left with a slow pulse on the empty fifth shadow and the line from the reveal. At right, two large option buttons with the labels from the content, a four-digit code field, and a **Submit** button. Selecting an option highlights it in the accent colour. A wrong submission flashes the console red but never says which part was wrong.
-  - Success starts the Round 1 finale.
+  - Success starts the Round 1 finale (3.14).
 
-Round 2, Archive
-- [ ] **FE-110 R2-02 Redacted Report** (`redacted_pdf`). Click the yellowed folder. Panel shows two tabs, **Copy A** and **Copy B**, each a scanned-paper page with the report paragraphs. Redacted segments are drawn as solid black blocks but the text underneath stays selectable (same colour as the bar), so select-all and copy reveal it. Footer line of each copy shows "DOC-HASH: `footer_hash`" in monospace. Two fields: shutdown date and code word. Success: the folder stamps "VERIFIED" on the genuine copy.
+#### Round 2, The Records Archive (4 clues)
+
+- [ ] **FE-110 R2-02 Redacted Report** (`redacted_pdf`). Click the yellowed folder. Panel shows two tabs, **Copy A** and **Copy B**, each a scanned-paper page with the report paragraphs. Redacted segments are drawn as solid black blocks but the text underneath stays selectable (same colour as the bar), so select-all and copy reveal it. Footer line of each copy shows "DOC-HASH: \[footer\_hash\]" in monospace. Two fields: shutdown date and code word. Success: the folder stamps "VERIFIED" on the genuine copy.
 - [ ] **FE-111 R2-03 Photograph, Revisited** (`microfilm_viewer`, 2 stages). Click the microfilm reader. **Stage 1:** the screen shows a dark film strip and a date dial (one field in the YYYY-MM-DD format, with a click-sound dial look). **Stage 2:** the Round 1 portrait appears with film grain, plus a **Properties** button that opens a panel listing the comment field as hex lines from the stage reveal. A field takes the panel code. Unlocks only after R2-02 is solved.
-- [ ] **FE-112 R2-04 Epoch Timeline** (`epoch_timeline`). Click the whiteboard. Panel shows eight index cards pinned on a board, each with its event text and a large number (`epoch`) where a date would be, with a Copy button per card. No automatic sorting and no conversion. **(simplified: cards sit in a fixed pinned layout; drag-to-rearrange is optional.)** One text field.
+- [ ] **FE-112 R2-04 Epoch Timeline** (`epoch_timeline`). Click the whiteboard. Panel shows eight index cards pinned on a board, each with its event text and a large number (\[epoch\]) where a date would be. Cards can be dragged around the board to sort them (free layout, no automatic sorting, no conversion). Copy button per card. One text field.
 - [ ] **FE-113 R2-07 Convergence Lock** (`keypad_lock`). Click the bulkhead door. Panel shows a steel keypad with two fields (panel code, keyword) and a big **UNLOCK** button. Wrong entry shows "ACCESS DENIED" with no detail. Success: the bulkhead grinds open, the Vault card unlocks on the map, and a toast says so. Unlocks only after R2-03 and R2-04 are solved.
 
-Round 2, Control Room
-- [ ] **FE-114 R2-01 Personnel Index** (`table_filter`). Click the staff terminal. Panel shows a spreadsheet-styled table of `rows` with a sticky header and scroll, and a **Download CSV** button for the full table. **(simplified: no built-in column filters, sort or export logic; players filter in Excel or code.)** Nothing is highlighted for the player. One field for the badge ID.
+#### Round 2, The Control Room (3 clues)
+
+- [ ] **FE-114 R2-01 Personnel Index** (`table_filter`). Click the staff terminal. Panel shows a spreadsheet-style table of \[rows\] with a sticky header. Each column has a filter (dropdown for status and department, text for badge and name, date range for last login). Click a header to sort. A counter reads "Showing 12 of 60" and an **Export CSV** button downloads what is shown. Nothing is highlighted for the player. One field for the badge ID.
 - [ ] **FE-115 R2-05 Transmission Archive** (`transmission_archive`). Click the receiver. Panel shows six cassette or envelope icons, TX-1 to TX-6. Opening one shows a header block (From, X-Auth, Received) and the message body. Copy button on the header. One field for the voicemail file name. Unlocks only after R2-01 is solved.
 - [ ] **FE-116 R2-06 Spectrogram Voicemail** (`spectrogram_voicemail`). Click the sound console. Panel shows two tracks (Voicemail A and B), each with Play, a scrub bar, and a **Download WAV** button so teams can open the file in a spectrogram tool. No built-in spectrogram view. A four-box digit field. Unlocks only after R2-05 is solved.
 
-Round 2, Vault
+#### Round 2, The Containment Vault (3 clues)
+
 - [ ] **FE-117 R2-08 Manual Diff** (`manual_diff`). Click the manual terminal. Panel shows two panes side by side: **Manual (plain)** with the eight step lines, and **Manual (encrypted)** with the ciphertext block. Copy button on each, no built-in diff. One field for the tampered step numbers.
-- [ ] **FE-118 R2-09 Failsafe Circuit** (`logic_circuit`). Click the failsafe panel. Panel draws the circuit from `circuit` as SVG: eight inputs on the left (A1, A0, B1, B0, C1, C0, D1, D0), standard NOT, AND and OR symbols, wires, and four lamps on the right. The panel note is printed at the bottom. **(simplified: static drawing, no flip-able input switches.)** One four-digit field. After 5 wrong tries the clue locks for 60 seconds with a visible countdown.
-- [ ] **FE-119 R2-10 Final Containment** (`final_console`). Click the central console. Panel shows three fields (clean step numbers, authorization code, real sender badge) and a big **INITIATE SHUTDOWN** button. A wrong entry triggers a full-panel red lockout with a 3-minute countdown and the line "Check your evidence." Success starts the Round 2 finale.
+- [ ] **FE-118 R2-09 Failsafe Circuit** (`logic_circuit`). Click the failsafe panel. Panel draws the circuit from \[circuit\] as SVG: eight inputs on the left (A1, A0, B1, B0, C1, C0, D1, D0), standard NOT, AND and OR symbols, wires, and four lamps on the right. Inputs are toggle switches the player can flip to watch the lamps change. The panel note is printed at the bottom. One four-digit field. After 5 wrong tries the clue locks for 60 seconds with a visible countdown.
+- [ ] **FE-119 R2-10 Final Containment** (`final_console`). Click the central console. Panel shows three fields (clean step numbers, authorization code, real sender badge) and a big **INITIATE SHUTDOWN** button. A wrong entry triggers a full-panel red lockout with a 3-minute countdown and the line "Check your evidence." Success starts the Round 2 finale (3.14).
 
-### 3.5 Toolkit, leaderboard, error messages
+### 3.10 Hint ladder
 
-- [ ] **FE-150** Toolkit card: techniques and tool links from the content file.
-- [ ] **FE-151** Leaderboard screen: rank, team, clues solved, score ("?" when hidden), own team highlighted, "FINISHED" status, refresh every 5 s.
-- [ ] **FE-160** Error messages: `BAD_CREDENTIALS` "Team name or password is wrong." / `ACCOUNT_DISABLED` "This team is disabled. Contact the organisers." / `SESSION_LIMIT` "Your team is already signed in on other devices." / `SESSION_ENDED` (FE-06) / `ROUND_NOT_STARTED` "The round has not started yet." / `ROUND_CLOSED` "The round has ended." / `NOT_IN_ROUND` "Your team is not in this round." / `ROOM_LOCKED` and `CLUE_LOCKED` "This lead is not open yet." plus the hint / `WRONG` "Not quite. Check your evidence." / `TOO_FAST` "Wait a few seconds before trying again." / `LOCKED` "Locked. Check your evidence." / `HINT_NOT_READY` "This hint opens in mm:ss."
+- [ ] **FE-130** A **Hints** drawer in the clue panel shows three rungs per stage. Rung 1 is labelled "Nudge (free)" with a countdown until it unlocks. Rung 2 "Method (-1 point)" and rung 3 "Big help (-2 points)" are locked until the previous rung is used.
+- [ ] **FE-131** Using a rung asks for confirmation ("This costs 1 point. Reveal?") unless the penalty is 0. Revealed hints stay visible.
+- [ ] **FE-132** The penalty shown is read from the content, never hardcoded.
+- [ ] **FE-133** Hint requests use the same disabled-while-pending and same-request-id retry rules as submissions.
 
-### 3.6 Story screens and finales
+### 3.11 Submit behaviour
+
+- [ ] **FE-140** While a submission is in flight the button is disabled and shows a spinner. Enter is ignored during that time.
+- [ ] **FE-141** One `request_id` per click. If a request fails, retry with the same id. The player cannot trigger two submissions with one click or a double click.
+- [ ] **FE-142** `WRONG`: shake the panel, show "Not quite. Check your evidence.", keep the text in the fields. `TOO_FAST`: a countdown on the button ("Wait 3s"). `LOCKED`: full-panel lockout overlay with a live countdown that survives a page refresh because it comes from the server.
+- [ ] **FE-143** `ALREADY_SOLVED` (a teammate solved it): close the input, show "Your team already solved this", refresh state.
+- [ ] **FE-144** `STAGE_CORRECT`: move to the next stage with a short transition.
+- [ ] **FE-145** Client-side checks only for empty fields and length. Never compare with an answer in the browser.
+
+### 3.12 Toolkit card and leaderboard
+
+- [ ] **FE-150** Toolkit card (opens at the start of each round and from the top bar): a clean card listing each technique and its free tools as links, from the content file.
+- [ ] **FE-151** Leaderboard screen: rank, team name, clues solved, score (hidden when scores are hidden, shown as "?"), highlight for the player's own team. Refreshes every 5 seconds. Final results show "FINISHED" in the status column for teams that finished.
+
+### 3.13 Error messages (FE-160)
+
+| Code | Message shown |
+| --- | --- |
+| `BAD_CREDENTIALS` | Team name or password is wrong. |
+| `ACCOUNT_DISABLED` | This team is disabled. Contact the organisers. |
+| `SESSION_LIMIT` | Your team is already signed in on other devices. |
+| `SESSION_ENDED` | You were signed out. Sign in again; your progress is safe. |
+| `RATE_LIMITED` | Too many tries. Please wait a moment. |
+| `ROUND_NOT_STARTED` | The round has not started yet. |
+| `ROUND_PAUSED` | The round is paused by the organisers. |
+| `ROUND_CLOSED` | The round has ended. |
+| `NOT_IN_ROUND` | Your team is not in this round. |
+| `ROOM_LOCKED` / `CLUE_LOCKED` | This lead is not open yet. (plus the unlock hint) |
+| `WRONG` | Not quite. Check your evidence. |
+| `TOO_FAST` | Wait a few seconds before trying again. |
+| `LOCKED` | Locked. Check your evidence. (with countdown) |
+| `HINT_NOT_READY` | This hint opens in mm:ss. |
+| `SERVER_BUSY` | Please try again in a moment. |
+
+### 3.14 Story screens, finales and eliminated screen
 
 - [ ] **FE-170** **Round intro:** black screen, the `intro` text typed in VT323 at 40 characters per second, then a **BEGIN** button. Ambient audio fades in.
-- [ ] **FE-171** **Round 1 finale:** the house goes silent (all audio cuts for 1 second), the countdown freezes, the door opening animation plays (`door_open` image sequence), the three `victory_lines` appear one after another, the last line glitching. Then the leaderboard. Then, for qualified teams only, a glitch cut to the completed photograph with a doorway and a faint sixth shadow, and the `bridge_text` typed out as a CIPHER transmission with a **CONTINUE** button. **Not qualified:** after the leaderboard show the round's `eliminated_text` with a "Thank you for playing" card and a link to the final standings.
-- [ ] **FE-172** **Round 2 intro:** the `intro` text of Round 2 typed out, then the map with three rooms.
-- [ ] **FE-173** **Round 2 finale:** monitors flicker, the countdown freezes, the `victory_lines` appear, the `bridge_text` plays as the researcher's final recording (typed text with a static voice effect), then the final leaderboard with the winners highlighted. **Sting:** two seconds after the leaderboard, flash the `sting_template` full screen in red on black with the team name inserted for `{TEAM_NAME}`, glitching, then fade to black and show the final "Thank you" screen.
-- [ ] **FE-174** All cutscenes can be skipped with Esc after the first viewing, except the sting.
-- [ ] **FE-175** **Glitch effect** component (transitions and the sting): 300 ms RGB split plus horizontal slice jitter, triggered from code.
-- [ ] **FE-176** Screens after a round-end sign-out. Teams are logged out when a round ends, so cutscenes are shown on the next login, chosen by `phase`:
-  - `r1_ended_pending`: "Round 1 has ended. Results are being finalised." plus the Round 1 standings. Nothing about Round 2 yet.
-  - `qualified_waiting_r2`: Round 1 finale lines and standings, then the `bridge_text` cutscene (once, **CONTINUE**), then the lobby: "You are through to Round 2. Waiting for the organisers to start." When Round 2 goes live the poll moves them to the Round 2 intro, then the map.
-  - `eliminated`: `eliminated_text`, "Thank you for playing", Round 1 standings.
-  - `r2_live` for a qualified team: Round 2 intro (once), then `/play`. Teams that are still signed in when Round 2 goes live just see the intro and the map.
-  - `r2_ended`: Round 2 `victory_lines`, final standings, then the sting for Round 2 teams, then the thank-you screen. Everyone else sees the final standings.
-  - "Seen once" is remembered in `localStorage` per device; if it is lost the cutscene simply plays again.
+- [ ] **FE-171** **Round 1 finale:** the house goes silent (all audio cuts for 1 second), the countdown freezes, the door opening animation plays, the three `victory_lines` appear one after another, the last line glitching. Then the leaderboard. Then, for qualified teams only, a glitch cut to the completed photograph with a doorway and a faint sixth shadow, and the `bridge_text` typed out as a CIPHER transmission with a **CONTINUE** button.
+- [ ] **FE-172** **Not qualified:** after the leaderboard show the round's `eliminated_text` with a "Thank you for playing" card and a link back to the final standings.
+- [ ] **FE-173** **Round 2 intro:** the `intro` text of Round 2 typed out, then the map with three rooms.
+- [ ] **FE-174** **Round 2 finale:** monitors flicker, the countdown freezes, the `victory_lines` appear, the `bridge_text` plays as the researcher's final recording (typed text with a static voice effect), then the final leaderboard with the winners highlighted.
+- [ ] **FE-175** **Sting:** two seconds after the leaderboard, flash the `sting_template` full screen in red on black with the team name inserted for `{TEAM_NAME}`, glitching, then fade to black and show the final "Thank you" screen.
+- [ ] **FE-176** All cutscenes can be skipped with Esc after the first viewing, except the sting.
+- [ ] **FE-177** **Eliminated screen** (`/eliminated`): for any team without Round 2 state, shows the eliminated text and the final standings.
 
-## 4. Admin panel (`/admin`)
+### 3.15 Audio and effects (FE-190)
 
-Boring on purpose: flat dark slate `#0f1115`, panels `#171a21`, accent cyan `#38bdf8`, IBM Plex Sans. One page.
+- [ ] **FE-190** One ambient loop per room, crossfaded. Random sound effects per room as listed in the content. A tension layer that speeds up in the last 5 minutes of the round.
+- [ ] **FE-191** UI sounds: hotspot hover tick, panel open, correct chime, wrong buzz, room unlock, fragment slide. All short and mutable.
+- [ ] **FE-192** Never autoplay audio before the first click. Provide a visible mute button.
 
-- [ ] **ADM-01** `/admin/login`: username and password against the three organiser rows in `admins`. A cookie session in `admin_sessions`. Sign out button. No lockouts, no roles.
-- [ ] **ADM-02** Round controls for Round 1 and Round 2: status badge, **Start**, **End**, hide-scores toggle, elapsed time and the display-only countdown. Buttons only enabled when valid (Start when pending, End when live, Round 2 Start after qualification). **End** asks for confirmation ("This signs out every team in Round N. Progress and scores are kept.") and afterwards shows how many teams and sessions were ended. The organiser stays signed in.
-- [ ] **ADM-03** Teams table: name, active session count, clues solved, score, enabled flag. Row actions: **Force logout** (ends all sessions of that team), **Disable / Enable**.
-- [ ] **ADM-04** Leaderboard per round with exact scores and finish times (millisecond), rank order as in BE-90.
-- [ ] **ADM-05** Qualification panel (enabled once Round 1 has ended and Round 2 has not started): a number input **"Teams going to Round 2"** (integer, min 1, max = active teams), a **Preview** button listing rank, team, clues solved, score and finish time for those N plus a "cutoff" line, and a **Qualify** button with a confirmation ("Only these N teams get Round 2 access"). After qualifying it shows the qualified list and still allows re-running until Round 2 starts.
+## 4. Admin panel
 
-Admin API: `POST /admin/auth/login`, `POST /admin/auth/logout`, `GET /admin/state` (rounds + teams), `POST /admin/rounds/{n}/start`, `/end`, `/hide-scores`, `POST /admin/teams/{id}/force-logout`, `/disable`, `/enable`, `GET /admin/leaderboard?round=n`, `GET /admin/qualify/preview?top=N`, `POST /admin/qualify?top=N`.
+Separate area at `/admin`. Different look from the event: flat dark slate `#0f1115`, panels `#171a21`, accent cyan `#38bdf8`, text `#e5e7eb`, font IBM Plex Sans. No horror styling, because it must be fast to read under pressure.
 
-Done with SQL instead of UI: create teams and organisers, reset passwords, delete teams, fix scores, reset a clue, read submissions.
+### 4.1 Admin login and roles
+
+- [ ] **ADM-01** Admin login page (`/admin/login`): fields username and password, button "SIGN IN", error text under the form, Enter submits, button disabled while pending. After 5 failed attempts the account is locked for 10 minutes with a visible countdown.
+- [ ] **ADM-02** Admin sessions last 8 hours. A "Sign out" button sits in the top bar. An ended session returns to the admin login with a banner.
+- [ ] **ADM-03** Roles: **superadmin** (everything, including managing admins), **operator** (run the event: rounds, teams, announcements, adjustments), **viewer** (read-only dashboards and leaderboards). Buttons the role cannot use are hidden and the server rejects the call anyway.
+- [ ] **ADM-04** The first superadmin is created by a setup script, never through the web.
+- [ ] **ADM-05** Admin API is separate from the event API and is protected by the admin session only.
+
+### 4.2 Layout
+
+- [ ] **ADM-10** Left navigation: Dashboard, Teams, Rounds, Leaderboard, Submissions, Clue analytics, Announcements, Content check, Audit log, Admins (superadmin only).
+- [ ] **ADM-11** Top bar: live clock, current round with a status badge (pending, live, paused, ended), time remaining, the loaded content label and fingerprint (first 8 characters), a red banner if the content fingerprint changed during a live round, and the signed-in admin with a Sign out button.
+
+### 4.3 Pages
+
+- [ ] **ADM-20 Dashboard.** Big round card (status, countdown, buttons Start, Pause, Resume, End, Extend). Tiles: teams signed in now, teams finished, submissions in the last minute, wrong-answer rate. A heat grid with teams as rows and the 10 clues as columns (grey locked, white open, green solved, amber stuck beyond twice the par time). A live event feed (logins, solves, finishes, lockouts). A quick "Post announcement" box.
+- [ ] **ADM-21 Teams.** Searchable list with status chips (active, disabled, disqualified, signed in). Actions: create teams in bulk (paste lines of `team name, optional password`; blank passwords are generated), export credentials as CSV (shown once), reset password, disable or enable, disqualify with a reason, force logout, delete a team that has no progress.
+- [ ] **ADM-22 Team detail.** Header with status and active sessions (device label, last seen, Revoke). Per-clue table (state, stage, wrong attempts, hints used, score, solve time). Submissions log for the team. Forms: score adjustment (amount and a required reason), reset a single clue, and notes.
+- [ ] **ADM-23 Rounds.** Controls for each round: set duration, start, pause, resume, end, extend by minutes, toggle hide scores. Qualification panel: a number input for N, a **Preview** button listing top N ranked teams (by solved clues, score, time), and a **Qualify** button that qualifies top N teams to Round 2 without requiring all clues solved.
+- [ ] **ADM-24 Leaderboard.** Exact scores and finish times to the millisecond for each round, with the tie-break shown. Export as CSV. Never hidden for admins.
+- [ ] **ADM-25 Submissions.** Live table with filters (team, clue, result, time range): time, team, clue, stage, result, points, raw input. Auto-refresh every 3 seconds with a pause toggle.
+- [ ] **ADM-26 Clue analytics.** Per clue: teams solved, median solve time against par, wrong attempts, hints used by level, teams currently stuck. Sort by hardest.
+- [ ] **ADM-28 Content check.** Shows the loaded file name, label, fingerprint, counts per round, room and clue, validation status, asset folder name and a check of every referenced asset file (found or missing). It never shows answers or hashes. A reload button is disabled while any round is live.
+- [ ] **ADM-29 Audit log.** Every admin action with time, admin, action, target and details.
+- [ ] **ADM-30 Admins** (superadmin). Create, disable, change role, reset password.
+
+### 4.4 Admin API (names to implement)
+
+| Area | Endpoints |
+| --- | --- |
+| Auth | `POST /admin/auth/login`, `POST /admin/auth/logout`, `GET /admin/auth/me` |
+| Teams | `GET /admin/teams`, `POST /admin/teams/bulk`, `GET /admin/teams/{id}`, `POST /admin/teams/{id}/reset-password`, `POST /admin/teams/{id}/disable`, `POST /admin/teams/{id}/enable`, `POST /admin/teams/{id}/disqualify`, `POST /admin/teams/{id}/force-logout`, `POST /admin/teams/{id}/adjust`, `POST /admin/teams/{id}/reset-clue`, `GET /admin/teams/{id}/submissions` |
+| Rounds | `POST /admin/rounds/{n}/start`, `/pause`, `/resume`, `/end`, `/extend`, `/hide-scores`, `GET /admin/rounds/1/qualify/preview?top=N`, `POST /admin/rounds/1/qualify?top=N` |
+| Data | `GET /admin/leaderboard?round=n`, `GET /admin/submissions`, `GET /admin/analytics/clues`, `GET /admin/events/stream` |
+| Content | `GET /admin/content/status`, `POST /admin/content/reload` |
+| Other | `GET/POST/DELETE /admin/announcements`, `GET /admin/audit`, `GET/POST /admin/admins` |
 
 ## 5. Assets to produce
 
-Unchanged. All files go in `meta.assets_dir`; each clue's brief is in the content file (`clues[].assets[].brief`).
+All files go in the asset folder named by `meta.assets_dir` in the content file. File names must match the content file exactly. Each clue's asset brief is inside the content file under `clues[].assets[].brief`.
 
-- [ ] **AST-01** Six room backgrounds, 1920 x 1080 PNG (`bg_bedroom.png`, `bg_study.png`, `bg_basement.png`, `bg_records.png`, `bg_control.png`, `bg_vault.png`).
-- [ ] **AST-02** Object art (transparent PNG or SVG) for every object in the rooms (39 in total), named `obj_<object_id>.png` (for example `obj_diary_bed.png`), sized to the object's `w` x `h` percentage of the stage. Missing ones show as placeholders (FE-64), so this can be delivered gradually.
-- [ ] **AST-00** `scripts/make_placeholders`: reads the content file and generates a flat-colour placeholder for every referenced asset that does not exist yet (backgrounds, fragments, puzzle images, short silent or tone audio files). Used for dev and for `assets_test`, so the asset check and the full game run before any real art exists. It never overwrites a real file.
-- [ ] **AST-03** Ambient loops and effects per room, UI sounds (hover, open, correct, wrong, unlock, fragment, sting).
-- [ ] **AST-04** Round 1 puzzle files: `diary_open.png`, `music_box.mp3` (optional), `poster_dark.png`, `voice_memo.mp3`, `rec_a.wav`, `rec_b.wav` (metadata embedded), `final_note.png`, `photo_full.png`.
-- [ ] **AST-05** `frag_01.png` to `frag_10.png` cut from `photo_full.png` (2 x 5, torn edges) matching each fragment's `correct_slot`. Verify by assembling.
-- [ ] **AST-06** Round 2 puzzle files: `paper_scan.png`, `portrait_round1.png` (comment metadata embedded), `vm_a.wav`, `vm_b.wav` (spectrogram digits, check in Audacity).
-- [ ] **AST-07** Story screens: `bridge_photo.png`, door-open image sequence, cutscene backgrounds, icons (jack-o'-lantern, padlock, tick, fragment frame).
+- [ ] **AST-01** Six room backgrounds, 1920 x 1080 PNG, with an empty area where each hotspot object sits so the objects can be drawn separately: `bg_bedroom.png`, `bg_study.png`, `bg_basement.png`, `bg_records.png`, `bg_control.png`, `bg_vault.png`.
+- [ ] **AST-02** Object art (transparent PNG or SVG) for every clue object and decor object listed in section 3.7, sized to the percentages in the content file.
+- [ ] **AST-03** Ambient loops (60 to 120 s, seamless) and effects for each room: `amb_bedroom.mp3`, `music_box_faint.mp3`, `clock_tick.mp3`, `amb_study.mp3`, `crt_hum.mp3`, `whisper_far.mp3`, `amb_basement.mp3`, `server_hum.mp3`, `pipe_drip.mp3`, `amb_records.mp3`, `fluorescent_buzz.mp3`, `paper_shuffle.mp3`, `amb_control.mp3`, `static_burst.mp3`, `relay_click.mp3`, `amb_vault.mp3`, `core_pulse.mp3`, `steel_creak.mp3`.
+- [ ] **AST-04** UI sounds: hover tick, panel open, correct chime, wrong buzz, room unlock, fragment slide, success sting.
+- [ ] **AST-05** Round 1 puzzle files: `diary_open.png`, `music_box.mp3` (optional fallback), `poster_dark.png`, `voice_memo.mp3`, `rec_a.wav` and `rec_b.wav` (with the recording-date metadata embedded as in the brief), `final_note.png`, `photo_full.png`.
+- [ ] **AST-06** The ten photograph pieces `frag_01.png` to `frag_10.png`, cut from `photo_full.png` as a 2 x 5 grid with torn edges, matching each fragment's `correct_slot` in the content file. Verify by placing them in order and comparing with the full photo.
+- [ ] **AST-07** Round 2 puzzle files: `paper_scan.png`, `portrait_round1.png` (with the comment metadata embedded as in the brief), `vm_a.wav` and `vm_b.wav` (digits drawn in the spectrogram as in the brief, checked in Audacity).
+- [ ] **AST-08** Story screens: `bridge_photo.png` (the portrait with a doorway behind it and a faint sixth shadow), `door_open.png` sequence for the Round 1 finale, and cutscene backgrounds.
+- [ ] **AST-09** Icons: jack-o'-lantern line art for the login page, padlock, tick, fragment frame, tool icons for the Inspector.
 
-## 6. Tests (focused: enough to trust the game)
+## 6. Tests
 
-Backend: pytest. Frontend: Vitest. One Playwright playthrough per round. Run against `content.test.json`.
+Backend tests use pytest. Frontend tests use Vitest with React Testing Library. End-to-end tests use Playwright. Test function names below are the exact names to create.
 
-### 6.1 Backend (`tests/backend/`)
+### 6.1 Backend tests (`tests/backend/`)
 
-- [ ] **test\_content.py**: boots with a valid file; refuses to boot on missing env var, missing file, invalid JSON; validation catches wrong clue count, unknown object id, unknown `requires_all` id, dependency cycle, missing answer; public projection strips `answer`, `solution`, `feeds`, unused hints and unsolved `reveal`; `test_every_asset_file_exists`; every object lies inside the stage (`x + w <= 100`, `y + h <= 100`); two **clue** objects never overlap by more than 40 percent (a clue object sitting on a decor object is intended); every clue object's `clue_id` exists and every clue has exactly one object.
-- [ ] **test\_auth.py**: login success sets cookie; `SESSION_ENDED` carries the right `reason`; case-insensitive team name; wrong password and unknown team give the same error; disabled team rejected; session limit blocks login; logout ends only the current session; logout-all needs valid credentials, ends every session, is idempotent, keeps progress; ended session returns `SESSION_ENDED`; login allowed before round start.
-- [ ] **test\_answers.py**: normalisation (`upper`, `alnum`, `digits`); multi-field order matters; correct and wrong answers; `arrange` needs 10 distinct owned fragments in the right order; `choice_code` needs both parts right.
-- [ ] **test\_submit.py**: correct awards points; wrong returns `WRONG` with no detail; stage progression and wrong stage number rejected; 3 s cooldown; clue lockout persists across requests (R2-09 after 5 wrong, R2-10 for 3 minutes); locked clue rejected; already solved returns original points; submit rejected before start and after end; bad input (field count, length, control characters); submission rows recorded; answers never in logs.
-- [ ] **test\_concurrency.py**: 20 parallel correct submits score once; two teams are independent; parallel hint requests charge once; unlock engine creates no duplicates.
-- [ ] **test\_scoring.py**: full speed bonus within par, linear decay, zero at double par; hint penalties (0, 1, 2); 3 free wrong then 0.5 each; never below `min_points`; rounding; time measured from `unlocked_at`.
-- [ ] **test\_unlock.py**: round start opens `at_start` rooms and no-requirement clues; Study opens after Bedroom, Basement after Study; R1-09 after R1-05; R1-10 after R1-05/08/09; R2 chains (R2-03 after R2-02, R2-05 after R2-01, R2-06 after R2-05, R2-07 after R2-03 and R2-04, Vault after R2-07, R2-10 after R2-08 and R2-09).
-- [ ] **test\_hints.py**: level order enforced; level 1 not ready before 300 s; repeat hint no extra cost; hint text absent from state before use.
-- [ ] **test\_rounds.py**: start creates state for all eligible teams at once; Round 2 cannot start before qualify; nothing ends a round automatically.
-- [ ] **test\_round\_end.py**:
-  - End sets `ended` and ends all active sessions of that round's teams in one transaction; a forced failure in step 2 leaves the round `live` (rollback).
-  - A team with 2 sessions has both ended with `ended_reason='round_ended'`; the next request on either returns `SESSION_ENDED` with `reason=round_ended`.
-  - Round 1 End leaves Round 2-only sessions alone only if such sessions exist (none before qualify); Round 2 End does not touch teams that are not in Round 2.
-  - `team_rounds`, `team_clues`, `submissions`, `hint_usage` and `finished_at` are identical before and after End (snapshot compare); leaderboard and qualification preview return the same result.
-  - `admin_sessions` untouched: the organiser can still call admin endpoints after End.
-  - End twice is a no-op with the same response shape; End on a pending round changes nothing.
-  - After End, login works again; the team sees the lobby / standings / eliminated state, and submit returns `ROUND_CLOSED`.
-  - Race: 50 parallel submits from different teams while End runs. Every response is either `CORRECT`/`WRONG`/etc. from before the End commit, or `SESSION_ENDED`/`ROUND_CLOSED` after it. No `submissions` row or `team_clues.solved_at` has a timestamp later than `rounds.ended_at`.
-  - Same race for hint requests.
-- [ ] **test\_leaderboard.py**: rank order (finished, clues, score, last solve, team id); wrong attempts don't move `last_solved_at`; hidden scores omitted for public; disabled team excluded.
-- [ ] **test\_phase.py**: `/api/state` returns the right `phase` for a team in each of the seven situations, including after qualify is re-run with a different N.
-- [ ] **test\_qualification.py**: preview returns exactly N teams in rank order and writes nothing; qualify creates Round 2 rows for exactly those N and no one else; N larger than the team count qualifies everyone, N below 1 or not an integer is `BAD_INPUT`; tie at the cutoff still gives exactly N (team-id tie-break); disabled teams are never chosen; unfinished teams can qualify when N is larger than the finishers; qualify twice with the same N changes nothing; re-running with a smaller or larger N replaces the set; rejected while Round 1 is live or after Round 2 started; Round 2 start only creates clues for qualified teams; non-qualified team gets `NOT_IN_ROUND` on state, clue, submit and asset calls; Round 1 scores, progress and rank are identical before and after qualify.
-- [ ] **test\_admin.py**: admin routes need an admin session; start/end work; force logout revokes sessions with `ended_reason='forced'`; disable blocks login and ends sessions.
-- [ ] **test\_no\_leaks.py**: no endpoint returns `answer`, and `/api/state` contains none.
+#### test\_content\_loader.py
 
-### 6.2 Frontend (`frontend/src/__tests__/`)
+- [ ] `test_boots_with_valid_content_file`
+- [ ] `test_refuses_to_boot_when_env_var_missing`
+- [ ] `test_refuses_to_boot_when_file_missing`
+- [ ] `test_refuses_to_boot_on_invalid_json`
+- [ ] `test_validation_requires_ten_clues_per_round`
+- [ ] `test_validation_rejects_unknown_object_id`
+- [ ] `test_validation_rejects_unknown_requires_all_id`
+- [ ] `test_validation_rejects_dependency_cycle`
+- [ ] `test_validation_rejects_bad_answer_hash_length`
+- [ ] `test_validation_requires_three_hint_levels_per_stage`
+- [ ] `test_validation_requires_fragment_award_clue_exists`
+- [ ] `test_public_projection_strips_answer_hash`
+- [ ] `test_public_projection_strips_answer_plain_and_solution`
+- [ ] `test_public_projection_hides_unused_hints`
+- [ ] `test_public_projection_hides_reveal_until_stage_solved`
+- [ ] `test_room_clue_counts_computed_from_content`
+- [ ] `test_switching_content_file_env_var_changes_loaded_content`
+- [ ] `test_assets_dir_comes_from_content_meta`
+- [ ] `test_reload_blocked_while_round_live`
 
-- [ ] **SessionEnded**: a `SESSION_ENDED` response from poll or submit goes to `/login`, stops polling, shows the round-ended banner for `reason=round_ended`, and shows no wrong-answer message.
-- [ ] **LoginPage**: sign in and logout forms; button disabled while pending; generic error; session limit shows the logout-everywhere button; logout success returns to sign in with the name kept.
-- [ ] **RoomScene**: objects positioned from percentages; decor drawn under clue objects; decor not clickable; open, solved and locked hotspot states; gradient fallback; placeholder box with label when `obj_<id>` art is missing, art shown when present.
-- [ ] **MapHub**: Round 1 and Round 2 maps render three room cards each with counts from state, padlock and hint when locked, COMPLETE badge, locked-room click shows the toast.
-- [ ] **CluePanel**: renders prompt and fields from content; submit disabled while pending; wrong keeps input; `TOO_FAST` and `LOCKED` countdowns; stage correct moves on; review mode read-only; Copy works.
-- [ ] **ArrangeBoard**: place, swap, reset, submit sends 10 ids in slot order.
-- [ ] **HintDrawer**: rung 1 countdown; paid rung asks for confirmation; rung 3 locked until rung 2.
-- [ ] **Leaderboard / Lobby / Cutscenes**: ranks in order, own team highlighted, scores hidden when flagged; lobby moves on when live; bridge only for qualified teams; sting inserts the team name.
+#### test\_answers.py
 
-### 6.3 End to end (`e2e/`)
+- [ ] `test_normalize_upper_collapses_spaces`
+- [ ] `test_normalize_alnum_strips_punctuation`
+- [ ] `test_normalize_digits_keeps_only_digits`
+- [ ] `test_hash_matches_known_vector`
+- [ ] `test_multi_field_join_uses_pipe`
+- [ ] `test_comparison_uses_constant_time_compare`
+- [ ] `test_wrong_field_order_fails`
+- [ ] `test_every_stage_answer_plain_matches_hash_when_present`
 
+#### test\_auth.py
+
+- [ ] `test_login_success_sets_cookie`
+- [ ] `test_login_is_case_insensitive_on_team_name`
+- [ ] `test_login_wrong_password_generic_error`
+- [ ] `test_login_unknown_team_same_error_as_wrong_password`
+- [ ] `test_login_disabled_team_rejected`
+- [ ] `test_login_lockout_after_eight_failures`
+- [ ] `test_login_lockout_expires`
+- [ ] `test_ip_lockout_after_twenty_failures`
+- [ ] `test_session_limit_blocks_login_over_limit`
+- [ ] `test_session_limit_response_lists_devices`
+- [ ] `test_logout_ends_only_current_session`
+- [ ] `test_logout_all_requires_valid_credentials`
+- [ ] `test_logout_all_ends_every_session`
+- [ ] `test_logout_all_is_idempotent_with_zero_sessions`
+- [ ] `test_logout_all_keeps_progress_and_scores`
+- [ ] `test_logout_all_does_not_change_round_timer`
+- [ ] `test_logout_all_uses_same_rate_limit_as_login`
+- [ ] `test_login_succeeds_after_logout_all`
+- [ ] `test_revoked_session_returns_session_ended`
+- [ ] `test_expired_session_returns_session_ended`
+- [ ] `test_session_sliding_expiry_extends`
+- [ ] `test_login_allowed_before_round_start`
+- [ ] `test_me_returns_team_and_session_count`
+- [ ] `test_login_and_logout_events_recorded`
+
+#### test\_state.py
+
+- [ ] `test_state_requires_auth`
+- [ ] `test_state_lists_rooms_with_counts`
+- [ ] `test_state_locked_room_has_unlock_hint`
+- [ ] `test_state_hides_scores_when_hide_scores_on`
+- [ ] `test_state_etag_returns_304_when_unchanged`
+- [ ] `test_state_includes_lockout_end_times`
+- [ ] `test_state_includes_fragments_collected`
+- [ ] `test_state_for_team_not_in_round_returns_not_in_round`
+- [ ] `test_time_endpoint_returns_milliseconds`
+- [ ] `test_clue_endpoint_locked_returns_403`
+- [ ] `test_clue_endpoint_after_solve_includes_reveal`
+
+#### test\_unlock\_engine.py
+
+- [ ] `test_round_start_opens_at_start_rooms`
+- [ ] `test_round_start_unlocks_clues_without_requirements`
+- [ ] `test_round1_study_opens_when_bedroom_complete`
+- [ ] `test_round1_basement_opens_when_study_complete`
+- [ ] `test_r1_09_unlocks_after_r1_05`
+- [ ] `test_r1_10_unlocks_after_r1_05_r1_08_r1_09`
+- [ ] `test_r2_03_unlocks_after_r2_02`
+- [ ] `test_r2_05_unlocks_after_r2_01`
+- [ ] `test_r2_06_unlocks_after_r2_05`
+- [ ] `test_r2_07_unlocks_after_r2_03_and_r2_04`
+- [ ] `test_vault_opens_when_r2_07_solved`
+- [ ] `test_r2_10_unlocks_after_r2_08_and_r2_09`
+- [ ] `test_unlock_engine_is_idempotent`
+- [ ] `test_unlocked_at_equals_solve_time_of_prerequisite`
+- [ ] `test_room_marked_complete_when_all_clues_solved`
+
+#### test\_submit.py
+
+- [ ] `test_correct_answer_awards_points`
+- [ ] `test_wrong_answer_returns_wrong_without_detail`
+- [ ] `test_wrong_answer_never_reveals_which_field_is_wrong`
+- [ ] `test_answer_normalization_applied`
+- [ ] `test_multi_field_answer_correct`
+- [ ] `test_multi_field_partial_wrong_is_wrong`
+- [ ] `test_stage_correct_advances_stage`
+- [ ] `test_wrong_stage_number_rejected`
+- [ ] `test_arrange_requires_ten_distinct_fragments`
+- [ ] `test_arrange_rejects_fragments_not_owned`
+- [ ] `test_arrange_correct_order_accepted`
+- [ ] `test_choice_code_correct_pair_accepted`
+- [ ] `test_choice_correct_code_wrong_rejected`
+- [ ] `test_cooldown_after_wrong_returns_too_fast`
+- [ ] `test_cooldown_expires_after_three_seconds`
+- [ ] `test_final_clue_lockout_three_minutes`
+- [ ] `test_lockout_persists_across_requests`
+- [ ] `test_r2_09_locks_after_five_wrong`
+- [ ] `test_locked_clue_rejected`
+- [ ] `test_already_solved_returns_original_points`
+- [ ] `test_submit_before_round_start_rejected`
+- [ ] `test_submit_while_paused_rejected`
+- [ ] `test_submit_after_round_end_rejected`
+- [ ] `test_submit_just_before_end_accepted`
+- [ ] `test_per_team_rate_cap_thirty_per_minute`
+- [ ] `test_bad_input_wrong_field_count`
+- [ ] `test_bad_input_field_too_long`
+- [ ] `test_bad_input_control_characters`
+- [ ] `test_submission_record_has_raw_fields_and_result`
+- [ ] `test_answers_never_written_to_logs`
+
+#### test\_concurrency.py
+
+- [ ] `test_twenty_parallel_correct_submits_score_once`
+- [ ] `test_parallel_same_request_id_returns_same_response`
+- [ ] `test_duplicate_request_id_no_second_scoring`
+- [ ] `test_parallel_different_clues_both_succeed`
+- [ ] `test_parallel_submits_from_two_teams_are_independent`
+- [ ] `test_parallel_wrong_submits_apply_cooldown_once`
+- [ ] `test_parallel_hint_requests_charge_once`
+- [ ] `test_parallel_unlock_engine_creates_no_duplicates`
+- [ ] `test_solve_timestamp_uses_processing_time`
+
+#### test\_scoring.py
+
+- [ ] `test_full_speed_bonus_within_par`
+- [ ] `test_speed_bonus_decays_linearly`
+- [ ] `test_speed_bonus_zero_at_double_par`
+- [ ] `test_hint_level_two_costs_one_point`
+- [ ] `test_hint_level_three_costs_two_points`
+- [ ] `test_three_free_wrong_attempts`
+- [ ] `test_fourth_wrong_attempt_costs_half_point`
+- [ ] `test_score_never_below_min_points`
+- [ ] `test_score_rounded_to_two_decimals`
+- [ ] `test_time_measured_from_unlocked_at`
+- [ ] `test_round_total_is_sum_of_clue_scores`
+- [ ] `test_admin_adjustment_changes_total`
+- [ ] `test_recompute_totals_matches_incremental`
+
+#### test\_hints.py
+
+- [ ] `test_level_two_requires_level_one`
+- [ ] `test_level_one_not_ready_before_five_minutes`
+- [ ] `test_level_one_free_after_five_minutes`
+- [ ] `test_repeat_hint_returns_same_text_no_extra_cost`
+- [ ] `test_hint_text_not_in_state_before_use`
+- [ ] `test_hint_per_stage_for_multi_stage_clue`
+- [ ] `test_hint_idempotent_by_request_id`
+- [ ] `test_hint_rejected_when_clue_locked`
+
+#### test\_rounds.py
+
+- [ ] `test_start_sets_window_from_default_duration`
+- [ ] `test_start_overrides_duration`
+- [ ] `test_start_creates_state_for_all_eligible_teams_same_instant`
+- [ ] `test_pause_rejects_submissions`
+- [ ] `test_resume_extends_ends_at_by_paused_time`
+- [ ] `test_extend_adds_minutes`
+- [ ] `test_end_closes_round`
+- [ ] `test_round_two_cannot_start_before_qualify`
+- [ ] `test_hide_scores_switches_on_in_last_ten_minutes`
+- [ ] `test_scheduler_marks_round_ended`
+- [ ] `test_content_fingerprint_recorded_on_start`
+- [ ] `test_fingerprint_mismatch_blocks_submissions`
+
+#### test\_leaderboard.py
+
+- [ ] `test_rank_by_clues_then_score_then_time`
+- [ ] `test_equal_score_earlier_last_solve_wins`
+- [ ] `test_equal_everything_falls_back_to_team_id`
+- [ ] `test_finished_teams_rank_above_unfinished`
+- [ ] `test_wrong_attempts_do_not_change_last_solved_at`
+- [ ] `test_hidden_scores_omitted_for_public`
+- [ ] `test_admin_leaderboard_has_exact_scores`
+- [ ] `test_leaderboard_cache_three_seconds`
+- [ ] `test_own_rank_included`
+- [ ] `test_disqualified_team_excluded`
+
+#### test\_qualification.py
+
+- [ ] `test_preview_lists_top_n_finishers`
+- [ ] `test_only_finished_teams_qualify`
+- [ ] `test_unfinished_high_score_does_not_qualify`
+- [ ] `test_qualify_creates_round_two_state`
+- [ ] `test_qualify_twice_creates_no_duplicates`
+- [ ] `test_non_qualified_team_gets_not_in_round`
+- [ ] `test_cutoff_tie_broken_by_finish_time`
+- [ ] `test_disqualified_excluded_from_qualification`
+
+#### test\_assets.py
+
+- [ ] `test_asset_served_when_clue_unlocked`
+- [ ] `test_asset_blocked_when_clue_locked`
+- [ ] `test_path_traversal_blocked`
+- [ ] `test_range_request_for_audio`
+- [ ] `test_asset_content_type_correct`
+- [ ] `test_asset_cache_control_private`
+- [ ] `test_unknown_asset_returns_404`
+
+#### test\_admin\_api.py
+
+- [ ] `test_admin_login_success`
+- [ ] `test_admin_login_lockout`
+- [ ] `test_admin_routes_require_auth`
+- [ ] `test_viewer_cannot_start_round`
+- [ ] `test_operator_can_start_round`
+- [ ] `test_only_superadmin_manages_admins`
+- [ ] `test_bulk_create_teams_generates_passwords`
+- [ ] `test_bulk_create_rejects_duplicate_names`
+- [ ] `test_reset_team_password`
+- [ ] `test_disable_team_blocks_login_and_ends_sessions`
+- [ ] `test_force_logout_revokes_sessions`
+- [ ] `test_score_adjustment_requires_reason`
+- [ ] `test_reset_clue_clears_progress_for_that_clue`
+- [ ] `test_every_admin_action_is_in_audit_log`
+- [ ] `test_announcement_create_and_expire`
+- [ ] `test_content_status_endpoint_hides_answers`
+
+#### test\_security.py
+
+- [ ] `test_cors_blocks_other_origin`
+- [ ] `test_security_headers_present`
+- [ ] `test_body_size_limit`
+- [ ] `test_error_format_is_consistent`
+- [ ] `test_health_exposes_no_secrets`
+- [ ] `test_state_never_contains_answer_hash`
+- [ ] `test_no_endpoint_returns_answer_plain`
+
+#### test\_content\_rules.py (runs against whichever content file is loaded)
+
+- [ ] `test_content_file_conforms_to_schema`
+- [ ] `test_every_hotspot_inside_stage_bounds`
+- [ ] `test_hotspots_do_not_overlap_more_than_forty_percent`
+- [ ] `test_every_unlock_chain_reaches_the_final_clue`
+- [ ] `test_feeds_references_exist`
+- [ ] `test_each_room_has_expected_clue_count`
+- [ ] `test_every_asset_file_exists_in_assets_dir`
+- [ ] `test_sum_of_par_times_fits_round_duration`
+- [ ] `test_independent_solver_reproduces_every_answer`
+
+### 6.2 Frontend tests (`frontend/src/__tests__/`)
+
+#### LoginPage.test.tsx
+
+- [ ] `renders_sign_in_and_logout_options`
+- [ ] `sign_in_disables_button_while_pending`
+- [ ] `sign_in_submits_on_enter`
+- [ ] `sign_in_shows_generic_error_on_bad_credentials`
+- [ ] `sign_in_shows_lockout_countdown`
+- [ ] `sign_in_shows_disabled_team_message`
+- [ ] `session_limit_shows_logout_everywhere_button`
+- [ ] `session_limit_switch_prefills_team_name`
+- [ ] `logout_requires_team_name_and_password`
+- [ ] `logout_success_shows_sessions_ended_and_returns_to_sign_in`
+- [ ] `logout_keeps_team_name_and_clears_password`
+- [ ] `logout_error_shows_generic_message`
+- [ ] `redirects_to_play_when_already_signed_in`
+- [ ] `password_toggle_shows_and_hides`
+
+#### AppShell.test.tsx
+
+- [ ] `redirects_unknown_route`
+- [ ] `session_ended_returns_to_login_with_banner`
+- [ ] `polling_pauses_when_tab_hidden`
+- [ ] `polling_sends_etag`
+- [ ] `countdown_uses_server_offset`
+- [ ] `topbar_hides_score_when_scores_hidden`
+- [ ] `topbar_timer_turns_amber_under_ten_minutes`
+- [ ] `topbar_timer_pulses_under_five_minutes`
+- [ ] `mute_state_persists_during_session`
+- [ ] `sign_out_asks_for_confirmation`
+
+#### MapHub.test.tsx
+
+- [ ] `shows_room_counts_from_state`
+- [ ] `locked_room_shows_padlock_total_and_hint`
+- [ ] `clicking_locked_room_shows_toast`
+- [ ] `complete_room_shows_badge`
+- [ ] `round1_map_has_three_room_cards`
+- [ ] `round2_map_has_three_room_cards`
+- [ ] `unlock_animation_plays_when_room_opens`
+
+#### RoomScene.test.tsx
+
+- [ ] `positions_objects_from_percentages`
+- [ ] `decor_objects_are_not_clickable`
+- [ ] `open_hotspot_is_button_with_label`
+- [ ] `solved_hotspot_is_dimmed_with_tick`
+- [ ] `locked_hotspot_shows_padlock_tooltip`
+- [ ] `header_shows_clues_solved_count`
+- [ ] `header_shows_complete_badge`
+- [ ] `tab_cycles_hotspots_in_seq_order`
+- [ ] `uses_gradient_when_background_missing`
+- [ ] `reduced_motion_disables_flicker`
+- [ ] `debug_overlay_draws_rectangles`
+- [ ] `click_opens_clue_panel`
+- [ ] `esc_closes_clue_panel`
+
+#### CluePanel.test.tsx
+
+- [ ] `renders_prompt_and_fields_from_content`
+- [ ] `submit_disabled_while_pending`
+- [ ] `double_click_sends_one_request`
+- [ ] `retry_reuses_same_request_id`
+- [ ] `wrong_shakes_and_keeps_input`
+- [ ] `too_fast_shows_button_countdown`
+- [ ] `locked_shows_overlay_with_countdown`
+- [ ] `already_solved_closes_input`
+- [ ] `stage_correct_moves_to_next_stage`
+- [ ] `correct_shows_success_overlay_and_story`
+- [ ] `fragment_animation_plays_on_award`
+- [ ] `review_mode_is_read_only`
+- [ ] `copy_button_copies_text`
+
+#### Clue screens (one file per kind, `clues/*.test.tsx`)
+
+- [ ] `diary_shows_two_pages_and_cipher_page`
+- [ ] `music_box_play_starts_synth_with_morse`
+- [ ] `music_box_shows_no_dots_or_dashes`
+- [ ] `poster_invert_toggles_filter`
+- [ ] `poster_contrast_slider_stays_in_range`
+- [ ] `poster_reset_restores_image`
+- [ ] `tablet_turn_over_shows_sticky_note`
+- [ ] `tablet_unlock_shows_voice_memo`
+- [ ] `email_renders_encoded_block_copyable`
+- [ ] `recordings_properties_dialog_shows_metadata`
+- [ ] `hex_log_renders_hex_lines_with_offsets`
+- [ ] `log_search_highlights_matches`
+- [ ] `log_search_shows_match_count`
+- [ ] `vigenere_note_shows_margin_note`
+- [ ] `arrange_board_drag_places_fragment`
+- [ ] `arrange_board_click_to_place_works`
+- [ ] `arrange_board_swaps_on_filled_slot`
+- [ ] `arrange_board_reset_clears_slots`
+- [ ] `arrange_board_submit_sends_ten_ids_in_slot_order`
+- [ ] `final_terminal_option_select_highlights`
+- [ ] `final_terminal_sends_choice_and_code`
+- [ ] `redacted_report_text_under_bars_is_selectable`
+- [ ] `redacted_report_has_two_tabs`
+- [ ] `microfilm_stage_one_then_stage_two`
+- [ ] `microfilm_properties_panel_lists_hex`
+- [ ] `epoch_cards_are_draggable`
+- [ ] `epoch_cards_are_not_auto_sorted`
+- [ ] `transmission_archive_opens_headers`
+- [ ] `spectrogram_clue_has_download_buttons`
+- [ ] `spectrogram_clue_has_four_digit_boxes`
+- [ ] `manual_diff_shows_two_panes_without_diff_highlight`
+- [ ] `staff_table_filters_work`
+- [ ] `staff_table_sort_toggles`
+- [ ] `staff_table_counter_updates`
+- [ ] `staff_table_exports_csv`
+- [ ] `circuit_panel_draws_gates_from_content`
+- [ ] `circuit_panel_toggle_updates_lamps`
+- [ ] `circuit_panel_locks_after_five_wrong_with_countdown`
+- [ ] `final_console_shows_three_minute_lockout_overlay`
+
+#### HintDrawer.test.tsx
+
+- [ ] `rung_one_shows_countdown`
+- [ ] `rung_two_asks_for_confirmation`
+- [ ] `rung_three_locked_until_rung_two_used`
+- [ ] `revealed_hint_stays_visible`
+- [ ] `penalty_text_comes_from_content`
+- [ ] `hint_request_disabled_while_pending`
+
+#### Leaderboard.test.tsx, Lobby.test.tsx, Cutscenes.test.tsx
+
+- [ ] `leaderboard_shows_ranks_in_order`
+- [ ] `leaderboard_highlights_own_team`
+- [ ] `leaderboard_hides_scores_when_flag_set`
+- [ ] `leaderboard_refreshes_every_five_seconds`
+- [ ] `leaderboard_shows_finished_status`
+- [ ] `lobby_shows_waiting_status`
+- [ ] `lobby_starts_round_when_state_goes_live`
+- [ ] `lobby_shows_announcements`
+- [ ] `lobby_opens_toolkit_card`
+- [ ] `intro_types_text_then_shows_begin_button`
+- [ ] `round1_finale_plays_full_sequence`
+- [ ] `bridge_shown_only_to_qualified_teams`
+- [ ] `not_qualified_team_sees_eliminated_text`
+- [ ] `round2_finale_then_leaderboard_then_sting`
+- [ ] `sting_inserts_team_name`
+- [ ] `esc_skips_cutscene_except_sting`
+
+#### Admin UI tests (`admin/__tests__/`)
+
+- [ ] `admin_login_locks_after_five_failures`
+- [ ] `admin_buttons_hidden_for_viewer_role`
+- [ ] `dashboard_heat_grid_colours_clue_states`
+- [ ] `teams_bulk_create_parses_pasted_lines`
+- [ ] `teams_credentials_export_shown_once`
+- [ ] `team_detail_revoke_session_calls_api`
+- [ ] `adjust_form_requires_reason`
+- [ ] `rounds_qualify_requires_preview_and_confirmation`
+- [ ] `leaderboard_shows_exact_times`
+- [ ] `content_check_never_shows_answers`
+- [ ] `reload_button_disabled_while_round_live`
+
+### 6.3 End-to-end tests (`e2e/`)
+
+- [ ] `e2e_login_logout_cycle`
+- [ ] `e2e_session_limit_then_logout_everywhere_then_sign_in`
 - [ ] `e2e_full_round1_run`
-- [ ] `e2e_full_round2_run` (includes admin qualify)
-- [ ] `e2e_session_limit_then_logout_everywhere`
-- [ ] `e2e_admin_start_and_end`
-- [ ] `e2e_end_round_signs_teams_out_and_keeps_progress` (two browsers on one team are both sent to `/login` with the round-ended banner; scores and leaderboard unchanged after signing in again; organiser still signed in)
+- [ ] `e2e_full_round2_run`
+- [ ] `e2e_wrong_then_correct_answer`
+- [ ] `e2e_hint_ladder_costs_points`
+- [ ] `e2e_two_browsers_same_team_submit_same_clue_once`
+- [ ] `e2e_refresh_during_lockout_keeps_countdown`
+- [ ] `e2e_admin_start_pause_resume_end`
+- [ ] `e2e_admin_qualify_then_round2_access`
 - [ ] `e2e_non_qualified_team_sees_eliminated_screen`
+- [ ] `e2e_scores_hidden_in_last_ten_minutes`
+- [ ] `e2e_leaderboard_tie_break_visible`
+- [ ] `e2e_changing_content_file_variable_changes_questions`
+- [ ] `e2e_load_fifty_teams_three_devices_each`
 
-## 7. Order of work
+## 7. Suggested split by person
 
-Content loading and login, then state and unlock engine, then submit with the concurrency test, then room scene and clue panels, then admin and rounds, then cutscenes, then one full playthrough of each round by someone who did not build it.
+| Person | Owns | First tasks |
+| --- | --- | --- |
+| Backend lead | Sections 1 and 2, `test_*.py` | BE-01 to BE-08, BE-10 to BE-19, BE-40 to BE-55 |
+| Backend 2 | Unlock engine, scoring, hints, rounds, leaderboard, qualification | BE-30 to BE-35, BE-60 to BE-96 |
+| Frontend lead | Shell, login page, map, room scene, cutscenes | FE-01 to FE-72, FE-170 to FE-177 |
+| Frontend 2 | Clue panels and hint ladder | FE-80 to FE-145 |
+| Admin dev | Section 4 and admin tests | ADM-01 to ADM-30 |
+| Art and sound | Section 5 | AST-01 to AST-09 |
+| QA | Section 6 and the playtests | End-to-end suite, content rules, two full playthroughs |
 
-**Done means:** all boxes ticked, tests green, both rounds played end to end.
+**Order of work:** content loading and login first, then state and unlock engine, then submit with concurrency tests, then room scene and clue panels, then admin and rounds, then cutscenes and polish, then full playthroughs.
+
+**Done means:** all boxes ticked, all tests green, one full playthrough of both rounds by a person who did not build it, and a 50-team load run without a wrong score.
