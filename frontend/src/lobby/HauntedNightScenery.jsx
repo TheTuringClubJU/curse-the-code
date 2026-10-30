@@ -18,6 +18,7 @@ export default function HauntedNightScenery({ round = 1 }) {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
+    if (!ctx) return; // Guard for headless test environments (jsdom/CI)
     let animationId;
 
     const resize = () => {
