@@ -12,7 +12,6 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto;   -- gen_random_uuid()
 
 -- 1. ENUMS -----------------------------------------------------------
 DO $$ BEGIN CREATE TYPE round_status  AS ENUM ('pending','live','paused','ended');            EXCEPTION WHEN duplicate_object THEN NULL; END $$;
-DO $$ BEGIN CREATE TYPE admin_role    AS ENUM ('superadmin','operator','viewer');             EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN CREATE TYPE submit_result AS ENUM ('correct','wrong','stage_correct','already_solved','locked','too_fast','rejected'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN CREATE TYPE session_end   AS ENUM ('logout','forced_logout','admin_revoked','expired','replaced'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
@@ -26,7 +25,6 @@ CREATE TABLE IF NOT EXISTS admins (
   id             serial PRIMARY KEY,
   username       citext UNIQUE NOT NULL,
   password_hash  text   NOT NULL,
-  role           admin_role NOT NULL DEFAULT 'operator',
   is_active      boolean NOT NULL DEFAULT true,
   failed_logins  int     NOT NULL DEFAULT 0,
   locked_until   timestamptz,

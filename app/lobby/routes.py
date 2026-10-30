@@ -66,11 +66,12 @@ async def get_lobby_state(request: Request):
     r1_status = r1.get("status", "pending")
     r2_status = r2.get("status", "pending")
 
-    # Current round for display
-    if r1_status in ("pending", "live", "paused"):
-        active_round_num = 1
-    else:
+    # Current round for display:
+    # Round 2 Intermission Lobby displays when Round 1 has ended AND Round 2 is pending (or live/paused)
+    if r1_status == "ended":
         active_round_num = 2
+    else:
+        active_round_num = 1
 
     # Check if team is qualified for round 2 if in stage 2
     is_qualified_r2 = False

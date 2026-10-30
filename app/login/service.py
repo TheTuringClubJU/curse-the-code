@@ -343,6 +343,38 @@ class LoginService:
         }
 
     @classmethod
+    def force_logout_team_by_id(cls, team_id: int, admin_handle: str = "admin") -> int:
+        """
+        Admin-facing helper to immediately terminate all active sessions for a specific team.
+        """
+        now = datetime.now(timezone.utc)
+        count = 0
+        conn = get_db_connection()
+        if conn:
+            try:
+                with conn.cursor() as cur:
+                    cur.execute(
+                        "UPDATE team_sessions SET ended_at = %s, ended_reason = 'admin_revoked' WHERE team_id = %s AND ended_at IS NULL",
+                        (now, team_id)
+                    )
+                    count = cur.rowcount
+                    conn.commit()
+            except Exception as e:
+                print("Error admin logging out team in DB:", e)
+            finally:
+                conn.close()
+
+        for s in SESSIONS_DB.values():
+            if s["team_id"] == team_id and s.get("ended_at") is None:
+                s["ended_at"] = now
+                s["ended_reason"] = "admin_revoked"
+                if not conn:
+                    count += 1
+
+        cls.record_event(team_id, "admin_forced_logout", {"sessions_ended": count, "admin": admin_handle})
+        return count
+
+    @classmethod
     def get_current_team_by_token(cls, raw_token: str) -> Optional[Dict[str, Any]]:
         if not raw_token:
             return None

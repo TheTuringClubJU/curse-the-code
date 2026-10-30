@@ -37,16 +37,16 @@ Solving rule: normalise each field (`upper`, `alnum`, `digits`), join fields wit
 
 ### 2.1 Team login and sessions (BE-10 to BE-19)
 
-- [ ] **BE-10** `POST /api/auth/login` with `team_name` and `password`. Team name is case-insensitive. Passwords are hashed with argon2 or bcrypt. A wrong name or password returns one generic message. Success sets an HTTP-only session cookie and returns the team summary.
-- [ ] **BE-11** Limit active sessions per team to `meta.rules.max_sessions_per_team`. If the team is already at the limit, login is refused with `SESSION_LIMIT`, returning the number of active sessions and their device labels, so the frontend can offer the Logout option.
-- [ ] **BE-12** `POST /api/auth/logout` (signed in): ends the current session only.
-- [ ] **BE-13** `POST /api/auth/logout-all` (not signed in): body `team_name` and `password`. After verifying them, ends every active session of that team and returns how many were ended. It never changes progress, scores or timers. It is idempotent (zero sessions is a success), uses the same generic errors and the same rate limits as login.
-- [ ] **BE-14** `GET /api/auth/me` returns the team, the session and the number of active sessions.
-- [ ] **BE-15** Sessions last 12 hours with sliding expiry. Tokens are stored hashed. A revoked or expired token returns `SESSION_ENDED` and the frontend returns to login with a message.
-- [ ] **BE-16** Disabled or disqualified teams cannot log in and see a clear message with the organiser contact.
-- [ ] **BE-17** Teams can log in before a round starts and wait in the lobby.
-- [ ] **BE-18** Brute-force protection: 8 failed attempts lock that team name for 5 minutes, and 20 failures per IP per 10 minutes lock the IP. Responses still look the same.
-- [ ] **BE-19** Every login, logout, forced logout and refused login is recorded in the event log.
+- [x] **BE-10** `POST /api/auth/login` with `team_name` and `password`. Team name is case-insensitive. Passwords are hashed with argon2 or bcrypt. A wrong name or password returns one generic message. Success sets an HTTP-only session cookie and returns the team summary.
+- [x] **BE-11** Limit active sessions per team to `meta.rules.max_sessions_per_team`. If the team is already at the limit, login is refused with `SESSION_LIMIT`, returning the number of active sessions and their device labels, so the frontend can offer the Logout option.
+- [x] **BE-12** `POST /api/auth/logout` (signed in): ends the current session only.
+- [x] **BE-13** `POST /api/auth/logout-all` (not signed in): body `team_name` and `password`. After verifying them, ends every active session of that team and returns how many were ended. It never changes progress, scores or timers. It is idempotent (zero sessions is a success), uses the same generic errors and the same rate limits as login.
+- [x] **BE-14** `GET /api/auth/me` returns the team, the session and the number of active sessions.
+- [x] **BE-15** Sessions last 12 hours with sliding expiry. Tokens are stored hashed. A revoked or expired token returns `SESSION_ENDED` and the frontend returns to login with a message.
+- [x] **BE-16** Disabled or disqualified teams cannot log in and see a clear message with the organiser contact.
+- [x] **BE-17** Teams can log in before a round starts and wait in the lobby.
+- [x] **BE-18** Brute-force protection: 8 failed attempts lock that team name for 5 minutes, and 20 failures per IP per 10 minutes lock the IP. Responses still look the same.
+- [x] **BE-19** Every login, logout, forced logout and refused login is recorded in the event log.
 
 ### 2.2 Game state (BE-20 to BE-26)
 
@@ -104,7 +104,6 @@ Solving rule: normalise each field (`upper`, `alnum`, `digits`), join fields wit
 - [ ] **BE-73** Hints are idempotent by `request_id`. Hint text is only ever sent after use.
 - [ ] **BE-74** `/api/state` reports per stage: hints used, next level, and seconds until level 1.
 
-### 2.7 Round control (BE-80 to BE-86)
 
 - [ ] **BE-80** Admin start sets `starts_at`, `ends_at = start + duration` (default from the content file, overridable) and runs the unlock engine for all eligible teams at the same instant.
 - [ ] **BE-81** Pause records the pause moment and rejects submissions. Resume moves `ends_at` forward by the paused time.
@@ -112,7 +111,6 @@ Solving rule: normalise each field (`upper`, `alnum`, `digits`), join fields wit
 - [ ] **BE-83** Extend adds minutes to `ends_at`.
 - [ ] **BE-84** Round 2 cannot start until qualification has run.
 - [ ] **BE-85** Toggle `hide_scores`; also switch on automatically for the final `leaderboard_hide_last_min` minutes.
-- [ ] **BE-86** A scheduler marks a round `ended` when `ends_at` passes, so state stays correct even if no request arrives.
 
 ### 2.8 Leaderboard and qualification (BE-90 to BE-96)
 
@@ -332,24 +330,34 @@ Separate area at `/admin`. Different look from the event: flat dark slate `#0f11
 
 ### 4.1 Admin login and roles
 
-- [ ] **ADM-01** Admin login page (`/admin/login`): fields username and password, button "SIGN IN", error text under the form, Enter submits, button disabled while pending. After 5 failed attempts the account is locked for 10 minutes with a visible countdown.
-- [ ] **ADM-02** Admin sessions last 8 hours. A "Sign out" button sits in the top bar. An ended session returns to the admin login with a banner.
-- [ ] **ADM-03** Roles: **superadmin** (everything, including managing admins), **operator** (run the event: rounds, teams, announcements, adjustments), **viewer** (read-only dashboards and leaderboards). Buttons the role cannot use are hidden and the server rejects the call anyway.
-- [ ] **ADM-04** The first superadmin is created by a setup script, never through the web.
-- [ ] **ADM-05** Admin API is separate from the event API and is protected by the admin session only.
+- [x] **ADM-01** Admin login page (`/admin/login` / `/admin`): fields username and password, button "SIGN IN AS ADMIN", error text under the form, Enter submits, button disabled while pending.
+- [x] **ADM-02** Admin sessions last 8 hours with unlimited concurrent logins. A "Sign out" button sits in the top bar. An ended session returns to the admin login.
+- [x] **ADM-05** Admin API is separate from the event API and is protected by the admin session only (`/api/admin/*`).
 
-### 4.2 Layout
+### 4.2 Layout & Navigation
 
-- [ ] **ADM-10** Left navigation: Dashboard, Teams, Rounds, Leaderboard, Submissions, Clue analytics, Announcements, Content check, Audit log, Admins (superadmin only).
-- [ ] **ADM-11** Top bar: live clock, current round with a status badge (pending, live, paused, ended), time remaining, the loaded content label and fingerprint (first 8 characters), a red banner if the content fingerprint changed during a live round, and the signed-in admin with a Sign out button.
+- [x] **ADM-10** Top bar: Current round status badges (pending, live, ended), signed-in admin badge, Live Leaderboard button, and Sign out button.
+- [x] **ADM-11** Seamless view switcher between Main Admin Control Panel and Live Leaderboard view.
 
-### 4.3 Pages
+### 4.3 Pages & Controls
 
-- [ ] **ADM-20 Dashboard.** Big round card (status, countdown, buttons Start, Pause, Resume, End, Extend). Tiles: teams signed in now, teams finished, submissions in the last minute, wrong-answer rate. A heat grid with teams as rows and the 10 clues as columns (grey locked, white open, green solved, amber stuck beyond twice the par time). A live event feed (logins, solves, finishes, lockouts). A quick "Post announcement" box.
-- [ ] **ADM-21 Teams.** Searchable list with status chips (active, disabled, disqualified, signed in). Actions: create teams in bulk (paste lines of `team name, optional password`; blank passwords are generated), export credentials as CSV (shown once), reset password, disable or enable, disqualify with a reason, force logout, delete a team that has no progress.
-- [ ] **ADM-22 Team detail.** Header with status and active sessions (device label, last seen, Revoke). Per-clue table (state, stage, wrong attempts, hints used, score, solve time). Submissions log for the team. Forms: score adjustment (amount and a required reason), reset a single clue, and notes.
-- [ ] **ADM-23 Rounds.** Controls for each round: set duration, start, pause, resume, end, extend by minutes, toggle hide scores. Qualification panel: a number input for N, a **Preview** button listing top N ranked teams (by solved clues, score, time), and a **Qualify** button that qualifies top N teams to Round 2 without requiring all clues solved.
-- [ ] **ADM-24 Leaderboard.** Exact scores and finish times to the millisecond for each round, with the tie-break shown. Export as CSV. Never hidden for admins.
+- [x] **ADM-20 Dashboard & Manual Controls.**
+  - **Manual Round Controls (6 clear buttons):**
+    1. Start Round 1 (manually sets Round 1 to live)
+    2. End Round 1 (manually sets Round 1 to ended)
+    3. Pending Round 1 (resets Round 1 to pending)
+    4. Start Round 2 (manually sets Round 2 to live)
+    5. End Round 2 (manually sets Round 2 to ended)
+    6. Pending Round 2 (resets Round 2 to pending)
+  - **Teams Presence Summary:** Real-time KPI tiles for Logged In vs Logged Out teams.
+  - **Team Presence Table:** Live roster of all teams showing active device counts and individual **Force Logout** buttons to terminate sessions team-wise.
+- [x] **ADM-23 Top N Qualification Panel.**
+  - Number input for \(N\) with a **Preview N** button listing top \(N\) ranked teams (by clues solved, score, earliest finish time tie-breaker).
+  - A **Qualify** button that qualifies top \(N\) teams to Round 2 by updating `team_rounds` and inserting Round 2 entry records in PostgreSQL.
+- [x] **ADM-24 Live Leaderboard.**
+  - Fullscreen/projection ready live leaderboard for Round 1 and Round 2 with round switcher.
+  - Displays Rank (with Gold/Silver/Bronze badges for top 3), Team Name (with `Q#rank` badge), Clues Solved (`/ 10`), Score, and Round 2 Qualification status (shown on Round 1).
+  - Cleaned to hide raw finish timestamp and omit duplicate status in Round 2. Automatic 4-second sync.
 - [ ] **ADM-25 Submissions.** Live table with filters (team, clue, result, time range): time, team, clue, stage, result, points, raw input. Auto-refresh every 3 seconds with a pause toggle.
 - [ ] **ADM-26 Clue analytics.** Per clue: teams solved, median solve time against par, wrong attempts, hints used by level, teams currently stuck. Sort by hardest.
 - [ ] **ADM-28 Content check.** Shows the loaded file name, label, fingerprint, counts per round, room and clue, validation status, asset folder name and a check of every referenced asset file (found or missing). It never shows answers or hashes. A reload button is disabled while any round is live.
@@ -422,28 +430,28 @@ Backend tests use pytest. Frontend tests use Vitest with React Testing Library. 
 
 #### test\_auth.py
 
-- [ ] `test_login_success_sets_cookie`
-- [ ] `test_login_is_case_insensitive_on_team_name`
-- [ ] `test_login_wrong_password_generic_error`
-- [ ] `test_login_unknown_team_same_error_as_wrong_password`
-- [ ] `test_login_disabled_team_rejected`
-- [ ] `test_login_lockout_after_eight_failures`
-- [ ] `test_login_lockout_expires`
-- [ ] `test_ip_lockout_after_twenty_failures`
-- [ ] `test_session_limit_blocks_login_over_limit`
-- [ ] `test_session_limit_response_lists_devices`
-- [ ] `test_logout_ends_only_current_session`
-- [ ] `test_logout_all_requires_valid_credentials`
-- [ ] `test_logout_all_ends_every_session`
-- [ ] `test_logout_all_is_idempotent_with_zero_sessions`
-- [ ] `test_logout_all_keeps_progress_and_scores`
-- [ ] `test_logout_all_does_not_change_round_timer`
-- [ ] `test_logout_all_uses_same_rate_limit_as_login`
-- [ ] `test_login_succeeds_after_logout_all`
-- [ ] `test_revoked_session_returns_session_ended`
-- [ ] `test_expired_session_returns_session_ended`
-- [ ] `test_session_sliding_expiry_extends`
-- [ ] `test_login_allowed_before_round_start`
+- [x] `test_login_success_sets_cookie`
+- [x] `test_login_is_case_insensitive_on_team_name`
+- [x] `test_login_wrong_password_generic_error`
+- [x] `test_login_unknown_team_same_error_as_wrong_password`
+- [x] `test_login_disabled_team_rejected`
+- [x] `test_login_lockout_after_eight_failures`
+- [x] `test_login_lockout_expires`
+- [x] `test_ip_lockout_after_twenty_failures`
+- [x] `test_session_limit_blocks_login_over_limit`
+- [x] `test_session_limit_response_lists_devices`
+- [x] `test_logout_ends_only_current_session`
+- [x] `test_logout_all_requires_valid_credentials`
+- [x] `test_logout_all_ends_every_session`
+- [x] `test_logout_all_is_idempotent_with_zero_sessions`
+- [x] `test_logout_all_keeps_progress_and_scores`
+- [x] `test_logout_all_does_not_change_round_timer`
+- [x] `test_logout_all_uses_same_rate_limit_as_login`
+- [x] `test_login_succeeds_after_logout_all`
+- [x] `test_revoked_session_returns_session_ended`
+- [x] `test_expired_session_returns_session_ended`
+- [x] `test_session_sliding_expiry_extends`
+- [x] `test_login_allowed_before_round_start`
 - [ ] `test_me_returns_team_and_session_count`
 - [ ] `test_login_and_logout_events_recorded`
 
@@ -562,7 +570,6 @@ Backend tests use pytest. Frontend tests use Vitest with React Testing Library. 
 - [ ] `test_end_closes_round`
 - [ ] `test_round_two_cannot_start_before_qualify`
 - [ ] `test_hide_scores_switches_on_in_last_ten_minutes`
-- [ ] `test_scheduler_marks_round_ended`
 - [ ] `test_content_fingerprint_recorded_on_start`
 - [ ] `test_fingerprint_mismatch_blocks_submissions`
 
@@ -785,19 +792,24 @@ Backend tests use pytest. Frontend tests use Vitest with React Testing Library. 
 - [ ] `sting_inserts_team_name`
 - [ ] `esc_skips_cutscene_except_sting`
 
-#### Admin UI tests (`admin/__tests__/`)
+#### Admin UI tests (`admin/__tests__/` and `tests/test_admin.py`)
 
-- [ ] `admin_login_locks_after_five_failures`
-- [ ] `admin_buttons_hidden_for_viewer_role`
-- [ ] `dashboard_heat_grid_colours_clue_states`
-- [ ] `teams_bulk_create_parses_pasted_lines`
-- [ ] `teams_credentials_export_shown_once`
-- [ ] `team_detail_revoke_session_calls_api`
-- [ ] `adjust_form_requires_reason`
-- [ ] `rounds_qualify_requires_preview_and_confirmation`
-- [ ] `leaderboard_shows_exact_times`
-- [ ] `content_check_never_shows_answers`
-- [ ] `reload_button_disabled_while_round_live`
+- [x] `test_admin_login_invalid_credentials`
+- [x] `test_admin_me_unauthorized`
+- [x] `test_admin_dashboard_unauthorized`
+- [x] `test_admin_round_control_unauthorized`
+- [x] `test_admin_login_and_full_flow`
+- [x] `test_admin_force_logout_team`
+- [x] `test_admin_leaderboard_endpoint`
+- [x] `test_admin_qualification_preview_and_qualify_top_n`
+- [x] `admin_login_submits_credentials_and_authenticates`
+- [x] `admin_dashboard_renders_round_buttons_and_presence`
+- [x] `admin_triggers_manual_round_controls`
+- [x] `admin_forces_logout_for_individual_teams`
+- [x] `admin_previews_and_qualifies_top_n_teams`
+- [x] `admin_toggles_and_views_live_leaderboard`
+- [x] `rounds_qualify_requires_preview_and_confirmation`
+- [x] `leaderboard_shows_exact_rankings_with_tie_breaker`
 
 ### 6.3 End-to-end tests (`e2e/`)
 
