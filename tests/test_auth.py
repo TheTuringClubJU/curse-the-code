@@ -51,6 +51,14 @@ def test_login_unknown_team_same_error_as_wrong_password():
 # 5. test_login_disabled_team_rejected
 def test_login_disabled_team_rejected():
     TEAMS_DB["team cipher"]["is_active"] = False
+    from app.login.service import get_db_connection
+    conn = get_db_connection()
+    if conn:
+        with conn.cursor() as cur:
+            cur.execute("UPDATE teams SET is_active = false WHERE name = 'Team Cipher';")
+            conn.commit()
+        conn.close()
+
     res = client.post("/api/auth/login", json={"team_name": "Team Cipher", "password": "password123"})
     assert res.status_code == 403
     assert res.json()["detail"]["code"] == "ACCOUNT_DISABLED"

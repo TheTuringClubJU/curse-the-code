@@ -23,13 +23,13 @@ def test_lobby_state_authenticated():
     """Lobby state identifies the logged-in team and their current round"""
     # Clear any previous test sessions first
     client.post("/api/auth/logout-all", json={
-        "team_name": "techtesting1",
+        "team_name": "Team Cipher",
         "password": "password123"
     })
 
-    # 1. Login with demo team (techtesting1 from database)
+    # 1. Login with demo team
     login_res = client.post("/api/auth/login", json={
-        "team_name": "techtesting1",
+        "team_name": "Team Cipher",
         "password": "password123"
     })
     assert login_res.status_code == 200
@@ -41,5 +41,5 @@ def test_lobby_state_authenticated():
     data = lobby_res.json()
     assert data["ok"] is True
     assert data["team"] is not None
-    assert data["team"]["name"].lower() == "techtesting1"
+    assert data["team"]["name"].lower() == "team cipher"
     assert data["current_round"] in (1, 2)
