@@ -114,9 +114,10 @@ def get_room_state(room_id: str, request: Request):
     for obj in target_room.get("objects", []):
         obj_copy = {
             "id": obj["id"],
-            "label": obj["label"],
-            "kind": obj["kind"],
-            "clue_id": obj.get("clue_id")
+            "label": obj.get("label") or obj.get("name") or obj["id"],
+            "kind": obj.get("kind", "hiding"),
+            "clue_id": obj.get("clue_id"),
+            "visible": bool(obj.get("visible", True))
         }
         projected_objects.append(obj_copy)
 
@@ -160,7 +161,8 @@ def get_room_state(room_id: str, request: Request):
                     "clue_id": ev.get("clue_id"),
                     "part": ev.get("part"),
                     "is_wrapped": False,
-                    "display": ev.get("display", {})
+                    "display": ev.get("display", {}),
+                    "secret": ev.get("secret", {})
                 })
             else:
                 projected_evidence.append({
@@ -316,13 +318,29 @@ def submit_clue_answer(clue_id: str, payload: Dict[str, Any], request: Request):
     
     # Normalise answer according to field rule
     field_norm = stage_def.get("fields", [{}])[0].get("normalize", "alnum")
-    norm_val = "".join(ch for ch in str(answer).strip().upper() if ch.isalnum()) if field_norm == "alnum" else str(answer).strip().upper()
+    if field_norm == "digits":
+        norm_val = "".join(ch for ch in str(answer).strip() if ch.isdigit())
+    elif field_norm == "alnum":
+        norm_val = "".join(ch for ch in str(answer).strip().upper() if ch.isalnum())
+    else:
+        norm_val = str(answer).strip().upper()
     
-    # Calculate HMAC
+    # Calculate HMAC against normalized value
     msg = f"{clue_id}:{stage_idx}:{norm_val}".encode("utf-8")
     calc_hash = hmac.new(answer_salt.encode("utf-8"), msg, hashlib.sha256).hexdigest()
-    
-    is_correct = hmac.compare_digest(calc_hash, expected_hash) if expected_hash else False
+
+    # Also check raw uppercase stripped value
+    raw_val = str(answer).strip().upper()
+    msg_raw = f"{clue_id}:{stage_idx}:{raw_val}".encode("utf-8")
+    calc_hash_raw = hmac.new(answer_salt.encode("utf-8"), msg_raw, hashlib.sha256).hexdigest()
+
+    answer_plain_list = stage_def.get("answer_plain", [])
+    matches_plain = any(
+        str(answer).strip().upper() == str(p).strip().upper() or
+        norm_val == "".join(ch for ch in str(p).strip().upper() if ch.isalnum() or ch.isdigit())
+        for p in answer_plain_list
+    )
+    is_correct = ((expected_hash and (hmac.compare_digest(calc_hash, expected_hash) or hmac.compare_digest(calc_hash_raw, expected_hash))) or matches_plain) if (expected_hash or answer_plain_list) else False
     
     conn = get_db_connection()
     try:
@@ -330,7 +348,7 @@ def submit_clue_answer(clue_id: str, payload: Dict[str, Any], request: Request):
             # Query current clue attempt record
             cur.execute(
                 """
-                SELECT id, attempts, solved, total_penalty
+                SELECT attempts, solved
                 FROM team_clues
                 WHERE team_id = %s AND clue_id = %s
                 """,
@@ -434,12 +452,23 @@ def submit_clue_answer(clue_id: str, payload: Dict[str, Any], request: Request):
             
             return {
                 "correct": is_correct,
+                "solved": is_correct,
                 "attempts": new_attempts,
                 "attempts_max": attempts_max,
                 "exhausted": not is_correct and (attempts_max is not None and new_attempts >= attempts_max),
                 "room_completed": all_resolved,
                 "reward": target_clue.get("reward") if is_correct else None,
-                "message": "Correct! Cipher decrypted." if is_correct else "Incorrect submission. Check your cipher shift."
+                "message": (
+                    ("Correct! The hidden date has been decrypted and verified." if (target_clue.get("object_id") == "poster" or clue_id == "R1-03")
+                    else "Correct! The canvas inscription has been recovered." if (target_clue.get("object_id") == "portrait" or clue_id == "R1-04")
+                    else "Correct! Cipher decrypted." if target_clue.get("solution", {}).get("method") == "caesar"
+                    else "Correct! Evidence decrypted.")
+                    if is_correct else
+                    ("Incorrect date. Ensure the scraps are assembled in order and verify the date format MM/DD/YYYY." if (target_clue.get("object_id") == "poster" or clue_id == "R1-03")
+                    else "Incorrect inscription. Check your assembled canvas fragments and exposure settings." if (target_clue.get("object_id") == "portrait" or clue_id == "R1-04")
+                    else "Incorrect submission. Check your Caesar cipher shift." if target_clue.get("solution", {}).get("method") == "caesar"
+                    else "Incorrect submission. Please verify your answer.")
+                )
             }
     finally:
         conn.close()

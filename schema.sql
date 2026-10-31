@@ -1,12 +1,29 @@
 -- ============================================================================
 -- CURSE THE CODE - LIVE TOURNAMENT DATABASE SCHEMA
--- Exactly matches all 14 active public tables in the live PostgreSQL instance.
+-- Exactly matches all 14 active public tables, enums, and extensions in PostgreSQL.
 -- ============================================================================
+
+-- EXTENSIONS
+CREATE EXTENSION IF NOT EXISTS citext;     -- Case-insensitive team names and usernames
+CREATE EXTENSION IF NOT EXISTS pgcrypto;   -- gen_random_uuid() for session tokens
+
+-- ENUMS
+DO $$ BEGIN 
+  CREATE TYPE session_end AS ENUM ('logout','forced_logout','admin_revoked','expired','replaced'); 
+EXCEPTION 
+  WHEN duplicate_object THEN NULL; 
+END $$;
+
+DO $$ BEGIN 
+  CREATE TYPE round_status AS ENUM ('pending','live','paused','ended'); 
+EXCEPTION 
+  WHEN duplicate_object THEN NULL; 
+END $$;
 
 -- 1. ADMINS
 CREATE TABLE IF NOT EXISTS admins (
     id SERIAL PRIMARY KEY,
-    username VARCHAR(100) NOT NULL UNIQUE,
+    username CITEXT NOT NULL UNIQUE,
     password_hash TEXT NOT NULL,
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
     failed_logins INT NOT NULL DEFAULT 0,
@@ -42,7 +59,7 @@ CREATE TABLE IF NOT EXISTS admin_log (
 -- 4. TEAMS
 CREATE TABLE IF NOT EXISTS teams (
     id SERIAL PRIMARY KEY,
-    name VARCHAR(100) NOT NULL UNIQUE,
+    name CITEXT NOT NULL UNIQUE,
     password_hash TEXT NOT NULL,
     members TEXT[] NOT NULL DEFAULT '{}'::text[],
     contact TEXT,
@@ -66,7 +83,7 @@ CREATE TABLE IF NOT EXISTS team_sessions (
     last_seen_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     expires_at TIMESTAMPTZ NOT NULL,
     ended_at TIMESTAMPTZ,
-    ended_reason VARCHAR(50)
+    ended_reason session_end
 );
 
 -- 6. LOGIN ATTEMPTS AUDIT
@@ -90,7 +107,7 @@ CREATE TABLE IF NOT EXISTS event_log (
 -- 8. TOURNAMENT ROUNDS
 CREATE TABLE IF NOT EXISTS rounds (
     round SMALLINT PRIMARY KEY,
-    status VARCHAR(50) NOT NULL DEFAULT 'pending',
+    status round_status NOT NULL DEFAULT 'pending',
     duration_min INT,
     starts_at TIMESTAMPTZ,
     ends_at TIMESTAMPTZ,

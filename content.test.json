@@ -111,145 +111,176 @@
           "id": "diary",
           "label": "Open diary",
           "kind": "clue_entry",
-          "clue_id": "R1-01"
+          "clue_id": "R1-01",
+          "visible": true
         },
         {
           "id": "notebook",
           "label": "School notebook",
           "kind": "clue_entry",
-          "clue_id": "R1-02"
+          "clue_id": "R1-02",
+          "visible": true
         },
         {
           "id": "poster",
           "label": "Wall poster",
           "kind": "clue_entry",
-          "clue_id": "R1-03"
+          "clue_id": "R1-03",
+          "visible": true
         },
         {
           "id": "music_box",
           "label": "Music box",
           "kind": "decor",
-          "clue_id": null
+          "clue_id": null,
+          "visible": true
         },
         {
           "id": "trunk",
           "label": "Leather trunk",
           "kind": "hiding",
-          "clue_id": null
+          "clue_id": null,
+          "visible": true
         },
         {
           "id": "nightstand",
           "label": "Nightstand",
           "kind": "hiding",
-          "clue_id": null
+          "clue_id": null,
+          "visible": true
         },
         {
           "id": "candle",
           "label": "Candle",
           "kind": "hiding",
-          "clue_id": null
+          "clue_id": null,
+          "visible": true
         },
         {
           "id": "desk",
           "label": "Desk",
           "kind": "hiding",
-          "clue_id": null
+          "clue_id": null,
+          "visible": true
         },
         {
           "id": "bed",
           "label": "Four-poster bed",
           "kind": "hiding",
-          "clue_id": null
+          "clue_id": null,
+          "visible": true
         },
         {
           "id": "wardrobe",
           "label": "Wardrobe",
           "kind": "hiding",
-          "clue_id": null
+          "clue_id": null,
+          "visible": true
         },
         {
           "id": "lamp",
           "label": "Table lamp",
           "kind": "hiding",
-          "clue_id": null
+          "clue_id": null,
+          "visible": true
         },
         {
           "id": "window",
           "label": "Window",
           "kind": "hiding",
-          "clue_id": null
+          "clue_id": null,
+          "visible": true
         },
         {
           "id": "clock",
           "label": "Wall clock",
           "kind": "hiding",
-          "clue_id": null
+          "clue_id": null,
+          "visible": true
         },
         {
           "id": "pillow",
           "label": "Pillows",
           "kind": "hiding",
-          "clue_id": null
+          "clue_id": null,
+          "visible": true
         },
         {
           "id": "mirror",
           "label": "Cracked mirror",
           "kind": "hiding",
-          "clue_id": null
+          "clue_id": null,
+          "visible": true
         },
         {
           "id": "chair",
           "label": "Rocking chair",
           "kind": "hiding",
-          "clue_id": null
+          "clue_id": null,
+          "visible": true
         },
         {
           "id": "doll",
           "label": "Doll",
           "kind": "hiding",
-          "clue_id": null
+          "clue_id": null,
+          "visible": true
         },
         {
           "id": "photo_frame",
           "label": "Photo frame",
           "kind": "hiding",
-          "clue_id": null
+          "clue_id": null,
+          "visible": true
         },
         {
           "id": "portrait",
           "label": "Portrait",
           "kind": "clue_entry",
-          "clue_id": "R1-04"
+          "clue_id": "R1-04",
+          "visible": true
         },
         {
           "id": "rug",
           "label": "Rug",
           "kind": "decor",
-          "clue_id": null
+          "clue_id": null,
+          "visible": true
         },
         {
           "id": "pumpkins",
           "label": "Pumpkins",
           "kind": "decor",
-          "clue_id": null
+          "clue_id": null,
+          "visible": true
         },
         {
           "id": "wall_frames",
           "label": "Wall frames",
           "kind": "decor",
-          "clue_id": null
+          "clue_id": null,
+          "visible": true
         },
         {
           "id": "beams_webs",
           "label": "Beams and webs",
           "kind": "decor",
-          "clue_id": null
+          "clue_id": null,
+          "visible": true
         },
         {
           "id": "bats_spider",
           "label": "Bats and spider",
           "kind": "decor",
-          "clue_id": null
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "bookshelf",
+          "label": "Tall bookshelf",
+          "kind": "hiding",
+          "clue_id": null,
+          "visible": true
         }
       ],
       "evidence": [
@@ -469,8 +500,8 @@
           "seq": 7,
           "hiding": {
             "room": "bedroom",
-            "object_id": "lamp",
-            "spot": "rolled inside the lampshade",
+            "object_id": "musicbox",
+            "spot": "inside the musicbox compartment",
             "placement": "provisional"
           },
           "requires": {
@@ -489,7 +520,7 @@
             "image_file": "",
             "audio_file": ""
           },
-          "locate_hint": "TEST: search the lamp.",
+          "locate_hint": "TEST: search the musicbox.",
           "secret": {
             "chunk": "H RSHQV DW VXQ"
           }
@@ -503,8 +534,8 @@
           "seq": 8,
           "hiding": {
             "room": "bedroom",
-            "object_id": "window",
-            "spot": "taped to the pane",
+            "object_id": "pillow",
+            "spot": "tucked beneath the pillow",
             "placement": "provisional"
           },
           "requires": {
@@ -523,7 +554,7 @@
             "image_file": "portrait_piece_2.png",
             "audio_file": ""
           },
-          "locate_hint": "TEST: search the window.",
+          "locate_hint": "TEST: search the pillow.",
           "secret": {
             "note": "points to QR-2 location"
           }
@@ -571,8 +602,8 @@
           "seq": 10,
           "hiding": {
             "room": "bedroom",
-            "object_id": "pillow",
-            "spot": "inside a pillowcase",
+            "object_id": "bookshelf",
+            "spot": "inside a hollowed book on the shelf",
             "placement": "provisional"
           },
           "requires": {
@@ -591,7 +622,7 @@
             "image_file": "",
             "audio_file": ""
           },
-          "locate_hint": "TEST: search the pillow.",
+          "locate_hint": "TEST: search the bookshelf.",
           "secret": {
             "chunk": "ULVH"
           }
@@ -806,121 +837,141 @@
           "id": "tablet_drawer",
           "label": "Locked desk drawer",
           "kind": "clue_entry",
-          "clue_id": "R1-05"
+          "clue_id": "R1-05",
+          "visible": true
         },
         {
           "id": "crt_monitor",
           "label": "Old CRT monitor",
           "kind": "clue_entry",
-          "clue_id": "R1-06"
+          "clue_id": "R1-06",
+          "visible": true
         },
         {
           "id": "terminal_pc",
           "label": "Terminal PC",
           "kind": "clue_entry",
-          "clue_id": "R1-07"
+          "clue_id": "R1-07",
+          "visible": true
         },
         {
           "id": "line_printer",
           "label": "Dot-matrix printer",
           "kind": "clue_entry",
-          "clue_id": "R1-08"
+          "clue_id": "R1-08",
+          "visible": true
         },
         {
           "id": "bookshelf",
           "label": "Bookshelf",
           "kind": "hiding",
-          "clue_id": null
+          "clue_id": null,
+          "visible": true
         },
         {
           "id": "corkboard",
           "label": "Corkboard with red string",
           "kind": "hiding",
-          "clue_id": null
+          "clue_id": null,
+          "visible": true
         },
         {
           "id": "desk_blotter",
           "label": "Desk blotter",
           "kind": "hiding",
-          "clue_id": null
+          "clue_id": null,
+          "visible": true
         },
         {
           "id": "filing_cabinet",
           "label": "Filing cabinet",
           "kind": "hiding",
-          "clue_id": null
+          "clue_id": null,
+          "visible": true
         },
         {
           "id": "sticky_wall",
           "label": "Sticky-note wall",
           "kind": "hiding",
-          "clue_id": null
+          "clue_id": null,
+          "visible": true
         },
         {
           "id": "armchair",
           "label": "Armchair",
           "kind": "hiding",
-          "clue_id": null
+          "clue_id": null,
+          "visible": true
         },
         {
           "id": "reel_recorder",
           "label": "Reel recorder",
           "kind": "hiding",
-          "clue_id": null
+          "clue_id": null,
+          "visible": true
         },
         {
           "id": "cable_bundle",
           "label": "Cable bundle",
           "kind": "hiding",
-          "clue_id": null
+          "clue_id": null,
+          "visible": true
         },
         {
           "id": "floor_lamp",
           "label": "Floor lamp",
           "kind": "hiding",
-          "clue_id": null
+          "clue_id": null,
+          "visible": true
         },
         {
           "id": "wastebin",
           "label": "Waste bin",
           "kind": "hiding",
-          "clue_id": null
+          "clue_id": null,
+          "visible": true
         },
         {
           "id": "window",
           "label": "Window",
           "kind": "hiding",
-          "clue_id": null
+          "clue_id": null,
+          "visible": true
         },
         {
           "id": "radiator",
           "label": "Radiator",
           "kind": "hiding",
-          "clue_id": null
+          "clue_id": null,
+          "visible": true
         },
         {
           "id": "desk",
           "label": "Heavy desk",
           "kind": "decor",
-          "clue_id": null
+          "clue_id": null,
+          "visible": true
         },
         {
           "id": "rug",
           "label": "Rug",
           "kind": "decor",
-          "clue_id": null
+          "clue_id": null,
+          "visible": true
         },
         {
           "id": "beams_webs",
           "label": "Beams and webs",
           "kind": "decor",
-          "clue_id": null
+          "clue_id": null,
+          "visible": true
         },
         {
           "id": "coat_stand",
           "label": "Coat stand",
           "kind": "decor",
-          "clue_id": null
+          "clue_id": null,
+          "visible": true
         }
       ],
       "evidence": [
@@ -1533,67 +1584,78 @@
           "id": "intercom",
           "label": "Wall intercom",
           "kind": "clue_entry",
-          "clue_id": "R1-09"
+          "clue_id": "R1-09",
+          "visible": true
         },
         {
           "id": "rack_door",
           "label": "Server rack door with note",
           "kind": "clue_entry",
-          "clue_id": "R1-10"
+          "clue_id": "R1-10",
+          "visible": true
         },
         {
           "id": "containment_console",
           "label": "Containment console",
           "kind": "clue_entry",
-          "clue_id": "R1-FIN"
+          "clue_id": "R1-FIN",
+          "visible": true
         },
         {
           "id": "server_rack",
           "label": "Server rack",
           "kind": "hiding",
-          "clue_id": null
+          "clue_id": null,
+          "visible": true
         },
         {
           "id": "maintenance_terminal",
           "label": "Maintenance terminal",
           "kind": "hiding",
-          "clue_id": null
+          "clue_id": null,
+          "visible": true
         },
         {
           "id": "toolbox",
           "label": "Toolbox",
           "kind": "hiding",
-          "clue_id": null
+          "clue_id": null,
+          "visible": true
         },
         {
           "id": "floor_seal",
           "label": "Circular floor seal",
           "kind": "hiding",
-          "clue_id": null
+          "clue_id": null,
+          "visible": true
         },
         {
           "id": "wall_monitor",
           "label": "Countdown monitor",
           "kind": "decor",
-          "clue_id": null
+          "clue_id": null,
+          "visible": true
         },
         {
           "id": "pipes",
           "label": "Pipes and steam",
           "kind": "decor",
-          "clue_id": null
+          "clue_id": null,
+          "visible": true
         },
         {
           "id": "barrels",
           "label": "Barrels and crates",
           "kind": "decor",
-          "clue_id": null
+          "clue_id": null,
+          "visible": true
         },
         {
           "id": "fuse_box",
           "label": "Fuse box",
           "kind": "decor",
-          "clue_id": null
+          "clue_id": null,
+          "visible": true
         }
       ],
       "evidence": [
@@ -1804,37 +1866,43 @@
           "id": "filing_cabinets",
           "label": "Filing cabinets",
           "kind": "decor",
-          "clue_id": null
+          "clue_id": null,
+          "visible": true
         },
         {
           "id": "ceiling_light",
           "label": "Flickering light",
           "kind": "decor",
-          "clue_id": null
+          "clue_id": null,
+          "visible": true
         },
         {
           "id": "report_folder",
           "label": "Yellowed incident folder",
           "kind": "clue_entry",
-          "clue_id": "R2-02"
+          "clue_id": "R2-02",
+          "visible": true
         },
         {
           "id": "microfilm_reader",
           "label": "Microfilm reader",
           "kind": "clue_entry",
-          "clue_id": "R2-03"
+          "clue_id": "R2-03",
+          "visible": true
         },
         {
           "id": "timeline_board",
           "label": "Whiteboard of event cards",
           "kind": "clue_entry",
-          "clue_id": "R2-04"
+          "clue_id": "R2-04",
+          "visible": true
         },
         {
           "id": "bulkhead_door",
           "label": "Sealed bulkhead door",
           "kind": "clue_entry",
-          "clue_id": "R2-07"
+          "clue_id": "R2-07",
+          "visible": true
         }
       ],
       "evidence": [],
@@ -1872,31 +1940,36 @@
           "id": "monitor_bank",
           "label": "Bank of old monitors",
           "kind": "decor",
-          "clue_id": null
+          "clue_id": null,
+          "visible": true
         },
         {
           "id": "staff_terminal",
           "label": "Staff terminal",
           "kind": "clue_entry",
-          "clue_id": "R2-01"
+          "clue_id": "R2-01",
+          "visible": true
         },
         {
           "id": "radio_console",
           "label": "Transmission receiver",
           "kind": "clue_entry",
-          "clue_id": "R2-05"
+          "clue_id": "R2-05",
+          "visible": true
         },
         {
           "id": "sound_console",
           "label": "Sound console",
           "kind": "clue_entry",
-          "clue_id": "R2-06"
+          "clue_id": "R2-06",
+          "visible": true
         },
         {
           "id": "dead_intercom",
           "label": "Dead intercom",
           "kind": "decor",
-          "clue_id": null
+          "clue_id": null,
+          "visible": true
         }
       ],
       "evidence": [],
@@ -1934,31 +2007,36 @@
           "id": "core_glass",
           "label": "Glowing core behind glass",
           "kind": "decor",
-          "clue_id": null
+          "clue_id": null,
+          "visible": true
         },
         {
           "id": "countdown_timer",
           "label": "Countdown timer",
           "kind": "decor",
-          "clue_id": null
+          "clue_id": null,
+          "visible": true
         },
         {
           "id": "manual_terminal",
           "label": "Manual terminal",
           "kind": "clue_entry",
-          "clue_id": "R2-08"
+          "clue_id": "R2-08",
+          "visible": true
         },
         {
           "id": "failsafe_panel",
           "label": "Failsafe panel",
           "kind": "clue_entry",
-          "clue_id": "R2-09"
+          "clue_id": "R2-09",
+          "visible": true
         },
         {
           "id": "central_console",
           "label": "Central console",
           "kind": "clue_entry",
-          "clue_id": "R2-10"
+          "clue_id": "R2-10",
+          "visible": true
         }
       ],
       "evidence": [],

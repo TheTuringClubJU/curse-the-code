@@ -2,7 +2,8 @@
 import * as THREE from 'three'
 import {RoundedBoxGeometry} from 'three/examples/jsm/geometries/RoundedBoxGeometry.js'
 import * as X from './tex.js'
-export {THREE,X,RoundedBoxGeometry}
+import * as BufferGeometryUtils from 'three/examples/jsm/utils/BufferGeometryUtils.js'
+export {THREE,X,RoundedBoxGeometry,BufferGeometryUtils}
 const C={},get=(k,f)=>C[k]||(C[k]=f())
 export const rep=(t,x,y)=>{const c=t.clone();c.repeat.set(x,y);c.needsUpdate=true;return c}
 export const TX={
@@ -49,3 +50,4 @@ export function drapeGeo(w,d,hang,seed=1){const g=new THREE.PlaneGeometry(w+2*ha
  g.computeVertexNormals();return g}
 export function curtainGeo(w,h){const g=new THREE.PlaneGeometry(w,h,22,22);g.userData.base=g.attributes.position.array.slice();return g}
 export const tube=(pts,r,seg=24,rs=8)=>new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts.map(p=>new THREE.Vector3(...p))),seg,r,rs,false)
+
