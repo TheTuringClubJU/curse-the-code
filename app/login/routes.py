@@ -1,9 +1,13 @@
+import os
 from fastapi import APIRouter, Request, Response, HTTPException, Depends
 from typing import Optional
 from app.login.schemas import LoginRequest, LogoutAllRequest, LoginSuccessResponse, LogoutResponse
 from app.login.service import LoginService
 
 login_router = APIRouter(prefix="/api/auth", tags=["auth"])
+
+COOKIE_SECURE = os.getenv("COOKIE_SECURE", "false").lower() == "true"
+COOKIE_SAMESITE = os.getenv("COOKIE_SAMESITE", "lax")
 
 def get_client_ip(request: Request) -> str:
     forwarded = request.headers.get("x-forwarded-for")
@@ -52,8 +56,8 @@ async def login(req: LoginRequest, request: Request, response: Response):
         key="team_session",
         value=raw_token,
         httponly=True,
-        samesite="lax",
-        secure=False, # Set to True in production with SSL
+        samesite=COOKIE_SAMESITE,
+        secure=COOKIE_SECURE,
         max_age=12 * 3600
     )
 
@@ -69,7 +73,11 @@ async def logout(request: Request, response: Response):
     token = request.cookies.get("team_session")
     if token:
         LoginService.logout_single_session(token)
-    response.delete_cookie("team_session")
+    response.delete_cookie(
+        key="team_session",
+        samesite=COOKIE_SAMESITE,
+        secure=COOKIE_SECURE
+    )
     return {"ok": True, "message": "Signed out successfully."}
 
 @login_router.post("/logout-all")
@@ -87,7 +95,11 @@ async def logout_all(req: LogoutAllRequest, request: Request, response: Response
         )
     
     # Also clear cookie if this browser had that team's session
-    response.delete_cookie("team_session")
+    response.delete_cookie(
+        key="team_session",
+        samesite=COOKIE_SAMESITE,
+        secure=COOKIE_SECURE
+    )
     return res
 
 @login_router.get("/me")

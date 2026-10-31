@@ -14,14 +14,29 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# CORS setup for frontend development
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:3000", "http://127.0.0.1:5173"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# CORS setup for frontend development and production (e.g. Vercel)
+cors_origins_env = os.getenv("CORS_ORIGINS", "")
+allowed_origins = [o.strip() for o in cors_origins_env.split(",") if o.strip()]
+default_origins = [
+    "http://localhost:5173",
+    "http://localhost:3000",
+    "http://127.0.0.1:5173",
+]
+for d in default_origins:
+    if d not in allowed_origins:
+        allowed_origins.append(d)
+
+cors_origin_regex = os.getenv("CORS_ORIGIN_REGEX", r"https://.*\.vercel\.app")
+cors_kwargs = {
+    "allow_origins": allowed_origins,
+    "allow_credentials": True,
+    "allow_methods": ["*"],
+    "allow_headers": ["*"],
+}
+if cors_origin_regex:
+    cors_kwargs["allow_origin_regex"] = cors_origin_regex
+
+app.add_middleware(CORSMiddleware, **cors_kwargs)
 
 # Register login auth and lobby routes
 app.include_router(login_router)
@@ -44,4 +59,6 @@ if os.path.exists(frontend_dist):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=True)
+    port = int(os.getenv("PORT", 8000))
+    reload = os.getenv("ENVIRONMENT", "development").lower() == "development"
+    uvicorn.run("app.main:app", host="0.0.0.0", port=port, reload=reload)
