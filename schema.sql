@@ -195,10 +195,17 @@ ON team_rounds (round, clues_solved DESC, total_score DESC, last_solved_at ASC);
 CREATE OR REPLACE FUNCTION auto_enroll_team_in_round1()
 RETURNS trigger AS $$
 BEGIN
+  INSERT INTO rounds (round, status)
+  VALUES (1, 'pending')
+  ON CONFLICT (round) DO NOTHING;
+
   INSERT INTO team_rounds (team_id, round)
   VALUES (NEW.id, 1)
   ON CONFLICT (team_id, round) DO NOTHING;
   RETURN NEW;
+EXCEPTION
+  WHEN foreign_key_violation THEN
+    RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 

@@ -403,8 +403,13 @@ def submit_clue_answer(clue_id: str, payload: Dict[str, Any], request: Request):
 
             # Update team_rounds aggregate score & clues_solved for live leaderboard
             if clue_solved:
+                round_num = target_clue.get("round", 1)
                 cur.execute(
                     """
+                    INSERT INTO rounds (round, status)
+                    VALUES (%s, 'pending')
+                    ON CONFLICT (round) DO NOTHING;
+
                     INSERT INTO team_rounds (team_id, round, total_score, clues_solved, last_solved_at, updated_at)
                     VALUES (%s, %s, %s, 1, NOW(), NOW())
                     ON CONFLICT (team_id, round)
@@ -412,9 +417,9 @@ def submit_clue_answer(clue_id: str, payload: Dict[str, Any], request: Request):
                         total_score = team_rounds.total_score + EXCLUDED.total_score,
                         clues_solved = team_rounds.clues_solved + 1,
                         last_solved_at = NOW(),
-                        updated_at = NOW()
+                        updated_at = NOW();
                     """,
-                    (team["id"], target_clue.get("round", 1), pts_awarded)
+                    (round_num, team["id"], round_num, pts_awarded)
                 )
             
             # Check if all clues in this room are now resolved (solved or exhausted)

@@ -347,6 +347,15 @@ async def qualify_top_n_teams(req: QualifyTeamsRequest, admin: Dict[str, Any] = 
                 )
                 top_teams = cur.fetchall()
 
+                # Ensure tournament rounds 1 and 2 exist in rounds table
+                cur.execute(
+                    """
+                    INSERT INTO rounds (round, status)
+                    VALUES (1, 'pending'), (2, 'pending')
+                    ON CONFLICT (round) DO NOTHING;
+                    """
+                )
+
                 for rank_idx, team in enumerate(top_teams, start=1):
                     t_id = team["team_id"]
                     

@@ -23,6 +23,10 @@ def seed_demo_admin():
             with conn.cursor() as cur:
                 cur.execute(
                     """
+                    INSERT INTO rounds (round, status)
+                    VALUES (1, 'pending'), (2, 'pending')
+                    ON CONFLICT (round) DO NOTHING;
+
                     INSERT INTO admins (username, password_hash)
                     VALUES (%s, %s)
                     ON CONFLICT (username) DO NOTHING;

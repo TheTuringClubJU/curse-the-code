@@ -29,6 +29,14 @@ def seed_demo_teams():
     if conn:
         try:
             with conn.cursor() as cur:
+                # Ensure tournament rounds 1 and 2 exist
+                cur.execute(
+                    """
+                    INSERT INTO rounds (round, status)
+                    VALUES (1, 'pending'), (2, 'pending')
+                    ON CONFLICT (round) DO NOTHING;
+                    """
+                )
                 # Reset test sessions and failed login lockout state between test runs
                 cur.execute("UPDATE teams SET failed_logins = 0, locked_until = NULL, is_active = true WHERE name IN ('Team Cipher', 'Shadow Hackers', 'Curse Breakers');")
                 cur.execute("DELETE FROM team_sessions WHERE team_id IN (SELECT id FROM teams WHERE name IN ('Team Cipher', 'Shadow Hackers', 'Curse Breakers'));")
