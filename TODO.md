@@ -29,9 +29,10 @@ Every developer working on Room 2 (Subham & Shahan) and Room 3 (Krishnapriya & V
 1. **Single Source of Truth for Controls (`controls.js`):**
    - Never attach independent keyboard event listeners that mutate camera coordinates. All movement is handled in `controls.js` via PointerLockControls and smooth delta-time vector accumulation.
    - Modal states (`BasketModal`, `CaseFilesModal`, `ClueModal`, `PhotoPuzzleModal`) automatically unlock the mouse cursor and pause movement.
-2. **100% Tangible & Visible Objects (No Invisible Meshes):**
+2. **100% Tangible & Visible Objects (All Fragment Props Are Interactive with [E]):**
    - Every single object defined across all rooms in both `content.test.json` and `content.live.json` strictly carries `"visible": true`.
-   - Never use invisible proxy hitboxes, transparent collision planes, or phantom raycast meshes. Every single interactive prop (`hiding`, `clue_entry`, `room_door`) is an actual, visible 3D mesh that players can visually locate and examine.
+   - Never use invisible proxy hitboxes, transparent collision planes, or phantom raycast meshes. Every single interactive prop (`interactive_fragment`, `clue_entry`, `room_door`) is an actual, visible 3D mesh that players can visually locate and examine.
+   - **Crucial Clarification on "hiding" in JSON vs 3D Game:** In backend JSON schemas, the category `"kind": "hiding"` is purely a database taxonomy label indicating that an object contains a hidden evidence fragment. In the actual 3D room, **these objects are NOT hidden or passive**. Every single fragment-holding object is a fully clickable, inspectable 3D prop. Developers MUST attach `interact(mesh, objectId)`, emissive hover highlighting, and the `[E] Search <Object>` interaction handler to every fragment prop.
    - The central crosshair raycaster directly targets the real visible mesh tagged with `mesh.userData.id = object_id`.
 3. **Exact Lag-Free Optimization Blueprint (No GLB, No Heavy Textures):**
    - **Zero External 3D Models (No .glb / .gltf):** We do NOT load any external `.glb` or `.gltf` model files. All furniture, fixtures, terminals, and props are built 100% procedurally in memory using Three.js geometric primitives (`THREE.BoxGeometry`, `THREE.CylinderGeometry`, `THREE.PlaneGeometry`, `THREE.SphereGeometry`, `THREE.RingGeometry`). This completely eliminates network asset stalls, async model load freezes, and WebGL parser lag.
@@ -68,7 +69,7 @@ Every developer working on Room 2 (Subham & Shahan) and Room 3 (Krishnapriya & V
    - Always verify clue submissions using HMAC-SHA256 with `answer_salt` over `f"{clue_id}:{stage_idx}:{normalized_answer}"`.
    - In test mode, always support dual-comparison against `answer_plain` array in `content.test.json`.
 2. **Sequential Fragment Drop Hunt (`/api/game/room/{room_id}/search`):**
-   - Players must search hiding objects with `E`.
+   - Players inspect and search interactive fragment objects by walking up to them and pressing `E` (or clicking).
    - Pieces drop sequentially. Decoy fragments are placed strategically and appear identical to real pieces.
    - When all fragments for the room are collected, the backend updates `is_basket_unlocked = TRUE` in `team_rooms`.
 3. **Exit Door Mechanics:**
@@ -96,18 +97,18 @@ Every developer working on Room 2 (Subham & Shahan) and Room 3 (Krishnapriya & V
 | `crt_monitor` | Old CRT monitor | `clue_entry` (`R1-06`) | Center of heavy desk at `x: 0.0, z: -0.8`. Flickering green terminal. | *None* |
 | `terminal_pc` | Terminal PC | `clue_entry` (`R1-07`) | Right side of desk at `x: 0.9, z: -0.8`. Beige tower with crash dump. | *None* |
 | `line_printer` | Dot-matrix printer | `clue_entry` (`R1-08`) | Side table at `x: 1.8, z: -0.4`. Continuous fan-fold paper feed. | *None* |
-| `bookshelf` | Bookshelf | `hiding` | West wall at `x: -2.8, z: 0.0`. Tall mahogany shelves packed with manuals. | `ES01` & `EK03` |
-| `corkboard` | Corkboard with red string | `hiding` | North-east wall at `x: 1.5, z: -2.8`. Conspiracy diagram with pins. | `ES02` & `ES09` |
-| `desk_blotter` | Desk blotter | `hiding` | Flat on center desk. Green leather pad with gold trim. | `ES03` |
-| `filing_cabinet` | Filing cabinet | `hiding` | Corner at `x: -2.6, z: -2.5`. 4-drawer metal cabinet. | `ES04` & `ES10` |
-| `sticky_wall` | Sticky-note wall | `hiding` | North-west wall at `x: -1.8, z: -2.9`. Covered in layered yellow notes. | `ES05` |
-| `armchair` | Armchair | `hiding` | Reading nook at `x: -2.0, z: 1.5`. Worn leather chair with deep cushions. | `ES06` |
-| `reel_recorder` | Reel recorder | `hiding` | Audio cart at `x: 2.2, z: 1.0`. Vintage dual-reel magnetic tape deck. | `ES07` & `EK02` |
-| `cable_bundle` | Cable bundle | `hiding` | Floor under desk at `x: -0.5, z: -1.1`. Tangled server ribbon cables. | `ES08` |
-| `floor_lamp` | Floor lamp | `hiding` | Beside armchair at `x: -2.6, z: 1.8`. Standing brass lamp with fabric shade. | `ES11` |
-| `wastebin` | Waste bin | `hiding` | Under desk right at `x: 1.1, z: -0.9`. Mesh bin with crumpled printouts. | `ES12` |
-| `window` | Window | `hiding` | East wall at `x: 2.9, z: 0.0`. Rain streaking glass with wide sill. | `XS01` (Decoy) |
-| `radiator` | Radiator | `hiding` | Under window at `x: 2.9, z: 0.2`. Cast-iron heating pipes. | `XS02` (Decoy) |
+| `bookshelf` | Bookshelf | `interactive_fragment` (Inspect with `E`) | West wall at `x: -2.8, z: 0.0`. Tall mahogany shelves packed with manuals. | `ES01` & `EK03` |
+| `corkboard` | Corkboard with red string | `interactive_fragment` (Inspect with `E`) | North-east wall at `x: 1.5, z: -2.8`. Conspiracy diagram with pins. | `ES02` & `ES09` |
+| `desk_blotter` | Desk blotter | `interactive_fragment` (Inspect with `E`) | Flat on center desk. Green leather pad with gold trim. | `ES03` |
+| `filing_cabinet` | Filing cabinet | `interactive_fragment` (Inspect with `E`) | Corner at `x: -2.6, z: -2.5`. 4-drawer metal cabinet. | `ES04` & `ES10` |
+| `sticky_wall` | Sticky-note wall | `interactive_fragment` (Inspect with `E`) | North-west wall at `x: -1.8, z: -2.9`. Covered in layered yellow notes. | `ES05` |
+| `armchair` | Armchair | `interactive_fragment` (Inspect with `E`) | Reading nook at `x: -2.0, z: 1.5`. Worn leather chair with deep cushions. | `ES06` |
+| `reel_recorder` | Reel recorder | `interactive_fragment` (Inspect with `E`) | Audio cart at `x: 2.2, z: 1.0`. Vintage dual-reel magnetic tape deck. | `ES07` & `EK02` |
+| `cable_bundle` | Cable bundle | `interactive_fragment` (Inspect with `E`) | Floor under desk at `x: -0.5, z: -1.1`. Tangled server ribbon cables. | `ES08` |
+| `floor_lamp` | Floor lamp | `interactive_fragment` (Inspect with `E`) | Beside armchair at `x: -2.6, z: 1.8`. Standing brass lamp with fabric shade. | `ES11` |
+| `wastebin` | Waste bin | `interactive_fragment` (Inspect with `E`) | Under desk right at `x: 1.1, z: -0.9`. Mesh bin with crumpled printouts. | `ES12` |
+| `window` | Window | `interactive_fragment` (Inspect with `E`) | East wall at `x: 2.9, z: 0.0`. Rain streaking glass with wide sill. | `XS01` (Decoy) |
+| `radiator` | Radiator | `interactive_fragment` (Inspect with `E`) | Under window at `x: 2.9, z: 0.2`. Cast-iron heating pipes. | `XS02` (Decoy) |
 | `desk` | Heavy desk | `decor` | Center of room. Massive carved oak executive desk. | *None* |
 | `rug` | Rug | `decor` | Center floor. Faded Persian rug `#1a3324`. | *None* |
 | `beams_webs` | Beams and webs | `decor` | Ceiling rafters with dusty volumetric cobwebs. | *None* |
@@ -180,10 +181,10 @@ Every developer working on Room 2 (Subham & Shahan) and Room 3 (Krishnapriya & V
 | `intercom` | Wall intercom | `clue_entry` (`R1-09`) | East concrete wall at `x: 2.8, z: 0.5`. Yellowed intercom with speaker grille. | *None* |
 | `rack_door` | Server rack door with note | `clue_entry` (`R1-10`) | Server cabinet at `x: -2.2, z: -1.0`. Perforated metal door with yellow note taped inside. | *None* |
 | `containment_console` | Containment console | `clue_entry` (`R1-FIN`) | South wall at `x: 0.0, z: -2.8`. Massive triple-screen steel console. | *None* |
-| `server_rack` | Server rack | `hiding` | West wall at `x: -2.5, z: 0.0`. 42U rack with blinking blue/red activity LEDs. | `EK04` & `XK02` |
-| `maintenance_terminal` | Maintenance terminal | `hiding` | Beside rack at `x: -2.2, z: 1.2`. Wall-mounted CRT terminal with audio headphone jack. | `EK05` |
-| `toolbox` | Toolbox | `hiding` | Concrete floor at `x: 1.8, z: -1.5`. Heavy red steel mechanics toolbox. | `EK06` |
-| `floor_seal` | Circular floor seal | `hiding` | Center floor at `x: 0.0, z: 0.0`. 2-meter steel vault hatch with runic perimeter. | `XK01` (Decoy) |
+| `server_rack` | Server rack | `interactive_fragment` (Inspect with `E`) | West wall at `x: -2.5, z: 0.0`. 42U rack with blinking blue/red activity LEDs. | `EK04` & `XK02` |
+| `maintenance_terminal` | Maintenance terminal | `interactive_fragment` (Inspect with `E`) | Beside rack at `x: -2.2, z: 1.2`. Wall-mounted CRT terminal with audio headphone jack. | `EK05` |
+| `toolbox` | Toolbox | `interactive_fragment` (Inspect with `E`) | Concrete floor at `x: 1.8, z: -1.5`. Heavy red steel mechanics toolbox. | `EK06` |
+| `floor_seal` | Circular floor seal | `interactive_fragment` (Inspect with `E`) | Center floor at `x: 0.0, z: 0.0`. 2-meter steel vault hatch with runic perimeter. | `XK01` (Decoy) |
 | `wall_monitor` | Countdown monitor | `decor` | High on north wall at `x: 0.0, z: 2.8`. Large 7-segment digital countdown clock. | *None* |
 | `pipes` | Pipes and steam | `decor` | Ceiling overhead. Insulated steam pipes with particle smoke vents. | *None* |
 | `barrels` | Barrels and crates | `decor` | South-west corner at `x: -2.0, z: 2.2`. Wooden cargo crates and sealed drums. | *None* |
@@ -249,7 +250,7 @@ Each room has a dedicated suite of **100 tests**:
 - [ ] `QA-R1-E2E-01` **`e2e_bedroom_complete_participant_journey`**
   *Full browser automation simulating a team:*
   1. Log into team session and enter Lena's Bedroom.
-  2. Walk using WASD to all 15 hiding objects and press `E` to recover all 15 evidence fragments.
+  2. Walk using WASD to all 15 interactive fragment props and press `E` (or click) to inspect and recover all 15 evidence fragments.
   3. Verify `HUD` shows `15/15` fragments and basket unseals.
   4. Press `B` to open `BasketModal`, inspect scraps, and verify real PNG rendering.
   5. Approach `diary`, press `E`, decrypt Caesar shift -5, submit `LANTERN`, verify `P01` awarded.
@@ -371,7 +372,7 @@ Each room has a dedicated suite of **100 tests**:
   *Full browser automation simulating a team:*
   1. Transition from Room 1 into Daniel's Study.
   2. Verify green CRT aesthetic, scanline overlay, and typewriter ambient audio.
-  3. Walk using WASD to all 12 hiding objects and press `E` to recover all 16 evidence fragments (`ES01`–`ES12`, `EK02`, `EK03`, `XS01`, `XS02`).
+  3. Walk using WASD to all 12 interactive fragment props and press `E` (or click) to inspect and recover all 16 evidence fragments (`ES01`–`ES12`, `EK02`, `EK03`, `XS01`, `XS02`).
   4. Verify `HUD` shows `16/16` fragments and Study Evidence Basket unseals.
   5. Press `B` to inspect green CRT printout strips and sticky notes.
   6. Approach `tablet_drawer`, press `E`, convert binary sticky note, submit `ALPHA`, verify `P05` awarded.
@@ -493,7 +494,7 @@ Each room has a dedicated suite of **100 tests**:
   *Full browser automation simulating a team:*
   1. Transition from Room 2 into The Basement bunker.
   2. Verify red emergency strobe lighting, steam particle venting, and heartbeat subwoofer audio.
-  3. Walk using WASD to all 4 hiding objects and press `E` to recover all 5 evidence fragments (`EK04`, `EK05`, `EK06`, `XK01`, `XK02`).
+  3. Walk using WASD to all 4 interactive fragment props and press `E` (or click) to inspect and recover all 5 evidence fragments (`EK04`, `EK05`, `EK06`, `XK01`, `XK02`).
   4. Verify `HUD` shows `5/5` fragments and Basement Evidence Basket unseals.
   5. Approach `intercom`, press `E`, submit QR authentication passcode `QR92`, verify `P09` awarded.
   6. Approach `rack_door`, press `E`, decrypt margin note, submit `LOWER`, verify `P10` awarded.
