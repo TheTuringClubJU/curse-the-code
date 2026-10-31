@@ -1,13 +1,13 @@
 -- ============================================================================
 -- CURSE THE CODE - LIVE TOURNAMENT DATABASE SCHEMA
--- Exactly matches all 14 active public tables, enums, and extensions in PostgreSQL.
+-- Matches all 14 active tables, enums, triggers, and seed data for production & CI.
 -- ============================================================================
 
--- EXTENSIONS
+-- 1. EXTENSIONS
 CREATE EXTENSION IF NOT EXISTS citext;     -- Case-insensitive team names and usernames
 CREATE EXTENSION IF NOT EXISTS pgcrypto;   -- gen_random_uuid() for session tokens
 
--- ENUMS
+-- 2. ENUMS
 DO $$ BEGIN 
   CREATE TYPE session_end AS ENUM ('logout','forced_logout','admin_revoked','expired','replaced'); 
 EXCEPTION 
@@ -20,7 +20,15 @@ EXCEPTION
   WHEN duplicate_object THEN NULL; 
 END $$;
 
--- 1. ADMINS
+-- 3. TRIGGER HELPERS
+CREATE OR REPLACE FUNCTION set_updated_at() RETURNS trigger AS $$
+BEGIN 
+  NEW.updated_at = clock_timestamp(); 
+  RETURN NEW; 
+END;
+$$ LANGUAGE plpgsql;
+
+-- 4. ADMINS
 CREATE TABLE IF NOT EXISTS admins (
     id SERIAL PRIMARY KEY,
     username CITEXT NOT NULL UNIQUE,
@@ -33,7 +41,17 @@ CREATE TABLE IF NOT EXISTS admins (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- 2. ADMIN SESSIONS
+DROP TRIGGER IF EXISTS trg_admins_updated ON admins;
+CREATE TRIGGER trg_admins_updated 
+BEFORE UPDATE ON admins 
+FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+-- Seed default admin (admin / admin123)
+INSERT INTO admins (username, password_hash) VALUES
+    ('admin', '$2b$12$YomkOFAK6PAxvkien8D3V.j7dgQYLZ8yzviTeNkQOwoSoExbeaqJy')
+ON CONFLICT (username) DO NOTHING;
+
+-- 5. ADMIN SESSIONS
 CREATE TABLE IF NOT EXISTS admin_sessions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     admin_id INT NOT NULL REFERENCES admins(id) ON DELETE CASCADE,
@@ -45,7 +63,11 @@ CREATE TABLE IF NOT EXISTS admin_sessions (
     revoked_at TIMESTAMPTZ
 );
 
--- 3. ADMIN ACTION LOG
+CREATE INDEX IF NOT EXISTS idx_admin_sessions_admin
+ON admin_sessions (admin_id)
+WHERE revoked_at IS NULL;
+
+-- 6. ADMIN ACTION LOG
 CREATE TABLE IF NOT EXISTS admin_log (
     id BIGSERIAL PRIMARY KEY,
     admin_id INT REFERENCES admins(id) ON DELETE SET NULL,
@@ -56,7 +78,10 @@ CREATE TABLE IF NOT EXISTS admin_log (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- 4. TEAMS
+CREATE INDEX IF NOT EXISTS idx_admin_log_time 
+ON admin_log (created_at DESC);
+
+-- 7. TEAMS
 CREATE TABLE IF NOT EXISTS teams (
     id SERIAL PRIMARY KEY,
     name CITEXT NOT NULL UNIQUE,
@@ -68,10 +93,16 @@ CREATE TABLE IF NOT EXISTS teams (
     failed_logins INT NOT NULL DEFAULT 0,
     locked_until TIMESTAMPTZ,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT teams_name_len CHECK (char_length(name) BETWEEN 2 AND 40)
 );
 
--- 5. TEAM SESSIONS
+DROP TRIGGER IF EXISTS trg_teams_updated ON teams;
+CREATE TRIGGER trg_teams_updated 
+BEFORE UPDATE ON teams 
+FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+-- 8. TEAM SESSIONS
 CREATE TABLE IF NOT EXISTS team_sessions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     team_id INT NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
@@ -86,7 +117,14 @@ CREATE TABLE IF NOT EXISTS team_sessions (
     ended_reason session_end
 );
 
--- 6. LOGIN ATTEMPTS AUDIT
+CREATE INDEX IF NOT EXISTS idx_active_team_sessions 
+ON team_sessions (team_id, last_seen_at DESC) 
+WHERE ended_at IS NULL;
+
+CREATE INDEX IF NOT EXISTS idx_token_hash 
+ON team_sessions (token_hash);
+
+-- 9. LOGIN ATTEMPTS AUDIT
 CREATE TABLE IF NOT EXISTS login_attempts (
     id BIGSERIAL PRIMARY KEY,
     subject TEXT NOT NULL,
@@ -95,7 +133,10 @@ CREATE TABLE IF NOT EXISTS login_attempts (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- 7. EVENT AUDIT LOG
+CREATE INDEX IF NOT EXISTS idx_login_ip_time 
+ON login_attempts (ip, created_at DESC);
+
+-- 10. EVENT AUDIT LOG
 CREATE TABLE IF NOT EXISTS event_log (
     id BIGSERIAL PRIMARY KEY,
     team_id INT REFERENCES teams(id) ON DELETE SET NULL,
@@ -104,7 +145,10 @@ CREATE TABLE IF NOT EXISTS event_log (
     created_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp()
 );
 
--- 8. TOURNAMENT ROUNDS
+CREATE INDEX IF NOT EXISTS idx_event_log_team 
+ON event_log (team_id, created_at DESC);
+
+-- 11. TOURNAMENT ROUNDS
 CREATE TABLE IF NOT EXISTS rounds (
     round SMALLINT PRIMARY KEY,
     status round_status NOT NULL DEFAULT 'pending',
@@ -117,7 +161,18 @@ CREATE TABLE IF NOT EXISTS rounds (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- 9. TEAM ROUND PROGRESSION & QUALIFICATION
+DROP TRIGGER IF EXISTS trg_rounds_updated ON rounds;
+CREATE TRIGGER trg_rounds_updated 
+BEFORE UPDATE ON rounds 
+FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+-- Seed initial tournament rounds (Rounds 1 and 2)
+INSERT INTO rounds (round, status) VALUES 
+    (1, 'pending'), 
+    (2, 'pending')
+ON CONFLICT (round) DO NOTHING;
+
+-- 12. TEAM ROUND PROGRESSION & QUALIFICATION
 CREATE TABLE IF NOT EXISTS team_rounds (
     team_id INT NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
     round SMALLINT NOT NULL REFERENCES rounds(round) ON DELETE CASCADE,
@@ -132,7 +187,28 @@ CREATE TABLE IF NOT EXISTS team_rounds (
     PRIMARY KEY (team_id, round)
 );
 
--- 10. TEAM ROOM STATUS (Fragment hunt & basket gate)
+CREATE INDEX IF NOT EXISTS idx_leaderboard 
+ON team_rounds (round, clues_solved DESC, total_score DESC, last_solved_at ASC);
+
+-- Auto-enrollment trigger: whenever a new team is inserted into teams,
+-- automatically enroll them into Round 1 of team_rounds
+CREATE OR REPLACE FUNCTION auto_enroll_team_in_round1()
+RETURNS trigger AS $$
+BEGIN
+  INSERT INTO team_rounds (team_id, round)
+  VALUES (NEW.id, 1)
+  ON CONFLICT (team_id, round) DO NOTHING;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_auto_enroll_round1 ON teams;
+CREATE TRIGGER trg_auto_enroll_round1
+AFTER INSERT ON teams
+FOR EACH ROW
+EXECUTE FUNCTION auto_enroll_team_in_round1();
+
+-- 13. TEAM ROOM STATUS (Fragment hunt & basket gate)
 CREATE TABLE IF NOT EXISTS team_rooms (
     id SERIAL PRIMARY KEY,
     team_id INT NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
@@ -144,7 +220,7 @@ CREATE TABLE IF NOT EXISTS team_rooms (
     UNIQUE (team_id, room_id)
 );
 
--- 11. TEAM FRAGMENTS COLLECTED
+-- 14. TEAM FRAGMENTS COLLECTED
 CREATE TABLE IF NOT EXISTS team_fragments (
     id SERIAL PRIMARY KEY,
     team_id INT NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
@@ -155,7 +231,7 @@ CREATE TABLE IF NOT EXISTS team_fragments (
     UNIQUE (team_id, fragment_id)
 );
 
--- 12. TEAM CLUES (Status, attempts, score per clue)
+-- 15. TEAM CLUES (Status, attempts, score per clue)
 CREATE TABLE IF NOT EXISTS team_clues (
     team_id INT NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
     clue_id VARCHAR(50) NOT NULL,
@@ -169,7 +245,7 @@ CREATE TABLE IF NOT EXISTS team_clues (
     PRIMARY KEY (team_id, clue_id)
 );
 
--- 13. SUBMISSIONS (Full audit log of every submitted answer)
+-- 16. SUBMISSIONS (Full audit log of every submitted answer)
 CREATE TABLE IF NOT EXISTS submissions (
     id SERIAL PRIMARY KEY,
     team_id INT NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
@@ -180,7 +256,7 @@ CREATE TABLE IF NOT EXISTS submissions (
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 14. HINT USAGE (Penalties & unlocked levels)
+-- 17. HINT USAGE (Penalties & unlocked levels)
 CREATE TABLE IF NOT EXISTS hint_usage (
     team_id INT NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
     clue_id VARCHAR(50) NOT NULL,
