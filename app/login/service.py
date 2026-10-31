@@ -14,13 +14,7 @@ SESSIONS_DB: Dict[str, Dict[str, Any]] = {}
 LOGIN_ATTEMPTS: List[Dict[str, Any]] = []
 EVENT_LOG: List[Dict[str, Any]] = []
 
-def get_db_connection():
-    if DATABASE_URL:
-        try:
-            return psycopg2.connect(DATABASE_URL)
-        except Exception as e:
-            print("DB Connection failed, falling back to memory:", e)
-    return None
+from app.db import get_db_connection
 
 def seed_demo_teams():
     # Helper to seed demo teams into memory or database if empty

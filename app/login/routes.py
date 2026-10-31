@@ -18,7 +18,7 @@ def get_client_ip(request: Request) -> str:
     return ip
 
 @login_router.post("/login")
-async def login(req: LoginRequest, request: Request, response: Response):
+def login(req: LoginRequest, request: Request, response: Response):
     ip = get_client_ip(request)
     ua = request.headers.get("user-agent", "Unknown Browser")
     
@@ -69,7 +69,7 @@ async def login(req: LoginRequest, request: Request, response: Response):
     }
 
 @login_router.post("/logout")
-async def logout(request: Request, response: Response):
+def logout(request: Request, response: Response):
     token = request.cookies.get("team_session")
     if token:
         LoginService.logout_single_session(token)
@@ -81,7 +81,7 @@ async def logout(request: Request, response: Response):
     return {"ok": True, "message": "Signed out successfully."}
 
 @login_router.post("/logout-all")
-async def logout_all(req: LogoutAllRequest, request: Request, response: Response):
+def logout_all(req: LogoutAllRequest, request: Request, response: Response):
     ip = get_client_ip(request)
     res = LoginService.logout_all_sessions(req.team_name, req.password, ip)
     
@@ -103,7 +103,7 @@ async def logout_all(req: LogoutAllRequest, request: Request, response: Response
     return res
 
 @login_router.get("/me")
-async def get_me(request: Request):
+def get_me(request: Request):
     token = request.cookies.get("team_session")
     data = LoginService.get_current_team_by_token(token) if token else None
     
