@@ -54,3 +54,60 @@ class MockAudioContext {
 
 window.AudioContext = MockAudioContext;
 window.webkitAudioContext = MockAudioContext;
+
+// Mock 2D and WebGL Contexts using Proxy so any Canvas method call works smoothly
+const noop = () => {};
+const createMock2DContext = () => new Proxy({
+  canvas: {},
+  getImageData: (x, y, w, h) => ({ data: new Uint8ClampedArray(Math.max(4, (w || 512) * (h || 512) * 4)) }),
+  createImageData: (w, h) => ({ data: new Uint8ClampedArray(Math.max(4, (w || 512) * (h || 512) * 4)) }),
+  measureText: () => ({ width: 0 }),
+  createLinearGradient: () => ({ addColorStop: noop }),
+  createRadialGradient: () => ({ addColorStop: noop }),
+}, {
+  get(target, prop) {
+    if (prop in target) return target[prop];
+    return noop;
+  },
+  set(target, prop, value) {
+    target[prop] = value;
+    return true;
+  }
+});
+
+const createMockWebGLContext = () => new Proxy({
+  canvas: {},
+  getExtension: () => null,
+  getParameter: () => 0,
+  createTexture: () => ({}),
+  createBuffer: () => ({}),
+  createProgram: () => ({}),
+  createShader: () => ({}),
+}, {
+  get(target, prop) {
+    if (prop in target) return target[prop];
+    return noop;
+  },
+  set(target, prop, value) {
+    target[prop] = value;
+    return true;
+  }
+});
+
+HTMLCanvasElement.prototype.getContext = function (contextType) {
+  if (contextType === '2d') {
+    return createMock2DContext();
+  }
+  return createMockWebGLContext();
+};
+
+HTMLCanvasElement.prototype.toDataURL = function () {
+  return 'data:image/png;base64,';
+};
+
+if (!window.requestAnimationFrame) {
+  window.requestAnimationFrame = (cb) => setTimeout(cb, 16);
+}
+if (!window.cancelAnimationFrame) {
+  window.cancelAnimationFrame = (id) => clearTimeout(id);
+}

@@ -1,17 +1,19 @@
 {
-  "schema_version": "1.0",
+  "schema_version": "3.0",
   "meta": {
     "pack_label": "test",
     "event_name": "Curse the Code",
-    "answer_salt": "b68810eda0a40da7499f5a4e8e54bdb7",
+    "answer_salt": "4731265783fc4318705734749f541513",
     "assets_dir": "assets_test",
     "rules": {
       "answer_cooldown_sec": 3,
       "hint_free_after_sec": 300,
       "max_sessions_per_team": 2,
       "max_field_len": 200,
-      "leaderboard_hide_last_min": 10,
-      "multi_field_separator": "|"
+      "leaderboard_hide_last_min": 0,
+      "multi_field_separator": "|",
+      "timer_mode": "manual",
+      "auto_end": false
     }
   },
   "rounds": [
@@ -19,11 +21,23 @@
       "round": 1,
       "title": "Test Round 1",
       "subtitle": "Round 1",
-      "difficulty": "Easy to Medium",
+      "difficulty": "Medium",
       "default_duration_min": 60,
-      "final_clue": "R1-10",
+      "final_clue": "R1-FIN",
+      "rules": {
+        "mode": "fragments",
+        "attempts_max": 3,
+        "room_unlock": "all_clues_resolved",
+        "input_gate": "room_evidence_complete",
+        "pickup_order": "strict_chain",
+        "search_nudge": {
+          "first_after_sec": 600,
+          "every_sec": 480
+        },
+        "photo_pieces_required": 10
+      },
       "screens": {
-        "intro": "TEST INTRO ROUND 1. This is placeholder text for layout testing.",
+        "intro": "TEST INTRO ROUND 1. Placeholder text for layout testing.",
         "victory_lines": [
           "TEST VICTORY LINE 1.",
           "TEST VICTORY LINE 2.",
@@ -41,6 +55,18 @@
       "difficulty": "Medium to Hard",
       "default_duration_min": 75,
       "final_clue": "R2-10",
+      "rules": {
+        "mode": "classic",
+        "attempts_max": null,
+        "room_unlock": "rules",
+        "input_gate": null,
+        "pickup_order": null,
+        "search_nudge": {
+          "first_after_sec": 0,
+          "every_sec": 0
+        },
+        "photo_pieces_required": 0
+      },
       "screens": {
         "intro": "TEST INTRO ROUND 2. This is placeholder text for layout testing.",
         "victory_lines": [
@@ -63,7 +89,6 @@
       "unlock": {
         "at_start": true
       },
-      "background_file": "bg_bedroom.png",
       "theme": {
         "bg_top": "#140d26",
         "bg_bottom": "#2b1d52",
@@ -83,96 +108,702 @@
       },
       "objects": [
         {
-          "id": "window_moon",
-          "label": "Moonlit window",
-          "kind": "decor",
-          "x": 6,
-          "y": 10,
-          "w": 16,
-          "h": 26,
-          "clue_id": null
-        },
-        {
-          "id": "poster_wall",
-          "label": "Wall poster",
-          "kind": "clue",
-          "x": 50,
-          "y": 12,
-          "w": 17,
-          "h": 30,
-          "clue_id": "R1-03"
-        },
-        {
-          "id": "desk_lamp",
-          "label": "Desk lamp (flickers)",
-          "kind": "decor",
-          "x": 74,
-          "y": 36,
-          "w": 6,
-          "h": 16,
-          "clue_id": null
-        },
-        {
-          "id": "bed",
-          "label": "Unmade bed",
-          "kind": "decor",
-          "x": 22,
-          "y": 52,
-          "w": 34,
-          "h": 24,
-          "clue_id": null
-        },
-        {
-          "id": "diary_bed",
+          "id": "diary",
           "label": "Open diary",
-          "kind": "clue",
-          "x": 34,
-          "y": 56,
-          "w": 11,
-          "h": 8,
-          "clue_id": "R1-01"
+          "kind": "clue_entry",
+          "clue_id": "R1-01",
+          "visible": true
         },
         {
-          "id": "nightstand",
-          "label": "Nightstand",
-          "kind": "decor",
-          "x": 12,
-          "y": 56,
-          "w": 12,
-          "h": 18,
-          "clue_id": null
+          "id": "notebook",
+          "label": "School notebook",
+          "kind": "clue_entry",
+          "clue_id": "R1-02",
+          "visible": true
+        },
+        {
+          "id": "poster",
+          "label": "Wall poster",
+          "kind": "clue_entry",
+          "clue_id": "R1-03",
+          "visible": true
         },
         {
           "id": "music_box",
           "label": "Music box",
-          "kind": "clue",
-          "x": 14,
-          "y": 50,
-          "w": 8,
-          "h": 8,
-          "clue_id": "R1-02"
+          "kind": "decor",
+          "clue_id": null,
+          "visible": true
         },
         {
-          "id": "suitcase",
-          "label": "Half-packed suitcase",
-          "kind": "decor",
-          "x": 60,
-          "y": 66,
-          "w": 18,
-          "h": 10,
-          "clue_id": null
+          "id": "trunk",
+          "label": "Leather trunk",
+          "kind": "hiding",
+          "clue_id": null,
+          "visible": true
         },
         {
-          "id": "wall_clock",
-          "label": "Wall clock (ticks)",
+          "id": "nightstand",
+          "label": "Nightstand",
+          "kind": "hiding",
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "candle",
+          "label": "Candle",
+          "kind": "hiding",
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "desk",
+          "label": "Desk",
+          "kind": "hiding",
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "bed",
+          "label": "Four-poster bed",
+          "kind": "hiding",
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "wardrobe",
+          "label": "Wardrobe",
+          "kind": "hiding",
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "lamp",
+          "label": "Table lamp",
+          "kind": "hiding",
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "window",
+          "label": "Window",
+          "kind": "hiding",
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "clock",
+          "label": "Wall clock",
+          "kind": "hiding",
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "pillow",
+          "label": "Pillows",
+          "kind": "hiding",
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "mirror",
+          "label": "Cracked mirror",
+          "kind": "hiding",
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "chair",
+          "label": "Rocking chair",
+          "kind": "hiding",
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "doll",
+          "label": "Doll",
+          "kind": "hiding",
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "photo_frame",
+          "label": "Photo frame",
+          "kind": "hiding",
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "portrait",
+          "label": "Portrait",
+          "kind": "clue_entry",
+          "clue_id": "R1-04",
+          "visible": true
+        },
+        {
+          "id": "rug",
+          "label": "Rug",
           "kind": "decor",
-          "x": 80,
-          "y": 14,
-          "w": 6,
-          "h": 10,
-          "clue_id": null
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "pumpkins",
+          "label": "Pumpkins",
+          "kind": "decor",
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "wall_frames",
+          "label": "Wall frames",
+          "kind": "decor",
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "beams_webs",
+          "label": "Beams and webs",
+          "kind": "decor",
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "bats_spider",
+          "label": "Bats and spider",
+          "kind": "decor",
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "bookshelf",
+          "label": "Tall bookshelf",
+          "kind": "hiding",
+          "clue_id": null,
+          "visible": true
         }
-      ]
+      ],
+      "evidence": [
+        {
+          "id": "EB01",
+          "clue_id": "R1-03",
+          "part": "A",
+          "is_decoy": false,
+          "chain": "bedroom",
+          "seq": 1,
+          "hiding": {
+            "room": "bedroom",
+            "object_id": "trunk",
+            "spot": "folded in the lid lining",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "Torn poster scrap",
+            "style": {
+              "ink": "black",
+              "paper": "poster"
+            },
+            "lines": [],
+            "corner_mark": "",
+            "image_file": "poster_piece_1.png",
+            "audio_file": ""
+          },
+          "locate_hint": "TEST: search the trunk.",
+          "secret": {
+            "hidden_strip": "TEST DATE 07/"
+          }
+        },
+        {
+          "id": "EB02",
+          "clue_id": "R1-01",
+          "part": "A",
+          "is_decoy": false,
+          "chain": "bedroom",
+          "seq": 2,
+          "hiding": {
+            "room": "bedroom",
+            "object_id": "nightstand",
+            "spot": "the drawer, under the tissues",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "Loose page, blue ink",
+            "style": {
+              "ink": "blue",
+              "paper": "lined"
+            },
+            "lines": [
+              "Test day 2",
+              "Rex turned 5 today. This is test page text.",
+              "Test line three.",
+              "Test line four:",
+              "YJXY JSYWD Y"
+            ],
+            "corner_mark": "41",
+            "image_file": "",
+            "audio_file": ""
+          },
+          "locate_hint": "TEST: search the nightstand.",
+          "secret": {
+            "chunk": "YJXY JSYWD Y"
+          }
+        },
+        {
+          "id": "EB03",
+          "clue_id": "R1-04",
+          "part": "A",
+          "is_decoy": false,
+          "chain": "bedroom",
+          "seq": 3,
+          "hiding": {
+            "room": "bedroom",
+            "object_id": "candle",
+            "spot": "under the candle holder",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "Torn canvas strip (left)",
+            "style": {
+              "ink": "black",
+              "paper": "card"
+            },
+            "lines": [
+              "TEST riddle one: the first place."
+            ],
+            "corner_mark": "",
+            "image_file": "portrait_piece_1.png",
+            "audio_file": ""
+          },
+          "locate_hint": "TEST: search the candle.",
+          "secret": {
+            "note": "points to QR-1 location"
+          }
+        },
+        {
+          "id": "EB04",
+          "clue_id": "R1-02",
+          "part": "A",
+          "is_decoy": false,
+          "chain": "bedroom",
+          "seq": 4,
+          "hiding": {
+            "room": "bedroom",
+            "object_id": "desk",
+            "spot": "under the clutter on the desk",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "Notebook sheet, pencil",
+            "style": {
+              "ink": "grey pencil",
+              "paper": "grid"
+            },
+            "lines": [
+              "Test sheet, page 3",
+              "I drew three test stars tonight.",
+              "Test line three.",
+              "WKH WHVW JDW"
+            ],
+            "corner_mark": "7",
+            "image_file": "",
+            "audio_file": ""
+          },
+          "locate_hint": "TEST: search the desk.",
+          "secret": {
+            "chunk": "WKH WHVW JDW"
+          }
+        },
+        {
+          "id": "EB05",
+          "clue_id": "R1-01",
+          "part": "B",
+          "is_decoy": false,
+          "chain": "bedroom",
+          "seq": 5,
+          "hiding": {
+            "room": "bedroom",
+            "object_id": "bed",
+            "spot": "under the mattress edge",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "Torn page, blue ink",
+            "style": {
+              "ink": "blue",
+              "paper": "lined"
+            },
+            "lines": [
+              "MJ PJDBTWI NX QFS"
+            ],
+            "corner_mark": "42",
+            "image_file": "",
+            "audio_file": ""
+          },
+          "locate_hint": "TEST: search the bed.",
+          "secret": {
+            "chunk": "MJ PJDBTWI NX QFS"
+          }
+        },
+        {
+          "id": "EB06",
+          "clue_id": "R1-03",
+          "part": "B",
+          "is_decoy": false,
+          "chain": "bedroom",
+          "seq": 6,
+          "hiding": {
+            "room": "bedroom",
+            "object_id": "wardrobe",
+            "spot": "a coat pocket",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "Torn poster scrap",
+            "style": {
+              "ink": "black",
+              "paper": "poster"
+            },
+            "lines": [],
+            "corner_mark": "",
+            "image_file": "poster_piece_2.png",
+            "audio_file": ""
+          },
+          "locate_hint": "TEST: search the wardrobe.",
+          "secret": {
+            "hidden_strip": "04/20"
+          }
+        },
+        {
+          "id": "EB07",
+          "clue_id": "R1-02",
+          "part": "B",
+          "is_decoy": false,
+          "chain": "bedroom",
+          "seq": 7,
+          "hiding": {
+            "room": "bedroom",
+            "object_id": "musicbox",
+            "spot": "inside the musicbox compartment",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "Notebook sheet, pencil",
+            "style": {
+              "ink": "grey pencil",
+              "paper": "grid"
+            },
+            "lines": [
+              "H RSHQV DW VXQ"
+            ],
+            "corner_mark": "8",
+            "image_file": "",
+            "audio_file": ""
+          },
+          "locate_hint": "TEST: search the musicbox.",
+          "secret": {
+            "chunk": "H RSHQV DW VXQ"
+          }
+        },
+        {
+          "id": "EB08",
+          "clue_id": "R1-04",
+          "part": "B",
+          "is_decoy": false,
+          "chain": "bedroom",
+          "seq": 8,
+          "hiding": {
+            "room": "bedroom",
+            "object_id": "pillow",
+            "spot": "tucked beneath the pillow",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "Torn canvas strip (center)",
+            "style": {
+              "ink": "black",
+              "paper": "ticket"
+            },
+            "lines": [
+              "TEST riddle two: the second place."
+            ],
+            "corner_mark": "",
+            "image_file": "portrait_piece_2.png",
+            "audio_file": ""
+          },
+          "locate_hint": "TEST: search the pillow.",
+          "secret": {
+            "note": "points to QR-2 location"
+          }
+        },
+        {
+          "id": "EB09",
+          "clue_id": "R1-01",
+          "part": "C",
+          "is_decoy": false,
+          "chain": "bedroom",
+          "seq": 9,
+          "hiding": {
+            "room": "bedroom",
+            "object_id": "clock",
+            "spot": "behind the clock face",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "Page corner, blue ink",
+            "style": {
+              "ink": "blue",
+              "paper": "lined"
+            },
+            "lines": [
+              "YJWS"
+            ],
+            "corner_mark": "",
+            "image_file": "",
+            "audio_file": ""
+          },
+          "locate_hint": "TEST: search the clock.",
+          "secret": {
+            "chunk": "YJWS"
+          }
+        },
+        {
+          "id": "EB10",
+          "clue_id": "R1-02",
+          "part": "C",
+          "is_decoy": false,
+          "chain": "bedroom",
+          "seq": 10,
+          "hiding": {
+            "room": "bedroom",
+            "object_id": "bookshelf",
+            "spot": "inside a hollowed book on the shelf",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "Notebook scrap, blue ink",
+            "style": {
+              "ink": "blue",
+              "paper": "grid"
+            },
+            "lines": [
+              "ULVH"
+            ],
+            "corner_mark": "",
+            "image_file": "",
+            "audio_file": ""
+          },
+          "locate_hint": "TEST: search the bookshelf.",
+          "secret": {
+            "chunk": "ULVH"
+          }
+        },
+        {
+          "id": "EB11",
+          "clue_id": "R1-03",
+          "part": "C",
+          "is_decoy": false,
+          "chain": "bedroom",
+          "seq": 11,
+          "hiding": {
+            "room": "bedroom",
+            "object_id": "mirror",
+            "spot": "behind the frame",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "Torn poster scrap",
+            "style": {
+              "ink": "black",
+              "paper": "poster"
+            },
+            "lines": [],
+            "corner_mark": "",
+            "image_file": "poster_piece_3.png",
+            "audio_file": ""
+          },
+          "locate_hint": "TEST: search the mirror.",
+          "secret": {
+            "hidden_strip": "01"
+          }
+        },
+        {
+          "id": "EB12",
+          "clue_id": "R1-04",
+          "part": "C",
+          "is_decoy": false,
+          "chain": "bedroom",
+          "seq": 12,
+          "hiding": {
+            "room": "bedroom",
+            "object_id": "chair",
+            "spot": "the cushion seam",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "Torn canvas strip (right)",
+            "style": {
+              "ink": "black",
+              "paper": "index card"
+            },
+            "lines": [
+              "TEST rule line 1.",
+              "TEST rule line 2.",
+              "TEST rule line 3.",
+              "You may choose once."
+            ],
+            "corner_mark": "",
+            "image_file": "portrait_piece_3.png",
+            "audio_file": ""
+          },
+          "locate_hint": "TEST: search the chair.",
+          "secret": {
+            "note": "rule card"
+          }
+        },
+        {
+          "id": "EK01",
+          "clue_id": "R1-10",
+          "part": "A",
+          "is_decoy": false,
+          "chain": "basement",
+          "seq": 1,
+          "hiding": {
+            "room": "bedroom",
+            "object_id": "doll",
+            "spot": "inside the doll",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "Folded note, aged paper",
+            "style": {
+              "ink": "blue",
+              "paper": "aged"
+            },
+            "lines": [
+              "KYFV MVV HZ",
+              "(margin) The key is the name of the process that halted."
+            ],
+            "corner_mark": "",
+            "image_file": "",
+            "audio_file": ""
+          },
+          "locate_hint": "TEST: search the doll.",
+          "secret": {
+            "chunk": "KYFV MVV HZ"
+          }
+        },
+        {
+          "id": "XB01",
+          "clue_id": null,
+          "part": null,
+          "is_decoy": true,
+          "chain": null,
+          "seq": null,
+          "hiding": {
+            "room": "bedroom",
+            "object_id": "photo_frame",
+            "spot": "behind the photograph",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "Torn page, blue ink",
+            "style": {
+              "ink": "blue",
+              "paper": "lined"
+            },
+            "lines": [
+              "Test decoy page about a school play.",
+              "Line 12 of the test script."
+            ],
+            "corner_mark": "43",
+            "image_file": "",
+            "audio_file": ""
+          },
+          "locate_hint": "TEST: search the photo_frame.",
+          "secret": {
+            "note": "decoy"
+          }
+        },
+        {
+          "id": "XB02",
+          "clue_id": null,
+          "part": null,
+          "is_decoy": true,
+          "chain": null,
+          "seq": null,
+          "hiding": {
+            "room": "bedroom",
+            "object_id": "portrait",
+            "spot": "behind the canvas",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "Scrap, blue ink",
+            "style": {
+              "ink": "blue",
+              "paper": "lined"
+            },
+            "lines": [
+              "RSX IZIVC XIWX RSXI MW XVYI"
+            ],
+            "corner_mark": "",
+            "image_file": "",
+            "audio_file": ""
+          },
+          "locate_hint": "TEST: search the portrait.",
+          "secret": {
+            "note": "decoy"
+          }
+        }
+      ],
+      "basket": {
+        "opens_when": "all_room_pieces_collected"
+      }
     },
     {
       "id": "study",
@@ -180,11 +811,10 @@
       "order": 2,
       "title": "Test Room 2 (Study)",
       "unlock": {
-        "rooms_complete": [
+        "all_clues_resolved": [
           "bedroom"
         ]
       },
-      "background_file": "bg_study.png",
       "theme": {
         "bg_top": "#04120b",
         "bg_bottom": "#0b2418",
@@ -204,76 +834,723 @@
       },
       "objects": [
         {
-          "id": "sticky_wall",
-          "label": "Sticky-note wall",
-          "kind": "decor",
-          "x": 5,
-          "y": 12,
-          "w": 24,
-          "h": 30,
-          "clue_id": null
+          "id": "tablet_drawer",
+          "label": "Locked desk drawer",
+          "kind": "clue_entry",
+          "clue_id": "R1-05",
+          "visible": true
+        },
+        {
+          "id": "crt_monitor",
+          "label": "Old CRT monitor",
+          "kind": "clue_entry",
+          "clue_id": "R1-06",
+          "visible": true
+        },
+        {
+          "id": "terminal_pc",
+          "label": "Terminal PC",
+          "kind": "clue_entry",
+          "clue_id": "R1-07",
+          "visible": true
+        },
+        {
+          "id": "line_printer",
+          "label": "Dot-matrix printer",
+          "kind": "clue_entry",
+          "clue_id": "R1-08",
+          "visible": true
+        },
+        {
+          "id": "bookshelf",
+          "label": "Bookshelf",
+          "kind": "hiding",
+          "clue_id": null,
+          "visible": true
         },
         {
           "id": "corkboard",
           "label": "Corkboard with red string",
-          "kind": "decor",
-          "x": 62,
-          "y": 12,
-          "w": 28,
-          "h": 30,
-          "clue_id": null
+          "kind": "hiding",
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "desk_blotter",
+          "label": "Desk blotter",
+          "kind": "hiding",
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "filing_cabinet",
+          "label": "Filing cabinet",
+          "kind": "hiding",
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "sticky_wall",
+          "label": "Sticky-note wall",
+          "kind": "hiding",
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "armchair",
+          "label": "Armchair",
+          "kind": "hiding",
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "reel_recorder",
+          "label": "Reel recorder",
+          "kind": "hiding",
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "cable_bundle",
+          "label": "Cable bundle",
+          "kind": "hiding",
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "floor_lamp",
+          "label": "Floor lamp",
+          "kind": "hiding",
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "wastebin",
+          "label": "Waste bin",
+          "kind": "hiding",
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "window",
+          "label": "Window",
+          "kind": "hiding",
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "radiator",
+          "label": "Radiator",
+          "kind": "hiding",
+          "clue_id": null,
+          "visible": true
         },
         {
           "id": "desk",
           "label": "Heavy desk",
           "kind": "decor",
-          "x": 24,
-          "y": 52,
-          "w": 50,
-          "h": 20,
-          "clue_id": null
+          "clue_id": null,
+          "visible": true
         },
         {
-          "id": "crt_monitor",
-          "label": "Old CRT monitor",
-          "kind": "clue",
-          "x": 40,
-          "y": 36,
-          "w": 16,
-          "h": 16,
-          "clue_id": "R1-06"
-        },
-        {
-          "id": "tape_deck",
-          "label": "Reel recorder",
-          "kind": "clue",
-          "x": 62,
-          "y": 52,
-          "w": 12,
-          "h": 8,
-          "clue_id": "R1-07"
-        },
-        {
-          "id": "desk_drawer",
-          "label": "Locked desk drawer",
-          "kind": "clue",
-          "x": 28,
-          "y": 66,
-          "w": 14,
-          "h": 6,
-          "clue_id": "R1-04"
-        },
-        {
-          "id": "cables",
-          "label": "Tangled cables",
+          "id": "rug",
+          "label": "Rug",
           "kind": "decor",
-          "x": 8,
-          "y": 70,
-          "w": 20,
-          "h": 12,
-          "clue_id": null
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "beams_webs",
+          "label": "Beams and webs",
+          "kind": "decor",
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "coat_stand",
+          "label": "Coat stand",
+          "kind": "decor",
+          "clue_id": null,
+          "visible": true
         }
-      ]
+      ],
+      "evidence": [
+        {
+          "id": "ES01",
+          "clue_id": "R1-07",
+          "part": "A",
+          "is_decoy": false,
+          "chain": "study",
+          "seq": 1,
+          "hiding": {
+            "room": "study",
+            "object_id": "bookshelf",
+            "spot": "inside a hollowed book",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "Terminal printout",
+            "style": {
+              "ink": "green",
+              "paper": "fanfold"
+            },
+            "lines": [
+              "test.log",
+              "[02:12:50] test: peer joined",
+              "[02:13:31] test: retry",
+              "DUMP:",
+              "45 52 52 4F 52 20 30 32 3A 31 35 3A 30"
+            ],
+            "corner_mark": "",
+            "image_file": "",
+            "audio_file": ""
+          },
+          "locate_hint": "TEST: search the bookshelf.",
+          "secret": {
+            "chunk": "45 52 52 4F 52 20 30 32 3A 31 35 3A 30"
+          }
+        },
+        {
+          "id": "ES02",
+          "clue_id": "R1-06",
+          "part": "A",
+          "is_decoy": false,
+          "chain": "study",
+          "seq": 2,
+          "hiding": {
+            "room": "study",
+            "object_id": "corkboard",
+            "spot": "pinned under a flyer",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "CRT screen dump tape 1",
+            "style": {
+              "ink": "black",
+              "paper": "printout"
+            },
+            "lines": [
+              "01010011 01001001"
+            ],
+            "corner_mark": "",
+            "image_file": "",
+            "audio_file": ""
+          },
+          "locate_hint": "TEST: search the corkboard.",
+          "secret": {
+            "chunk": "VGhlIHNpZ25hbCBtdXN0IG5l"
+          }
+        },
+        {
+          "id": "ES03",
+          "clue_id": "R1-05",
+          "part": "A",
+          "is_decoy": false,
+          "chain": "study",
+          "seq": 3,
+          "hiding": {
+            "room": "study",
+            "object_id": "desk_blotter",
+            "spot": "under the green blotter",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "Sticky note, torn",
+            "style": {
+              "ink": "black",
+              "paper": "yellow"
+            },
+            "lines": [
+              "01000001 01001100"
+            ],
+            "corner_mark": "",
+            "image_file": "",
+            "audio_file": ""
+          },
+          "locate_hint": "TEST: search the desk_blotter.",
+          "secret": {
+            "chunk": "AL"
+          }
+        },
+        {
+          "id": "ES04",
+          "clue_id": "R1-08",
+          "part": "A",
+          "is_decoy": false,
+          "chain": "study",
+          "seq": 4,
+          "hiding": {
+            "room": "study",
+            "object_id": "filing_cabinet",
+            "spot": "top drawer, behind the folders",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "Printer sheet 1",
+            "style": {
+              "ink": "black",
+              "paper": "fanfold"
+            },
+            "lines": [
+              "LOGINS",
+              "LOGIN src=WS-LAB1 token=TK-01",
+              "LOGIN src=WS-LAB2 token=TK-02",
+              "LOGIN src=TABLET-A token=TK-03",
+              "LOGIN src=SRC-TEST3 token=TK-04",
+              "LOGIN src=HOUSE-TEST token=TK-05",
+              "LOGIN src=TABLET-B token=TK-06",
+              "LOGIN src=SRC-TEST9 token=TK-07"
+            ],
+            "corner_mark": "",
+            "image_file": "",
+            "audio_file": ""
+          },
+          "locate_hint": "TEST: search the filing_cabinet.",
+          "secret": {
+            "note": "logins"
+          }
+        },
+        {
+          "id": "ES05",
+          "clue_id": "R1-06",
+          "part": "B",
+          "is_decoy": false,
+          "chain": "study",
+          "seq": 5,
+          "hiding": {
+            "room": "study",
+            "object_id": "sticky_wall",
+            "spot": "behind the yellow notes",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "CRT screen dump tape 2",
+            "style": {
+              "ink": "blue",
+              "paper": "yellow note"
+            },
+            "lines": [
+              "01000111 01001110"
+            ],
+            "corner_mark": "",
+            "image_file": "",
+            "audio_file": ""
+          },
+          "locate_hint": "TEST: search the sticky_wall.",
+          "secret": {
+            "chunk": "dmVyIGJlIHNlbnQgZnJvbSBp"
+          }
+        },
+        {
+          "id": "ES06",
+          "clue_id": "R1-07",
+          "part": "B",
+          "is_decoy": false,
+          "chain": "study",
+          "seq": 6,
+          "hiding": {
+            "room": "study",
+            "object_id": "armchair",
+            "spot": "between cushion and frame",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "Editor window capture",
+            "style": {
+              "ink": "green",
+              "paper": "screenshot"
+            },
+            "lines": [
+              "// test_dump.c",
+              "// DUMP continues:",
+              "39 20 50 52 4F 43 45 53 53 20 4F 52 42"
+            ],
+            "corner_mark": "",
+            "image_file": "",
+            "audio_file": ""
+          },
+          "locate_hint": "TEST: search the armchair.",
+          "secret": {
+            "chunk": "39 20 50 52 4F 43 45 53 53 20 4F 52 42"
+          }
+        },
+        {
+          "id": "ES07",
+          "clue_id": "R1-08",
+          "part": "B",
+          "is_decoy": false,
+          "chain": "study",
+          "seq": 7,
+          "hiding": {
+            "room": "study",
+            "object_id": "reel_recorder",
+            "spot": "taped under the reel",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "Printer sheet 2",
+            "style": {
+              "ink": "black",
+              "paper": "fanfold"
+            },
+            "lines": [
+              "TOKENS",
+              "TK-01 issued 2001-07-04 16:12:44",
+              "TK-02 issued 2001-07-04 17:03:10",
+              "TK-03 issued 2001-07-04 18:40:27",
+              "TK-04 issued 2001-07-04 20:31:05",
+              "TK-05 issued 2001-07-04 21:15:52",
+              "TK-06 issued 2001-07-04 22:09:33",
+              "TK-07 issued 2031-07-04 23:47:09"
+            ],
+            "corner_mark": "",
+            "image_file": "",
+            "audio_file": ""
+          },
+          "locate_hint": "TEST: search the reel_recorder.",
+          "secret": {
+            "note": "tokens"
+          }
+        },
+        {
+          "id": "ES08",
+          "clue_id": "R1-05",
+          "part": "B",
+          "is_decoy": false,
+          "chain": "study",
+          "seq": 8,
+          "hiding": {
+            "room": "study",
+            "object_id": "cable_bundle",
+            "spot": "a tag tied to the cables",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "Cable tag",
+            "style": {
+              "ink": "black",
+              "paper": "tag"
+            },
+            "lines": [
+              "01010000 01001000 01000001"
+            ],
+            "corner_mark": "",
+            "image_file": "",
+            "audio_file": ""
+          },
+          "locate_hint": "TEST: search the cable_bundle.",
+          "secret": {
+            "chunk": "PHA"
+          }
+        },
+        {
+          "id": "ES09",
+          "clue_id": "R1-06",
+          "part": "C",
+          "is_decoy": false,
+          "chain": "study",
+          "seq": 9,
+          "hiding": {
+            "room": "study",
+            "object_id": "corkboard",
+            "spot": "the back of the board",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "CRT screen dump tape 3",
+            "style": {
+              "ink": "black",
+              "paper": "cork backing"
+            },
+            "lines": [
+              "01000001 01001100"
+            ],
+            "corner_mark": "",
+            "image_file": "",
+            "audio_file": ""
+          },
+          "locate_hint": "TEST: search the corkboard.",
+          "secret": {
+            "chunk": "bnNpZGUgdGhlIGxhYi4="
+          }
+        },
+        {
+          "id": "ES10",
+          "clue_id": "R1-08",
+          "part": "C",
+          "is_decoy": false,
+          "chain": "study",
+          "seq": 10,
+          "hiding": {
+            "room": "study",
+            "object_id": "filing_cabinet",
+            "spot": "bottom drawer, false bottom",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "Printer sheet 3",
+            "style": {
+              "ink": "black",
+              "paper": "fanfold"
+            },
+            "lines": [
+              "POLICY",
+              "AUTHORISED SOURCES: WS-LAB1, WS-LAB2, TABLET-A, TABLET-B, HOUSE-TEST",
+              "HOUSE SEALED: 2001-07-04 23:59:59",
+              "A token issued after sealing is invalid."
+            ],
+            "corner_mark": "",
+            "image_file": "",
+            "audio_file": ""
+          },
+          "locate_hint": "TEST: search the filing_cabinet.",
+          "secret": {
+            "note": "policy"
+          }
+        },
+        {
+          "id": "ES11",
+          "clue_id": "R1-07",
+          "part": "C",
+          "is_decoy": false,
+          "chain": "study",
+          "seq": 11,
+          "hiding": {
+            "room": "study",
+            "object_id": "floor_lamp",
+            "spot": "rolled in the lampshade",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "Printed memo",
+            "style": {
+              "ink": "black",
+              "paper": "white"
+            },
+            "lines": [
+              "...end of dump:",
+              "49 54 2E 53 59 53 20 48 41 4C 54 45 44"
+            ],
+            "corner_mark": "",
+            "image_file": "",
+            "audio_file": ""
+          },
+          "locate_hint": "TEST: search the floor_lamp.",
+          "secret": {
+            "chunk": "49 54 2E 53 59 53 20 48 41 4C 54 45 44"
+          }
+        },
+        {
+          "id": "ES12",
+          "clue_id": "R1-05",
+          "part": "C",
+          "is_decoy": false,
+          "chain": "study",
+          "seq": 12,
+          "hiding": {
+            "room": "study",
+            "object_id": "wastebin",
+            "spot": "crumpled at the bottom",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "Screen protector scrap",
+            "style": {
+              "ink": "black",
+              "paper": "clear"
+            },
+            "lines": [
+              "Test passcode: the first Greek letter.",
+              "Five letters."
+            ],
+            "corner_mark": "",
+            "image_file": "",
+            "audio_file": ""
+          },
+          "locate_hint": "TEST: search the wastebin.",
+          "secret": {
+            "note": "context"
+          }
+        },
+        {
+          "id": "EK02",
+          "clue_id": "R1-09",
+          "part": "B",
+          "is_decoy": false,
+          "chain": "basement",
+          "seq": 2,
+          "hiding": {
+            "room": "study",
+            "object_id": "reel_recorder",
+            "spot": "the recorder's case",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "Corrupted reel tape segment",
+            "style": {
+              "ink": "black",
+              "paper": "reel"
+            },
+            "lines": [
+              "[STATIC FREQUENCY OVERRIDE - DATA UNRECOVERABLE]",
+              "TRANSMISSION INTEGRITY: 0%"
+            ],
+            "corner_mark": "",
+            "image_file": "",
+            "audio_file": "rec_b.wav"
+          },
+          "locate_hint": "TEST: search the reel_recorder.",
+          "secret": {
+            "spoken_word": "RED"
+          }
+        },
+        {
+          "id": "EK03",
+          "clue_id": "R1-10",
+          "part": "B",
+          "is_decoy": false,
+          "chain": "basement",
+          "seq": 3,
+          "hiding": {
+            "room": "study",
+            "object_id": "bookshelf",
+            "spot": "behind a row of books",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "Folded note, aged paper",
+            "style": {
+              "ink": "blue",
+              "paper": "aged"
+            },
+            "lines": [
+              "BR TPUIZVUML ZF"
+            ],
+            "corner_mark": "",
+            "image_file": "",
+            "audio_file": ""
+          },
+          "locate_hint": "TEST: search the bookshelf.",
+          "secret": {
+            "chunk": "BR TPUIZVUML ZF"
+          }
+        },
+        {
+          "id": "XS01",
+          "clue_id": null,
+          "part": null,
+          "is_decoy": true,
+          "chain": null,
+          "seq": null,
+          "hiding": {
+            "room": "study",
+            "object_id": "window",
+            "spot": "the sill",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "Old terminal printout",
+            "style": {
+              "ink": "green",
+              "paper": "fanfold"
+            },
+            "lines": [
+              "DUMP (old):",
+              "4B 45 45 50 20 54 48 45 20 54 45 53 54 20 4F 4E"
+            ],
+            "corner_mark": "",
+            "image_file": "",
+            "audio_file": ""
+          },
+          "locate_hint": "TEST: search the window.",
+          "secret": {
+            "note": "decoy"
+          }
+        },
+        {
+          "id": "XS02",
+          "clue_id": null,
+          "part": null,
+          "is_decoy": true,
+          "chain": null,
+          "seq": null,
+          "hiding": {
+            "room": "study",
+            "object_id": "radiator",
+            "spot": "behind the pipes",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "Sticky note",
+            "style": {
+              "ink": "black",
+              "paper": "yellow"
+            },
+            "lines": [
+              "01001111 01001101",
+              "01000101 01000111 01000001"
+            ],
+            "corner_mark": "",
+            "image_file": "",
+            "audio_file": ""
+          },
+          "locate_hint": "TEST: search the radiator.",
+          "secret": {
+            "note": "decoy"
+          }
+        }
+      ],
+      "basket": {
+        "opens_when": "all_room_pieces_collected"
+      }
     },
     {
       "id": "basement",
@@ -281,12 +1558,10 @@
       "order": 3,
       "title": "Test Room 3 (Basement)",
       "unlock": {
-        "rooms_complete": [
-          "bedroom",
+        "all_clues_resolved": [
           "study"
         ]
       },
-      "background_file": "bg_basement.png",
       "theme": {
         "bg_top": "#14161a",
         "bg_bottom": "#1f1115",
@@ -306,76 +1581,260 @@
       },
       "objects": [
         {
-          "id": "wall_monitor",
-          "label": "Countdown monitor",
-          "kind": "decor",
-          "x": 38,
-          "y": 8,
-          "w": 24,
-          "h": 14,
-          "clue_id": null
+          "id": "intercom",
+          "label": "Wall intercom",
+          "kind": "clue_entry",
+          "clue_id": "R1-09",
+          "visible": true
         },
         {
-          "id": "server_rack",
-          "label": "Server rack",
-          "kind": "decor",
-          "x": 6,
-          "y": 20,
-          "w": 22,
-          "h": 56,
-          "clue_id": null
-        },
-        {
-          "id": "rack_door_note",
-          "label": "Note inside rack door",
-          "kind": "clue",
-          "x": 12,
-          "y": 38,
-          "w": 8,
-          "h": 8,
-          "clue_id": "R1-09"
-        },
-        {
-          "id": "maintenance_terminal",
-          "label": "Maintenance terminal",
-          "kind": "clue",
-          "x": 30,
-          "y": 44,
-          "w": 12,
-          "h": 12,
-          "clue_id": "R1-05"
-        },
-        {
-          "id": "rack_console",
-          "label": "Access console",
-          "kind": "clue",
-          "x": 44,
-          "y": 44,
-          "w": 12,
-          "h": 12,
-          "clue_id": "R1-08"
+          "id": "rack_door",
+          "label": "Server rack door with note",
+          "kind": "clue_entry",
+          "clue_id": "R1-10",
+          "visible": true
         },
         {
           "id": "containment_console",
           "label": "Containment console",
-          "kind": "clue",
-          "x": 72,
-          "y": 34,
-          "w": 20,
-          "h": 22,
-          "clue_id": "R1-10"
+          "kind": "clue_entry",
+          "clue_id": "R1-FIN",
+          "visible": true
+        },
+        {
+          "id": "server_rack",
+          "label": "Server rack",
+          "kind": "hiding",
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "maintenance_terminal",
+          "label": "Maintenance terminal",
+          "kind": "hiding",
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "toolbox",
+          "label": "Toolbox",
+          "kind": "hiding",
+          "clue_id": null,
+          "visible": true
         },
         {
           "id": "floor_seal",
           "label": "Circular floor seal",
+          "kind": "hiding",
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "wall_monitor",
+          "label": "Countdown monitor",
           "kind": "decor",
-          "x": 36,
-          "y": 70,
-          "w": 28,
-          "h": 22,
-          "clue_id": null
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "pipes",
+          "label": "Pipes and steam",
+          "kind": "decor",
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "barrels",
+          "label": "Barrels and crates",
+          "kind": "decor",
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "fuse_box",
+          "label": "Fuse box",
+          "kind": "decor",
+          "clue_id": null,
+          "visible": true
         }
-      ]
+      ],
+      "evidence": [
+        {
+          "id": "EK04",
+          "clue_id": "R1-09",
+          "part": "C",
+          "is_decoy": false,
+          "chain": "basement",
+          "seq": 4,
+          "hiding": {
+            "room": "basement",
+            "object_id": "server_rack",
+            "spot": "the printer tray",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "Glitched printer report",
+            "style": {
+              "ink": "black",
+              "paper": "fanfold"
+            },
+            "lines": [
+              "ERR_COMM_DROP: SOURCE PACKET CORRUPTED",
+              "DO NOT TRUST INTERNAL RECORDINGS"
+            ],
+            "corner_mark": "",
+            "image_file": "",
+            "audio_file": ""
+          },
+          "locate_hint": "TEST: search the server_rack.",
+          "secret": {
+            "note": "metadata"
+          }
+        },
+        {
+          "id": "EK05",
+          "clue_id": "R1-09",
+          "part": "A",
+          "is_decoy": false,
+          "chain": "basement",
+          "seq": 5,
+          "hiding": {
+            "room": "basement",
+            "object_id": "maintenance_terminal",
+            "spot": "the terminal's audio player",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "Scrambled terminal audio packet",
+            "style": {
+              "ink": "black",
+              "paper": "digital"
+            },
+            "lines": [
+              "VOICE METADATA TAMPERED",
+              "CHECK EXTERNAL PHYSICAL LOG"
+            ],
+            "corner_mark": "",
+            "image_file": "",
+            "audio_file": "rec_a.wav"
+          },
+          "locate_hint": "TEST: search the maintenance_terminal.",
+          "secret": {
+            "spoken_word": "GREEN"
+          }
+        },
+        {
+          "id": "EK06",
+          "clue_id": "R1-10",
+          "part": "C",
+          "is_decoy": false,
+          "chain": "basement",
+          "seq": 6,
+          "hiding": {
+            "room": "basement",
+            "object_id": "toolbox",
+            "spot": "under the tool tray",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "Folded note, aged paper",
+            "style": {
+              "ink": "blue",
+              "paper": "aged"
+            },
+            "lines": [
+              "XMK HYF NEOX"
+            ],
+            "corner_mark": "",
+            "image_file": "",
+            "audio_file": ""
+          },
+          "locate_hint": "TEST: search the toolbox.",
+          "secret": {
+            "chunk": "XMK HYF NEOX"
+          }
+        },
+        {
+          "id": "XK01",
+          "clue_id": null,
+          "part": null,
+          "is_decoy": true,
+          "chain": null,
+          "seq": null,
+          "hiding": {
+            "room": "basement",
+            "object_id": "floor_seal",
+            "spot": "under the grating",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "Clean printed note",
+            "style": {
+              "ink": "black",
+              "paper": "white glossy"
+            },
+            "lines": [
+              "FRJAX HYF NEOX BB GCFO"
+            ],
+            "corner_mark": "",
+            "image_file": "",
+            "audio_file": ""
+          },
+          "locate_hint": "TEST: search the floor_seal.",
+          "secret": {
+            "note": "decoy"
+          }
+        },
+        {
+          "id": "XK02",
+          "clue_id": null,
+          "part": null,
+          "is_decoy": true,
+          "chain": null,
+          "seq": null,
+          "hiding": {
+            "room": "basement",
+            "object_id": "server_rack",
+            "spot": "a drive bay",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "Maintenance checklist scrap",
+            "style": {
+              "ink": "blue",
+              "paper": "lined"
+            },
+            "lines": [
+              "QZX VMT KLP RWN BHD"
+            ],
+            "corner_mark": "",
+            "image_file": "",
+            "audio_file": ""
+          },
+          "locate_hint": "TEST: search the server_rack.",
+          "secret": {
+            "note": "decoy"
+          }
+        }
+      ],
+      "basket": {
+        "opens_when": "all_room_pieces_collected"
+      }
     },
     {
       "id": "records",
@@ -385,7 +1844,6 @@
       "unlock": {
         "at_start": true
       },
-      "background_file": "bg_records.png",
       "theme": {
         "bg_top": "#1e1b14",
         "bg_bottom": "#2d2818",
@@ -408,63 +1866,49 @@
           "id": "filing_cabinets",
           "label": "Filing cabinets",
           "kind": "decor",
-          "x": 4,
-          "y": 18,
-          "w": 30,
-          "h": 56,
-          "clue_id": null
+          "clue_id": null,
+          "visible": true
         },
         {
           "id": "ceiling_light",
           "label": "Flickering light",
           "kind": "decor",
-          "x": 44,
-          "y": 4,
-          "w": 12,
-          "h": 4,
-          "clue_id": null
+          "clue_id": null,
+          "visible": true
         },
         {
           "id": "report_folder",
           "label": "Yellowed incident folder",
-          "kind": "clue",
-          "x": 38,
-          "y": 56,
-          "w": 10,
-          "h": 8,
-          "clue_id": "R2-02"
+          "kind": "clue_entry",
+          "clue_id": "R2-02",
+          "visible": true
         },
         {
           "id": "microfilm_reader",
           "label": "Microfilm reader",
-          "kind": "clue",
-          "x": 52,
-          "y": 40,
-          "w": 14,
-          "h": 18,
-          "clue_id": "R2-03"
+          "kind": "clue_entry",
+          "clue_id": "R2-03",
+          "visible": true
         },
         {
           "id": "timeline_board",
           "label": "Whiteboard of event cards",
-          "kind": "clue",
-          "x": 70,
-          "y": 14,
-          "w": 24,
-          "h": 26,
-          "clue_id": "R2-04"
+          "kind": "clue_entry",
+          "clue_id": "R2-04",
+          "visible": true
         },
         {
           "id": "bulkhead_door",
           "label": "Sealed bulkhead door",
-          "kind": "clue",
-          "x": 74,
-          "y": 52,
-          "w": 20,
-          "h": 36,
-          "clue_id": "R2-07"
+          "kind": "clue_entry",
+          "clue_id": "R2-07",
+          "visible": true
         }
-      ]
+      ],
+      "evidence": [],
+      "basket": {
+        "opens_when": "not_used"
+      }
     },
     {
       "id": "control",
@@ -474,7 +1918,6 @@
       "unlock": {
         "at_start": true
       },
-      "background_file": "bg_control.png",
       "theme": {
         "bg_top": "#0a1220",
         "bg_bottom": "#101c33",
@@ -497,53 +1940,42 @@
           "id": "monitor_bank",
           "label": "Bank of old monitors",
           "kind": "decor",
-          "x": 6,
-          "y": 10,
-          "w": 40,
-          "h": 28,
-          "clue_id": null
+          "clue_id": null,
+          "visible": true
         },
         {
           "id": "staff_terminal",
           "label": "Staff terminal",
-          "kind": "clue",
-          "x": 12,
-          "y": 52,
-          "w": 14,
-          "h": 14,
-          "clue_id": "R2-01"
+          "kind": "clue_entry",
+          "clue_id": "R2-01",
+          "visible": true
         },
         {
           "id": "radio_console",
           "label": "Transmission receiver",
-          "kind": "clue",
-          "x": 34,
-          "y": 48,
-          "w": 16,
-          "h": 14,
-          "clue_id": "R2-05"
+          "kind": "clue_entry",
+          "clue_id": "R2-05",
+          "visible": true
         },
         {
           "id": "sound_console",
           "label": "Sound console",
-          "kind": "clue",
-          "x": 56,
-          "y": 54,
-          "w": 20,
-          "h": 12,
-          "clue_id": "R2-06"
+          "kind": "clue_entry",
+          "clue_id": "R2-06",
+          "visible": true
         },
         {
           "id": "dead_intercom",
           "label": "Dead intercom",
           "kind": "decor",
-          "x": 82,
-          "y": 24,
-          "w": 6,
-          "h": 10,
-          "clue_id": null
+          "clue_id": null,
+          "visible": true
         }
-      ]
+      ],
+      "evidence": [],
+      "basket": {
+        "opens_when": "not_used"
+      }
     },
     {
       "id": "vault",
@@ -553,7 +1985,6 @@
       "unlock": {
         "clue_solved": "R2-07"
       },
-      "background_file": "bg_vault.png",
       "theme": {
         "bg_top": "#120d17",
         "bg_bottom": "#1b0f2b",
@@ -576,53 +2007,42 @@
           "id": "core_glass",
           "label": "Glowing core behind glass",
           "kind": "decor",
-          "x": 36,
-          "y": 14,
-          "w": 28,
-          "h": 40,
-          "clue_id": null
+          "clue_id": null,
+          "visible": true
         },
         {
           "id": "countdown_timer",
           "label": "Countdown timer",
           "kind": "decor",
-          "x": 40,
-          "y": 4,
-          "w": 20,
-          "h": 8,
-          "clue_id": null
+          "clue_id": null,
+          "visible": true
         },
         {
           "id": "manual_terminal",
           "label": "Manual terminal",
-          "kind": "clue",
-          "x": 8,
-          "y": 46,
-          "w": 16,
-          "h": 16,
-          "clue_id": "R2-08"
+          "kind": "clue_entry",
+          "clue_id": "R2-08",
+          "visible": true
         },
         {
           "id": "failsafe_panel",
           "label": "Failsafe panel",
-          "kind": "clue",
-          "x": 76,
-          "y": 42,
-          "w": 16,
-          "h": 18,
-          "clue_id": "R2-09"
+          "kind": "clue_entry",
+          "clue_id": "R2-09",
+          "visible": true
         },
         {
           "id": "central_console",
           "label": "Central console",
-          "kind": "clue",
-          "x": 38,
-          "y": 62,
-          "w": 24,
-          "h": 14,
-          "clue_id": "R2-10"
+          "kind": "clue_entry",
+          "clue_id": "R2-10",
+          "visible": true
         }
-      ]
+      ],
+      "evidence": [],
+      "basket": {
+        "opens_when": "not_used"
+      }
     }
   ],
   "clues": [
@@ -632,37 +2052,19 @@
       "room": "bedroom",
       "seq": 1,
       "order_in_room": 1,
-      "kind": "cipher_text",
-      "object_id": "diary_bed",
+      "kind": "evidence_case",
+      "case_file_id": "CF-2649",
+      "object_id": "diary",
       "title": "Test Diary",
-      "scene_text": "A test diary lies open. The last page is scrambled.",
+      "scene_text": "TEST scene text for R1-01.",
       "unlock": {
-        "requires_all": []
+        "requires_resolved": []
       },
+      "input_gate": "room_evidence_complete",
       "payload": {
-        "pages": [
-          {
-            "label": "Test day 1",
-            "text": "This is test page one."
-          },
-          {
-            "label": "Test day 2",
-            "text": "Rex turned 5 today. This is test page two."
-          }
-        ],
-        "last_entry": {
-          "label": "Test day 3",
-          "cipher_text": "YJXY JSYWD YMJ PJDBTWI NX QFSYJWS"
-        }
+        "tools": []
       },
-      "assets": [
-        {
-          "id": "diary_bg",
-          "file": "diary_open.png",
-          "kind": "image",
-          "brief": "Placeholder diary image with one readable page and one cipher page."
-        }
-      ],
+      "assets": [],
       "stages": [
         {
           "index": 1,
@@ -679,7 +2081,7 @@
             }
           ],
           "expected_fields": 1,
-          "answer_hash": "248ff280ef7cd9ef9b65c86d0a6bb84f2f4aefb56e2b7e93f9f812a4f569a2a0",
+          "answer_hash": "34ec72c494a90b2f435377fda40bb59161ad0b1ea1742ff110b05366c4d8cea3",
           "answer_plain": [
             "LANTERN"
           ],
@@ -690,46 +2092,51 @@
         {
           "stage": 1,
           "level": 1,
-          "text": "Look for a number on the earlier pages.",
-          "penalty": 0,
-          "free_after_sec": 300
+          "text": "Test riddle: some lines are meant to be walked through."
         },
         {
           "stage": 1,
           "level": 2,
-          "text": "It is a Caesar cipher. The shift is on the page.",
-          "penalty": 1,
-          "free_after_sec": null
+          "text": "Test riddle: a small birthday sets the number of steps."
         },
         {
           "stage": 1,
           "level": 3,
-          "text": "The shift is 5. The last word is the answer.",
-          "penalty": 2,
-          "free_after_sec": null
+          "text": "Test riddle: turn back by the age on the page."
         }
       ],
-      "scoring": {
-        "base": 6,
-        "speed_max": 4,
-        "par_sec": 180,
-        "free_wrong": 3,
-        "wrong_penalty": 0.5,
-        "min_points": 2
-      },
+      "attempts_max": 3,
       "lockout": {
         "after_wrong": null,
         "seconds": 0
       },
       "reward": {
-        "fragment": "F01",
-        "story_text": "TEST: fragment 1 unlocked."
+        "photo_piece": "P01",
+        "story_text": "TEST: R1-01 solved."
       },
-      "feeds": [
-        "R1-10"
-      ],
+      "feeds": [],
       "solution": {
         "method": "caesar"
+      },
+      "assembly": {
+        "type": "concat_text",
+        "parts_order": [
+          "A",
+          "B",
+          "C"
+        ],
+        "evidence_ids": [
+          "EB02",
+          "EB05",
+          "EB09"
+        ]
+      },
+      "secret": {
+        "parts_order": [
+          "A",
+          "B",
+          "C"
+        ]
       },
       "tools": [],
       "final": false
@@ -740,46 +2147,38 @@
       "room": "bedroom",
       "seq": 2,
       "order_in_room": 2,
-      "kind": "audio_morse",
-      "object_id": "music_box",
-      "title": "Test Music Box",
-      "scene_text": "A test music box plays long and short notes.",
+      "kind": "evidence_case",
+      "case_file_id": "CF-7F01",
+      "object_id": "notebook",
+      "title": "Test Notebook",
+      "scene_text": "TEST scene text for R1-02.",
       "unlock": {
-        "requires_all": []
+        "requires_resolved": []
       },
+      "input_gate": "room_evidence_complete",
       "payload": {
-        "unit_ms": 140,
-        "morse": "...-- ----. ....- ---..",
-        "note": "Short and long notes. A longer pause separates digits.",
-        "synth": true
+        "tools": []
       },
-      "assets": [
-        {
-          "id": "mb",
-          "file": "music_box.mp3",
-          "kind": "audio",
-          "brief": "Placeholder beep sequence of Morse 3948, unit 140 ms."
-        }
-      ],
+      "assets": [],
       "stages": [
         {
           "index": 1,
           "type": "fields",
-          "prompt": "Enter the number code the box plays.",
+          "prompt": "What time does the notebook say the gate opens? (one word)",
           "fields": [
             {
-              "key": "code",
-              "label": "Number code",
-              "kind": "number",
-              "normalize": "digits",
+              "key": "word",
+              "label": "One word",
+              "kind": "text",
+              "normalize": "alnum",
               "placeholder": "",
               "max_len": 60
             }
           ],
           "expected_fields": 1,
-          "answer_hash": "6468c3da9f747c0542f206f307a4cb005f8fb93d41d7fca9cf008ca1fe30f282",
+          "answer_hash": "bf810d90316b9efae8f6f046c8219ca5cee447fc2d2bf92823252006681566fe",
           "answer_plain": [
-            "3948"
+            "SUNRISE"
           ],
           "reveal": {}
         }
@@ -788,46 +2187,51 @@
         {
           "stage": 1,
           "level": 1,
-          "text": "Listen to note lengths.",
-          "penalty": 0,
-          "free_after_sec": 300
+          "text": "Test riddle: same trick, other pocket."
         },
         {
           "stage": 1,
           "level": 2,
-          "text": "It is Morse code.",
-          "penalty": 1,
-          "free_after_sec": null
+          "text": "Test riddle: count the drawn things."
         },
         {
           "stage": 1,
           "level": 3,
-          "text": "Four digits. The first is ...--.",
-          "penalty": 2,
-          "free_after_sec": null
+          "text": "Test riddle: turn back by that count."
         }
       ],
-      "scoring": {
-        "base": 6,
-        "speed_max": 4,
-        "par_sec": 240,
-        "free_wrong": 3,
-        "wrong_penalty": 0.5,
-        "min_points": 2
-      },
+      "attempts_max": 3,
       "lockout": {
         "after_wrong": null,
         "seconds": 0
       },
       "reward": {
-        "fragment": "F02",
-        "story_text": "TEST: fragment 2 unlocked."
+        "photo_piece": "P02",
+        "story_text": "TEST: R1-02 solved."
       },
-      "feeds": [
-        "R1-10"
-      ],
+      "feeds": [],
       "solution": {
-        "method": "morse"
+        "method": "caesar"
+      },
+      "assembly": {
+        "type": "concat_text",
+        "parts_order": [
+          "A",
+          "B",
+          "C"
+        ],
+        "evidence_ids": [
+          "EB04",
+          "EB07",
+          "EB10"
+        ]
+      },
+      "secret": {
+        "parts_order": [
+          "A",
+          "B",
+          "C"
+        ]
       },
       "tools": [],
       "final": false
@@ -838,15 +2242,16 @@
       "room": "bedroom",
       "seq": 3,
       "order_in_room": 3,
-      "kind": "image_inspect",
-      "object_id": "poster_wall",
+      "kind": "evidence_case",
+      "case_file_id": "CF-3AA1",
+      "object_id": "poster",
       "title": "Test Poster",
-      "scene_text": "A test poster looks blank.",
+      "scene_text": "TEST scene text for R1-03.",
       "unlock": {
-        "requires_all": []
+        "requires_resolved": []
       },
+      "input_gate": "room_evidence_complete",
       "payload": {
-        "image_file": "poster_dark.png",
         "tools": [
           "invert",
           "contrast",
@@ -855,10 +2260,22 @@
       },
       "assets": [
         {
-          "id": "poster",
-          "file": "poster_dark.png",
+          "id": "pp1",
+          "file": "poster_piece_1.png",
           "kind": "image",
-          "brief": "Near-black image with hidden text 'TEST DATE 07/04/2001' at about 3 percent contrast."
+          "brief": "Third 1 of the near-black poster (about 3 percent contrast). Hidden text: 'TEST DATE 07/'. Left to right, torn edges."
+        },
+        {
+          "id": "pp2",
+          "file": "poster_piece_2.png",
+          "kind": "image",
+          "brief": "Third 2 of the near-black poster (about 3 percent contrast). Hidden text: '04/20'. Left to right, torn edges."
+        },
+        {
+          "id": "pp3",
+          "file": "poster_piece_3.png",
+          "kind": "image",
+          "brief": "Third 3 of the near-black poster (about 3 percent contrast). Hidden text: '01'. Left to right, torn edges."
         }
       ],
       "stages": [
@@ -877,7 +2294,7 @@
             }
           ],
           "expected_fields": 1,
-          "answer_hash": "99d506da82e8e5642dc7e3ef12ecd87e44036fd29baf3773d1691b21f2110caa",
+          "answer_hash": "1d30497d2c7d86e2f3d7ca18dff295ce1d8fd2f7d54326f433121234fb61119e",
           "answer_plain": [
             "07/04/2001"
           ],
@@ -888,77 +2305,213 @@
         {
           "stage": 1,
           "level": 1,
-          "text": "The poster is just dark.",
-          "penalty": 0,
-          "free_after_sec": 300
+          "text": "Test riddle: dark is light nobody asked."
         },
         {
           "stage": 1,
           "level": 2,
-          "text": "Use the Inspector to invert or raise contrast.",
-          "penalty": 1,
-          "free_after_sec": null
+          "text": "Test riddle: trade night for day."
         },
         {
           "stage": 1,
           "level": 3,
-          "text": "The text ends in a date. The year is 2001.",
-          "penalty": 2,
-          "free_after_sec": null
+          "text": "Test riddle: the sentence ends in a date."
         }
       ],
-      "scoring": {
-        "base": 6,
-        "speed_max": 4,
-        "par_sec": 240,
-        "free_wrong": 3,
-        "wrong_penalty": 0.5,
-        "min_points": 2
-      },
+      "attempts_max": 3,
       "lockout": {
         "after_wrong": null,
         "seconds": 0
       },
       "reward": {
-        "fragment": "F03",
-        "story_text": "TEST: fragment 3 unlocked."
+        "photo_piece": "P03",
+        "story_text": "TEST: R1-03 solved."
       },
-      "feeds": [
-        "R1-10"
-      ],
+      "feeds": [],
       "solution": {
         "method": "image_contrast"
       },
-      "tools": [
-        "invert",
-        "contrast",
-        "brightness"
-      ],
+      "assembly": {
+        "type": "image_strips",
+        "parts_order": [
+          "A",
+          "B",
+          "C"
+        ],
+        "evidence_ids": [
+          "EB01",
+          "EB06",
+          "EB11"
+        ]
+      },
+      "secret": {
+        "parts_order": [
+          "A",
+          "B",
+          "C"
+        ],
+        "hidden_text": "TEST DATE 07/04/2001"
+      },
+      "tools": [],
       "final": false
     },
     {
       "id": "R1-04",
       "round": 1,
-      "room": "study",
+      "room": "bedroom",
       "seq": 4,
-      "order_in_room": 1,
-      "kind": "binary_note",
-      "object_id": "desk_drawer",
-      "title": "Test Tablet",
-      "scene_text": "A test tablet wants a passcode. A note holds zeros and ones.",
+      "order_in_room": 4,
+      "kind": "evidence_case",
+      "case_file_id": "CF-FB04",
+      "object_id": "portrait",
+      "title": "Test Torn Portrait",
+      "scene_text": "A cracked oil portrait in a heavy gilt frame. Three torn canvas fragments fit along the bottom edge.",
       "unlock": {
-        "requires_all": []
+        "requires_resolved": []
       },
+      "input_gate": "room_evidence_complete",
       "payload": {
-        "sticky_note": "01000001 01001100 01010000 01001000 01000001",
-        "bits_per_char": 8
+        "tools": [
+          "invert",
+          "contrast",
+          "brightness"
+        ]
+      },
+      "assets": [
+        {
+          "id": "pt1",
+          "file": "portrait_piece_1.png",
+          "kind": "image",
+          "brief": "Left third of canvas backing with faint pencil mark: SHADOW"
+        },
+        {
+          "id": "pt2",
+          "file": "portrait_piece_2.png",
+          "kind": "image",
+          "brief": "Center third of canvas backing with faint pencil mark"
+        },
+        {
+          "id": "pt3",
+          "file": "portrait_piece_3.png",
+          "kind": "image",
+          "brief": "Right third of canvas backing with faint pencil mark"
+        }
+      ],
+      "stages": [
+        {
+          "index": 1,
+          "type": "fields",
+          "prompt": "What word is inscribed in faint pigment on the reverse of the canvas?",
+          "fields": [
+            {
+              "key": "kw",
+              "label": "Inscription",
+              "kind": "text",
+              "normalize": "alnum",
+              "placeholder": "",
+              "max_len": 60
+            }
+          ],
+          "expected_fields": 1,
+          "answer_hash": "4e070958630c559549c62fc2eb9ef8576975854d59aefe3bb1441035e0aa4f21",
+          "answer_plain": [
+            "SHADOW"
+          ],
+          "reveal": {}
+        }
+      ],
+      "hints": [
+        {
+          "stage": 1,
+          "level": 1,
+          "text": "Test riddle: inspect the darkened pigment."
+        },
+        {
+          "stage": 1,
+          "level": 2,
+          "text": "Test riddle: invert the lighting across the canvas seams."
+        },
+        {
+          "stage": 1,
+          "level": 3,
+          "text": "Test riddle: the hidden word begins with S."
+        }
+      ],
+      "attempts_max": 3,
+      "lockout": {
+        "after_wrong": null,
+        "seconds": 0
+      },
+      "reward": {
+        "photo_piece": "P04",
+        "story_text": "TEST: R1-04 solved."
+      },
+      "feeds": [],
+      "solution": {
+        "method": "image_contrast"
+      },
+      "assembly": {
+        "type": "image_strips",
+        "parts_order": [
+          "A",
+          "B",
+          "C"
+        ],
+        "evidence_ids": [
+          "EB03",
+          "EB08",
+          "EB12"
+        ]
+      },
+      "secret": {
+        "parts_order": [
+          "A",
+          "B",
+          "C"
+        ],
+        "qr_codes": [
+          {
+            "label": "QR-1",
+            "encodes": "CF-2649",
+            "role": "decoy",
+            "placement_note": "Test location 1"
+          },
+          {
+            "label": "QR-2",
+            "encodes": "CF-3AA1",
+            "role": "correct",
+            "placement_note": "Test location 2"
+          }
+        ],
+        "validation_rule": "Correct identifier is the case file number of the clue whose answer contains a full year (the poster). The decoy is the diary, which has days but no year."
+      },
+      "tools": [],
+      "final": false
+    },
+    {
+      "id": "R1-05",
+      "round": 1,
+      "room": "study",
+      "seq": 5,
+      "order_in_room": 1,
+      "kind": "evidence_case",
+      "case_file_id": "CF-0F69",
+      "object_id": "tablet_drawer",
+      "title": "Test Tablet",
+      "scene_text": "TEST scene text for R1-05.",
+      "unlock": {
+        "requires_resolved": []
+      },
+      "input_gate": "room_evidence_complete",
+      "payload": {
+        "tools": []
       },
       "assets": [
         {
           "id": "vm",
           "file": "voice_memo.mp3",
           "kind": "audio",
-          "brief": "Placeholder 5 second spoken line 'test voice memo'."
+          "brief": "TEST VOICE MEMO TRANSCRIPT."
         }
       ],
       "stages": [
@@ -968,7 +2521,7 @@
           "prompt": "Enter the tablet passcode (a word).",
           "fields": [
             {
-              "key": "pass",
+              "key": "name",
               "label": "Passcode",
               "kind": "text",
               "normalize": "alnum",
@@ -977,7 +2530,7 @@
             }
           ],
           "expected_fields": 1,
-          "answer_hash": "150930910faa8f4844123cbd3f9dd4ebe1ff1876fbb132df0656dbcabd86fdab",
+          "answer_hash": "4152e40ed00ec561031ea571896c46591c8cde9324f612e09394d2b6124c3f6a",
           "answer_plain": [
             "ALPHA"
           ],
@@ -991,147 +2544,51 @@
         {
           "stage": 1,
           "level": 1,
-          "text": "The note is a message.",
-          "penalty": 0,
-          "free_after_sec": 300
+          "text": "Test riddle: the lock wants someone."
         },
         {
           "stage": 1,
           "level": 2,
-          "text": "Binary to ASCII.",
-          "penalty": 1,
-          "free_after_sec": null
+          "text": "Test riddle: light and dark in eights."
         },
         {
           "stage": 1,
           "level": 3,
-          "text": "The passcode is the first Greek letter.",
-          "penalty": 2,
-          "free_after_sec": null
+          "text": "Test riddle: a Greek beginning."
         }
       ],
-      "scoring": {
-        "base": 6,
-        "speed_max": 4,
-        "par_sec": 300,
-        "free_wrong": 3,
-        "wrong_penalty": 0.5,
-        "min_points": 2
-      },
+      "attempts_max": 3,
       "lockout": {
         "after_wrong": null,
         "seconds": 0
       },
       "reward": {
-        "fragment": "F04",
-        "story_text": "TEST: fragment 4 unlocked."
+        "photo_piece": "P05",
+        "story_text": "TEST: R1-05 solved."
       },
-      "feeds": [
-        "R1-10"
-      ],
+      "feeds": [],
       "solution": {
         "method": "binary_ascii"
       },
-      "tools": [],
-      "final": false
-    },
-    {
-      "id": "R1-05",
-      "round": 1,
-      "room": "basement",
-      "seq": 5,
-      "order_in_room": 1,
-      "kind": "hex_log",
-      "object_id": "maintenance_terminal",
-      "title": "Test Log",
-      "scene_text": "A test terminal holds a crash log.",
-      "unlock": {
-        "requires_all": []
-      },
-      "payload": {
-        "filename": "crash_1031.log",
-        "log_lines": [
-          "[02:10:02] test: buffer ok",
-          "[02:12:50] test: peer joined",
-          "[02:13:31] test: retry (3)",
-          "[02:14:05] test: checksum fail",
-          "[02:15:00] test: dump written"
+      "assembly": {
+        "type": "concat_bits",
+        "parts_order": [
+          "A",
+          "B",
+          "C"
         ],
-        "hex_lines": [
-          "45 52 52 4F 52 20 30 32 3A 31 35 3A 30 39 20 50",
-          "52 4F 43 45 53 53 20 4F 52 42 49 54 2E 53 59 53",
-          "20 48 41 4C 54 45 44"
+        "evidence_ids": [
+          "ES03",
+          "ES08",
+          "ES12"
         ]
       },
-      "assets": [],
-      "stages": [
-        {
-          "index": 1,
-          "type": "fields",
-          "prompt": "Which process crashed? (name only, no extension)",
-          "fields": [
-            {
-              "key": "proc",
-              "label": "Process name",
-              "kind": "text",
-              "normalize": "alnum",
-              "placeholder": "",
-              "max_len": 60
-            }
-          ],
-          "expected_fields": 1,
-          "answer_hash": "dc9c44bd1210f26897a6f8ce897ea32029c6171ec7b270dfb5ecf6b4df4de3d4",
-          "answer_plain": [
-            "ORBIT"
-          ],
-          "reveal": {}
-        }
-      ],
-      "hints": [
-        {
-          "stage": 1,
-          "level": 1,
-          "text": "Find the block of hex pairs.",
-          "penalty": 0,
-          "free_after_sec": 300
-        },
-        {
-          "stage": 1,
-          "level": 2,
-          "text": "Convert hex to text.",
-          "penalty": 1,
-          "free_after_sec": null
-        },
-        {
-          "stage": 1,
-          "level": 3,
-          "text": "The name before the dot is the answer.",
-          "penalty": 2,
-          "free_after_sec": null
-        }
-      ],
-      "scoring": {
-        "base": 6,
-        "speed_max": 4,
-        "par_sec": 300,
-        "free_wrong": 3,
-        "wrong_penalty": 0.5,
-        "min_points": 2
-      },
-      "lockout": {
-        "after_wrong": null,
-        "seconds": 0
-      },
-      "reward": {
-        "fragment": "F05",
-        "story_text": "TEST: fragment 5 unlocked."
-      },
-      "feeds": [
-        "R1-09",
-        "R1-10"
-      ],
-      "solution": {
-        "method": "hex_ascii"
+      "secret": {
+        "parts_order": [
+          "A",
+          "B",
+          "C"
+        ]
       },
       "tools": [],
       "final": false
@@ -1142,19 +2599,17 @@
       "room": "study",
       "seq": 6,
       "order_in_room": 2,
-      "kind": "base64_email",
+      "kind": "evidence_case",
+      "case_file_id": "CF-6E2A",
       "object_id": "crt_monitor",
       "title": "Test Email",
-      "scene_text": "A test draft with one long encoded block.",
+      "scene_text": "TEST scene text for R1-06.",
       "unlock": {
-        "requires_all": []
+        "requires_resolved": []
       },
+      "input_gate": "room_evidence_complete",
       "payload": {
-        "from_addr": "test@lab.test",
-        "to_addr": "boss@lab.test",
-        "subject": "Test draft",
-        "intro": "Test intro text before the encoded block.",
-        "encoded_block": "VGhlIHNpZ25hbCBtdXN0IG5ldmVyIGJlIHNlbnQgZnJvbSBpbnNpZGUgdGhlIGxhYi4="
+        "tools": []
       },
       "assets": [],
       "stages": [
@@ -1173,7 +2628,7 @@
             }
           ],
           "expected_fields": 1,
-          "answer_hash": "e4e0e0a8e2592cad7312c4902297245d41a2f061389389555af8045d5ee52940",
+          "answer_hash": "76e4af1848ad0271806af93954951400f46bf69f25539169561cb5253cac89a6",
           "answer_plain": [
             "SIGNAL"
           ],
@@ -1184,46 +2639,51 @@
         {
           "stage": 1,
           "level": 1,
-          "text": "It ends with equals signs.",
-          "penalty": 0,
-          "free_after_sec": 300
+          "text": "Test riddle: sequences of ones and zeros."
         },
         {
           "stage": 1,
           "level": 2,
-          "text": "It is Base64.",
-          "penalty": 1,
-          "free_after_sec": null
+          "text": "Test riddle: eight bits make one character."
         },
         {
           "stage": 1,
           "level": 3,
-          "text": "The decoded sentence names the thing.",
-          "penalty": 2,
-          "free_after_sec": null
+          "text": "Test riddle: join the bits in order A, B, C."
         }
       ],
-      "scoring": {
-        "base": 6,
-        "speed_max": 4,
-        "par_sec": 300,
-        "free_wrong": 3,
-        "wrong_penalty": 0.5,
-        "min_points": 2
-      },
+      "attempts_max": 3,
       "lockout": {
         "after_wrong": null,
         "seconds": 0
       },
       "reward": {
-        "fragment": "F06",
-        "story_text": "TEST: fragment 6 unlocked."
+        "photo_piece": "P06",
+        "story_text": "TEST: R1-06 solved."
       },
-      "feeds": [
-        "R1-10"
-      ],
+      "feeds": [],
       "solution": {
-        "method": "base64"
+        "method": "binary_ascii"
+      },
+      "assembly": {
+        "type": "concat_bits",
+        "parts_order": [
+          "A",
+          "B",
+          "C"
+        ],
+        "evidence_ids": [
+          "ES02",
+          "ES05",
+          "ES09"
+        ]
+      },
+      "secret": {
+        "parts_order": [
+          "A",
+          "B",
+          "C"
+        ]
       },
       "tools": [],
       "final": false
@@ -1234,61 +2694,28 @@
       "room": "study",
       "seq": 7,
       "order_in_room": 3,
-      "kind": "audio_compare",
-      "object_id": "tape_deck",
-      "title": "Test Recordings",
-      "scene_text": "Two test recordings. One says GREEN, one says RED. One is forged.",
+      "kind": "evidence_case",
+      "case_file_id": "CF-3135",
+      "object_id": "terminal_pc",
+      "title": "Test Log",
+      "scene_text": "TEST scene text for R1-07.",
       "unlock": {
-        "requires_all": []
+        "requires_resolved": []
       },
+      "input_gate": "room_evidence_complete",
       "payload": {
-        "files": [
-          {
-            "id": "rec_a",
-            "label": "Recording A",
-            "file": "rec_a.wav",
-            "properties": {
-              "date_recorded": "2002-01-10 09:12",
-              "duration_sec": 6,
-              "software": "TestForge 2.1"
-            }
-          },
-          {
-            "id": "rec_b",
-            "label": "Recording B",
-            "file": "rec_b.wav",
-            "properties": {
-              "date_recorded": "2001-07-03 22:14",
-              "duration_sec": 6,
-              "software": "TestCap 1.0"
-            }
-          }
-        ],
-        "properties_button": true
+        "tools": []
       },
-      "assets": [
-        {
-          "id": "ra",
-          "file": "rec_a.wav",
-          "kind": "audio",
-          "brief": "Spoken word 'green'. Embed date recorded 2002-01-10 09:12."
-        },
-        {
-          "id": "rb",
-          "file": "rec_b.wav",
-          "kind": "audio",
-          "brief": "Spoken word 'red'. Embed date recorded 2001-07-03 22:14."
-        }
-      ],
+      "assets": [],
       "stages": [
         {
           "index": 1,
           "type": "fields",
-          "prompt": "Which recording is forged? Enter the word it says.",
+          "prompt": "Which process caused the fatal crash in the crash log? (name only)",
           "fields": [
             {
-              "key": "word",
-              "label": "Spoken word",
+              "key": "proc",
+              "label": "Process name",
               "kind": "text",
               "normalize": "alnum",
               "placeholder": "",
@@ -1296,9 +2723,9 @@
             }
           ],
           "expected_fields": 1,
-          "answer_hash": "7331cbf4fcc0accf53e6ed34c522c09987329f479cdd729b723a3564b45ae333",
+          "answer_hash": "7afa8837b2ea6a1c4114f06b56707d5095688b98791925257b72088f041c21d0",
           "answer_plain": [
-            "GREEN"
+            "ORBIT"
           ],
           "reveal": {}
         }
@@ -1307,46 +2734,51 @@
         {
           "stage": 1,
           "level": 1,
-          "text": "Study the files, not the voices.",
-          "penalty": 0,
-          "free_after_sec": 300
+          "text": "Test riddle: inspect the three terminal log fragments."
         },
         {
           "stage": 1,
           "level": 2,
-          "text": "Open Properties and compare dates.",
-          "penalty": 1,
-          "free_after_sec": null
+          "text": "Test riddle: find the line marked FATAL FAULT."
         },
         {
           "stage": 1,
           "level": 3,
-          "text": "The event date is 07/04/2001. A later recording is forged.",
-          "penalty": 2,
-          "free_after_sec": null
+          "text": "Test riddle: the crashed process name is ORBIT."
         }
       ],
-      "scoring": {
-        "base": 6,
-        "speed_max": 4,
-        "par_sec": 300,
-        "free_wrong": 3,
-        "wrong_penalty": 0.5,
-        "min_points": 2
-      },
+      "attempts_max": 3,
       "lockout": {
         "after_wrong": null,
         "seconds": 0
       },
       "reward": {
-        "fragment": "F07",
-        "story_text": "TEST: fragment 7 unlocked."
+        "photo_piece": "P07",
+        "story_text": "TEST: R1-07 solved."
       },
-      "feeds": [
-        "R1-10"
-      ],
+      "feeds": [],
       "solution": {
-        "method": "file_metadata"
+        "method": "log_analysis"
+      },
+      "assembly": {
+        "type": "concat_text",
+        "parts_order": [
+          "A",
+          "B",
+          "C"
+        ],
+        "evidence_ids": [
+          "ES01",
+          "ES06",
+          "ES11"
+        ]
+      },
+      "secret": {
+        "parts_order": [
+          "A",
+          "B",
+          "C"
+        ]
       },
       "tools": [],
       "final": false
@@ -1354,40 +2786,20 @@
     {
       "id": "R1-08",
       "round": 1,
-      "room": "basement",
+      "room": "study",
       "seq": 8,
-      "order_in_room": 2,
-      "kind": "log_filter",
-      "object_id": "rack_console",
+      "order_in_room": 4,
+      "kind": "evidence_case",
+      "case_file_id": "CF-E0D1",
+      "object_id": "line_printer",
       "title": "Test Access Log",
-      "scene_text": "A test console lists logins.",
+      "scene_text": "TEST scene text for R1-08.",
       "unlock": {
-        "requires_all": []
+        "requires_resolved": []
       },
+      "input_gate": "room_evidence_complete",
       "payload": {
-        "lines": [
-          "2001-10-31 16:21:01 LOGIN OK user=lena src=TABLET-01",
-          "2001-10-31 16:25:06 LOGIN OK user=system src=HOUSE-CORE",
-          "2001-10-31 16:46:08 LOGIN OK user=system src=HOUSE-CORE",
-          "2001-10-31 17:11:48 LOGIN OK user=mara src=WS-MARA",
-          "2001-10-31 17:33:51 LOGIN OK user=lena src=TABLET-01",
-          "2001-10-31 17:51:00 LOGIN OK user=daniel src=WS-DANIEL",
-          "2001-10-31 18:14:27 LOGIN OK user=daniel src=WS-DANIEL",
-          "2001-10-31 18:29:26 LOGIN OK user=mara src=WS-MARA",
-          "2001-10-31 18:45:56 LOGIN OK user=lena src=TABLET-01",
-          "2001-10-31 18:58:20 LOGIN OK user=theo src=TABLET-02",
-          "2001-10-31 19:06:50 LOGIN OK user=theo src=TABLET-02",
-          "2001-10-31 19:18:32 LOGIN OK user=daniel src=WS-DANIEL",
-          "2001-10-31 19:36:00 LOGIN OK user=mara src=WS-MARA",
-          "2031-10-31 23:47:09 LOGIN OK user=unknown src=SRC-TEST9",
-          "2001-10-31 20:08:35 LOGIN OK user=mara src=WS-MARA",
-          "2001-10-31 20:27:45 LOGIN OK user=theo src=TABLET-02",
-          "2001-10-31 20:36:53 LOGIN OK user=system src=HOUSE-CORE",
-          "2001-10-31 20:49:27 LOGIN OK user=theo src=TABLET-02",
-          "2001-10-31 21:14:25 LOGIN OK user=lena src=TABLET-01",
-          "2001-10-31 21:39:25 LOGIN OK user=daniel src=WS-DANIEL"
-        ],
-        "search_enabled": true
+        "tools": []
       },
       "assets": [],
       "stages": [
@@ -1406,7 +2818,7 @@
             }
           ],
           "expected_fields": 1,
-          "answer_hash": "5a6f526ec6aeee9116d730746a10c08ba42c9e55cebe270426c667358cb780d7",
+          "answer_hash": "e619227c71a3726d5f336fa10742fd8fc71c34245411c507c46485294876e72b",
           "answer_plain": [
             "SRC-TEST9"
           ],
@@ -1417,46 +2829,51 @@
         {
           "stage": 1,
           "level": 1,
-          "text": "One line is wrong.",
-          "penalty": 0,
-          "free_after_sec": 300
+          "text": "Test riddle: three sheets, one lie."
         },
         {
           "stage": 1,
           "level": 2,
-          "text": "Look at the years.",
-          "penalty": 1,
-          "free_after_sec": null
+          "text": "Test riddle: a pass is as honest as its day."
         },
         {
           "stage": 1,
           "level": 3,
-          "text": "Search for 2031.",
-          "penalty": 2,
-          "free_after_sec": null
+          "text": "Test riddle: the guest printed too late."
         }
       ],
-      "scoring": {
-        "base": 6,
-        "speed_max": 4,
-        "par_sec": 300,
-        "free_wrong": 3,
-        "wrong_penalty": 0.5,
-        "min_points": 2
-      },
+      "attempts_max": 3,
       "lockout": {
         "after_wrong": null,
         "seconds": 0
       },
       "reward": {
-        "fragment": "F08",
-        "story_text": "TEST: fragment 8 unlocked."
+        "photo_piece": "P08",
+        "story_text": "TEST: R1-08 solved."
       },
-      "feeds": [
-        "R1-10"
-      ],
+      "feeds": [],
       "solution": {
-        "method": "log_search"
+        "method": "log_cross_reference"
+      },
+      "assembly": {
+        "type": "log_join",
+        "parts_order": [
+          "A",
+          "B",
+          "C"
+        ],
+        "evidence_ids": [
+          "ES04",
+          "ES07",
+          "ES10"
+        ]
+      },
+      "secret": {
+        "parts_order": [
+          "A",
+          "B",
+          "C"
+        ]
       },
       "tools": [],
       "final": false
@@ -1466,29 +2883,115 @@
       "round": 1,
       "room": "basement",
       "seq": 9,
-      "order_in_room": 3,
-      "kind": "vigenere_note",
-      "object_id": "rack_door_note",
-      "title": "Test Note",
-      "scene_text": "A test note is encrypted. A margin line mentions a key.",
+      "order_in_room": 1,
+      "kind": "evidence_case",
+      "case_file_id": "CF-1B75",
+      "object_id": "intercom",
+      "title": "Test Physical QR Terminal",
+      "scene_text": "The wall intercom terminal asks for the physical clearance passcode encoded in the physical card.",
       "unlock": {
-        "requires_all": [
-          "R1-05"
-        ]
+        "requires_resolved": []
       },
+      "input_gate": "room_evidence_complete",
       "payload": {
-        "cipher_text": "KYFV MVV HZBR TPUIZVUML ZFXMK HYF NEOX",
-        "margin_note": "The key is the name of the process that halted.",
-        "image_file": "final_note.png"
+        "tools": []
       },
-      "assets": [
+      "assets": [],
+      "stages": [
         {
-          "id": "note",
-          "file": "final_note.png",
-          "kind": "image",
-          "brief": "Placeholder note image with the cipher text and the margin line."
+          "index": 1,
+          "type": "fields",
+          "prompt": "Enter the authorization passcode obtained from the physical QR card.",
+          "fields": [
+            {
+              "key": "code",
+              "label": "Passcode",
+              "kind": "text",
+              "normalize": "alnum",
+              "placeholder": "",
+              "max_len": 60
+            }
+          ],
+          "expected_fields": 1,
+          "answer_hash": "9661d6eee858ada8ba676d91f66aa71545f3d89114c6caee1e8ef3479d56aae2",
+          "answer_plain": [
+            "QR92"
+          ],
+          "reveal": {}
         }
       ],
+      "hints": [
+        {
+          "stage": 1,
+          "level": 1,
+          "text": "Test riddle: the fragments in this room are decoy telemetry."
+        },
+        {
+          "stage": 1,
+          "level": 2,
+          "text": "Test riddle: scan the physical QR card handed to your team."
+        },
+        {
+          "stage": 1,
+          "level": 3,
+          "text": "Test riddle: the test code is QR92."
+        }
+      ],
+      "attempts_max": 3,
+      "lockout": {
+        "after_wrong": null,
+        "seconds": 0
+      },
+      "reward": {
+        "photo_piece": "P09",
+        "story_text": "TEST: R1-09 solved."
+      },
+      "feeds": [],
+      "solution": {
+        "method": "physical_qr"
+      },
+      "assembly": {
+        "type": "qr_verification",
+        "parts_order": [
+          "A",
+          "B",
+          "C"
+        ],
+        "evidence_ids": [
+          "EK02",
+          "EK04",
+          "EK05"
+        ]
+      },
+      "secret": {
+        "parts_order": [
+          "A",
+          "B",
+          "C"
+        ]
+      },
+      "tools": [],
+      "final": false
+    },
+    {
+      "id": "R1-10",
+      "round": 1,
+      "room": "basement",
+      "seq": 10,
+      "order_in_room": 2,
+      "kind": "evidence_case",
+      "case_file_id": "CF-E9F5",
+      "object_id": "rack_door",
+      "title": "Test Note",
+      "scene_text": "TEST scene text for R1-10.",
+      "unlock": {
+        "requires_resolved": []
+      },
+      "input_gate": "room_evidence_complete",
+      "payload": {
+        "tools": []
+      },
+      "assets": [],
       "stages": [
         {
           "index": 1,
@@ -1496,7 +2999,7 @@
           "prompt": "What does the note say to do with the flag? (one word)",
           "fields": [
             {
-              "key": "verb",
+              "key": "word",
               "label": "One word",
               "kind": "text",
               "normalize": "alnum",
@@ -1505,7 +3008,7 @@
             }
           ],
           "expected_fields": 1,
-          "answer_hash": "043c438b265cf7c89db73d8fd85806ef9594c58b7054b0f4f82dda081640f1e0",
+          "answer_hash": "9be62fcea12d7c29c1e638f4a85f6a80ee164f8c667eb075be2ef4183e3c09bc",
           "answer_plain": [
             "LOWER"
           ],
@@ -1516,83 +3019,89 @@
         {
           "stage": 1,
           "level": 1,
-          "text": "Read the margin line.",
-          "penalty": 0,
-          "free_after_sec": 300
+          "text": "Test riddle: a dead machine has a name."
         },
         {
           "stage": 1,
           "level": 2,
-          "text": "Vigenere. The key is the crashed process.",
-          "penalty": 1,
-          "free_after_sec": null
+          "text": "Test riddle: check the paper before the ink."
         },
         {
           "stage": 1,
           "level": 3,
-          "text": "The key is ORBIT. The word before THE FLAG is the answer.",
-          "penalty": 2,
-          "free_after_sec": null
+          "text": "Test riddle: a repeated name moves each letter."
         }
       ],
-      "scoring": {
-        "base": 6,
-        "speed_max": 4,
-        "par_sec": 420,
-        "free_wrong": 3,
-        "wrong_penalty": 0.5,
-        "min_points": 2
-      },
+      "attempts_max": 3,
       "lockout": {
         "after_wrong": null,
         "seconds": 0
       },
       "reward": {
-        "fragment": "F09",
-        "story_text": "TEST: fragment 9 unlocked."
+        "photo_piece": "P10",
+        "story_text": "TEST: R1-10 solved."
       },
-      "feeds": [
-        "R1-10"
-      ],
+      "feeds": [],
       "solution": {
         "method": "vigenere"
+      },
+      "assembly": {
+        "type": "concat_text",
+        "parts_order": [
+          "A",
+          "B",
+          "C"
+        ],
+        "evidence_ids": [
+          "EK01",
+          "EK03",
+          "EK06"
+        ]
+      },
+      "secret": {
+        "parts_order": [
+          "A",
+          "B",
+          "C"
+        ]
       },
       "tools": [],
       "final": false
     },
     {
-      "id": "R1-10",
+      "id": "R1-FIN",
       "round": 1,
       "room": "basement",
-      "seq": 10,
-      "order_in_room": 4,
+      "seq": 11,
+      "order_in_room": 3,
       "kind": "final_terminal",
+      "case_file_id": null,
       "object_id": "containment_console",
-      "title": "Test Containment Terminal",
-      "scene_text": "A test wall console with three stages.",
+      "title": "Test Terminal",
+      "scene_text": "TEST scene text for R1-FIN.",
       "unlock": {
-        "requires_all": [
-          "R1-05",
-          "R1-08",
-          "R1-09"
+        "requires_resolved": [
+          "R1-09",
+          "R1-10"
         ]
       },
+      "input_gate": null,
       "payload": {
         "grid": {
           "rows": 2,
           "cols": 5
         },
-        "fragment_ids": [
-          "F01",
-          "F02",
-          "F03",
-          "F04",
-          "F05",
-          "F06",
-          "F07",
-          "F08",
-          "F09",
-          "F10"
+        "piece_ids": [
+          "P01",
+          "P02",
+          "P03",
+          "P04",
+          "P05",
+          "P06",
+          "P07",
+          "P08",
+          "P09",
+          "P10"
         ],
         "options": [
           {
@@ -1611,24 +3120,24 @@
           "id": "full",
           "file": "photo_full.png",
           "kind": "image",
-          "brief": "Placeholder portrait with five figures and faint text 2468 in the bottom-right at about 6 percent contrast."
+          "brief": "Assembled family portrait, five people, four shadows, fifth figure faceless. Faint text '2468' near the fifth figure at about 6 percent contrast."
         },
         {
-          "id": "fr",
-          "file": "frag_01.png ... frag_10.png",
+          "id": "pc",
+          "file": "piece_01.png ... piece_10.png",
           "kind": "image",
-          "brief": "Portrait cut into 2x5 torn pieces frag_01..frag_10 matching the test permutation."
+          "brief": "The portrait cut into a 2x5 grid with torn edges, exported as ten PNGs matching the photo_pieces list."
         }
       ],
       "stages": [
         {
           "index": 1,
           "type": "fields",
-          "prompt": "Enter the three keywords.",
+          "prompt": "Enter the three words.",
           "fields": [
             {
               "key": "k1",
-              "label": "Keyword from the diary",
+              "label": "First word",
               "kind": "text",
               "normalize": "alnum",
               "placeholder": "",
@@ -1636,7 +3145,7 @@
             },
             {
               "key": "k2",
-              "label": "Crashed process",
+              "label": "Second word",
               "kind": "text",
               "normalize": "alnum",
               "placeholder": "",
@@ -1644,7 +3153,7 @@
             },
             {
               "key": "k3",
-              "label": "Source ID",
+              "label": "Third word",
               "kind": "text",
               "normalize": "alnum",
               "placeholder": "",
@@ -1652,25 +3161,23 @@
             }
           ],
           "expected_fields": 3,
-          "answer_hash": "350245f5612d1efc6a6f5e77d4ca65eb1eaef3db8ebf751d6cc73461c61a34ff",
+          "answer_hash": "226328313d6259c38f8a3b54f912041b0f95fe57e1cae6975d9351a2ff5187ee",
           "answer_plain": [
             "LANTERN",
             "ORBIT",
             "SRC-TEST9"
           ],
-          "reveal": {
-            "fragment": "F10"
-          }
+          "reveal": {}
         },
         {
           "index": 2,
           "type": "arrange",
-          "prompt": "Arrange the ten fragments.",
+          "prompt": "Arrange the ten photograph pieces.",
           "fields": [
             {
               "key": "s1",
               "label": "Slot 1",
-              "kind": "fragment",
+              "kind": "photo_piece",
               "normalize": "upper",
               "placeholder": "",
               "max_len": 60
@@ -1678,7 +3185,7 @@
             {
               "key": "s2",
               "label": "Slot 2",
-              "kind": "fragment",
+              "kind": "photo_piece",
               "normalize": "upper",
               "placeholder": "",
               "max_len": 60
@@ -1686,7 +3193,7 @@
             {
               "key": "s3",
               "label": "Slot 3",
-              "kind": "fragment",
+              "kind": "photo_piece",
               "normalize": "upper",
               "placeholder": "",
               "max_len": 60
@@ -1694,7 +3201,7 @@
             {
               "key": "s4",
               "label": "Slot 4",
-              "kind": "fragment",
+              "kind": "photo_piece",
               "normalize": "upper",
               "placeholder": "",
               "max_len": 60
@@ -1702,7 +3209,7 @@
             {
               "key": "s5",
               "label": "Slot 5",
-              "kind": "fragment",
+              "kind": "photo_piece",
               "normalize": "upper",
               "placeholder": "",
               "max_len": 60
@@ -1710,7 +3217,7 @@
             {
               "key": "s6",
               "label": "Slot 6",
-              "kind": "fragment",
+              "kind": "photo_piece",
               "normalize": "upper",
               "placeholder": "",
               "max_len": 60
@@ -1718,7 +3225,7 @@
             {
               "key": "s7",
               "label": "Slot 7",
-              "kind": "fragment",
+              "kind": "photo_piece",
               "normalize": "upper",
               "placeholder": "",
               "max_len": 60
@@ -1726,7 +3233,7 @@
             {
               "key": "s8",
               "label": "Slot 8",
-              "kind": "fragment",
+              "kind": "photo_piece",
               "normalize": "upper",
               "placeholder": "",
               "max_len": 60
@@ -1734,7 +3241,7 @@
             {
               "key": "s9",
               "label": "Slot 9",
-              "kind": "fragment",
+              "kind": "photo_piece",
               "normalize": "upper",
               "placeholder": "",
               "max_len": 60
@@ -1742,25 +3249,25 @@
             {
               "key": "s10",
               "label": "Slot 10",
-              "kind": "fragment",
+              "kind": "photo_piece",
               "normalize": "upper",
               "placeholder": "",
               "max_len": 60
             }
           ],
           "expected_fields": 10,
-          "answer_hash": "64cb50fc61c9573e84947295011e23d95ec7ed0ed8a0f4a81a5230227f22291a",
+          "answer_hash": "5c72feb28cfcf89f18c44ee28ba094102f11ef30eab12f9478809157ee0e2c11",
           "answer_plain": [
-            "F06",
-            "F01",
-            "F08",
-            "F03",
-            "F10",
-            "F05",
-            "F02",
-            "F09",
-            "F04",
-            "F07"
+            "P06",
+            "P01",
+            "P08",
+            "P03",
+            "P10",
+            "P05",
+            "P02",
+            "P09",
+            "P04",
+            "P07"
           ],
           "reveal": {
             "shadow_hint": "TEST: five people, four shadows."
@@ -1789,7 +3296,7 @@
             }
           ],
           "expected_fields": 2,
-          "answer_hash": "f06391a54cbabab72a1cf2fd6a4e94f50346f8cfd711d576ef9448c3443c1c03",
+          "answer_hash": "ffe98457817840bcb8196a4fcd6d301d9f2e80c3bf2b2c0b0522cc0a27f4f2c3",
           "answer_plain": [
             "BETA",
             "2468"
@@ -1801,87 +3308,64 @@
         {
           "stage": 1,
           "level": 1,
-          "text": "Which clues gave words?",
-          "penalty": 0,
-          "free_after_sec": 300
+          "text": "Test riddle: three words already given."
         },
         {
           "stage": 1,
           "level": 2,
-          "text": "Diary keyword, crashed process, odd login source.",
-          "penalty": 1,
-          "free_after_sec": null
+          "text": "Test riddle: from three places."
         },
         {
           "stage": 1,
           "level": 3,
-          "text": "LANTERN, ORBIT, SRC-TEST9.",
-          "penalty": 2,
-          "free_after_sec": null
+          "text": "Test riddle: in the order asked."
         },
         {
           "stage": 2,
           "level": 1,
-          "text": "It is a two by five grid.",
-          "penalty": 0,
-          "free_after_sec": 300
+          "text": "Test riddle: ten pieces."
         },
         {
           "stage": 2,
           "level": 2,
-          "text": "Match the edges.",
-          "penalty": 1,
-          "free_after_sec": null
+          "text": "Test riddle: edges remember."
         },
         {
           "stage": 2,
           "level": 3,
-          "text": "F06 is the top-left corner and F07 the bottom-right.",
-          "penalty": 2,
-          "free_after_sec": null
+          "text": "Test riddle: floor is the bottom row."
         },
         {
           "stage": 3,
           "level": 1,
-          "text": "Count people and shadows.",
-          "penalty": 0,
-          "free_after_sec": 300
+          "text": "Test riddle: count people and shadows."
         },
         {
           "stage": 3,
           "level": 2,
-          "text": "Recall the forged recording and the note.",
-          "penalty": 1,
-          "free_after_sec": null
+          "text": "Test riddle: one voice lied."
         },
         {
           "stage": 3,
           "level": 3,
-          "text": "Choose what the note asks. The code is faint text in the photo.",
-          "penalty": 2,
-          "free_after_sec": null
+          "text": "Test riddle: the number hides near a missing face."
         }
       ],
-      "scoring": {
-        "base": 6,
-        "speed_max": 4,
-        "par_sec": 600,
-        "free_wrong": 3,
-        "wrong_penalty": 0.5,
-        "min_points": 2
-      },
+      "attempts_max": null,
       "lockout": {
         "after_wrong": null,
         "seconds": 0
       },
       "reward": {
-        "fragment": "F10",
-        "story_text": "TEST: the door opens."
+        "photo_piece": null,
+        "story_text": "The door opens. The countdown stops. The house goes silent."
       },
       "feeds": [],
       "solution": {
         "method": "meta_final"
       },
+      "assembly": null,
+      "secret": null,
       "tools": [],
       "final": true
     },
@@ -1892,12 +3376,14 @@
       "seq": 1,
       "order_in_room": 1,
       "kind": "table_filter",
+      "case_file_id": "CF-9219",
       "object_id": "staff_terminal",
       "title": "Test Personnel Index",
       "scene_text": "A test staff terminal with sixty badges.",
       "unlock": {
-        "requires_all": []
+        "requires_resolved": []
       },
+      "input_gate": null,
       "payload": {
         "columns": [
           "badge_id",
@@ -2352,7 +3838,7 @@
             }
           ],
           "expected_fields": 1,
-          "answer_hash": "ab1c03f2665e99a5d994a9170fcd43c934eab0eeadac8fac8f84fe37e9aed493",
+          "answer_hash": "62a3e2903014816f6d2148e0c704977c56d5b24f37cfedde964b8d0461cdf3ac",
           "answer_plain": [
             "BDG-9001"
           ],
@@ -2363,39 +3849,26 @@
         {
           "stage": 1,
           "level": 1,
-          "text": "You need the shutdown date first.",
-          "penalty": 0,
-          "free_after_sec": 300
+          "text": "Test nudge 1."
         },
         {
           "stage": 1,
           "level": 2,
-          "text": "Filter by status and compare last login.",
-          "penalty": 1,
-          "free_after_sec": null
+          "text": "Test method 1."
         },
         {
           "stage": 1,
           "level": 3,
-          "text": "One Active badge logged in before shutdown. It is a decoy.",
-          "penalty": 2,
-          "free_after_sec": null
+          "text": "Test help 1."
         }
       ],
-      "scoring": {
-        "base": 6,
-        "speed_max": 4,
-        "par_sec": 360,
-        "free_wrong": 3,
-        "wrong_penalty": 0.5,
-        "min_points": 2
-      },
+      "attempts_max": null,
       "lockout": {
         "after_wrong": null,
         "seconds": 0
       },
       "reward": {
-        "fragment": null,
+        "photo_piece": null,
         "story_text": "TEST: badge identified."
       },
       "feeds": [
@@ -2405,6 +3878,8 @@
       "solution": {
         "method": "table_query"
       },
+      "assembly": null,
+      "secret": null,
       "tools": [],
       "final": false
     },
@@ -2415,12 +3890,14 @@
       "seq": 2,
       "order_in_room": 1,
       "kind": "redacted_pdf",
+      "case_file_id": "CF-79A2",
       "object_id": "report_folder",
       "title": "Test Redacted Report",
       "scene_text": "A test report with black bars. Two copies disagree.",
       "unlock": {
-        "requires_all": []
+        "requires_resolved": []
       },
+      "input_gate": null,
       "payload": {
         "copies": [
           {
@@ -2540,7 +4017,7 @@
             }
           ],
           "expected_fields": 2,
-          "answer_hash": "c8c955ab84e6c639dad864b905d63de6f1d12e5f180804025a75a9e3ef3fe547",
+          "answer_hash": "d9c805b292da0a02cc7a6d43a890eac80956a5b5be4c28d7dc7e548a11efff7a",
           "answer_plain": [
             "2001-02-10",
             "COMET"
@@ -2552,39 +4029,26 @@
         {
           "stage": 1,
           "level": 1,
-          "text": "Bars hide text, they do not delete it.",
-          "penalty": 0,
-          "free_after_sec": 300
+          "text": "Test nudge 1."
         },
         {
           "stage": 1,
           "level": 2,
-          "text": "Select the text, then decode the footers.",
-          "penalty": 1,
-          "free_after_sec": null
+          "text": "Test method 1."
         },
         {
           "stage": 1,
           "level": 3,
-          "text": "The footer is Base64 and holds the true date.",
-          "penalty": 2,
-          "free_after_sec": null
+          "text": "Test help 1."
         }
       ],
-      "scoring": {
-        "base": 6,
-        "speed_max": 4,
-        "par_sec": 360,
-        "free_wrong": 3,
-        "wrong_penalty": 0.5,
-        "min_points": 2
-      },
+      "attempts_max": null,
       "lockout": {
         "after_wrong": null,
         "seconds": 0
       },
       "reward": {
-        "fragment": null,
+        "photo_piece": null,
         "story_text": "TEST: date and code word found."
       },
       "feeds": [
@@ -2596,6 +4060,8 @@
       "solution": {
         "method": "redaction_base64"
       },
+      "assembly": null,
+      "secret": null,
       "tools": [],
       "final": false
     },
@@ -2606,14 +4072,16 @@
       "seq": 3,
       "order_in_room": 2,
       "kind": "microfilm_viewer",
+      "case_file_id": "CF-7C9D",
       "object_id": "microfilm_reader",
       "title": "Test Photograph",
       "scene_text": "A test microfilm viewer with a locked date dial.",
       "unlock": {
-        "requires_all": [
+        "requires_resolved": [
           "R2-02"
         ]
       },
+      "input_gate": null,
       "payload": {
         "image_file": "portrait_round1.png",
         "dial": true
@@ -2642,7 +4110,7 @@
             }
           ],
           "expected_fields": 1,
-          "answer_hash": "53621d3fde1ce7d246c9e5c327c47442978b70bdc1a90fcb890b8885b873429c",
+          "answer_hash": "449692cd6d8357e17b181fcfa5815c1cd41473be56934212f5f97cd8bf2d6f15",
           "answer_plain": [
             "2001-02-10"
           ],
@@ -2672,7 +4140,7 @@
             }
           ],
           "expected_fields": 1,
-          "answer_hash": "be7b33a35f96a6ad58f80a0eb29906a8cec3efa444233494c631c61b98870cf6",
+          "answer_hash": "6d013ae31e058b6c7a7aa187c1fd6692726e4e342fadac53ce3fdbe847873564",
           "answer_plain": [
             "1357"
           ],
@@ -2683,60 +4151,41 @@
         {
           "stage": 1,
           "level": 1,
-          "text": "The dial wants a date.",
-          "penalty": 0,
-          "free_after_sec": 300
+          "text": "Test nudge 1."
         },
         {
           "stage": 1,
           "level": 2,
-          "text": "Use the shutdown date.",
-          "penalty": 1,
-          "free_after_sec": null
+          "text": "Test method 1."
         },
         {
           "stage": 1,
           "level": 3,
-          "text": "Format YYYY-MM-DD.",
-          "penalty": 2,
-          "free_after_sec": null
+          "text": "Test help 1."
         },
         {
           "stage": 2,
           "level": 1,
-          "text": "Check the Properties.",
-          "penalty": 0,
-          "free_after_sec": 300
+          "text": "Test nudge 2."
         },
         {
           "stage": 2,
           "level": 2,
-          "text": "The comment is hex.",
-          "penalty": 1,
-          "free_after_sec": null
+          "text": "Test method 2."
         },
         {
           "stage": 2,
           "level": 3,
-          "text": "The code follows PANEL.",
-          "penalty": 2,
-          "free_after_sec": null
+          "text": "Test help 2."
         }
       ],
-      "scoring": {
-        "base": 6,
-        "speed_max": 4,
-        "par_sec": 420,
-        "free_wrong": 3,
-        "wrong_penalty": 0.5,
-        "min_points": 2
-      },
+      "attempts_max": null,
       "lockout": {
         "after_wrong": null,
         "seconds": 0
       },
       "reward": {
-        "fragment": null,
+        "photo_piece": null,
         "story_text": "TEST: panel code found."
       },
       "feeds": [
@@ -2745,6 +4194,8 @@
       "solution": {
         "method": "date_gate_hex"
       },
+      "assembly": null,
+      "secret": null,
       "tools": [],
       "final": false
     },
@@ -2755,12 +4206,14 @@
       "seq": 4,
       "order_in_room": 3,
       "kind": "epoch_timeline",
+      "case_file_id": "CF-2F05",
       "object_id": "timeline_board",
       "title": "Test Timeline",
       "scene_text": "A test whiteboard of cards with numbers instead of dates.",
       "unlock": {
-        "requires_all": []
+        "requires_resolved": []
       },
+      "input_gate": null,
       "payload": {
         "cards": [
           {
@@ -2822,7 +4275,7 @@
             }
           ],
           "expected_fields": 1,
-          "answer_hash": "c4a881ed025a33ad6d6094b78890af3a6add878712efd69f98569056e1f00566",
+          "answer_hash": "da5a5107d20ab05966e9d3c87b96755aa76817b4b5a350960b4d4d0e936ab619",
           "answer_plain": [
             "PLANET"
           ],
@@ -2833,39 +4286,26 @@
         {
           "stage": 1,
           "level": 1,
-          "text": "The numbers are dates.",
-          "penalty": 0,
-          "free_after_sec": 300
+          "text": "Test nudge 1."
         },
         {
           "stage": 1,
           "level": 2,
-          "text": "Unix timestamps. Convert and sort.",
-          "penalty": 1,
-          "free_after_sec": null
+          "text": "Test method 1."
         },
         {
           "stage": 1,
           "level": 3,
-          "text": "Two events are after the shutdown date. Ignore them.",
-          "penalty": 2,
-          "free_after_sec": null
+          "text": "Test help 1."
         }
       ],
-      "scoring": {
-        "base": 6,
-        "speed_max": 4,
-        "par_sec": 420,
-        "free_wrong": 3,
-        "wrong_penalty": 0.5,
-        "min_points": 2
-      },
+      "attempts_max": null,
       "lockout": {
         "after_wrong": null,
         "seconds": 0
       },
       "reward": {
-        "fragment": null,
+        "photo_piece": null,
         "story_text": "TEST: keyword found."
       },
       "feeds": [
@@ -2874,6 +4314,8 @@
       "solution": {
         "method": "epoch_filter"
       },
+      "assembly": null,
+      "secret": null,
       "tools": [],
       "final": false
     },
@@ -2884,14 +4326,16 @@
       "seq": 5,
       "order_in_room": 2,
       "kind": "transmission_archive",
+      "case_file_id": "CF-E521",
       "object_id": "radio_console",
       "title": "Test Transmissions",
       "scene_text": "Six test transmissions with auth headers.",
       "unlock": {
-        "requires_all": [
+        "requires_resolved": [
           "R2-01"
         ]
       },
+      "input_gate": null,
       "payload": {
         "messages": [
           {
@@ -2967,7 +4411,7 @@
             }
           ],
           "expected_fields": 1,
-          "answer_hash": "8f8f66c6f8843faee0139109357c494c2cc257166e2a3b19076e8164022c02b0",
+          "answer_hash": "68e47ca9206c4f5d99673b9969143a6c4cb5d34d93841ed379e1e24cf8b7d26d",
           "answer_plain": [
             "VM-A"
           ],
@@ -2978,39 +4422,26 @@
         {
           "stage": 1,
           "level": 1,
-          "text": "Real messages carry a badge.",
-          "penalty": 0,
-          "free_after_sec": 300
+          "text": "Test nudge 1."
         },
         {
           "stage": 1,
           "level": 2,
-          "text": "X-Auth is Base64. Compare with the Active badge.",
-          "penalty": 1,
-          "free_after_sec": null
+          "text": "Test method 1."
         },
         {
           "stage": 1,
           "level": 3,
-          "text": "One header matches. Read that message.",
-          "penalty": 2,
-          "free_after_sec": null
+          "text": "Test help 1."
         }
       ],
-      "scoring": {
-        "base": 6,
-        "speed_max": 4,
-        "par_sec": 420,
-        "free_wrong": 3,
-        "wrong_penalty": 0.5,
-        "min_points": 2
-      },
+      "attempts_max": null,
       "lockout": {
         "after_wrong": null,
         "seconds": 0
       },
       "reward": {
-        "fragment": null,
+        "photo_piece": null,
         "story_text": "TEST: file identified."
       },
       "feeds": [
@@ -3020,6 +4451,8 @@
       "solution": {
         "method": "base64_header"
       },
+      "assembly": null,
+      "secret": null,
       "tools": [],
       "final": false
     },
@@ -3030,14 +4463,16 @@
       "seq": 6,
       "order_in_room": 3,
       "kind": "spectrogram_voicemail",
+      "case_file_id": "CF-4819",
       "object_id": "sound_console",
       "title": "Test Voicemail",
       "scene_text": "Two test voicemails of static.",
       "unlock": {
-        "requires_all": [
+        "requires_resolved": [
           "R2-05"
         ]
       },
+      "input_gate": null,
       "payload": {
         "files": [
           {
@@ -3082,7 +4517,7 @@
             }
           ],
           "expected_fields": 1,
-          "answer_hash": "c5e009c79cce5e18c14e2a8e8249aa8e8f3772edf0a11cc5d67a264d7098ff9e",
+          "answer_hash": "09b71e9ae94b53b43d146d1898e09675c2dadb96545bc7b8bfe3f280789a0222",
           "answer_plain": [
             "8140"
           ],
@@ -3093,39 +4528,26 @@
         {
           "stage": 1,
           "level": 1,
-          "text": "Some sounds are meant to be seen.",
-          "penalty": 0,
-          "free_after_sec": 300
+          "text": "Test nudge 1."
         },
         {
           "stage": 1,
           "level": 2,
-          "text": "Open the right file in a spectrogram viewer.",
-          "penalty": 1,
-          "free_after_sec": null
+          "text": "Test method 1."
         },
         {
           "stage": 1,
           "level": 3,
-          "text": "The first digit is eight.",
-          "penalty": 2,
-          "free_after_sec": null
+          "text": "Test help 1."
         }
       ],
-      "scoring": {
-        "base": 6,
-        "speed_max": 4,
-        "par_sec": 480,
-        "free_wrong": 3,
-        "wrong_penalty": 0.5,
-        "min_points": 2
-      },
+      "attempts_max": null,
       "lockout": {
         "after_wrong": null,
         "seconds": 0
       },
       "reward": {
-        "fragment": null,
+        "photo_piece": null,
         "story_text": "TEST: digits found."
       },
       "feeds": [
@@ -3134,6 +4556,8 @@
       "solution": {
         "method": "spectrogram"
       },
+      "assembly": null,
+      "secret": null,
       "tools": [],
       "final": false
     },
@@ -3144,15 +4568,17 @@
       "seq": 7,
       "order_in_room": 4,
       "kind": "keypad_lock",
+      "case_file_id": "CF-4C16",
       "object_id": "bulkhead_door",
       "title": "Test Lock",
       "scene_text": "A test bulkhead with a two-field keypad.",
       "unlock": {
-        "requires_all": [
+        "requires_resolved": [
           "R2-03",
           "R2-04"
         ]
       },
+      "input_gate": null,
       "payload": {},
       "assets": [],
       "stages": [
@@ -3179,7 +4605,7 @@
             }
           ],
           "expected_fields": 2,
-          "answer_hash": "86c7053aa3ef9491da54c42e907f68d64e7c493daf4eb217cf4baac46de9f6cc",
+          "answer_hash": "c565f9ff84486eef9251cbda3422e6403f3f186889aa6ed789bc4c1252fda3e1",
           "answer_plain": [
             "1357",
             "PLANET"
@@ -3193,39 +4619,26 @@
         {
           "stage": 1,
           "level": 1,
-          "text": "One number and one word.",
-          "penalty": 0,
-          "free_after_sec": 300
+          "text": "Test nudge 1."
         },
         {
           "stage": 1,
           "level": 2,
-          "text": "Number from the photo, word from the timeline.",
-          "penalty": 1,
-          "free_after_sec": null
+          "text": "Test method 1."
         },
         {
           "stage": 1,
           "level": 3,
-          "text": "Microfilm code and timeline keyword.",
-          "penalty": 2,
-          "free_after_sec": null
+          "text": "Test help 1."
         }
       ],
-      "scoring": {
-        "base": 6,
-        "speed_max": 4,
-        "par_sec": 120,
-        "free_wrong": 3,
-        "wrong_penalty": 0.5,
-        "min_points": 2
-      },
+      "attempts_max": null,
       "lockout": {
         "after_wrong": null,
         "seconds": 0
       },
       "reward": {
-        "fragment": null,
+        "photo_piece": null,
         "story_text": "TEST: vault opened."
       },
       "feeds": [
@@ -3234,6 +4647,8 @@
       "solution": {
         "method": "combine"
       },
+      "assembly": null,
+      "secret": null,
       "tools": [],
       "final": false
     },
@@ -3244,12 +4659,14 @@
       "seq": 8,
       "order_in_room": 1,
       "kind": "manual_diff",
+      "case_file_id": "CF-1F0A",
       "object_id": "manual_terminal",
       "title": "Test Manual Diff",
       "scene_text": "Two test manuals, one encrypted.",
       "unlock": {
-        "requires_all": []
+        "requires_resolved": []
       },
+      "input_gate": null,
       "payload": {
         "manual_plain": [
           "STEP 1: POWER DOWN THE TEST RIG",
@@ -3281,7 +4698,7 @@
             }
           ],
           "expected_fields": 1,
-          "answer_hash": "3ecec412eaf9f2f574e4b6d15ddc7efd6978a10af4d42d56ecb5132afd4e3116",
+          "answer_hash": "88cc813e0dd4a6f0b6e2f1031d83722a66a9bfe7aa257c51ba4d64433739695f",
           "answer_plain": [
             "26"
           ],
@@ -3294,39 +4711,26 @@
         {
           "stage": 1,
           "level": 1,
-          "text": "The encrypted copy is the original.",
-          "penalty": 0,
-          "free_after_sec": 300
+          "text": "Test nudge 1."
         },
         {
           "stage": 1,
           "level": 2,
-          "text": "Vigenere with the code word, then compare.",
-          "penalty": 1,
-          "free_after_sec": null
+          "text": "Test method 1."
         },
         {
           "stage": 1,
           "level": 3,
-          "text": "The code word is COMET.",
-          "penalty": 2,
-          "free_after_sec": null
+          "text": "Test help 1."
         }
       ],
-      "scoring": {
-        "base": 6,
-        "speed_max": 4,
-        "par_sec": 540,
-        "free_wrong": 3,
-        "wrong_penalty": 0.5,
-        "min_points": 2
-      },
+      "attempts_max": null,
       "lockout": {
         "after_wrong": null,
         "seconds": 0
       },
       "reward": {
-        "fragment": null,
+        "photo_piece": null,
         "story_text": "TEST: tampered steps found."
       },
       "feeds": [
@@ -3335,6 +4739,8 @@
       "solution": {
         "method": "vigenere_diff"
       },
+      "assembly": null,
+      "secret": null,
       "tools": [],
       "final": false
     },
@@ -3345,12 +4751,14 @@
       "seq": 9,
       "order_in_room": 2,
       "kind": "logic_circuit",
+      "case_file_id": "CF-BFF7",
       "object_id": "failsafe_panel",
       "title": "Test Circuit",
       "scene_text": "A test panel of logic gates.",
       "unlock": {
-        "requires_all": []
+        "requires_resolved": []
       },
+      "input_gate": null,
       "payload": {
         "circuit": {
           "inputs": [
@@ -3492,7 +4900,7 @@
             }
           ],
           "expected_fields": 1,
-          "answer_hash": "4aa6a3dfcb33bb38d963a4caabfd27796d45687ea3270f74f919d153cd0498cf",
+          "answer_hash": "3f74aa503cce32e967da8d0303076ab92f527cfbd1c24276cbad5daf5dc6e669",
           "answer_plain": [
             "1101"
           ],
@@ -3503,39 +4911,26 @@
         {
           "stage": 1,
           "level": 1,
-          "text": "Inputs come from the real voicemail digits.",
-          "penalty": 0,
-          "free_after_sec": 300
+          "text": "Test nudge 1."
         },
         {
           "stage": 1,
           "level": 2,
-          "text": "Last two bits of each digit in binary.",
-          "penalty": 1,
-          "free_after_sec": null
+          "text": "Test method 1."
         },
         {
           "stage": 1,
           "level": 3,
-          "text": "Digit 8 is 1000, so A1=0 and A0=0.",
-          "penalty": 2,
-          "free_after_sec": null
+          "text": "Test help 1."
         }
       ],
-      "scoring": {
-        "base": 6,
-        "speed_max": 4,
-        "par_sec": 420,
-        "free_wrong": 3,
-        "wrong_penalty": 0.5,
-        "min_points": 2
-      },
+      "attempts_max": null,
       "lockout": {
         "after_wrong": 5,
         "seconds": 60
       },
       "reward": {
-        "fragment": null,
+        "photo_piece": null,
         "story_text": "TEST: code found."
       },
       "feeds": [
@@ -3544,6 +4939,8 @@
       "solution": {
         "method": "logic_gates"
       },
+      "assembly": null,
+      "secret": null,
       "tools": [],
       "final": false
     },
@@ -3554,15 +4951,17 @@
       "seq": 10,
       "order_in_room": 3,
       "kind": "final_console",
+      "case_file_id": "CF-A77C",
       "object_id": "central_console",
       "title": "Test Final Console",
       "scene_text": "A test central console with three entries.",
       "unlock": {
-        "requires_all": [
+        "requires_resolved": [
           "R2-08",
           "R2-09"
         ]
       },
+      "input_gate": null,
       "payload": {},
       "assets": [],
       "stages": [
@@ -3597,7 +4996,7 @@
             }
           ],
           "expected_fields": 3,
-          "answer_hash": "ad5fabdbfd98bb60680434f9ad62e8088f89f1bdf51a1336ffadf3ca7871593a",
+          "answer_hash": "e9ef1c3883884f84a9205fa1a6dfd7ae1ffbb8d35a345bcc00991b9cc447ba48",
           "answer_plain": [
             "134578",
             "1101",
@@ -3610,119 +5009,108 @@
         {
           "stage": 1,
           "level": 1,
-          "text": "Use your evidence.",
-          "penalty": 0,
-          "free_after_sec": 300
+          "text": "Test nudge 1."
         },
         {
           "stage": 1,
           "level": 2,
-          "text": "Clean steps are untampered. Code from circuit. Badge of the authentic sender.",
-          "penalty": 1,
-          "free_after_sec": null
+          "text": "Test method 1."
         },
         {
           "stage": 1,
           "level": 3,
-          "text": "Clean steps are the complement of the tampered steps among 1 to 8.",
-          "penalty": 2,
-          "free_after_sec": null
+          "text": "Test help 1."
         }
       ],
-      "scoring": {
-        "base": 6,
-        "speed_max": 4,
-        "par_sec": 300,
-        "free_wrong": 3,
-        "wrong_penalty": 0.5,
-        "min_points": 2
-      },
+      "attempts_max": null,
       "lockout": {
         "after_wrong": 1,
         "seconds": 180
       },
       "reward": {
-        "fragment": null,
+        "photo_piece": null,
         "story_text": "TEST: round complete."
       },
       "feeds": [],
       "solution": {
         "method": "meta_final"
       },
+      "assembly": null,
+      "secret": null,
       "tools": [],
       "final": true
     }
   ],
-  "fragments": [
+  "photo_pieces": [
     {
-      "id": "F01",
+      "id": "P01",
       "awarded_by": "R1-01",
       "correct_slot": 2,
-      "file": "frag_01.png",
-      "caption": "Test fragment 1"
+      "file": "piece_01.png",
+      "caption": "Test piece 1"
     },
     {
-      "id": "F02",
+      "id": "P02",
       "awarded_by": "R1-02",
       "correct_slot": 7,
-      "file": "frag_02.png",
-      "caption": "Test fragment 2"
+      "file": "piece_02.png",
+      "caption": "Test piece 2"
     },
     {
-      "id": "F03",
+      "id": "P03",
       "awarded_by": "R1-03",
       "correct_slot": 4,
-      "file": "frag_03.png",
-      "caption": "Test fragment 3"
+      "file": "piece_03.png",
+      "caption": "Test piece 3"
     },
     {
-      "id": "F04",
+      "id": "P04",
       "awarded_by": "R1-04",
       "correct_slot": 9,
-      "file": "frag_04.png",
-      "caption": "Test fragment 4"
+      "file": "piece_04.png",
+      "caption": "Test piece 4"
     },
     {
-      "id": "F05",
+      "id": "P05",
       "awarded_by": "R1-05",
       "correct_slot": 6,
-      "file": "frag_05.png",
-      "caption": "Test fragment 5"
+      "file": "piece_05.png",
+      "caption": "Test piece 5"
     },
     {
-      "id": "F06",
+      "id": "P06",
       "awarded_by": "R1-06",
       "correct_slot": 1,
-      "file": "frag_06.png",
-      "caption": "Test fragment 6"
+      "file": "piece_06.png",
+      "caption": "Test piece 6"
     },
     {
-      "id": "F07",
+      "id": "P07",
       "awarded_by": "R1-07",
       "correct_slot": 10,
-      "file": "frag_07.png",
-      "caption": "Test fragment 7"
+      "file": "piece_07.png",
+      "caption": "Test piece 7"
     },
     {
-      "id": "F08",
+      "id": "P08",
       "awarded_by": "R1-08",
       "correct_slot": 3,
-      "file": "frag_08.png",
-      "caption": "Test fragment 8"
+      "file": "piece_08.png",
+      "caption": "Test piece 8"
     },
     {
-      "id": "F09",
+      "id": "P09",
       "awarded_by": "R1-09",
       "correct_slot": 8,
-      "file": "frag_09.png",
-      "caption": "Test fragment 9"
+      "file": "piece_09.png",
+      "caption": "Test piece 9"
     },
     {
-      "id": "F10",
+      "id": "P10",
       "awarded_by": "R1-10",
       "correct_slot": 5,
-      "file": "frag_10.png",
-      "caption": "Test fragment 10"
+      "file": "piece_10.png",
+      "caption": "Test piece 10"
     }
   ],
   "toolkit": [

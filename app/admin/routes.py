@@ -1,3 +1,4 @@
+import os
 from fastapi import APIRouter, Request, Response, HTTPException, Depends
 from typing import Optional, Dict, Any
 from datetime import datetime, timezone
@@ -10,6 +11,9 @@ from app.admin.service import AdminService
 from app.login.service import get_db_connection, TEAMS_DB, SESSIONS_DB, LoginService
 
 admin_router = APIRouter(prefix="/api/admin", tags=["admin"])
+
+COOKIE_SECURE = os.getenv("COOKIE_SECURE", "false").lower() == "true"
+COOKIE_SAMESITE = os.getenv("COOKIE_SAMESITE", "lax")
 
 def get_admin_user(request: Request) -> Dict[str, Any]:
     token = request.cookies.get("admin_session") or request.headers.get("x-admin-token")
@@ -34,8 +38,8 @@ async def admin_login(req: AdminLoginRequest, request: Request, response: Respon
         key="admin_session",
         value=token,
         httponly=True,
-        samesite="lax",
-        secure=False,
+        samesite=COOKIE_SAMESITE,
+        secure=COOKIE_SECURE,
         max_age=8 * 3600
     )
 
@@ -50,7 +54,7 @@ async def admin_logout(request: Request, response: Response):
     token = request.cookies.get("admin_session") or request.headers.get("x-admin-token")
     if token:
         AdminService.logout_admin_session(token)
-    response.delete_cookie("admin_session")
+    response.delete_cookie(key="admin_session", samesite=COOKIE_SAMESITE, secure=COOKIE_SECURE)
     return {"ok": True, "message": "Admin signed out"}
 
 @admin_router.get("/me")

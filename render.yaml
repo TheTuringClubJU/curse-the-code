@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: curse-the-code-backend
+    runtime: python
+    region: oregon
+    plan: free
+    buildCommand: pip install --upgrade pip && pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: CONTENT_FILE
+        value: content.test.json
+      - key: ASSETS_DIR
+        value: assets_test
+      - key: DATABASE_URL
+        sync: false
+      - key: CORS_ORIGINS
+        value: "http://localhost:5173,https://curse-the-code.vercel.app"
+      - key: CORS_ORIGIN_REGEX
+        value: "https://.*\\.vercel\\.app"
+      - key: COOKIE_SECURE
+        value: "true"
+      - key: COOKIE_SAMESITE
+        value: "lax"

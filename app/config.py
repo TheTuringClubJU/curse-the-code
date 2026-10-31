@@ -6,6 +6,9 @@ from dotenv import load_dotenv
 load_dotenv()
 
 DATABASE_URL = os.getenv("DATABASE_URL")
+if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+
 CONTENT_FILE = os.getenv("CONTENT_FILE", "content.test.json")
 MAX_SESSIONS_PER_TEAM = 2
 

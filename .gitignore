@@ -2,6 +2,7 @@
 .env
 .env.*
 !.env.example
+!.env.production.example
 content.live*
 content.real.*.json
 *.enc
@@ -17,3 +18,5 @@ __pycache__/
 node_modules/
 frontend/dist/
 schema.completed.sql
+
+ctc/
