@@ -122,7 +122,7 @@ export default function App() {
       );
     }
     return (
-      <div className="w-full min-h-screen">
+      <div className="w-full min-h-screen overflow-y-auto">
         {adminUser ? (
           <AdminDashboard admin={adminUser} onLogout={handleAdminLogout} />
         ) : (

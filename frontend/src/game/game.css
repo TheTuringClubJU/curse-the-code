@@ -1,4 +1,4 @@
-*{box-sizing:border-box}body{margin:0;background:#07060b;color:#e9e4f5;font-family:'IBM Plex Mono',monospace;overflow:hidden}
+*{box-sizing:border-box}body{margin:0;background:#07060b;color:#e9e4f5;font-family:'IBM Plex Mono',monospace}
 .app,.view{position:fixed;inset:0}.view canvas{display:block}.vig{position:fixed;inset:0;pointer-events:none;background:radial-gradient(ellipse at center,transparent 50%,rgba(7,6,11,.75))}
 .cross{position:fixed;left:50%;top:50%;width:4px;height:4px;margin:-2px;border-radius:50%;background:#e9e4f5aa}
 .hud{position:fixed;top:14px;left:18px;display:flex;flex-direction:column;gap:3px;font-size:13px;text-shadow:0 0 6px #000}.logo{font-family:'Special Elite';color:#ff7a1a;font-size:20px}.hud small{opacity:.7}
