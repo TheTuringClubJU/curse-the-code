@@ -65,6 +65,9 @@ export default function App() {
   useEffect(() => {
     if (!team || isAdminRoute) return;
 
+    // Pause continuous polling while actively playing Room 1 to free server bandwidth for instant interactions
+    if (roundStatus === 'live' && currentRoundNum === 1) return;
+
     let isMounted = true;
     const checkState = async () => {
       try {
@@ -84,12 +87,12 @@ export default function App() {
     };
 
     checkState();
-    const interval = setInterval(checkState, 2000);
+    const interval = setInterval(checkState, 3000);
     return () => {
       isMounted = false;
       clearInterval(interval);
     };
-  }, [team, isAdminRoute]);
+  }, [team, isAdminRoute, roundStatus, currentRoundNum]);
 
   const handleLoginSuccess = (authenticatedTeam) => {
     setTeam(authenticatedTeam);

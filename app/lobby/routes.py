@@ -4,7 +4,7 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 from app.config import DATABASE_URL, CONTENT_FILE
 from app.login.routes import get_client_ip
-from app.login.service import LoginService
+from app.login.service import LoginService, get_db_connection
 import json
 import os
 
@@ -20,7 +20,7 @@ def get_content_data():
     return {}
 
 @lobby_router.get("/state")
-async def get_lobby_state(request: Request):
+def get_lobby_state(request: Request):
     """
     Returns the team's current lobby status, current round status,
     round information (title, subtitle), and qualification status.
@@ -40,7 +40,7 @@ async def get_lobby_state(request: Request):
     
     if DATABASE_URL:
         try:
-            conn = psycopg2.connect(DATABASE_URL)
+            conn = get_db_connection()
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
                 cur.execute("SELECT round, status, starts_at, ends_at FROM rounds ORDER BY round;")
                 for r in cur.fetchall():
