@@ -6,11 +6,11 @@
   "rewrites": [
     {
       "source": "/api/:match*",
-      "destination": "https://curse-the-code-backend.onrender.com/api/:match*"
+      "destination": "https://curse-the-code-backend-p7cn.onrender.com/api/:match*"
     },
     {
       "source": "/health",
-      "destination": "https://curse-the-code-backend.onrender.com/health"
+      "destination": "https://curse-the-code-backend-p7cn.onrender.com/health"
     },
     {
       "source": "/(.*)",
