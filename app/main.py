@@ -6,6 +6,7 @@ from fastapi.staticfiles import StaticFiles
 from app.login.routes import login_router
 from app.lobby.routes import lobby_router
 from app.admin.routes import admin_router
+from app.game.routes import router as game_router
 
 app = FastAPI(
     title="Curse the Code - API",
@@ -26,6 +27,7 @@ app.add_middleware(
 app.include_router(login_router)
 app.include_router(lobby_router)
 app.include_router(admin_router)
+app.include_router(game_router)
 
 @app.get("/health")
 async def health_check():

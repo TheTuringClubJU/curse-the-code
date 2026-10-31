@@ -3,6 +3,7 @@ import UserLogin from './userlogin/UserLogin';
 import Lobby from './lobby/Lobby';
 import AdminLogin from './admin/AdminLogin';
 import AdminDashboard from './admin/AdminDashboard';
+import Room1Bedroom from './game/Room1Bedroom';
 import { checkAuthStatus, logoutTeam } from './userlogin/authApi';
 
 export default function App() {
@@ -14,6 +15,8 @@ export default function App() {
 
   const [team, setTeam] = useState(null);
   const [checkingAuth, setCheckingAuth] = useState(true);
+  const [roundStatus, setRoundStatus] = useState('live'); // Default to live so players enter directly
+  const [currentRoundNum, setCurrentRoundNum] = useState(1);
 
   // Listen to popstate or route changes if needed
   useEffect(() => {
@@ -57,6 +60,36 @@ export default function App() {
       })
       .finally(() => setCheckingAuth(false));
   }, [isAdminRoute]);
+
+  // Fast poll lobby/game status when team is logged in
+  useEffect(() => {
+    if (!team || isAdminRoute) return;
+
+    let isMounted = true;
+    const checkState = async () => {
+      try {
+        const res = await fetch('/api/lobby/state', {
+          credentials: 'include'
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (isMounted) {
+            setRoundStatus(data.round_status || 'live');
+            setCurrentRoundNum(data.current_round || 1);
+          }
+        }
+      } catch (err) {
+        console.error('State polling error:', err);
+      }
+    };
+
+    checkState();
+    const interval = setInterval(checkState, 2000);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, [team, isAdminRoute]);
 
   const handleLoginSuccess = (authenticatedTeam) => {
     setTeam(authenticatedTeam);
@@ -105,13 +138,15 @@ export default function App() {
     );
   }
 
-  return (
-    <div className="w-full min-h-screen">
-      {team ? (
-        <Lobby team={team} onLogout={handleLogout} />
-      ) : (
-        <UserLogin onLoginSuccess={handleLoginSuccess} />
-      )}
-    </div>
-  );
+  if (!team) {
+    return <UserLogin onLoginSuccess={handleLoginSuccess} />;
+  }
+
+  // When Round 1 is live, display Room 1 (Lena's Bedroom)
+  if (roundStatus === 'live' && currentRoundNum === 1) {
+    return <Room1Bedroom team={team} onLogout={handleLogout} />;
+  }
+
+  // Otherwise, player waits in the atmospheric Lobby
+  return <Lobby team={team} onLogout={handleLogout} />;
 }
