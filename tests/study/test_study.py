@@ -281,7 +281,11 @@ def test_study_clues_max_attempts_3_enforced(ready):
             assert response.json()["exhausted"] is (count == 3)
         assert ready.submit(clue_id, answer).json()["exhausted"] is True
         assert ready.progress(clue_id)[0]["attempts"] == 3
-    assert ready.state()["is_completed"] is False
+    state = ready.state()
+    assert state["is_completed"] is True
+    assert state["photo_pieces_collected"] == 4
+    assert state["photo_piece_ids"] == ["P01", "P02", "P03", "P04"]
+    assert ready.client.get("/api/game/room/basement").status_code == 200
 
 
 # QA-R2-BE-37

@@ -1,26 +1,29 @@
-# Room 2 validation — 2 November 2026
+# Room 2 validation — 3 November 2026
 
 Base revision: `94323f8`. Local branch: `feat/room2-backend`.
+Review correction builds on `7767bb6` and targets `feat/room-2` through PR #7.
 
 | Check | Result |
 |---|---|
 | Required Study backend cases, `tests/study/test_study.py` | 50 passed |
-| Complete Study suite, `tests/study` | 93 passed |
-| Study service line coverage | 98% (194/197 statements) |
+| Review progression regressions, `tests/study/test_progression.py` | 25 passed |
+| Complete Study suite, `tests/study` | 118 passed |
+| Study service line coverage | 98% (206/210 statements) |
 | Existing backend regression files | 73 passed |
-| Complete backend CI command, one combined invocation | 166 passed; 88% overall app coverage |
+| Complete backend suite, one combined invocation | 191 passed; 88% overall app coverage |
 | Existing frontend suite, `npm test` | 69 passed across four files |
 | Frontend production build, `npm run build` | Passed |
 | Ruff check/format on Study service and Study tests | Passed |
 | `git diff --check` | Passed |
 | Existing `schema.sql` | Unchanged |
 
-The first row is included in the second row; it is not an additional 50 tests.
-Study and existing backend suites passed separately and then together in one
-final invocation: 166 backend tests total, not the sum of these table rows.
-The final combined run took 185.78 seconds. The new tests exercise a real isolated PostgreSQL 16.14 database
+The 50 assigned checks and 25 new progression cases are included in the 118
+Study tests. A focused correction run passed first, followed by one complete
+invocation: 191 backend tests total, not the sum of these table rows.
+The final combined run took 283.83 seconds. The tests exercise a real isolated PostgreSQL 16.14 database
 on localhost, Python 3.12.7, real session authentication and actual HTTP routing
-through FastAPI TestClient. Frontend dependencies were installed with `npm ci`.
+through FastAPI TestClient. The frontend suite and build were rerun using
+the dependencies previously installed with `npm ci`.
 
 Final backend command (using the isolated local test server settings):
 
@@ -28,8 +31,13 @@ Final backend command (using the isolated local test server settings):
 $env:DATABASE_URL='postgresql://ctc_test:local-tests-only@127.0.0.1:55433/ctc_test'
 $env:CONTENT_FILE='content.test.json'
 $env:COOKIE_SECURE='false'
-.\.venv\Scripts\python.exe -m pytest --cov=app --cov-report=term-missing -q --tb=short
+.\.venv\Scripts\python.exe -m pytest --cov=app --cov-report=term-missing -q --tb=short -p no:cacheprovider
 ```
+
+Test selection matches CI. The local run also redirected coverage data and
+a JSON coverage report to the workspace's `.local` directory outside the
+repository. Pytest's optional cache was disabled because its existing local
+directory was not writable in the Windows sandbox.
 
 The Study tests verify every fragment drop, repeat searches at shared props,
 cross-room chain requirements, basket wrapping/unlock, all four answer paths,
@@ -55,6 +63,27 @@ do not begin with `ctc_test` before importing the pre-existing demo seeder.
 Each Study test owns a separate team and removes that team's records afterward.
 No event database, live answer file, hosted API or deployment was used.
 
+## PR #7 progression correction
+
+The reviewer clarified that a resolved clue is either solved or exhausted.
+The original service and its exhaustion assertion incorrectly required all
+four clues to be solved. Before applying the fix, four focused cases failed:
+all clues exhausted, unlimited attempts, and recovery of old exhausted
+progress through either a refresh or a retry. All four pass after correction.
+
+The new `tests/study/test_progression.py` adds 25 regression cases. These
+include all 16 combinations of solved/exhausted clues and verify the exact
+earned photo IDs, clue/aggregate scores, attempt/audit counts, persisted exit
+state, Basement access and idempotent retries. Further cases cover a missing
+or partly attempted final clue, per-clue limits, unlimited attempts, recovery
+of old incomplete room records, simultaneous final wrong attempts and rollback
+if the completion write fails. A focused run of these 25 cases plus the
+corrected original exhaustion test passed (26 tests).
+
+Opening the Study exit does not award missing photos, mark Basement complete
+or qualify the team for Round 2. The Basement final terminal's multi-stage
+photo gate remains Room 3 integration work; these tests do not certify it.
+
 ## Warnings and limits
 
 - The existing frontend suite emits React `act(...)` warnings and logs a
@@ -63,9 +92,10 @@ No event database, live answer file, hosted API or deployment was used.
   (302 KB gzip). It remains a successful build with a bundle-size warning.
 - Installed Python dependencies emit pytest-asyncio/Starlette/httpx deprecation
   warnings; the repository currently uses broad minimum dependency versions.
-- The three uncovered Study statements handle a missing Study room via direct
-  service invocation and normalisation modes not used by any current Study
-  clue. The actual Study clues all use alphanumeric normalisation.
+- The four uncovered Study statements handle a missing Study room via direct
+  service invocation, an empty room clue list, and normalisation modes not
+  used by any current Study clue. The actual Study clues all use alphanumeric
+  normalisation.
 - No claim is made about 60 FPS, GPU memory, real PNG rendering, door animation
   or the full Room 2 100-test target. The Study frontend does not yet exist on
   the checked-out `main`, so `QA-R2-E2E-01` and its frontend checks remain open.
