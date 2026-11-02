@@ -153,13 +153,17 @@ Every developer working on Room 2 (Subham & Shahan) and Room 3 (Krishnapriya & V
 - [ ] **FE-R2-08** Maintain 60 FPS performance budget and `< 250 draw calls`.
 
 ### 2.6 Detailed Tasks for Shahan (Backend)
-- [ ] **BE-R2-01** Wire `study` room metadata in `app/game/routes.py` and ensure `/api/game/room/study` returns valid object states.
-- [ ] **BE-R2-02** Implement `/api/game/room/study/search` supporting the 14 real + 2 decoy fragment drop progression.
-- [ ] **BE-R2-03** Implement auto-unlock for Room 2 Evidence Basket when 16/16 fragments are collected.
-- [ ] **BE-R2-04** Implement submission endpoints for `R1-05`, `R1-06`, `R1-07`, and `R1-08` with dual-HMAC and `answer_plain` array matching.
-- [ ] **BE-R2-05** Add tailored failure messages per clue (e.g., *"Check your binary byte groups"*, *"Invalid base64 padding"*, *"Verify timestamp timezone"*).
-- [ ] **BE-R2-06** Enforce max 3 attempts per clue and record detailed progress in Neon PostgreSQL `team_clues`.
-- [ ] **BE-R2-07** Trigger `room_completed: true` upon solving all 4 study clues and award Photo Pieces `P05`–`P08`.
+- [x] **BE-R2-01** Wire `study` room metadata in `app/game/routes.py` and ensure `/api/game/room/study` returns valid object states.
+- [x] **BE-R2-02** Implement `/api/game/room/study/search` supporting the 14 real + 2 decoy fragment drop progression.
+- [x] **BE-R2-03** Implement auto-unlock for Room 2 Evidence Basket when 16/16 fragments are collected.
+- [x] **BE-R2-04** Implement submission endpoints for `R1-05`, `R1-06`, `R1-07`, and `R1-08` with dual-HMAC and `answer_plain` array matching.
+- [x] **BE-R2-05** Add tailored failure messages per clue (e.g., *"Check your binary byte groups"*, *"Invalid base64 padding"*, *"Verify timestamp timezone"*).
+- [x] **BE-R2-06** Enforce max 3 attempts per clue and record detailed progress in Neon PostgreSQL `team_clues`.
+- [x] **BE-R2-07** Trigger `room_completed: true` upon solving all 4 study clues and award Photo Pieces `P05`–`P08`.
+
+Backend implementation and local PostgreSQL verification: see
+[`docs/ROOM2_HANDOFF.md`](docs/ROOM2_HANDOFF.md) and
+[`docs/TEST_RESULTS.md`](docs/TEST_RESULTS.md). Frontend and browser E2E remain pending.
 
 ---
 
@@ -383,56 +387,56 @@ Each room has a dedicated suite of **100 tests**:
   11. Verify `RoomCompleteModal` triggers, 3D Basement exit door unbolts and swings open, and walking to door prompts Room 3 transition.
 
 #### Backend Unit & Integration Tests (50 Tests - Shahan)
-- [ ] `QA-R2-BE-01` `test_study_initial_state_locked_until_room1_completed`
-- [ ] `QA-R2-BE-02` `test_study_get_room_state_returns_20_objects`
-- [ ] `QA-R2-BE-03` `test_study_search_bookshelf_drops_ES01`
-- [ ] `QA-R2-BE-04` `test_study_search_corkboard_drops_ES02`
-- [ ] `QA-R2-BE-05` `test_study_search_desk_blotter_drops_ES03`
-- [ ] `QA-R2-BE-06` `test_study_search_filing_cabinet_drops_ES04`
-- [ ] `QA-R2-BE-07` `test_study_search_sticky_wall_drops_ES05`
-- [ ] `QA-R2-BE-08` `test_study_search_armchair_drops_ES06`
-- [ ] `QA-R2-BE-09` `test_study_search_reel_recorder_drops_ES07`
-- [ ] `QA-R2-BE-10` `test_study_search_cable_bundle_drops_ES08`
-- [ ] `QA-R2-BE-11` `test_study_search_corkboard_second_spot_drops_ES09`
-- [ ] `QA-R2-BE-12` `test_study_search_filing_cabinet_second_spot_drops_ES10`
-- [ ] `QA-R2-BE-13` `test_study_search_floor_lamp_drops_ES11`
-- [ ] `QA-R2-BE-14` `test_study_search_wastebin_drops_ES12`
-- [ ] `QA-R2-BE-15` `test_study_search_reel_recorder_case_drops_EK02`
-- [ ] `QA-R2-BE-16` `test_study_search_bookshelf_row_drops_EK03`
-- [ ] `QA-R2-BE-17` `test_study_search_window_drops_decoy_XS01`
-- [ ] `QA-R2-BE-18` `test_study_search_radiator_drops_decoy_XS02`
-- [ ] `QA-R2-BE-19` `test_study_search_empty_returns_nothing_found`
-- [ ] `QA-R2-BE-20` `test_study_search_duplicate_returns_already_collected`
-- [ ] `QA-R2-BE-21` `test_study_basket_auto_unlocks_when_all_16_fragments_collected`
-- [ ] `QA-R2-BE-22` `test_study_basket_locked_when_15_of_16_collected`
-- [ ] `QA-R2-BE-23` `test_study_clue_R1_05_hmac_sha256_correct_answer`
-- [ ] `QA-R2-BE-24` `test_study_clue_R1_05_plain_text_array_match_ALPHA`
-- [ ] `QA-R2-BE-25` `test_study_clue_R1_05_case_insensitive_handling`
-- [ ] `QA-R2-BE-26` `test_study_clue_R1_05_awards_photo_piece_P05`
-- [ ] `QA-R2-BE-27` `test_study_clue_R1_06_hmac_sha256_correct_answer`
-- [ ] `QA-R2-BE-28` `test_study_clue_R1_06_plain_text_array_match_SIGNAL`
-- [ ] `QA-R2-BE-29` `test_study_clue_R1_06_awards_photo_piece_P06`
-- [ ] `QA-R2-BE-30` `test_study_clue_R1_07_hmac_sha256_correct_answer`
-- [ ] `QA-R2-BE-31` `test_study_clue_R1_07_plain_text_array_match_ORBIT`
-- [ ] `QA-R2-BE-32` `test_study_clue_R1_07_awards_photo_piece_P07`
-- [ ] `QA-R2-BE-33` `test_study_clue_R1_08_hmac_sha256_correct_answer`
-- [ ] `QA-R2-BE-34` `test_study_clue_R1_08_plain_text_array_match_SRC_TEST9`
-- [ ] `QA-R2-BE-35` `test_study_clue_R1_08_awards_photo_piece_P08`
-- [ ] `QA-R2-BE-36` `test_study_clues_max_attempts_3_enforced`
-- [ ] `QA-R2-BE-37` `test_study_clues_wrong_attempt_increments_count`
-- [ ] `QA-R2-BE-38` `test_study_clues_exhausted_rejects_further_answers`
-- [ ] `QA-R2-BE-39` `test_study_room_completion_flag_true_when_4_clues_solved`
-- [ ] `QA-R2-BE-40` `test_study_exit_door_unlatched_in_database_upon_completion`
-- [ ] `QA-R2-BE-41` `test_study_backward_door_persists_state_when_revisiting_bedroom`
-- [ ] `QA-R2-BE-42` `test_study_photo_pieces_accumulate_to_8_total`
-- [ ] `QA-R2-BE-43` `test_study_atomic_database_transactions_on_concurrent_submits`
-- [ ] `QA-R2-BE-44` `test_study_rate_limit_enforced_across_study_clues`
-- [ ] `QA-R2-BE-45` `test_study_security_no_passwords_or_hashes_in_json`
-- [ ] `QA-R2-BE-46` `test_study_custom_error_message_for_tablet_cipher`
-- [ ] `QA-R2-BE-47` `test_study_custom_error_message_for_email_cipher`
-- [ ] `QA-R2-BE-48` `test_study_custom_error_message_for_crash_dump`
-- [ ] `QA-R2-BE-49` `test_study_custom_error_message_for_printer_log`
-- [ ] `QA-R2-BE-50` `test_study_recompute_score_accurately_reflects_all_solved_clues`
+- [x] `QA-R2-BE-01` `test_study_initial_state_locked_until_room1_completed`
+- [x] `QA-R2-BE-02` `test_study_get_room_state_returns_20_objects`
+- [x] `QA-R2-BE-03` `test_study_search_bookshelf_drops_ES01`
+- [x] `QA-R2-BE-04` `test_study_search_corkboard_drops_ES02`
+- [x] `QA-R2-BE-05` `test_study_search_desk_blotter_drops_ES03`
+- [x] `QA-R2-BE-06` `test_study_search_filing_cabinet_drops_ES04`
+- [x] `QA-R2-BE-07` `test_study_search_sticky_wall_drops_ES05`
+- [x] `QA-R2-BE-08` `test_study_search_armchair_drops_ES06`
+- [x] `QA-R2-BE-09` `test_study_search_reel_recorder_drops_ES07`
+- [x] `QA-R2-BE-10` `test_study_search_cable_bundle_drops_ES08`
+- [x] `QA-R2-BE-11` `test_study_search_corkboard_second_spot_drops_ES09`
+- [x] `QA-R2-BE-12` `test_study_search_filing_cabinet_second_spot_drops_ES10`
+- [x] `QA-R2-BE-13` `test_study_search_floor_lamp_drops_ES11`
+- [x] `QA-R2-BE-14` `test_study_search_wastebin_drops_ES12`
+- [x] `QA-R2-BE-15` `test_study_search_reel_recorder_case_drops_EK02`
+- [x] `QA-R2-BE-16` `test_study_search_bookshelf_row_drops_EK03`
+- [x] `QA-R2-BE-17` `test_study_search_window_drops_decoy_XS01`
+- [x] `QA-R2-BE-18` `test_study_search_radiator_drops_decoy_XS02`
+- [x] `QA-R2-BE-19` `test_study_search_empty_returns_nothing_found`
+- [x] `QA-R2-BE-20` `test_study_search_duplicate_returns_already_collected`
+- [x] `QA-R2-BE-21` `test_study_basket_auto_unlocks_when_all_16_fragments_collected`
+- [x] `QA-R2-BE-22` `test_study_basket_locked_when_15_of_16_collected`
+- [x] `QA-R2-BE-23` `test_study_clue_R1_05_hmac_sha256_correct_answer`
+- [x] `QA-R2-BE-24` `test_study_clue_R1_05_plain_text_array_match_ALPHA`
+- [x] `QA-R2-BE-25` `test_study_clue_R1_05_case_insensitive_handling`
+- [x] `QA-R2-BE-26` `test_study_clue_R1_05_awards_photo_piece_P05`
+- [x] `QA-R2-BE-27` `test_study_clue_R1_06_hmac_sha256_correct_answer`
+- [x] `QA-R2-BE-28` `test_study_clue_R1_06_plain_text_array_match_SIGNAL`
+- [x] `QA-R2-BE-29` `test_study_clue_R1_06_awards_photo_piece_P06`
+- [x] `QA-R2-BE-30` `test_study_clue_R1_07_hmac_sha256_correct_answer`
+- [x] `QA-R2-BE-31` `test_study_clue_R1_07_plain_text_array_match_ORBIT`
+- [x] `QA-R2-BE-32` `test_study_clue_R1_07_awards_photo_piece_P07`
+- [x] `QA-R2-BE-33` `test_study_clue_R1_08_hmac_sha256_correct_answer`
+- [x] `QA-R2-BE-34` `test_study_clue_R1_08_plain_text_array_match_SRC_TEST9`
+- [x] `QA-R2-BE-35` `test_study_clue_R1_08_awards_photo_piece_P08`
+- [x] `QA-R2-BE-36` `test_study_clues_max_attempts_3_enforced`
+- [x] `QA-R2-BE-37` `test_study_clues_wrong_attempt_increments_count`
+- [x] `QA-R2-BE-38` `test_study_clues_exhausted_rejects_further_answers`
+- [x] `QA-R2-BE-39` `test_study_room_completion_flag_true_when_4_clues_solved`
+- [x] `QA-R2-BE-40` `test_study_exit_door_unlatched_in_database_upon_completion`
+- [x] `QA-R2-BE-41` `test_study_backward_door_persists_state_when_revisiting_bedroom`
+- [x] `QA-R2-BE-42` `test_study_photo_pieces_accumulate_to_8_total`
+- [x] `QA-R2-BE-43` `test_study_atomic_database_transactions_on_concurrent_submits`
+- [x] `QA-R2-BE-44` `test_study_rate_limit_enforced_across_study_clues`
+- [x] `QA-R2-BE-45` `test_study_security_no_passwords_or_hashes_in_json`
+- [x] `QA-R2-BE-46` `test_study_custom_error_message_for_tablet_cipher`
+- [x] `QA-R2-BE-47` `test_study_custom_error_message_for_email_cipher`
+- [x] `QA-R2-BE-48` `test_study_custom_error_message_for_crash_dump`
+- [x] `QA-R2-BE-49` `test_study_custom_error_message_for_printer_log`
+- [x] `QA-R2-BE-50` `test_study_recompute_score_accurately_reflects_all_solved_clues`
 
 #### Frontend Unit & Integration Tests (49 Tests - Subham Das)
 - [ ] `QA-R2-FE-01` `test_room2_study_mounts_canvas_and_loads_threejs_scene`
