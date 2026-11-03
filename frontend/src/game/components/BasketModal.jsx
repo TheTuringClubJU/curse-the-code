@@ -20,6 +20,11 @@ const EVIDENCE_IMAGE_MAP = {
   EK01: '/key_piece.png',
   XB01: '/decoy_photo.png',
   XB02: '/decoy_portrait.png',
+  EK04: '/evidence/basement/EK04.png',
+  EK05: '/evidence/basement/EK05.png',
+  EK06: '/evidence/basement/EK06.png',
+  XK01: '/evidence/basement/XK01.png',
+  XK02: '/evidence/basement/XK02.png',
 };
 
 const EVIDENCE_DETAILS_MAP = {
@@ -38,6 +43,11 @@ const EVIDENCE_DETAILS_MAP = {
   EK01: { clue: 'R1-10 (Doll Slip)', part: 'Key Note', hiding: 'Porcelain Doll', tip: 'Folded parchment note: "KYFV MVV HZ"' },
   XB01: { clue: 'Decoy (No Target)', part: 'Decoy', hiding: 'Photo Frame', tip: 'Faded childhood photograph. Decoy specimen.' },
   XB02: { clue: 'Decoy (No Target)', part: 'Decoy', hiding: 'Portrait Canvas', tip: 'Varnished linen frame backing. Decoy specimen.' },
+  EK04: { clue: 'R1-09 (Intercom)', part: 'Fragment C', hiding: 'Server Rack', tip: 'Glitched printer report from the containment rack.' },
+  EK05: { clue: 'R1-09 (Intercom)', part: 'Fragment A', hiding: 'Maintenance Terminal', tip: 'Scrambled terminal audio packet with external-log metadata.' },
+  EK06: { clue: 'R1-10 (Rack Note)', part: 'Fragment C', hiding: 'Toolbox', tip: 'Folded cipher note found beneath the toolbox tray.' },
+  XK01: { clue: 'Decoy (No Target)', part: 'Decoy', hiding: 'Floor Seal', tip: 'Clean printed note with decoy ciphertext. Decoy specimen.' },
+  XK02: { clue: 'Decoy (No Target)', part: 'Decoy', hiding: 'Server Rack Drive Bay', tip: 'Maintenance checklist scrap. Decoy specimen.' },
 };
 
 function getFragmentImage(ev) {
