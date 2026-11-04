@@ -15,6 +15,7 @@ import './game.css';
 export default function Room3Basement({ team, onLogout, onProceedToLobby }) {
   const mountRef = useRef(null), engineRef = useRef(null), audioRef = useRef(null);
   const roomDataRef = useRef(null), activeTargetRef = useRef(null), handleInteractRef = useRef(null);
+  const submittingRef = useRef(false), notificationTimerRef = useRef(null);
   const [roomData, setRoomData] = useState(null), [loading, setLoading] = useState(true);
   const [isStarted, setIsStarted] = useState(false), [activeClue, setActiveClue] = useState(null);
   const [isBasketOpen, setIsBasketOpen] = useState(false), [isCaseFilesOpen, setIsCaseFilesOpen] = useState(false);
@@ -22,37 +23,50 @@ export default function Room3Basement({ team, onLogout, onProceedToLobby }) {
   const [hoverPrompt, setHoverPrompt] = useState(null), [notification, setNotification] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false), [audioMuted, setAudioMuted] = useState(false);
 
-  const showNotification = (message) => { setNotification(message); setTimeout(()=>setNotification(null), 4500); };
+  const showNotification = (message) => {
+    setNotification(message);
+    if (notificationTimerRef.current) clearTimeout(notificationTimerRef.current);
+    notificationTimerRef.current = setTimeout(()=>setNotification(null), 4500);
+  };
   const fetchRoomState = async () => {
     try {
       const res = await fetch('/api/game/room/basement', { credentials:'include', headers:{'x-session-token':localStorage.getItem('ctc_token')||''} });
       if(res.ok){ const data=await res.json(); setRoomData(data); roomDataRef.current=data; if(data.is_completed) engineRef.current?.openDoor?.(); }
+      else if ([401,403,404,429,500].includes(res.status)) return;
     } catch(e){ console.error('Failed to load basement:', e); } finally { setLoading(false); }
   };
 
   const handleInteract = async (objectId) => {
     const data=roomDataRef.current;
-    if(objectId==='room_door'){ if(data?.is_completed) setIsCompleteOpen(true); else showNotification('The subterranean vault remains sealed until the containment terminal is solved.'); return; }
+    if(objectId==='room_door'){
+      if(data?.is_completed){ setIsCompleteOpen(true); engineRef.current?.unlock(); }
+      else showNotification('The backward passage leads to the Study. The subterranean vault remains sealed.');
+      return;
+    }
     try {
       const res=await fetch('/api/game/room/basement/search',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json','x-session-token':localStorage.getItem('ctc_token')||''},body:JSON.stringify({object_id:objectId})});
       if(res.ok){ const result=await res.json(); if(result.message) showNotification(result.message); if(result.found){await fetchRoomState(); return;} }
+      if ([401,403,404,429,500].includes(res.status)) { showNotification(res.status === 429 ? 'Search is temporarily rate limited.' : 'Search request could not be completed.'); }
     } catch(e){ console.error('Search failed:',e); }
     const clue=data?.clues?.find(c=>c.object_id===objectId);
     if(clue){
       if(clue.id==='R1-FIN'){ const required=['R1-09','R1-10']; const ready=required.every(id=>data.clues.find(c=>c.id===id)?.solved); if(!ready){showNotification('Final terminal locked. Solve R1-09 and R1-10 first.');return;} }
       if(!data?.basket_unlocked && clue.id!=='R1-FIN'){showNotification('The evidence lock is sealed. Recover all 5 basement fragments first.');return;}
+      if(!clue.solved && (clue.attempts || 0) >= (clue.attempts_max || 3)){ showNotification('Maximum attempts exhausted for this clue.'); return; }
       setActiveClue(clue); engineRef.current?.unlock();
     }
   };
   handleInteractRef.current=handleInteract;
 
   useEffect(()=>{fetchRoomState();},[]);
+  useEffect(() => () => {
+    if (notificationTimerRef.current) clearTimeout(notificationTimerRef.current);
+  }, []);
   useEffect(()=>{
     const key=(e)=>{ const tag=(e.target?.tagName||'').toUpperCase(); if(['INPUT','TEXTAREA'].includes(tag)||e.target?.isContentEditable)return;
-      if(e.key.toLowerCase()==='e'&&activeTargetRef.current){e.preventDefault();handleInteractRef.current?.(activeTargetRef.current);}
-      if(e.key.toLowerCase()==='b'){e.preventDefault();setIsBasketOpen(v=>!v);}
-      if(e.key.toLowerCase()==='c'){e.preventDefault();setIsCaseFilesOpen(v=>!v);}
-      if(e.key.toLowerCase()==='p'){e.preventDefault();setIsPhotoPuzzleOpen(v=>!v);}
+      if(e.key.toLowerCase()==='b'){e.preventDefault();setIsBasketOpen(v=>{const next=!v;if(next)engineRef.current?.unlock();else engineRef.current?.lock();return next;});}
+      if(e.key.toLowerCase()==='c'){e.preventDefault();setIsCaseFilesOpen(v=>{const next=!v;if(next)engineRef.current?.unlock();else engineRef.current?.lock();return next;});}
+      if(e.key.toLowerCase()==='p'){e.preventDefault();setIsPhotoPuzzleOpen(v=>{const next=!v;if(next)engineRef.current?.unlock();else engineRef.current?.lock();return next;});}
     };
     window.addEventListener('keydown',key,true); return()=>window.removeEventListener('keydown',key,true);
   },[]);
@@ -65,7 +79,23 @@ export default function Room3Basement({ team, onLogout, onProceedToLobby }) {
   },[]);
 
   const handleStart=()=>{setIsStarted(true);audioRef.current?.start(basementConfig.audio);engineRef.current?.setPaused(false);setTimeout(()=>engineRef.current?.lock(),50);};
-  const handleClueSubmit=async(clueId,answer)=>{setIsSubmitting(true);try{const res=await fetch(`/api/game/clue/${clueId}/submit`,{method:'POST',credentials:'include',headers:{'Content-Type':'application/json','x-session-token':localStorage.getItem('ctc_token')||''},body:JSON.stringify({answer})});const data=await res.json();if(res.ok){await fetchRoomState();if(data.room_completed){engineRef.current?.openDoor?.();setIsCompleteOpen(true);}return data;}return{correct:false,message:data.detail||'Submission failed'};}catch(e){return{correct:false,message:'Server communication error'};}finally{setIsSubmitting(false);}};
+  const handleClueSubmit=async(clueId,answer)=>{
+    if(submittingRef.current)return {correct:false,message:'Submission already pending'};
+    submittingRef.current=true;setIsSubmitting(true);
+    const controller=new AbortController();
+    const timeout=setTimeout(()=>controller.abort(),10000);
+    try{
+      const res=await fetch(`/api/game/clue/${clueId}/submit`,{method:'POST',credentials:'include',headers:{'Content-Type':'application/json','x-session-token':localStorage.getItem('ctc_token')||''},body:JSON.stringify({answer}),signal:controller.signal});
+      const data=await res.json().catch(()=>({detail:'Invalid server response'}));
+      if(res.ok){await fetchRoomState();if(data.room_completed){engineRef.current?.openDoor?.();setIsCompleteOpen(true);}return data;}
+      if(res.status===429)return {correct:false,message:'Submission is temporarily rate limited.'};
+      if([401,403].includes(res.status))return {correct:false,message:'Your session is no longer authorized.'};
+      if(res.status===404)return {correct:false,message:'This clue is unavailable.'};
+      if(res.status===500)return {correct:false,message:'The server could not process this submission.'};
+      return {correct:false,message:data.detail||'Submission failed'};
+    }catch(e){return {correct:false,message:e?.name==='AbortError'?'Submission timed out.':'Server communication error'};}
+    finally{clearTimeout(timeout);submittingRef.current=false;setIsSubmitting(false);}
+  };
 
   const clues=roomData?.clues||[], roomClues=clues.filter(c=>c.id!=='R1-FIN');
   const clueModalProps={isSubmitting,onSubmitAnswer:handleClueSubmit,clue:activeClue,onClose:()=>{setActiveClue(null);engineRef.current?.lock();}};

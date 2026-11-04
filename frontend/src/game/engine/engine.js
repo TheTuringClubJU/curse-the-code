@@ -19,7 +19,7 @@ export function createEngine(el,room,h){
  const flick=(seed,amt=.3)=>t=>1-amt*Math.abs(Math.sin(t*(6.3+seed%5)+seed)*Math.sin(t*(2.9+seed%3)+seed*1.7))-.04*Math.abs(Math.sin(t*31+seed))
  let tl=performance.now();const E={lap:n=>{if(debug){const t=performance.now();console.info('[ctc] lap',n,Math.round(t-tl));tl=t}},S,cam,W,H,D,win:room.window,ref,sc,lampMats:[],lampGlow:null,flick,lightScale:()=>sc.v,audio:h.audio,
   anim:f=>anims.push(f),solid:(x0,x1,z0,z1)=>solids.push({x0,x1,z0,z1}),glow:(m,b,f)=>rigG.push({m,b,f:f||flick(Math.floor(Math.random()*90),.3)}),lightRig:(l,b,f)=>rigL.push({l,b,f}),
-  interact(obj,id){obj.traverse(o=>{if(o.isMesh){o.userData.id=id;delete o.userData.np;if(o.material){o.material=Array.isArray(o.material)?o.material.map(m=>m.clone()):o.material.clone()}}})},
+  interact(obj,id){obj.traverse(o=>{if(o.isMesh){o.userData.id=id;delete o.userData.np}})},
   add(obj,o={}){obj.traverse(m=>{if(!m.isMesh)return;if(!m.userData.ns&&!o.noShadow){m.castShadow=true}m.receiveShadow=true;if(!m.userData.np){pick.push(m);if(m.userData.id)(byId[m.userData.id]??=[]).push(m)}});S.add(obj);return obj}}
  // ---- shell: textured walls, floor, ceiling, trim ----
  const wp=X.tex(X.wallpaper()),wmat=new THREE.MeshStandardMaterial({map:wp,bumpMap:wp,bumpScale:.5,roughness:.92,color:0xffffff})
@@ -50,7 +50,7 @@ export function createEngine(el,room,h){
      const mats = Array.isArray(m.material) ? m.material : [m.material];
      mats.forEach(q => {
        if (q && q.emissive && typeof q.emissive.setHex === 'function') {
-         q.emissive.setHex(on ? 0x4a3c9a : 0);
+         q.emissive.setHex(on ? (room.id === 'basement' ? 0xff3030 : 0x4a3c9a) : 0);
        }
      });
    });
@@ -79,6 +79,14 @@ export function createEngine(el,room,h){
    get paused() { return false; }
  });
 
+ const disposedTextures=new Set();
+ const disposeMaterial=(material)=>{
+  if(!material)return;
+  Object.values(material).forEach(value=>{
+   if(value?.isTexture&&!disposedTextures.has(value)){disposedTextures.add(value);value.dispose();}
+  });
+  material.dispose?.();
+ }
  const rs=()=>{R.setSize(el.clientWidth,el.clientHeight);cam.aspect=el.clientWidth/el.clientHeight;cam.updateProjectionMatrix()}
  window.addEventListener('resize',rs)
 
@@ -167,7 +175,11 @@ export function createEngine(el,room,h){
     cancelAnimationFrame(raf);
     controls.dispose();
     window.removeEventListener('resize',rs);
-    S.traverse(o=>{o.geometry?.dispose()});
+    S.traverse(o=>{
+      o.geometry?.dispose();
+      if (Array.isArray(o.material)) o.material.forEach(disposeMaterial);
+      else disposeMaterial(o.material);
+    });
     R.dispose();
     R.domElement.remove();
   }

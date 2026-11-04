@@ -1,4 +1,5 @@
 import { THREE, mat, bgeo } from './kit.js';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
 const box = (w, h, d, material, x, y, z) => {
   const mesh = new THREE.Mesh(bgeo(w, h, d), material);
@@ -15,6 +16,36 @@ const cylinder = (rt, rb, h, segments, material, x, y, z) => {
   return mesh;
 };
 
+const mergeStaticChildren = (group) => {
+  group.updateMatrixWorld(true);
+  const byMaterial = new Map();
+  const originalGeometries = new Set();
+  group.traverse((mesh) => {
+    if (!mesh.isMesh || mesh === group) return;
+    originalGeometries.add(mesh.geometry);
+    const key = mesh.material?.uuid || 'default';
+    const geometry = mesh.geometry.clone();
+    geometry.applyMatrix4(mesh.matrixWorld);
+    const geometries = byMaterial.get(key);
+    if (geometries) geometries.geometries.push(geometry);
+    else byMaterial.set(key, { material: mesh.material, geometries: [geometry] });
+  });
+  const parentInverse = group.matrixWorld.clone().invert();
+  group.children.slice().forEach((child) => group.remove(child));
+  originalGeometries.forEach((geometry) => geometry.dispose());
+  for (const { material, geometries } of byMaterial.values()) {
+    const combined = geometries.length > 1 ? mergeGeometries(geometries, false) : geometries[0];
+    if (combined) combined.applyMatrix4(parentInverse);
+    if (combined) {
+      const merged = new THREE.Mesh(combined, material);
+      merged.castShadow = true;
+      merged.receiveShadow = true;
+      group.add(merged);
+    }
+    geometries.forEach((geometry) => geometry.dispose());
+  }
+};
+
 export function buildBasement(E) {
   const { S, add, solid, interact, anim, ref } = E;
   const concrete = mat({ c: 0x303238, r: 0.95 });
@@ -27,27 +58,30 @@ export function buildBasement(E) {
 
   // Intercom
   const intercom = new THREE.Group();
-  intercom.position.set(3.85, 1.45, 0.5);
+  intercom.position.set(2.8, 1.45, 0.5);
   intercom.add(box(0.12, 0.62, 0.48, yellow, 0, 0, 0));
   intercom.add(box(0.14, 0.14, 0.32, darkSteel, 0, 0.12, 0));
   for (let i = -2; i <= 2; i++) intercom.add(box(0.02, 0.015, 0.3, darkSteel, -0.07, i * 0.045 - 0.02, 0));
-  interact(intercom, 'intercom'); add(intercom); solid(3.72, 4.05, 0.2, 0.8);
+  mergeStaticChildren(intercom);
+  interact(intercom, 'intercom'); add(intercom); solid(2.6, 3.0, 0.2, 0.8);
 
   // Server rack and rack door share visible separate meshes and are both searchable/tagged.
-  const rack = new THREE.Group(); rack.position.set(-2.3, 0, -1.0);
+  const rack = new THREE.Group(); rack.position.set(-2.5, 0, 0);
   rack.add(box(1.25, 2.45, 0.7, darkSteel, 0, 1.225, 0));
   for (let y = 0.25; y < 2.15; y += 0.22) {
     rack.add(box(1.05, 0.12, 0.04, steel, 0, y, 0.38));
     rack.add(cylinder(0.018, 0.018, 0.02, 6, blueLed, 0.38, y, 0.42));
     if ((Math.round(y * 10) % 2) === 0) rack.add(cylinder(0.018, 0.018, 0.02, 6, redLed, -0.38, y, 0.42));
   }
-  interact(rack, 'server_rack'); add(rack); solid(-3.05, -1.55, -1.45, -0.55);
+  mergeStaticChildren(rack);
+  interact(rack, 'server_rack'); add(rack); solid(-3.25, -1.75, -0.45, 0.45);
 
-  const rackDoor = new THREE.Group(); rackDoor.position.set(-2.3, 1.15, -0.62);
+  const rackDoor = new THREE.Group(); rackDoor.position.set(-2.2, 1.15, -1.0);
   rackDoor.add(box(1.08, 2.1, 0.05, steel, 0, 0, 0));
   for (let y = -0.85; y <= 0.85; y += 0.16) rackDoor.add(box(0.82, 0.018, 0.025, darkSteel, 0, y, 0.04));
   rackDoor.add(box(0.5, 0.18, 0.025, yellow, -0.18, 0.72, 0.04));
   rackDoor.rotation.y = 0;
+  mergeStaticChildren(rackDoor);
   interact(rackDoor, 'rack_door'); add(rackDoor);
 
   // Final containment console
@@ -63,11 +97,13 @@ export function buildBasement(E) {
   const terminal = new THREE.Group(); terminal.position.set(-2.2, 1.2, 1.2);
   terminal.add(box(0.78, 0.58, 0.12, darkSteel, 0, 0, 0));
   terminal.add(box(0.62, 0.38, 0.03, blueLed, 0, 0.08, 0.08));
+  mergeStaticChildren(terminal);
   interact(terminal, 'maintenance_terminal'); add(terminal);
 
   const toolbox = new THREE.Group(); toolbox.position.set(1.8, 0, -1.5);
   toolbox.add(box(1.0, 0.55, 0.58, red, 0, 0.275, 0));
   toolbox.add(box(0.5, 0.08, 0.05, steel, 0, 0.62, 0));
+  mergeStaticChildren(toolbox);
   interact(toolbox, 'toolbox'); add(toolbox); solid(1.2, 2.4, -1.85, -1.15);
 
   const floorSeal = new THREE.Group(); floorSeal.position.set(0, 0.04, 0);
@@ -75,10 +111,11 @@ export function buildBasement(E) {
   floorSeal.add(new THREE.Mesh(new THREE.RingGeometry(0.72, 0.78, 12), red));
   floorSeal.children[1].rotation.x = -Math.PI / 2;
   floorSeal.children[1].position.y = 0.06;
+  mergeStaticChildren(floorSeal);
   interact(floorSeal, 'floor_seal'); add(floorSeal);
 
   // Decorative but visible objects
-  const monitor = new THREE.Group(); monitor.position.set(0, 2.45, 3.42);
+  const monitor = new THREE.Group(); monitor.position.set(0, 2.45, 2.8);
   monitor.add(box(2.0, 0.68, 0.08, darkSteel, 0, 0, 0));
   const canvas = document.createElement('canvas'); canvas.width = 512; canvas.height = 128;
   const ctx = canvas.getContext('2d');

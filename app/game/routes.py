@@ -202,72 +202,69 @@ def search_object(room_id: str, payload: Dict[str, Any], request: Request):
     if not target_room:
         raise HTTPException(status_code=404, detail="Room not found")
         
-    # Find evidence attached to this object in room definition
+    # Find every evidence piece attached to this object in room definition.
     room_evidence = target_room.get("evidence", [])
-    target_ev = next((ev for ev in room_evidence if ev.get("hiding", {}).get("object_id") == object_id), None)
-    
-    if not target_ev:
+    target_evidence = [
+        ev for ev in room_evidence
+        if ev.get("hiding", {}).get("object_id") == object_id
+    ]
+
+    if not target_evidence:
         return {
             "found": False,
             "message": "You search carefully, but this object contains no hidden compartments."
         }
-        
+
     conn = get_db_connection()
     try:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            # Check if team already collected this piece
             cur.execute(
-                "SELECT fragment_id FROM team_fragments WHERE team_id = %s AND fragment_id = %s",
-                (team["id"], target_ev["id"])
+                "SELECT fragment_id FROM team_fragments WHERE team_id = %s AND room_id = %s",
+                (team["id"], room_id)
             )
-            if cur.fetchone():
+            collected_in_room = {row["fragment_id"] for row in cur.fetchall()}
+
+            uncollected = [ev for ev in target_evidence if ev["id"] not in collected_in_room]
+            if not uncollected:
                 return {
                     "found": False,
                     "already_collected": True,
-                    "message": "You have already recovered the hidden fragment from here."
+                    "message": "You have already recovered the hidden fragments from here."
                 }
-                
-            # Verify sequence lock:
-            # Target piece requires all lower seq in this chain to have been collected
-            target_seq = target_ev.get("seq")
-            target_chain = target_ev.get("chain", room_id)
-            
-            if target_seq is not None and target_seq > 1:
+
+            # Verify sequence locks before inserting any piece. This prevents
+            # searching maintenance/toolbox props before their chain prerequisites.
+            for target_ev in uncollected:
+                target_seq = target_ev.get("seq")
+                target_chain = target_ev.get("chain", room_id)
+                if target_seq is not None and target_seq > 1:
+                    preceding = [
+                        ev["id"] for ev in room_evidence
+                        if ev.get("chain", room_id) == target_chain
+                        and ev.get("seq") is not None
+                        and ev.get("seq") < target_seq
+                    ]
+                    missing = [fragment_id for fragment_id in preceding if fragment_id not in collected_in_room]
+                    if missing:
+                        return {
+                            "found": False,
+                            "locked": True,
+                            "message": "Locked for now. Follow the investigation trail in order to unlock this."
+                        }
+
+            recovered_ids = []
+            for target_ev in uncollected:
                 cur.execute(
                     """
-                    SELECT fragment_id FROM team_fragments
-                    WHERE team_id = %s AND room_id = %s
+                    INSERT INTO team_fragments (team_id, room_id, fragment_id, is_wrapped)
+                    VALUES (%s, %s, %s, TRUE)
+                    ON CONFLICT (team_id, fragment_id) DO NOTHING
                     """,
-                    (team["id"], room_id)
+                    (team["id"], room_id, target_ev["id"])
                 )
-                collected_in_room = {row["fragment_id"] for row in cur.fetchall()}
-                
-                # Check preceding items in same chain
-                preceding = [
-                    ev["id"] for ev in room_evidence
-                    if ev.get("chain", room_id) == target_chain and ev.get("seq") is not None and ev.get("seq") < target_seq
-                ]
-                missing = [pid for pid in preceding if pid not in collected_in_room]
-                if missing:
-                    # Locked out of order prompt (Option 3 discussed)
-                    return {
-                        "found": False,
-                        "locked": True,
-                        "message": "Locked for now. Follow the investigation trail in order to unlock this."
-                    }
-                    
-            # Valid pickup! Insert into team_fragments
-            cur.execute(
-                """
-                INSERT INTO team_fragments (team_id, room_id, fragment_id, is_wrapped)
-                VALUES (%s, %s, %s, TRUE)
-                ON CONFLICT (team_id, fragment_id) DO NOTHING
-                """,
-                (team["id"], room_id, target_ev["id"])
-            )
+                recovered_ids.append(target_ev["id"])
             conn.commit()
-            
-            # Check total count in room now
+
             cur.execute(
                 "SELECT COUNT(*) as cnt FROM team_fragments WHERE team_id = %s AND room_id = %s",
                 (team["id"], room_id)
@@ -275,7 +272,7 @@ def search_object(room_id: str, payload: Dict[str, Any], request: Request):
             cnt = cur.fetchone()["cnt"]
             total_room = len(room_evidence)
             basket_unlocked = False
-            
+
             if cnt >= total_room:
                 cur.execute(
                     """
@@ -287,11 +284,12 @@ def search_object(room_id: str, payload: Dict[str, Any], request: Request):
                 )
                 conn.commit()
                 basket_unlocked = True
-                
+
             return {
                 "found": True,
-                "fragment_id": target_ev["id"],
-                "message": f"You discovered a wrapped fragment inside the {object_id.replace('_', ' ')}! It has been placed in your basket.",
+                "fragment_id": recovered_ids[0],
+                "fragment_ids": recovered_ids,
+                "message": f"You discovered {len(recovered_ids)} wrapped fragment(s) inside the {object_id.replace('_', ' ')}! They have been placed in your basket.",
                 "total_collected": cnt,
                 "total_in_room": total_room,
                 "basket_unlocked": basket_unlocked
