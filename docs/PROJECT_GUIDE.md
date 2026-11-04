@@ -39,8 +39,11 @@ printer. Their puzzles involve binary characters, an encoded message, a hex
 dump and inconsistent access timestamps. Correct submissions award one photo
 piece and 100 points each under the current implementation. Every accepted
 answer, including a correct answer, uses one of the clue's three attempts.
-An exhausted Study clue stays unsolved. The Study exit opens only when all
-four clues are solved.
+An exhausted Study clue stays unsolved and earns no photo piece or points.
+The Study exit opens when all four clues are resolved: solved or out of
+attempts. This follows the progression rule clarified in PR #7. A team can
+therefore enter the Basement with missing photo pieces; opening the Study
+exit does not complete Round 1.
 
 The Basement's planned final terminal asks for keywords, an ordering of all
 ten photo pieces, then a protocol and PIN. That multi-stage implementation is
@@ -248,10 +251,10 @@ would be unlikely to reveal.
 - The JSON defines 20 Study objects. TODO additionally describes two doors,
   but those door objects are not in that JSON. Coordinate their scene/API
   representation with Subham rather than silently changing his assignment.
-- The task list says to solve every clue to open the exit. Older Room 1 code
-  also treats exhausted clues as resolved, matching an older JSON rule.
-  Study uses the explicit all-solved rule. Darsh should confirm the event's
-  recovery policy when a team exhausts its three attempts.
+- Study and Room 1 both allow progression after all clues are solved or
+  exhausted, as clarified in PR #7. The Study frontend must use the server's
+  completion flag rather than requiring four solved badges. The planned
+  Basement finale must separately require all earned photo pieces.
 - Admin round controls update round status, but existing game routes do not
   generally enforce live/paused/ended status. `App.jsx` defaults to live and
   skips lobby polling during Round 1. The event's pause/end behavior needs a

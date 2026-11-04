@@ -157,6 +157,12 @@ def get_room_state(team_id, content):
             if f["room_id"] == ROOM_ID
         }
         basket_unlocked = _unlock_basket(cur, team_id, room, collected)
+        # Repair progress left incomplete by the former all-solved rule.
+        _update_room_completion(
+            cur,
+            team_id,
+            [c for c in content.get("clues", []) if c.get("room") == ROOM_ID],
+        )
         cur.execute(
             "SELECT is_completed FROM team_rooms WHERE team_id = %s AND room_id = %s",
             (team_id, ROOM_ID),
@@ -399,12 +405,37 @@ def _check_rate_limit(cur, team_id, content):
 
 
 def _room_completed(cur, team_id, clues):
+    """Door progression requires resolution; only correct solves earn rewards."""
     cur.execute(
-        "SELECT clue_id FROM team_clues WHERE team_id = %s AND room_id = %s AND solved = TRUE",
+        "SELECT clue_id, solved, attempts FROM team_clues WHERE team_id = %s AND room_id = %s",
         (team_id, ROOM_ID),
     )
-    solved = {row["clue_id"] for row in cur.fetchall()}
-    return bool(clues) and all(c["id"] in solved for c in clues)
+    progress = {row["clue_id"]: row for row in cur.fetchall()}
+    if not clues:
+        return False
+    for clue in clues:
+        saved = progress.get(clue["id"])
+        if not saved:
+            return False
+        attempts_max = clue.get("attempts_max", 3)
+        if not saved["solved"] and (
+            attempts_max is None or saved["attempts"] < attempts_max
+        ):
+            return False
+    return True
+
+
+def _update_room_completion(cur, team_id, clues):
+    completed = _room_completed(cur, team_id, clues)
+    if completed:
+        cur.execute(
+            """INSERT INTO team_rooms (team_id, room_id, is_completed, completed_at)
+               VALUES (%s, %s, TRUE, NOW()) ON CONFLICT (team_id, room_id) DO UPDATE SET
+               is_completed = TRUE, completed_at = COALESCE(team_rooms.completed_at, EXCLUDED.completed_at)
+               WHERE team_rooms.is_completed IS DISTINCT FROM TRUE OR team_rooms.completed_at IS NULL""",
+            (team_id, ROOM_ID),
+        )
+    return completed
 
 
 def _recompute_score(cur, team_id, round_num):
@@ -439,7 +470,9 @@ def submit_clue_answer(team_id, content, clue, answer):
             (team_id, clue["id"]),
         )
         saved = cur.fetchone() or {"solved": False, "attempts": 0}
-        if saved["solved"] or saved["attempts"] >= attempts_max:
+        if saved["solved"] or (
+            attempts_max is not None and saved["attempts"] >= attempts_max
+        ):
             return {
                 "correct": saved["solved"],
                 "solved": saved["solved"],
@@ -447,7 +480,7 @@ def submit_clue_answer(team_id, content, clue, answer):
                 "attempts": saved["attempts"],
                 "attempts_max": attempts_max,
                 "exhausted": not saved["solved"],
-                "room_completed": _room_completed(cur, team_id, room_clues),
+                "room_completed": _update_room_completion(cur, team_id, room_clues),
                 "reward": _public(clue.get("reward")) if saved["solved"] else None,
                 "message": "Clue already solved!"
                 if saved["solved"]
@@ -496,20 +529,15 @@ def submit_clue_answer(team_id, content, clue, answer):
         )
         if correct:
             _recompute_score(cur, team_id, clue.get("round", 1))
-        completed = _room_completed(cur, team_id, room_clues)
-        if completed:
-            cur.execute(
-                """INSERT INTO team_rooms (team_id, room_id, is_completed, completed_at)
-                   VALUES (%s, %s, TRUE, NOW()) ON CONFLICT (team_id, room_id) DO UPDATE SET
-                   is_completed = TRUE, completed_at = COALESCE(team_rooms.completed_at, EXCLUDED.completed_at)""",
-                (team_id, ROOM_ID),
-            )
+        completed = _update_room_completion(cur, team_id, room_clues)
         return {
             "correct": correct,
             "solved": correct,
             "attempts": attempts,
             "attempts_max": attempts_max,
-            "exhausted": not correct and attempts >= attempts_max,
+            "exhausted": not correct
+            and attempts_max is not None
+            and attempts >= attempts_max,
             "room_completed": completed,
             "reward": _public(clue.get("reward")) if correct else None,
             "message": "Correct! Evidence decrypted."

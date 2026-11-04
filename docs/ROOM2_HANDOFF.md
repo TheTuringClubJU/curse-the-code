@@ -23,7 +23,10 @@ code change is required for the backend implementation.
   fallback only in `content.test.json` with pack label `test`.
 - Each accepted attempt is audited. The attempt cap, idempotency, recomputed
   score, reward and room completion are protected by one team-row lock and
-  transaction. Completion requires four actual solves, never exhaustion.
+  transaction. The exit opens when all four clues are resolved: each is
+  either solved or has exhausted its configured attempts. Exhausted clues
+  stay unsolved and earn zero points and no photo piece. Room completion
+  does not imply Round 1 completion or qualification.
 - Clue-specific failure messages, a content-configured cooldown and a
   30-per-minute submission limit are implemented. Rejected requests do not
   consume attempts. Different teams have independent progress and locks.
@@ -55,6 +58,13 @@ device needs state refresh/polling; there is no WebSocket push. Trigger the
 exit animation from `room_completed` and restore it from `is_completed` after
 a reload. Completed responses commit their database transaction before being
 returned.
+
+Use the server's completion flag for the exit, not a count of solved clues.
+The door can open with fewer than four Study photo pieces. Build the recap
+from `clues[].solved` and `photo_piece_ids`; do not reuse the Bedroom modal's
+hardcoded "4 / 4" solves or four-photo claim. Refreshing Study
+state or retrying a resolved clue also repairs completion records left by
+the earlier all-solved implementation, without awarding missing rewards.
 
 | HTTP result | Meaning | Suggested UI behavior |
 |---|---|---|
@@ -88,6 +98,9 @@ Additional regressions in `tests/study/test_safety.py` cover authentication,
 input validation, team isolation, sequential/cross-room dependencies, live
 verification, cooldown, rollback, parallel attempts/searches, parallel distinct
 solves and an API journey from Bedroom through Study into Basement.
+`tests/study/test_progression.py` covers every combination of solved/exhausted
+clues, missing progress, configurable attempt limits, legacy-state recovery,
+concurrent final attempts and rollback when completion cannot be saved.
 
 Every Study test creates and removes its own team. SQL assertions verify
 persistent state and aggregates. Concurrent checks synchronize real parallel

@@ -148,7 +148,7 @@ Every developer working on Room 2 (Subham & Shahan) and Room 3 (Krishnapriya & V
   - `LinePrinterModal`: Continuous printout viewer with search filter.
 - [ ] **FE-R2-04** Implement 16 PNG evidence fragments (`ES01`–`ES12`, `EK02`, `EK03`, `XS01`, `XS02`) in `frontend/public/evidence/study/`.
 - [ ] **FE-R2-05** Hook keyboard shortcuts: `E` (Search/Interact), `B` (Basket), `C` (Clues Status: 4 study clues), `P` (Photo pieces 5/10).
-- [ ] **FE-R2-06** Implement 3D Basement exit door animation with iron deadbolt sound and green clearance beacon when all 4 clues are solved.
+- [ ] **FE-R2-06** Implement 3D Basement exit door animation with iron deadbolt sound and green clearance beacon when all 4 clues are resolved (solved or exhausted), using the server completion flag.
 - [ ] **FE-R2-07** Implement backward traversal through `study_door_back` allowing players to revisit Room 1.
 - [ ] **FE-R2-08** Maintain 60 FPS performance budget and `< 250 draw calls`.
 
@@ -159,7 +159,7 @@ Every developer working on Room 2 (Subham & Shahan) and Room 3 (Krishnapriya & V
 - [x] **BE-R2-04** Implement submission endpoints for `R1-05`, `R1-06`, `R1-07`, and `R1-08` with dual-HMAC and `answer_plain` array matching.
 - [x] **BE-R2-05** Add tailored failure messages per clue (e.g., *"Check your binary byte groups"*, *"Invalid base64 padding"*, *"Verify timestamp timezone"*).
 - [x] **BE-R2-06** Enforce max 3 attempts per clue and record detailed progress in Neon PostgreSQL `team_clues`.
-- [x] **BE-R2-07** Trigger `room_completed: true` upon solving all 4 study clues and award Photo Pieces `P05`–`P08`.
+- [x] **BE-R2-07** Trigger `room_completed: true` once all 4 Study clues are resolved (solved or exhausted). Award Photo Pieces `P05`–`P08` and points only for correct solves; exhausted clues earn neither (progression clarified in PR #7).
 
 Backend implementation and local PostgreSQL verification: see
 [`docs/ROOM2_HANDOFF.md`](docs/ROOM2_HANDOFF.md) and
