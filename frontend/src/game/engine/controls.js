@@ -18,7 +18,7 @@ export function setupControls({
   spawn
 }) {
   const [W, H, D] = roomSize;
-  let px = spawn[0], pz = spawn[1], yaw = spawn[2], pitch = 0;
+  let px = spawn[0], pz = spawn[2] ?? spawn[1], yaw = spawn[3] ?? 0, pitch = 0;
   let walk = 0, lastStep = 0;
   let currentTarget = null;
   const activeKeys = new Set();
@@ -34,9 +34,8 @@ export function setupControls({
     try {
       const targetEl = canvas || document.body;
       if (targetEl && targetEl.requestPointerLock) {
-        targetEl.requestPointerLock({ unadjustedMovement: true })?.catch?.(() => {
-          targetEl.requestPointerLock?.();
-        });
+        const result = targetEl.requestPointerLock();
+        result?.catch?.(() => {});
       }
     } catch (e) {
       try { (canvas || document.body).requestPointerLock?.(); } catch (_) {}
@@ -119,6 +118,9 @@ export function setupControls({
       }
     }
 
+    if (['KeyW','KeyA','KeyS','KeyD','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code)) {
+      e.preventDefault();
+    }
     activeKeys.add(e.code);
     activeKeys.add(e.key.toLowerCase());
   };

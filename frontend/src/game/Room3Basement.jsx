@@ -12,7 +12,7 @@ import Round1VictoryModal from './components/Round1VictoryModal.jsx';
 import FinalContainmentTerminalModal from './components/FinalContainmentTerminalModal.jsx';
 import './game.css';
 
-export default function Room3Basement({ team, onLogout, onProceedToLobby }) {
+export default function Room3Basement({ team, onLogout, onProceedToLobby, previewMode = false }) {
   const mountRef = useRef(null), engineRef = useRef(null), audioRef = useRef(null);
   const roomDataRef = useRef(null), activeTargetRef = useRef(null), handleInteractRef = useRef(null);
   const submittingRef = useRef(false), notificationTimerRef = useRef(null);
@@ -23,12 +23,32 @@ export default function Room3Basement({ team, onLogout, onProceedToLobby }) {
   const [hoverPrompt, setHoverPrompt] = useState(null), [notification, setNotification] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false), [audioMuted, setAudioMuted] = useState(false);
 
+  const previewRoomData = {
+    title: 'The Basement',
+    is_completed: false,
+    basket_unlocked: true,
+    collected_fragment_ids: ['basement-preview-1'],
+    evidence: [],
+    photo_pieces_collected: 4,
+    clues: [
+      { id: 'R1-09', object_id: 'intercom', solved: false, attempts: 0, attempts_max: 3 },
+      { id: 'R1-10', object_id: 'rack_door', solved: false, attempts: 0, attempts_max: 3 },
+      { id: 'R1-FIN', object_id: 'containment_console', solved: false, attempts: 0, attempts_max: 3 },
+    ],
+  };
+
   const showNotification = (message) => {
     setNotification(message);
     if (notificationTimerRef.current) clearTimeout(notificationTimerRef.current);
     notificationTimerRef.current = setTimeout(()=>setNotification(null), 4500);
   };
   const fetchRoomState = async () => {
+    if (previewMode) {
+      setRoomData(previewRoomData);
+      roomDataRef.current = previewRoomData;
+      setLoading(false);
+      return;
+    }
     try {
       const res = await fetch('/api/game/room/basement', { credentials:'include', headers:{'x-session-token':localStorage.getItem('ctc_token')||''} });
       if(res.ok){ const data=await res.json(); setRoomData(data); roomDataRef.current=data; if(data.is_completed) engineRef.current?.openDoor?.(); }
@@ -38,6 +58,20 @@ export default function Room3Basement({ team, onLogout, onProceedToLobby }) {
 
   const handleInteract = async (objectId) => {
     const data=roomDataRef.current;
+    if (previewMode) {
+      if (objectId === 'room_door') {
+        showNotification('Preview mode: the Room 3 exit is not connected.');
+        return;
+      }
+      const clue = data?.clues?.find(c => c.object_id === objectId);
+      if (clue) {
+        setActiveClue(clue);
+        engineRef.current?.unlock();
+      } else {
+        showNotification(`Preview: inspected ${objectId.replaceAll('_', ' ')}`);
+      }
+      return;
+    }
     if(objectId==='room_door'){
       if(data?.is_completed){ setIsCompleteOpen(true); engineRef.current?.unlock(); }
       else showNotification('The backward passage leads to the Study. The subterranean vault remains sealed.');
@@ -78,8 +112,11 @@ export default function Room3Basement({ team, onLogout, onProceedToLobby }) {
     catch(e){console.error('Basement initialization failed:',e);} return()=>{engineRef.current?.dispose?.();engineRef.current=null;audioRef.current?.dispose?.();};
   },[]);
 
-  const handleStart=()=>{setIsStarted(true);audioRef.current?.start(basementConfig.audio);engineRef.current?.setPaused(false);setTimeout(()=>engineRef.current?.lock(),50);};
+  const handleStart=()=>{setIsStarted(true);audioRef.current?.start(basementConfig.audio);engineRef.current?.setPaused(false);engineRef.current?.lock();};
   const handleClueSubmit=async(clueId,answer)=>{
+    if (previewMode) {
+      return { correct: false, message: `Preview mode: "${answer}" is not submitted to the server.` };
+    }
     if(submittingRef.current)return {correct:false,message:'Submission already pending'};
     submittingRef.current=true;setIsSubmitting(true);
     const controller=new AbortController();
@@ -105,11 +142,15 @@ export default function Room3Basement({ team, onLogout, onProceedToLobby }) {
     let remainingSeconds = 15 * 60;
     const updateCountdown = async () => {
       try {
+        if (previewMode) {
+          remainingSeconds = 15 * 60;
+        } else {
         const res = await fetch('/api/time', { credentials: 'include' });
         if (res.ok) {
           const data = await res.json();
           const serverRemaining = Number(data.remaining_seconds ?? data.remaining ?? NaN);
           if (Number.isFinite(serverRemaining)) remainingSeconds = Math.max(0, Math.floor(serverRemaining));
+        }
         }
       } catch (_) {}
       if (cancelled) return;

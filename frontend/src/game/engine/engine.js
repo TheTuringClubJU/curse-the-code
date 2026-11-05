@@ -47,7 +47,17 @@ export function createEngine(el,room,h){
  const ray=new THREE.Raycaster(),v0=new THREE.Vector2();
  const hl = (id, on) => {
    byId[id]?.forEach(m => {
-     const mats = Array.isArray(m.material) ? m.material : [m.material];
+     if (!m.userData.__highlightOriginalMaterials) {
+       const original = Array.isArray(m.material) ? m.material.slice() : m.material;
+       m.userData.__highlightOriginalMaterials = original;
+       m.userData.__highlightMaterials = Array.isArray(original)
+         ? original.map(q => q?.clone?.() || q)
+         : original?.clone?.() || original;
+       m.material = m.userData.__highlightMaterials;
+     }
+     const mats = Array.isArray(m.userData.__highlightMaterials)
+       ? m.userData.__highlightMaterials
+       : [m.userData.__highlightMaterials];
      mats.forEach(q => {
        if (q && q.emissive && typeof q.emissive.setHex === 'function') {
          q.emissive.setHex(on ? (room.id === 'basement' ? 0xff3030 : 0x4a3c9a) : 0);

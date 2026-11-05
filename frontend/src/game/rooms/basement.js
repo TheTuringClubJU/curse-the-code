@@ -2,7 +2,7 @@ export default {
   id: 'basement',
   title: 'The Basement',
   size: [8, 3.2, 7],
-  spawn: [0, 1.8, 2.4],
+  spawn: [0.8, 1.8, 2.6],
   haunted: false,
   theme: {
     bg: '#14161a', wall: '#34343a', floor: '#25272b', ceil: '#111216',
