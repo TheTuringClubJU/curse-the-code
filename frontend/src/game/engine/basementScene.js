@@ -120,7 +120,7 @@ export function buildBasement(E) {
   const canvas = document.createElement('canvas'); canvas.width = 512; canvas.height = 128;
   const ctx = canvas.getContext('2d');
   ctx.fillStyle = '#120607'; ctx.fillRect(0, 0, canvas.width, canvas.height);
-  ctx.fillStyle = '#ff3030'; ctx.font = 'bold 84px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('15:00', 256, 68);
+  ctx.fillStyle = '#ff3030'; ctx.font = 'bold 84px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('--:--', 256, 68);
   const countdownTexture = new THREE.CanvasTexture(canvas); countdownTexture.colorSpace = THREE.SRGBColorSpace;
   const countdownMaterial = new THREE.MeshBasicMaterial({ map: countdownTexture });
   const countdown = new THREE.Mesh(new THREE.PlaneGeometry(1.82, 0.48), countdownMaterial); countdown.position.set(0, 0, -0.05); monitor.add(countdown);

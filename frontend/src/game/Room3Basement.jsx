@@ -137,33 +137,42 @@ export default function Room3Basement({ team, onLogout, onProceedToLobby, previe
   const clues=roomData?.clues||[], roomClues=clues.filter(c=>c.id!=='R1-FIN');
   const clueModalProps={isSubmitting,onSubmitAnswer:handleClueSubmit,clue:activeClue,onClose:()=>{setActiveClue(null);engineRef.current?.lock();}};
 
+  // Wall-monitor countdown: sync with the server clock ONCE on mount, then count down
+  // locally (no polling). If the sync fails, retry at most 3 times with backoff and show
+  // --:-- until the server answers, so players never see a made-up time.
   useEffect(() => {
-    let cancelled = false;
-    let remainingSeconds = 15 * 60;
-    const updateCountdown = async () => {
-      try {
-        if (previewMode) {
-          remainingSeconds = 15 * 60;
-        } else {
-        const res = await fetch('/api/time', { credentials: 'include' });
-        if (res.ok) {
-          const data = await res.json();
-          const serverRemaining = Number(data.remaining_seconds ?? data.remaining ?? NaN);
-          if (Number.isFinite(serverRemaining)) remainingSeconds = Math.max(0, Math.floor(serverRemaining));
-        }
-        }
-      } catch (_) {}
-      if (cancelled) return;
-      if (!document.hidden) {
-        const minutes = String(Math.floor(remainingSeconds / 60)).padStart(2, '0');
-        const seconds = String(remainingSeconds % 60).padStart(2, '0');
-        engineRef.current?.setCountdown(`${minutes}:${seconds}`);
-        remainingSeconds = Math.max(0, remainingSeconds - 1);
-      }
+    let cancelled = false, retryTimer = null, lastText = null;
+    let deadline = null; // performance.now() value at which the countdown reaches 0
+    const toNum = (v) => (typeof v === 'number' || (typeof v === 'string' && v.trim() !== '')) ? Number(v) : NaN;
+    const parseRemaining = (d) => {
+      const direct = toNum(d?.remaining_seconds ?? d?.remaining);
+      if (Number.isFinite(direct)) return Math.max(0, Math.floor(direct));
+      const end = Date.parse(d?.ends_at), now = Date.parse(d?.server_time ?? d?.now);
+      return Number.isFinite(end) && Number.isFinite(now) ? Math.max(0, Math.floor((end - now) / 1000)) : null;
     };
-    updateCountdown();
-    const interval = setInterval(updateCountdown, 1000);
-    return () => { cancelled = true; clearInterval(interval); };
+    const render = () => {
+      let text = '--:--';
+      if (deadline !== null) {
+        const left = Math.max(0, Math.ceil((deadline - performance.now()) / 1000));
+        text = `${String(Math.floor(left / 60)).padStart(2, '0')}:${String(left % 60).padStart(2, '0')}`;
+      }
+      if (engineRef.current && text !== lastText) { lastText = text; engineRef.current.setCountdown?.(text); }
+    };
+    const sync = async (attempt = 0) => {
+      if (previewMode) { deadline = performance.now() + 15 * 60 * 1000; render(); return; }
+      try {
+        const res = await fetch('/api/time', { credentials: 'include' });
+        if (cancelled) return;
+        if (res.ok) {
+          const remaining = parseRemaining(await res.json());
+          if (remaining !== null && !cancelled) { deadline = performance.now() + remaining * 1000; render(); return; }
+        }
+      } catch (_) { /* fall through to retry */ }
+      if (!cancelled && attempt < 3) retryTimer = setTimeout(() => sync(attempt + 1), [5000, 15000, 45000][attempt]);
+    };
+    sync();
+    const tickTimer = setInterval(render, 1000); // local only, no network
+    return () => { cancelled = true; clearTimeout(retryTimer); clearInterval(tickTimer); };
   }, []);
 
   return <div className="relative w-full h-screen overflow-hidden bg-[#14161a] select-none font-mono">
