@@ -20,6 +20,23 @@ const EVIDENCE_IMAGE_MAP = {
   EK01: '/key_piece.png',
   XB01: '/decoy_photo.png',
   XB02: '/decoy_portrait.png',
+  // Study Room 2 fragments
+  ES01: '/evidence/study/ES01.png',
+  ES02: '/evidence/study/ES02.png',
+  ES03: '/evidence/study/ES03.png',
+  ES04: '/evidence/study/ES04.png',
+  ES05: '/evidence/study/ES05.png',
+  ES06: '/evidence/study/ES06.png',
+  ES07: '/evidence/study/ES07.png',
+  ES08: '/evidence/study/ES08.png',
+  ES09: '/evidence/study/ES09.png',
+  ES10: '/evidence/study/ES10.png',
+  ES11: '/evidence/study/ES11.png',
+  ES12: '/evidence/study/ES12.png',
+  EK02: '/evidence/study/EK02.png',
+  EK03: '/evidence/study/EK03.png',
+  XS01: '/evidence/study/XS01.png',
+  XS02: '/evidence/study/XS02.png',
 };
 
 const EVIDENCE_DETAILS_MAP = {
@@ -38,6 +55,23 @@ const EVIDENCE_DETAILS_MAP = {
   EK01: { clue: 'R1-10 (Doll Slip)', part: 'Key Note', hiding: 'Porcelain Doll', tip: 'Folded parchment note: "KYFV MVV HZ"' },
   XB01: { clue: 'Decoy (No Target)', part: 'Decoy', hiding: 'Photo Frame', tip: 'Faded childhood photograph. Decoy specimen.' },
   XB02: { clue: 'Decoy (No Target)', part: 'Decoy', hiding: 'Portrait Canvas', tip: 'Varnished linen frame backing. Decoy specimen.' },
+  // Study Room 2 details
+  ES01: { clue: 'R1-07 (Test Log)', part: 'Piece A', hiding: 'Bookshelf', tip: 'Terminal printout inside hollowed book: DUMP 45 52 52 4F...' },
+  ES02: { clue: 'R1-06 (Test Email)', part: 'Piece A', hiding: 'Corkboard', tip: 'CRT screen dump tape 1: 01010011 01001001' },
+  ES03: { clue: 'R1-05 (Test Tablet)', part: 'Piece A', hiding: 'Desk Blotter', tip: 'Binary tape scrap A: 01000001 01001100' },
+  ES04: { clue: 'R1-08 (Test Access Log)', part: 'Piece A', hiding: 'Filing Cabinet', tip: 'Access log page 1: 2001-09-12 04:12:00 [SRC-TEST1]' },
+  ES05: { clue: 'R1-06 (Test Email)', part: 'Piece B', hiding: 'Sticky-note Wall', tip: 'Yellow sticky note: 01000111 01001110' },
+  ES06: { clue: 'R1-07 (Test Log)', part: 'Piece B', hiding: 'Armchair', tip: 'Crash excerpt: FATAL FAULT in thread 0x4: ORBIT.SYS' },
+  ES07: { clue: 'R1-08 (Test Access Log)', part: 'Piece B', hiding: 'Reel Recorder', tip: 'Magnetic tape log page 2: 2001-09-12 04:18:22 [SRC-TEST2]' },
+  ES08: { clue: 'R1-05 (Test Tablet)', part: 'Piece B', hiding: 'Cable Bundle', tip: 'Sticky note snippet B: 01010000 01001000' },
+  ES09: { clue: 'R1-06 (Test Email)', part: 'Piece C', hiding: 'Corkboard (Upper)', tip: 'CRT screen dump tape 2: 01000001 01001100' },
+  ES10: { clue: 'R1-08 (Test Access Log)', part: 'Piece C', hiding: 'Filing Cabinet (Drawer 4)', tip: 'Access log page 3: 2001-09-12 04:99:99 [SRC-TEST9] ERR_IMPOSSIBLE_TIME' },
+  ES11: { clue: 'R1-07 (Test Log)', part: 'Piece C', hiding: 'Floor Lamp', tip: 'Printed memo rolled in shade: 49 54 2E 53 59 53 20 48 41 4C 54 45 44' },
+  ES12: { clue: 'R1-05 (Test Tablet)', part: 'Piece C', hiding: 'Wastebin', tip: 'Screen protector scrap: "Test passcode: the first Greek letter. Five letters."' },
+  EK02: { clue: 'R1-09 (Reel Static)', part: 'Reel Tape', hiding: 'Reel Recorder Case', tip: 'Corrupted reel tape segment with static frequency override.' },
+  EK03: { clue: 'R1-10 (Margin Cipher)', part: 'Folded Slip', hiding: 'Bookshelf Row', tip: 'Aged paper folded note: "BR TPUIZVUML ZF"' },
+  XS01: { clue: 'Decoy (No Target)', part: 'Decoy', hiding: 'Window Sill', tip: 'Old terminal printout scrap. Decoy specimen.' },
+  XS02: { clue: 'Decoy (No Target)', part: 'Decoy', hiding: 'Radiator Pipes', tip: 'Decoy sticky note with misleading binary sequence.' },
 };
 
 function getFragmentImage(ev) {
@@ -79,11 +113,7 @@ export default function BasketModal({
     }
   };
 
-  const isPosterOrPortrait = inspectingEv && (
-    inspectingEv.id === 'EB01' || inspectingEv.id === 'EB06' || inspectingEv.id === 'EB11' ||
-    inspectingEv.id === 'EB03' || inspectingEv.id === 'EB08' || inspectingEv.id === 'EB12' ||
-    inspectingEv.display?.style?.paper === 'poster'
-  );
+  const isPosterOrPortrait = Boolean(inspectingEv);
 
   return (
     <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-5 select-none">

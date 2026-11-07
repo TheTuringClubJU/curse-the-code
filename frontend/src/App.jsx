@@ -4,6 +4,7 @@ import Lobby from './lobby/Lobby';
 import AdminLogin from './admin/AdminLogin';
 import AdminDashboard from './admin/AdminDashboard';
 import Room1Bedroom from './game/Room1Bedroom';
+import Room2Study from './game/Room2Study';
 import { checkAuthStatus, logoutTeam } from './userlogin/authApi';
 
 export default function App() {
@@ -17,6 +18,7 @@ export default function App() {
   const [checkingAuth, setCheckingAuth] = useState(true);
   const [roundStatus, setRoundStatus] = useState(null); // Pure DB-driven: null until verified from DB
   const [currentRoundNum, setCurrentRoundNum] = useState(1);
+  const [currentRoom, setCurrentRoom] = useState('bedroom');
 
   // Listen to popstate or route changes if needed
   useEffect(() => {
@@ -152,9 +154,25 @@ export default function App() {
     return <UserLogin onLoginSuccess={handleLoginSuccess} />;
   }
 
-  // When Round 1 is live, display Room 1 (Lena's Bedroom)
+  // When Round 1 is live, display Room 1 (Bedroom) or Room 2 (Study)
   if (roundStatus === 'live' && currentRoundNum === 1) {
-    return <Room1Bedroom team={team} onLogout={handleLogout} />;
+    if (currentRoom === 'study') {
+      return (
+        <Room2Study
+          team={team}
+          onLogout={handleLogout}
+          onTransitionToRoom1={() => setCurrentRoom('bedroom')}
+          onTransitionToRoom3={() => setCurrentRoom('basement')}
+        />
+      );
+    }
+    return (
+      <Room1Bedroom
+        team={team}
+        onLogout={handleLogout}
+        onTransitionToRoom2={() => setCurrentRoom('study')}
+      />
+    );
   }
 
   // Otherwise, player waits in the atmospheric Lobby

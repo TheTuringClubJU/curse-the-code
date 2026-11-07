@@ -141,18 +141,18 @@ Every developer working on Room 2 (Subham & Shahan) and Room 3 (Krishnapriya & V
    - **Reward:** Photo Piece `P08`
 
 ### 2.5 Detailed Tasks for Subham Das (Frontend)
-- [ ] **FE-R2-01** Create `frontend/src/game/rooms/study.js` with 3D coordinate layout for all 20 objects, green ambient lighting, and door pivots.
-- [ ] **FE-R2-02** Build `frontend/src/game/Room2Study.jsx` integrating `engine.js` and hooking into `/api/game/room/study`.
-- [ ] **FE-R2-03** Create custom terminal skins for Study clue modals:
+- [x] **FE-R2-01** Create `frontend/src/game/rooms/study.js` with 3D coordinate layout for all 20 objects, green ambient lighting, and door pivots.
+- [x] **FE-R2-02** Build `frontend/src/game/Room2Study.jsx` integrating `engine.js` and hooking into `/api/game/room/study`.
+- [x] **FE-R2-03** Create custom terminal skins for Study clue modals:
   - `TabletPasscodeModal`: Cracked tablet interface with flip button revealing sticky note.
   - `CrtEmailModal`: Monospace green-phosphor email client with base64 copy buffer.
   - `CrashDumpModal`: Hex viewer with offset highlight and copy capability.
   - `LinePrinterModal`: Continuous printout viewer with search filter.
-- [ ] **FE-R2-04** Implement 16 PNG evidence fragments (`ES01`–`ES12`, `EK02`, `EK03`, `XS01`, `XS02`) in `frontend/public/evidence/study/`.
-- [ ] **FE-R2-05** Hook keyboard shortcuts: `E` (Search/Interact), `B` (Basket), `C` (Clues Status: 4 study clues), `P` (Photo pieces 5/10).
-- [ ] **FE-R2-06** Implement 3D Basement exit door animation with iron deadbolt sound and green clearance beacon when all 4 clues are resolved (solved or exhausted), using the server completion flag.
-- [ ] **FE-R2-07** Implement backward traversal through `study_door_back` allowing players to revisit Room 1.
-- [ ] **FE-R2-08** Maintain 60 FPS performance budget and `< 250 draw calls`.
+- [x] **FE-R2-04** Implement 16 PNG evidence fragments (`ES01`–`ES12`, `EK02`, `EK03`, `XS01`, `XS02`) in `frontend/public/evidence/study/`.
+- [x] **FE-R2-05** Hook keyboard shortcuts: `E` (Search/Interact), `B` (Basket), `C` (Clues Status: 4 study clues), `P` (Photo pieces 5/10).
+- [x] **FE-R2-06** Implement 3D Basement exit door animation with iron deadbolt sound and green clearance beacon when all 4 clues are resolved (solved or exhausted), using the server completion flag.
+- [x] **FE-R2-07** Implement backward traversal through `study_door_back` allowing players to revisit Room 1.
+- [x] **FE-R2-08** Maintain 60 FPS performance budget and `< 250 draw calls`.
 
 ### 2.6 Detailed Tasks for Shahan (Backend)
 - [x] **BE-R2-01** Wire `study` room metadata in `app/game/routes.py` and ensure `/api/game/room/study` returns valid object states.
@@ -374,7 +374,7 @@ Each room has a dedicated suite of **100 tests**:
 ### 4.2 Room 2 (Daniel's Study) Test Suite (100 Tests)
 
 #### E2E Full Walkthrough Test (1 Test - Subham Das & Shahan)
-- [ ] `QA-R2-E2E-01` **`e2e_study_complete_participant_journey`**
+- [x] `QA-R2-E2E-01` **`e2e_study_complete_participant_journey`**
   *Full browser automation simulating a team:*
   1. Transition from Room 1 into Daniel's Study.
   2. Verify green CRT aesthetic, scanline overlay, and typewriter ambient audio.
@@ -441,55 +441,55 @@ Each room has a dedicated suite of **100 tests**:
 - [x] `QA-R2-BE-50` `test_study_recompute_score_accurately_reflects_all_solved_clues`
 
 #### Frontend Unit & Integration Tests (49 Tests - Subham Das)
-- [ ] `QA-R2-FE-01` `test_room2_study_mounts_canvas_and_loads_threejs_scene`
-- [ ] `QA-R2-FE-02` `test_room2_disposes_geometry_and_materials_on_unmount`
-- [ ] `QA-R2-FE-03` `test_room2_applies_green_crt_lighting_and_ambient_theme`
-- [ ] `QA-R2-FE-04` `test_room2_scanline_overlay_renders_with_low_opacity`
-- [ ] `QA-R2-FE-05` `test_room2_crt_flicker_effect_respects_reduced_motion`
-- [ ] `QA-R2-FE-06` `test_room2_controls_delegate_movement_to_controls_js`
-- [ ] `QA-R2-FE-07` `test_room2_wasd_movement_inside_study_bounding_box`
-- [ ] `QA-R2-FE-08` `test_room2_pointer_lock_engages_and_releases_properly`
-- [ ] `QA-R2-FE-09` `test_room2_hud_displays_study_title_and_collected_count`
-- [ ] `QA-R2-FE-10` `test_room2_pressing_B_opens_study_evidence_basket`
-- [ ] `QA-R2-FE-11` `test_room2_basket_renders_study_png_thumbnails_correctly`
-- [ ] `QA-R2-FE-12` `test_room2_basket_contrast_and_brightness_controls_active`
-- [ ] `QA-R2-FE-13` `test_room2_pressing_C_opens_clues_modal_for_study`
-- [ ] `QA-R2-FE-14` `test_room2_clues_modal_displays_clues_1_to_4_labels`
-- [ ] `QA-R2-FE-15` `test_room2_clues_modal_shows_accurate_attempts_count`
-- [ ] `QA-R2-FE-16` `test_room2_clues_modal_strictly_hides_study_room_locations`
-- [ ] `QA-R2-FE-17` `test_room2_clues_modal_strictly_hides_cipher_methods`
-- [ ] `QA-R2-FE-18` `test_room2_pressing_P_shows_photo_puzzle_with_up_to_8_pieces`
-- [ ] `QA-R2-FE-19` `test_room2_raycaster_detects_bookshelf_and_prompts_inspect`
-- [ ] `QA-R2-FE-20` `test_room2_pressing_E_searches_bookshelf_and_calls_api`
-- [ ] `QA-R2-FE-21` `test_room2_toast_notification_on_study_fragment_found`
-- [ ] `QA-R2-FE-22` `test_room2_pressing_E_on_tablet_drawer_opens_tablet_modal`
-- [ ] `QA-R2-FE-23` `test_room2_tablet_modal_flip_button_displays_binary_note`
-- [ ] `QA-R2-FE-24` `test_room2_tablet_modal_copy_button_copies_binary_text`
-- [ ] `QA-R2-FE-25` `test_room2_tablet_modal_submits_ALPHA_successfully`
-- [ ] `QA-R2-FE-26` `test_room2_pressing_E_on_crt_monitor_opens_email_modal`
-- [ ] `QA-R2-FE-27` `test_room2_email_modal_displays_base64_encoded_draft`
-- [ ] `QA-R2-FE-28` `test_room2_email_modal_submits_SIGNAL_successfully`
-- [ ] `QA-R2-FE-29` `test_room2_pressing_E_on_terminal_pc_opens_crash_dump_modal`
-- [ ] `QA-R2-FE-30` `test_room2_crash_dump_modal_displays_hex_lines_and_offsets`
-- [ ] `QA-R2-FE-31` `test_room2_crash_dump_modal_submits_ORBIT_successfully`
-- [ ] `QA-R2-FE-32` `test_room2_pressing_E_on_line_printer_opens_access_log_modal`
-- [ ] `QA-R2-FE-33` `test_room2_access_log_modal_search_box_filters_lines`
-- [ ] `QA-R2-FE-34` `test_room2_access_log_modal_submits_SRC_TEST9_successfully`
-- [ ] `QA-R2-FE-35` `test_room2_typing_in_inputs_does_not_trigger_room_movement`
-- [ ] `QA-R2-FE-36` `test_room2_submitting_all_4_clues_triggers_study_complete_modal`
-- [ ] `QA-R2-FE-37` `test_room2_study_exit_door_rotates_open_smoothly`
-- [ ] `QA-R2-FE-38` `test_room2_exit_door_audio_plays_heavy_unlatch_sound`
-- [ ] `QA-R2-FE-39` `test_room2_backward_door_prompts_revisit_bedroom`
-- [ ] `QA-R2-FE-40` `test_room2_pressing_E_on_backward_door_transitions_to_room1`
-- [ ] `QA-R2-FE-41` `test_room2_pressing_E_on_open_exit_door_transitions_to_room3`
-- [ ] `QA-R2-FE-42` `test_room2_ambient_typewriter_and_crt_hum_plays`
-- [ ] `QA-R2-FE-43` `test_room2_global_mute_silences_study_audio`
-- [ ] `QA-R2-FE-44` `test_room2_draw_calls_under_250_benchmark`
-- [ ] `QA-R2-FE-45` `test_room2_frame_rate_maintains_60fps`
-- [ ] `QA-R2-FE-46` `test_room2_texture_memory_under_25mb`
-- [ ] `QA-R2-FE-47` `test_room2_window_resize_handler_active`
-- [ ] `QA-R2-FE-48` `test_room2_whisper_sound_plays_at_random_intervals`
-- [ ] `QA-R2-FE-49` `test_room2_study_complete_modal_recap_displays_accurate_photo_count`
+- [x] `QA-R2-FE-01` `test_room2_study_mounts_canvas_and_loads_threejs_scene`
+- [x] `QA-R2-FE-02` `test_room2_disposes_geometry_and_materials_on_unmount`
+- [x] `QA-R2-FE-03` `test_room2_applies_green_crt_lighting_and_ambient_theme`
+- [x] `QA-R2-FE-04` `test_room2_scanline_overlay_renders_with_low_opacity`
+- [x] `QA-R2-FE-05` `test_room2_crt_flicker_effect_respects_reduced_motion`
+- [x] `QA-R2-FE-06` `test_room2_controls_delegate_movement_to_controls_js`
+- [x] `QA-R2-FE-07` `test_room2_wasd_movement_inside_study_bounding_box`
+- [x] `QA-R2-FE-08` `test_room2_pointer_lock_engages_and_releases_properly`
+- [x] `QA-R2-FE-09` `test_room2_hud_displays_study_title_and_collected_count`
+- [x] `QA-R2-FE-10` `test_room2_pressing_B_opens_study_evidence_basket`
+- [x] `QA-R2-FE-11` `test_room2_basket_renders_study_png_thumbnails_correctly`
+- [x] `QA-R2-FE-12` `test_room2_basket_contrast_and_brightness_controls_active`
+- [x] `QA-R2-FE-13` `test_room2_pressing_C_opens_clues_modal_for_study`
+- [x] `QA-R2-FE-14` `test_room2_clues_modal_displays_clues_1_to_4_labels`
+- [x] `QA-R2-FE-15` `test_room2_clues_modal_shows_accurate_attempts_count`
+- [x] `QA-R2-FE-16` `test_room2_clues_modal_strictly_hides_study_room_locations`
+- [x] `QA-R2-FE-17` `test_room2_clues_modal_strictly_hides_cipher_methods`
+- [x] `QA-R2-FE-18` `test_room2_pressing_P_shows_photo_puzzle_with_up_to_8_pieces`
+- [x] `QA-R2-FE-19` `test_room2_raycaster_detects_bookshelf_and_prompts_inspect`
+- [x] `QA-R2-FE-20` `test_room2_pressing_E_searches_bookshelf_and_calls_api`
+- [x] `QA-R2-FE-21` `test_room2_toast_notification_on_study_fragment_found`
+- [x] `QA-R2-FE-22` `test_room2_pressing_E_on_tablet_drawer_opens_tablet_modal`
+- [x] `QA-R2-FE-23` `test_room2_tablet_modal_flip_button_displays_binary_note`
+- [x] `QA-R2-FE-24` `test_room2_tablet_modal_copy_button_copies_binary_text`
+- [x] `QA-R2-FE-25` `test_room2_tablet_modal_submits_ALPHA_successfully`
+- [x] `QA-R2-FE-26` `test_room2_pressing_E_on_crt_monitor_opens_email_modal`
+- [x] `QA-R2-FE-27` `test_room2_email_modal_displays_base64_encoded_draft`
+- [x] `QA-R2-FE-28` `test_room2_email_modal_submits_SIGNAL_successfully`
+- [x] `QA-R2-FE-29` `test_room2_pressing_E_on_terminal_pc_opens_crash_dump_modal`
+- [x] `QA-R2-FE-30` `test_room2_crash_dump_modal_displays_hex_lines_and_offsets`
+- [x] `QA-R2-FE-31` `test_room2_crash_dump_modal_submits_ORBIT_successfully`
+- [x] `QA-R2-FE-32` `test_room2_pressing_E_on_line_printer_opens_access_log_modal`
+- [x] `QA-R2-FE-33` `test_room2_access_log_modal_search_box_filters_lines`
+- [x] `QA-R2-FE-34` `test_room2_access_log_modal_submits_SRC_TEST9_successfully`
+- [x] `QA-R2-FE-35` `test_room2_typing_in_inputs_does_not_trigger_room_movement`
+- [x] `QA-R2-FE-36` `test_room2_submitting_all_4_clues_triggers_study_complete_modal`
+- [x] `QA-R2-FE-37` `test_room2_study_exit_door_rotates_open_smoothly`
+- [x] `QA-R2-FE-38` `test_room2_exit_door_audio_plays_heavy_unlatch_sound`
+- [x] `QA-R2-FE-39` `test_room2_backward_door_prompts_revisit_bedroom`
+- [x] `QA-R2-FE-40` `test_room2_pressing_E_on_backward_door_transitions_to_room1`
+- [x] `QA-R2-FE-41` `test_room2_pressing_E_on_open_exit_door_transitions_to_room3`
+- [x] `QA-R2-FE-42` `test_room2_ambient_typewriter_and_crt_hum_plays`
+- [x] `QA-R2-FE-43` `test_room2_global_mute_silences_study_audio`
+- [x] `QA-R2-FE-44` `test_room2_draw_calls_under_250_benchmark`
+- [x] `QA-R2-FE-45` `test_room2_frame_rate_maintains_60fps`
+- [x] `QA-R2-FE-46` `test_room2_texture_memory_under_25mb`
+- [x] `QA-R2-FE-47` `test_room2_window_resize_handler_active`
+- [x] `QA-R2-FE-48` `test_room2_whisper_sound_plays_at_random_intervals`
+- [x] `QA-R2-FE-49` `test_room2_study_complete_modal_recap_displays_accurate_photo_count`
 
 ---
 
