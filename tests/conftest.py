@@ -1,6 +1,7 @@
 import pytest
 from app.login.service import get_db_connection, seed_demo_teams
 from app.admin.service import seed_demo_admin
+from app.db import ensure_schema_updates
 
 @pytest.fixture(scope="session", autouse=True)
 def ensure_test_database_initialized():
@@ -8,6 +9,7 @@ def ensure_test_database_initialized():
     Session-level autouse fixture executed before any test file runs.
     Ensures that rounds (1 & 2), admin credentials, and demo teams exist in PostgreSQL.
     """
+    ensure_schema_updates()
     conn = get_db_connection()
     if conn:
         try:

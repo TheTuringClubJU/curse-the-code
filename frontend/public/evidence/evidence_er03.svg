@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 580 440" width="100%" height="100%">
+    <defs>
+        <radialGradient id="paperVignette" cx="50%" cy="50%" r="70%">
+            <stop offset="60%" stop-color="#f4ede1"/>
+            <stop offset="100%" stop-color="#cfbe9b"/>
+        </radialGradient>
+        <filter id="noise">
+            <feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="3" result="noise"/>
+            <feColorMatrix type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0.08 0" in="noise" result="coloredNoise"/>
+            <feComposite operator="in" in2="SourceGraphic"/>
+        </filter>
+    </defs>
+    
+    <!-- Background Paper Texture -->
+    <rect width="580" height="440" fill="url(#paperVignette)" rx="6"/>
+    <rect width="564" height="424" x="8" y="8" fill="none" stroke="#877556" stroke-width="1.5" opacity="0.5" rx="4"/>
+    <rect width="554" height="414" x="13" y="13" fill="none" stroke="#877556" stroke-width="0.5" stroke-dasharray="6 3" opacity="0.4"/>
+
+    <!-- Document Header -->
+    <text x="60" y="55" font-family="Courier, monospace" font-size="16" font-weight="bold" letter-spacing="2" fill="#2b2319">INTERNAL MEDICAL MEMORANDUM</text>
+    <text x="60" y="78" font-family="Courier, monospace" font-size="11" letter-spacing="1" fill="#75644c">PATHOLOGY &amp; FORENSIC RESEARCH WING</text>
+    <line x1="60" y1="95" x2="520" y2="95" stroke="#75644c" stroke-width="1.5" opacity="0.6"/>
+
+    <!-- Body Content -->
+    <text x="60" y="140" font-family="Courier, monospace" font-size="13" font-weight="bold" fill="#66533c">REFERENCE:</text><text x="210" y="140" font-family="Courier, monospace" font-size="13" fill="#2b2319">SUBJECTS S-004, S-007, S-009</text><text x="60" y="166" font-family="Courier, monospace" font-size="13" font-weight="bold" fill="#66533c">EVALUATION:</text><text x="210" y="166" font-family="Courier, monospace" font-size="13" fill="#2b2319">STANDARD AUTOPSY PROTOCOLS INAPPLICABLE</text><text x="60" y="192" font-family="Courier, monospace" font-size="13" font-weight="bold" fill="#66533c">PATHOLOGY NOTE:</text><text x="210" y="192" font-family="Courier, monospace" font-size="13" fill="#2b2319">Brain activity persists at low frequency post-mortem.</text><text x="60" y="218" font-family="Courier, monospace" font-size="13" font-weight="bold" fill="#66533c">CONCLUSION:</text><text x="210" y="218" font-family="Courier, monospace" font-size="13" fill="#2b2319">Cease tissue extraction. Maintain sealed isolation at Cabinet B.</text>
+
+    <!-- Extra Graphics -->
+    
+
+    <!-- Stamp -->
+    
+        <g transform="translate(360, 60) rotate(12)">
+            <rect x="0" y="0" width="180" height="42" fill="none" stroke="#a31818" stroke-width="2.5" stroke-dasharray="4 2" rx="4" opacity="0.85"/>
+            <text x="90" y="26" font-family="Courier, monospace" font-size="11" font-weight="900" fill="#a31818" text-anchor="middle" letter-spacing="1.5">MEDICAL AUTOPSY</text>
+        </g>
+        
+
+    <!-- Corner / Classification Marks -->
+    <line x1="60" y1="385" x2="520" y2="385" stroke="#75644c" stroke-width="0.8" opacity="0.4"/>
+    <text x="60" y="405" font-family="Courier, monospace" font-size="10" font-weight="bold" fill="#75644c">RECORD ID: MED-83-REV</text>
+    <text x="520" y="405" font-family="Courier, monospace" font-size="9" fill="#998369" text-anchor="end">SUBSTATION DELTA ARCHIVES // SEC-04</text>
+</svg>

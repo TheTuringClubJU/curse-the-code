@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 580 440" width="100%" height="100%">
+    <defs>
+        <radialGradient id="paperVignette" cx="50%" cy="50%" r="70%">
+            <stop offset="60%" stop-color="#f2ead9"/>
+            <stop offset="100%" stop-color="#cfbe9b"/>
+        </radialGradient>
+        <filter id="noise">
+            <feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="3" result="noise"/>
+            <feColorMatrix type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0.08 0" in="noise" result="coloredNoise"/>
+            <feComposite operator="in" in2="SourceGraphic"/>
+        </filter>
+    </defs>
+    
+    <!-- Background Paper Texture -->
+    <rect width="580" height="440" fill="url(#paperVignette)" rx="6"/>
+    <rect width="564" height="424" x="8" y="8" fill="none" stroke="#877556" stroke-width="1.5" opacity="0.5" rx="4"/>
+    <rect width="554" height="414" x="13" y="13" fill="none" stroke="#877556" stroke-width="0.5" stroke-dasharray="6 3" opacity="0.4"/>
+
+    <!-- Document Header -->
+    <text x="60" y="55" font-family="Courier, monospace" font-size="16" font-weight="bold" letter-spacing="2" fill="#2b2319">EMERGENCY CONTAINMENT PROTOCOL</text>
+    <text x="60" y="78" font-family="Courier, monospace" font-size="11" letter-spacing="1" fill="#75644c">SECTOR 04 ISOLATION &amp; BULKHEAD KEYPAD SPECIFICATION</text>
+    <line x1="60" y1="95" x2="520" y2="95" stroke="#75644c" stroke-width="1.5" opacity="0.6"/>
+
+    <!-- Body Content -->
+    <text x="60" y="140" font-family="Courier, monospace" font-size="13" font-weight="bold" fill="#66533c">PROTOCOL CODE:</text><text x="210" y="140" font-family="Courier, monospace" font-size="13" fill="#2b2319">ECHO-ZERO // LEVEL 4 BYPASS</text><text x="60" y="166" font-family="Courier, monospace" font-size="13" font-weight="bold" fill="#66533c">AUTHORISATION BADGE:</text><text x="210" y="166" font-family="Courier, monospace" font-size="13" fill="#2b2319">BDG-0388 (DR. M. CORVIN)</text><text x="60" y="192" font-family="Courier, monospace" font-size="13" font-weight="bold" fill="#66533c">ACTIVATION:</text><text x="210" y="192" font-family="Courier, monospace" font-size="13" fill="#2b2319">DUAL FACTOR TERMINAL INPUT REQUIRED</text>
+
+    <!-- Extra Graphics -->
+    
+<g transform="translate(60, 220)">
+    <rect width="460" height="135" fill="#191c18" stroke="#2e382b" rx="4"/>
+    <text x="20" y="24" font-family="Courier, monospace" font-size="11" font-weight="bold" fill="#84c98b">JUNCTION DELTA-04 CIRCUIT BUS SCHEMATIC</text>
+    <line x1="20" y1="34" x2="440" y2="34" stroke="#2e382b" stroke-width="1"/>
+    
+    <!-- Schematic Diagram Bus Lines -->
+    <text x="20" y="60" font-family="Courier, monospace" font-size="12" fill="#bce8c2">PRIMARY HARDWARE BUS REGISTER:</text>
+    <rect x="290" y="44" width="90" height="24" fill="#0d120c" stroke="#4ade80" stroke-width="1.5" rx="3"/>
+    <text x="335" y="61" font-family="Courier, monospace" font-size="13" font-weight="bold" fill="#4ade80" text-anchor="middle">0x054D</text>
+
+    <text x="20" y="90" font-family="Courier, monospace" font-size="11" fill="#789c7d">SECONDARY CONTROLLER TRANSLATION:</text>
+    <text x="290" y="90" font-family="Courier, monospace" font-size="11" fill="#bce8c2">BASE-10 / DECIMAL BUS MAPPING</text>
+
+    <text x="20" y="115" font-family="Courier, monospace" font-size="10" font-style="italic" fill="#587a5d">PRIMARY LOGIC REGISTER: BASE-10 BUS ADDRESS ENCODING</text>
+</g>
+
+
+    <!-- Stamp -->
+    
+        <g transform="translate(360, 60) rotate(12)">
+            <rect x="0" y="0" width="180" height="42" fill="none" stroke="#a31818" stroke-width="2.5" stroke-dasharray="4 2" rx="4" opacity="0.85"/>
+            <text x="90" y="26" font-family="Courier, monospace" font-size="11" font-weight="900" fill="#a31818" text-anchor="middle" letter-spacing="1.5">EMERGENCY SPEC</text>
+        </g>
+        
+
+    <!-- Corner / Classification Marks -->
+    <line x1="60" y1="385" x2="520" y2="385" stroke="#75644c" stroke-width="0.8" opacity="0.4"/>
+    <text x="60" y="405" font-family="Courier, monospace" font-size="10" font-weight="bold" fill="#75644c">RECORD ID: ECP-83-001</text>
+    <text x="520" y="405" font-family="Courier, monospace" font-size="9" fill="#998369" text-anchor="end">SUBSTATION DELTA ARCHIVES // SEC-04</text>
+</svg>
