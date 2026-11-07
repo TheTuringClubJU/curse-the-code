@@ -2,7 +2,7 @@ name: CI
 
 on:
   pull_request:
-    branches: [main]
+    branches: [main, "feat/**"]
   push:
     branches: ["**"]
 
@@ -77,3 +77,21 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npm run build
+
+  deploy-vercel:
+    name: Trigger Vercel Production Deploy
+    needs: [backend-test, frontend-test]
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Deploy Hook
+        env:
+          VERCEL_DEPLOY_HOOK: ${{ secrets.VERCEL_DEPLOY_HOOK }}
+        run: |
+          if [ -n "$VERCEL_DEPLOY_HOOK" ]; then
+            echo "Triggering Vercel production deploy..."
+            curl -s -S -X POST "$VERCEL_DEPLOY_HOOK"
+            echo "Deploy hook successfully triggered."
+          else
+            echo "VERCEL_DEPLOY_HOOK secret is not set in GitHub repository secrets. Skipping hook trigger."
+          fi
