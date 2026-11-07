@@ -1,4 +1,5 @@
 import os
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -7,11 +8,18 @@ from app.login.routes import login_router
 from app.lobby.routes import lobby_router
 from app.admin.routes import admin_router
 from app.game.routes import router as game_router
+from app.db import ensure_schema_updates
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    ensure_schema_updates()
+    yield
 
 app = FastAPI(
     title="Curse the Code - API",
     description="Backend API for Curse the Code event with user authentication",
-    version="1.0.0"
+    version="1.0.0",
+    lifespan=lifespan
 )
 
 # CORS setup for frontend development and production (e.g. Vercel)

@@ -4,6 +4,7 @@ import Lobby from './lobby/Lobby';
 import AdminLogin from './admin/AdminLogin';
 import AdminDashboard from './admin/AdminDashboard';
 import Room1Bedroom from './game/Room1Bedroom';
+import Room4Records from './game/Room4Records';
 import { checkAuthStatus, logoutTeam } from './userlogin/authApi';
 
 export default function App() {
@@ -89,8 +90,8 @@ export default function App() {
     // Always execute the initial state check immediately from DB
     checkState();
 
-    // Pause continuous fast polling while actively playing Room 1 to free bandwidth for interactions
-    if (roundStatus === 'live' && currentRoundNum === 1) return;
+    // Pause continuous fast polling while actively playing Room 1 or Room 4 to free bandwidth for interactions
+    if (roundStatus === 'live' && (currentRoundNum === 1 || currentRoundNum === 2)) return;
 
     const interval = setInterval(checkState, 3000);
     return () => {
@@ -155,6 +156,11 @@ export default function App() {
   // When Round 1 is live, display Room 1 (Lena's Bedroom)
   if (roundStatus === 'live' && currentRoundNum === 1) {
     return <Room1Bedroom team={team} onLogout={handleLogout} />;
+  }
+
+  // When Round 2 is live, display Room 4 (The Rotting Archive)
+  if (roundStatus === 'live' && currentRoundNum === 2) {
+    return <Room4Records team={team} onLogout={handleLogout} />;
   }
 
   // Otherwise, player waits in the atmospheric Lobby

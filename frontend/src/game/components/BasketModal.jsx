@@ -20,6 +20,18 @@ const EVIDENCE_IMAGE_MAP = {
   EK01: '/key_piece.png',
   XB01: '/decoy_photo.png',
   XB02: '/decoy_portrait.png',
+  ER01: '/evidence/evidence_er01.svg',
+  ER02: '/evidence/evidence_er02.svg',
+  ER03: '/evidence/evidence_er03.svg',
+  ER04: '/evidence/evidence_er04.svg',
+  ER05: '/evidence/evidence_er05.svg',
+  ER06: '/evidence/evidence_er06.svg',
+  ER07: '/evidence/evidence_er07.svg',
+  ER08: '/evidence/evidence_er08.svg',
+  ER09: '/evidence/evidence_er09.svg',
+  ER10: '/evidence/evidence_er10.svg',
+  XR01: '/evidence/evidence_xr01.svg',
+  XR02: '/evidence/evidence_xr02.svg',
 };
 
 const EVIDENCE_DETAILS_MAP = {
@@ -38,6 +50,18 @@ const EVIDENCE_DETAILS_MAP = {
   EK01: { clue: 'R1-10 (Doll Slip)', part: 'Key Note', hiding: 'Porcelain Doll', tip: 'Folded parchment note: "KYFV MVV HZ"' },
   XB01: { clue: 'Decoy (No Target)', part: 'Decoy', hiding: 'Photo Frame', tip: 'Faded childhood photograph. Decoy specimen.' },
   XB02: { clue: 'Decoy (No Target)', part: 'Decoy', hiding: 'Portrait Canvas', tip: 'Varnished linen frame backing. Decoy specimen.' },
+  ER01: { clue: 'Incident Report (Requisition)', part: 'Doc A', hiding: 'Filing Cabinet A (Bottom Drawer)', tip: 'Facility Requisition Slip REQ-83-114 signed by Dr. M. Corvin.' },
+  ER02: { clue: 'Subject Intake (S-011)', part: 'Doc B', hiding: 'Filing Cabinet A (Middle Drawer)', tip: 'Classified Subject Intake Dossier SIF-81-011 for Subject S-011.' },
+  ER03: { clue: 'Medical Autopsy Memo', part: 'Doc C', hiding: 'Filing Cabinet B (Top Drawer Dividers)', tip: 'Confidential Medical Autopsy memo noting persistent neural activity.' },
+  ER04: { clue: 'Chamber Breach Log', part: 'Doc D', hiding: 'Filing Cabinet B (Classified Folder)', tip: 'Security Incident Breach Report INC-82-003 regarding Sector 2 breach.' },
+  ER05: { clue: 'Project Echo Report', part: 'Doc E', hiding: 'Archive Shelves (Third Shelf Box)', tip: 'Progress Report cover RPT-80-003 for Project Echo Chamber.' },
+  ER06: { clue: 'Facility Surveillance Photo', part: 'Doc F', hiding: 'Archive Shelves (Back Panel Envelope)', tip: 'Photograph PHT-84-011 of Chamber 3 dated 14 months after closure.' },
+  ER07: { clue: 'Corvin Handwritten Memo', part: 'Doc G', hiding: 'Clerk Desk (Under Blotter Mat)', tip: 'Confidential personal memo from Dr. Corvin citing active badge BDG-0388.' },
+  ER08: { clue: 'Subject Status File Card', part: 'Doc H', hiding: 'Card Catalog (Drawer S)', tip: 'Library card catalog card IDX-S-011 for Subject 011 in Chamber 3.' },
+  ER09: { clue: 'Emergency Containment Protocol', part: 'Doc I', hiding: 'Vent Grate (Inside Cover)', tip: 'Emergency Containment Protocol ECP-83-001 containing circuit bus schematic 0x054D.' },
+  ER10: { clue: 'Official Closure Notice', part: 'Doc J', hiding: 'Clerk Desk (Locked Drawer)', tip: 'Official facility closure notice with verified forged signature.' },
+  XR01: { clue: 'Decoy Utility Memo', part: 'Decoy', hiding: 'Waste Basket', tip: 'Discarded maintenance memo for routine fluorescent tubes.' },
+  XR02: { clue: 'Decoy Supply Invoice', part: 'Decoy', hiding: 'Archive Shelves (Top Shelf Loose)', tip: 'Commercial supply invoice for cleaning supplies and detergent.' },
 };
 
 function getFragmentImage(ev) {
@@ -163,7 +187,7 @@ export default function BasketModal({
                       {/* Badge bar */}
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-black/60 text-[#cdbfff] border border-white/5 font-bold">
-                          {ev.id}
+                          RECOVERED
                         </span>
                         {isWrapped ? (
                           <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-[#3c1e14] text-[#fdba74]">
@@ -180,7 +204,7 @@ export default function BasketModal({
                       <div className="relative w-full h-32 rounded-md bg-black/60 border border-white/10 overflow-hidden mb-2.5 flex items-center justify-center">
                         <img
                           src={imgSrc}
-                          alt={ev.display?.title || ev.id}
+                          alt={ev.display?.title || "Evidence thumbnail"}
                           className="w-full h-full object-contain p-1 transition-transform duration-300 group-hover:scale-105"
                           onError={(e) => {
                             // Fallback if image fails
@@ -198,7 +222,7 @@ export default function BasketModal({
 
                       {/* Title & Metadata */}
                       <h3 className="text-xs font-bold text-[#e8e0ff] font-serif mb-0.5 truncate">
-                        {ev.display?.title || `Evidence ${ev.id}`}
+                        {ev.display?.title ? ev.display.title.replace(/^TEST:\s*/i, "") : "Archival Evidence"}
                       </h3>
 
                       {isWrapped ? (
@@ -272,11 +296,8 @@ export default function BasketModal({
                   <ArrowLeft className="w-3.5 h-3.5" /> Back to Basket
                 </button>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-mono px-2 py-0.5 rounded bg-[#8f7bff]/20 text-[#cdbfff] border border-[#8f7bff]/30">
-                    {inspectingEv.id}
-                  </span>
                   <h3 className="text-base font-bold text-[#e8e0ff] font-serif">
-                    {inspectingEv.display?.title || `Evidence ${inspectingEv.id}`}
+                    {inspectingEv.display?.title ? inspectingEv.display.title.replace(/^TEST:\s*/i, "") : "Archival Evidence"}
                   </h3>
                 </div>
               </div>
@@ -367,10 +388,6 @@ export default function BasketModal({
                     FORENSIC ARCHIVE DATA
                   </h4>
                   <div className="space-y-1.5 text-gray-300">
-                    <div className="flex justify-between border-b border-white/5 pb-1">
-                      <span className="text-gray-500">Fragment ID:</span>
-                      <span className="text-[#e8e0ff] font-bold">{inspectingEv.id}</span>
-                    </div>
                     <div className="flex justify-between border-b border-white/5 pb-1">
                       <span className="text-gray-500">Associated Clue:</span>
                       <span className="text-[#cdbfff]">{EVIDENCE_DETAILS_MAP[inspectingEv.id]?.clue || 'Unassigned'}</span>
