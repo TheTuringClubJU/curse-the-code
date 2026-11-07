@@ -477,5 +477,3 @@ def submit_clue_answer(clue_id: str, payload: Dict[str, Any], request: Request):
             }
     finally:
         conn.close()
-
-

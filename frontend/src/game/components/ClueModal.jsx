@@ -20,6 +20,11 @@ const SCRAP_IMAGE_MAP = {
   EK01: '/key_piece.png',
   XB01: '/decoy_photo.png',
   XB02: '/decoy_portrait.png',
+  EK04: '/evidence/basement/EK04.png',
+  EK05: '/evidence/basement/EK05.png',
+  EK06: '/evidence/basement/EK06.png',
+  XK01: '/evidence/basement/XK01.png',
+  XK02: '/evidence/basement/XK02.png',
 };
 
 // Static fragments reference dictionary for Room 1 Bedroom

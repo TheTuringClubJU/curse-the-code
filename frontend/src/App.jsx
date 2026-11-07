@@ -4,6 +4,7 @@ import Lobby from './lobby/Lobby';
 import AdminLogin from './admin/AdminLogin';
 import AdminDashboard from './admin/AdminDashboard';
 import Room1Bedroom from './game/Room1Bedroom';
+import Room3Basement from './game/Room3Basement';
 import { checkAuthStatus, logoutTeam } from './userlogin/authApi';
 
 export default function App() {
@@ -143,6 +144,11 @@ export default function App() {
 
   if (!team) {
     return <UserLogin onLoginSuccess={handleLoginSuccess} />;
+  }
+
+  // Direct Room 3 entry points (frontend routing only)
+  if (window.location.pathname === '/basement' || window.location.pathname === '/room3') {
+    return <Room3Basement team={team} onLogout={handleLogout} />;
   }
 
   // When Round 1 is live, display Room 1 (Lena's Bedroom)

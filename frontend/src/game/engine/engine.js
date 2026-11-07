@@ -4,6 +4,7 @@ import {TX,bgeo,mat,wm} from './kit.js'
 import {buildBedroom} from './scene.js'
 import {createScares} from './scares.js'
 import {setupControls} from './controls.js'
+import {buildBasement} from './basementScene.js'
 export {posterCanvas} from './tex.js'
 
 export function createEngine(el,room,h){
@@ -18,7 +19,7 @@ export function createEngine(el,room,h){
  const flick=(seed,amt=.3)=>t=>1-amt*Math.abs(Math.sin(t*(6.3+seed%5)+seed)*Math.sin(t*(2.9+seed%3)+seed*1.7))-.04*Math.abs(Math.sin(t*31+seed))
  let tl=performance.now();const E={lap:n=>{if(debug){const t=performance.now();console.info('[ctc] lap',n,Math.round(t-tl));tl=t}},S,cam,W,H,D,win:room.window,ref,sc,lampMats:[],lampGlow:null,flick,lightScale:()=>sc.v,audio:h.audio,
   anim:f=>anims.push(f),solid:(x0,x1,z0,z1)=>solids.push({x0,x1,z0,z1}),glow:(m,b,f)=>rigG.push({m,b,f:f||flick(Math.floor(Math.random()*90),.3)}),lightRig:(l,b,f)=>rigL.push({l,b,f}),
-  interact(obj,id){obj.traverse(o=>{if(o.isMesh){o.userData.id=id;delete o.userData.np;if(o.material){o.material=Array.isArray(o.material)?o.material.map(m=>m.clone()):o.material.clone()}}})},
+  interact(obj,id){obj.traverse(o=>{if(o.isMesh){o.userData.id=id;delete o.userData.np}})},
   add(obj,o={}){obj.traverse(m=>{if(!m.isMesh)return;if(!m.userData.ns&&!o.noShadow){m.castShadow=true}m.receiveShadow=true;if(!m.userData.np){pick.push(m);if(m.userData.id)(byId[m.userData.id]??=[]).push(m)}});S.add(obj);return obj}}
  // ---- shell: textured walls, floor, ceiling, trim ----
  const wp=X.tex(X.wallpaper()),wmat=new THREE.MeshStandardMaterial({map:wp,bumpMap:wp,bumpScale:.5,roughness:.92,color:0xffffff})
@@ -37,7 +38,7 @@ export function createEngine(el,room,h){
  const hemi=new THREE.HemisphereLight(0x6a72d8,0x2a1a4a,1.5);S.add(hemi)
  const moonL=new THREE.DirectionalLight(T.moon,2.2);moonL.position.set(-9,5,win?win.z:0);moonL.target.position.set(2,0,win?win.z:0);S.add(moonL.target);moonL.castShadow=true;moonL.shadow.mapSize.set(512,512);moonL.shadow.autoUpdate=false;moonL.shadow.needsUpdate=true;moonL.shadow.bias=-.0004;moonL.shadow.normalBias=.03;Object.assign(moonL.shadow.camera,{left:-8,right:8,top:8,bottom:-8,far:30});S.add(moonL);E.bakeShadows=()=>{moonL.shadow.needsUpdate=true;}
  const lamp=new THREE.PointLight(T.lamp,room.lamp?9:0,10,2);if(room.lamp)lamp.position.set(...room.lamp.pos);lamp.castShadow=false;lamp.shadow.mapSize.set(256,256);lamp.shadow.bias=-.002;S.add(lamp);const LB=9
- if(room.haunted)buildBedroom(E);else{
+ if(room.haunted)buildBedroom(E);else if(room.id==='basement')buildBasement(E);else{
   S.add(new THREE.PointLight(T.accent,3,10,2));(room.boxes||[]).forEach(b=>{const o=new THREE.Mesh(new THREE.BoxGeometry(...b.s),new THREE.MeshStandardMaterial({color:b.c,roughness:.9}));o.position.set(...b.p);S.add(o);if(b.solid){const[x,y,z]=b.p,[w,hh,d]=b.s;solids.push({x0:x-w/2,x1:x+w/2,z0:z-d/2,z1:z+d/2})}})}
  const scares=room.haunted?createScares(E,h):null
  if(debug)console.info('[ctc] scene built in',Math.round(performance.now()-tb0),'ms')
@@ -46,10 +47,20 @@ export function createEngine(el,room,h){
  const ray=new THREE.Raycaster(),v0=new THREE.Vector2();
  const hl = (id, on) => {
    byId[id]?.forEach(m => {
-     const mats = Array.isArray(m.material) ? m.material : [m.material];
+     if (!m.userData.__highlightOriginalMaterials) {
+       const original = Array.isArray(m.material) ? m.material.slice() : m.material;
+       m.userData.__highlightOriginalMaterials = original;
+       m.userData.__highlightMaterials = Array.isArray(original)
+         ? original.map(q => q?.clone?.() || q)
+         : original?.clone?.() || original;
+       m.material = m.userData.__highlightMaterials;
+     }
+     const mats = Array.isArray(m.userData.__highlightMaterials)
+       ? m.userData.__highlightMaterials
+       : [m.userData.__highlightMaterials];
      mats.forEach(q => {
        if (q && q.emissive && typeof q.emissive.setHex === 'function') {
-         q.emissive.setHex(on ? 0x4a3c9a : 0);
+         q.emissive.setHex(on ? (room.id === 'basement' ? 0xff3030 : 0x4a3c9a) : 0);
        }
      });
    });
@@ -78,6 +89,14 @@ export function createEngine(el,room,h){
    get paused() { return false; }
  });
 
+ const disposedTextures=new Set();
+ const disposeMaterial=(material)=>{
+  if(!material)return;
+  Object.values(material).forEach(value=>{
+   if(value?.isTexture&&!disposedTextures.has(value)){disposedTextures.add(value);value.dispose();}
+  });
+  material.dispose?.();
+ }
  const rs=()=>{R.setSize(el.clientWidth,el.clientHeight);cam.aspect=el.clientWidth/el.clientHeight;cam.updateProjectionMatrix()}
  window.addEventListener('resize',rs)
 
@@ -161,11 +180,16 @@ export function createEngine(el,room,h){
   step(n,ms=50){ api._skip=true; for(let i=0;i<n;i++){ last=performance.now()-ms; loop(performance.now()); } api._skip=false; last=performance.now()-16; loop(performance.now()); },
   triggerScare:n=>scares?.trigger(n),
   scares,
+  setCountdown(text){ ref.wallMonitor?.setText?.(text); },
   dispose(){
     cancelAnimationFrame(raf);
     controls.dispose();
     window.removeEventListener('resize',rs);
-    S.traverse(o=>{o.geometry?.dispose()});
+    S.traverse(o=>{
+      o.geometry?.dispose();
+      if (Array.isArray(o.material)) o.material.forEach(disposeMaterial);
+      else disposeMaterial(o.material);
+    });
     R.dispose();
     R.domElement.remove();
   }

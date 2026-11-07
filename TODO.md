@@ -606,7 +606,7 @@ Each room has a dedicated suite of **100 tests**:
 - [ ] `QA-R3-FE-45` `test_room3_window_resize_handler_active`
 - [ ] `QA-R3-FE-46` `test_room3_backward_door_prompts_revisit_study`
 - [ ] `QA-R3-FE-47` `test_room3_pressing_E_on_backward_door_transitions_to_room2`
-- [ ] `QA-R3-FE-48` `test_room3_typing_in_inputs_does_not_trigger_room_movement`
+- [ ] `QA-R3-FE-48` `test_room3_typing_in.inputs_does_not_trigger_room_movement`
 - [ ] `QA-R3-FE-49` `test_room3_final_modal_read_only_when_exhausted`
 
 ---
