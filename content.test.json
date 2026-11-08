@@ -1903,11 +1903,503 @@
           "kind": "clue_entry",
           "clue_id": "R2-07",
           "visible": true
+        },
+        {
+          "id": "filing_cabinet_a",
+          "label": "TEST: Filing cabinet A",
+          "kind": "interactive_fragment",
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "filing_cabinet_b",
+          "label": "TEST: Filing cabinet B",
+          "kind": "interactive_fragment",
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "archive_shelves",
+          "label": "TEST: Archive shelves",
+          "kind": "interactive_fragment",
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "clerk_desk",
+          "label": "TEST: Clerk's desk",
+          "kind": "interactive_fragment",
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "card_catalog",
+          "label": "TEST: Card catalog",
+          "kind": "interactive_fragment",
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "waste_basket",
+          "label": "TEST: Waste basket",
+          "kind": "interactive_fragment",
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "vent_grate",
+          "label": "TEST: Vent grate",
+          "kind": "interactive_fragment",
+          "clue_id": null,
+          "visible": true
         }
       ],
-      "evidence": [],
+      "evidence": [
+        {
+          "id": "ER01",
+          "clue_id": "R2-02",
+          "part": "A",
+          "is_decoy": false,
+          "chain": "records",
+          "seq": 1,
+          "hiding": {
+            "room": "records",
+            "object_id": "filing_cabinet_a",
+            "spot": "inside the bottom drawer, under a collapsed stack of papers",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "TEST: Requisition form A",
+            "style": {
+              "ink": "black",
+              "paper": "bureaucratic"
+            },
+            "lines": [
+              "TEST: FACILITY REQUISITION \u2014 SUBSTATION DELTA",
+              "TEST: Date: 14 AUG 1983",
+              "TEST: Item: Containment-grade polymer sealant x40",
+              "TEST: Authorised: M. CORVIN"
+            ],
+            "corner_mark": "REQ-83-114",
+            "image_file": "",
+            "audio_file": ""
+          },
+          "locate_hint": "TEST: Check the bottom drawer of cabinet A on the east wall.",
+          "secret": {
+            "note": "TEST: Requisition date matches official shutdown \u2014 but items ordered AFTER shutdown."
+          }
+        },
+        {
+          "id": "ER02",
+          "clue_id": "R2-02",
+          "part": "B",
+          "is_decoy": false,
+          "chain": "records",
+          "seq": 2,
+          "hiding": {
+            "room": "records",
+            "object_id": "filing_cabinet_a",
+            "spot": "clipped to the inside back wall of the second drawer",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "TEST: Subject intake form B",
+            "style": {
+              "ink": "black",
+              "paper": "bureaucratic"
+            },
+            "lines": [
+              "TEST: SUBJECT INTAKE \u2014 FILE 11",
+              "TEST: Subject ID: S-011",
+              "TEST: Intake Date: 02 JAN 1981",
+              "TEST: Status: ACTIVE"
+            ],
+            "corner_mark": "SIF-81-011",
+            "image_file": "",
+            "audio_file": ""
+          },
+          "locate_hint": "TEST: Clipped inside cabinet A, second drawer.",
+          "secret": {
+            "note": "TEST: Subject 011 never appears on any exit record."
+          }
+        },
+        {
+          "id": "ER03",
+          "clue_id": "R2-03",
+          "part": "A",
+          "is_decoy": false,
+          "chain": "records",
+          "seq": 3,
+          "hiding": {
+            "room": "records",
+            "object_id": "filing_cabinet_b",
+            "spot": "wedged behind the hanging folder dividers at the rear of the top drawer",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "TEST: Autopsy memo",
+            "style": {
+              "ink": "red",
+              "paper": "medical"
+            },
+            "lines": [
+              "TEST: INTERNAL MEDICAL MEMO",
+              "TEST: RE: Subjects 004, 007, 009",
+              "TEST: Conclusion: standard autopsy inapplicable",
+              "TEST: Brain activity persists \u2014 post-mortem"
+            ],
+            "corner_mark": "MED-83-REV",
+            "image_file": "",
+            "audio_file": ""
+          },
+          "locate_hint": "TEST: Behind the folder dividers at the back of the top drawer of cabinet B.",
+          "secret": {
+            "note": "TEST: Subjects recorded as deceased show persistent neural signals."
+          }
+        },
+        {
+          "id": "ER04",
+          "clue_id": "R2-03",
+          "part": "B",
+          "is_decoy": false,
+          "chain": "records",
+          "seq": 4,
+          "hiding": {
+            "room": "records",
+            "object_id": "filing_cabinet_b",
+            "spot": "folded inside a hanging folder labelled CLASSIFIED",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "TEST: Incident log fragment",
+            "style": {
+              "ink": "black",
+              "paper": "bureaucratic"
+            },
+            "lines": [
+              "TEST: INCIDENT LOG \u2014 DELTA-4",
+              "TEST: 03 MAR 1982 \u2014 Chamber breach, Sector 2",
+              "TEST: Containment restored: 0312 hrs",
+              "TEST: Note: subject S-007 not recovered"
+            ],
+            "corner_mark": "INC-82-003",
+            "image_file": "",
+            "audio_file": ""
+          },
+          "locate_hint": "TEST: Inside the CLASSIFIED folder in cabinet B.",
+          "secret": {
+            "note": "TEST: S-007 breach is never logged in the official record."
+          }
+        },
+        {
+          "id": "ER05",
+          "clue_id": "R2-04",
+          "part": "A",
+          "is_decoy": false,
+          "chain": "records",
+          "seq": 5,
+          "hiding": {
+            "room": "records",
+            "object_id": "archive_shelves",
+            "spot": "inside a waterlogged box on the third shelf, labelled DELTA 1980",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "TEST: Internal report cover",
+            "style": {
+              "ink": "black",
+              "paper": "bureaucratic"
+            },
+            "lines": [
+              "TEST: PROGRESS REPORT \u2014 CYCLE 3",
+              "TEST: Project: ECHO CHAMBER",
+              "TEST: Period: JAN\u2014DEC 1980",
+              "TEST: Oversight: NONE DECLARED"
+            ],
+            "corner_mark": "RPT-80-003",
+            "image_file": "",
+            "audio_file": ""
+          },
+          "locate_hint": "TEST: Box labelled DELTA 1980 on the third shelf.",
+          "secret": {
+            "note": "TEST: No oversight body is listed \u2014 project was running unsupervised."
+          }
+        },
+        {
+          "id": "ER06",
+          "clue_id": "R2-04",
+          "part": "B",
+          "is_decoy": false,
+          "chain": "records",
+          "seq": 6,
+          "hiding": {
+            "room": "records",
+            "object_id": "archive_shelves",
+            "spot": "tucked in a manila envelope taped to the back of the bottom shelf",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "TEST: Facility photograph",
+            "style": {
+              "ink": "sepia",
+              "paper": "photo"
+            },
+            "lines": [
+              "TEST: [PHOTOGRAPH]",
+              "TEST: Rear: 'Chamber 3 \u2014 fully operational'",
+              "TEST: Date stamp: 11 OCT 1984",
+              "TEST: Stamp: AFTER OFFICIAL CLOSURE"
+            ],
+            "corner_mark": "PHT-84-011",
+            "image_file": "",
+            "audio_file": ""
+          },
+          "locate_hint": "TEST: Envelope taped to the back panel of the bottom shelf.",
+          "secret": {
+            "note": "TEST: Facility photograph is dated 14 months after the official shutdown."
+          }
+        },
+        {
+          "id": "ER07",
+          "clue_id": "R2-02",
+          "part": "C",
+          "is_decoy": false,
+          "chain": "records",
+          "seq": 7,
+          "hiding": {
+            "room": "records",
+            "object_id": "clerk_desk",
+            "spot": "folded under the desk mat, right-hand side",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "TEST: Corvin personal memo",
+            "style": {
+              "ink": "black",
+              "paper": "handwritten"
+            },
+            "lines": [
+              "TEST: Personal note \u2014 M.C.",
+              "TEST: Shutdown paperwork filed. Work continues.",
+              "TEST: Badge still active: BDG-0388",
+              "TEST: Tell no one."
+            ],
+            "corner_mark": "",
+            "image_file": "",
+            "audio_file": ""
+          },
+          "locate_hint": "TEST: Look under the desk mat on the right-hand side.",
+          "secret": {
+            "note": "TEST: Corvin's handwritten note confirms he continued after the official shutdown."
+          }
+        },
+        {
+          "id": "ER08",
+          "clue_id": "R2-04",
+          "part": "C",
+          "is_decoy": false,
+          "chain": "records",
+          "seq": 8,
+          "hiding": {
+            "room": "records",
+            "object_id": "card_catalog",
+            "spot": "inside the drawer labelled S, behind the last index card",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "TEST: Subject status index card",
+            "style": {
+              "ink": "black",
+              "paper": "index_card"
+            },
+            "lines": [
+              "TEST: S-011 \u2014 STATUS: UNRESOLVED",
+              "TEST: Last log: 14 AUG 1983",
+              "TEST: Location: CHAMBER 3",
+              "TEST: Note: DO NOT OPEN"
+            ],
+            "corner_mark": "IDX-S-011",
+            "image_file": "",
+            "audio_file": ""
+          },
+          "locate_hint": "TEST: Last card behind the S index in the card catalog.",
+          "secret": {
+            "note": "TEST: S-011 is cross-referenced in the final vault record."
+          }
+        },
+        {
+          "id": "ER09",
+          "clue_id": "R2-07",
+          "part": "A",
+          "is_decoy": false,
+          "chain": "records",
+          "seq": 9,
+          "hiding": {
+            "room": "records",
+            "object_id": "vent_grate",
+            "spot": "taped to the inside face of the vent cover",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "TEST: Emergency protocol sheet",
+            "style": {
+              "ink": "red",
+              "paper": "bureaucratic"
+            },
+            "lines": [
+              "TEST: EMERGENCY CONTAINMENT PROTOCOL",
+              "TEST: Code: ECHO-ZERO",
+              "TEST: Activation: Terminal input required",
+              "TEST: Authorisation: BDG-0388"
+            ],
+            "corner_mark": "ECP-83-001",
+            "image_file": "",
+            "audio_file": ""
+          },
+          "locate_hint": "TEST: Taped inside the vent grate near the floor.",
+          "secret": {
+            "note": "TEST: Protocol requires the same badge number as Corvin's."
+          }
+        },
+        {
+          "id": "ER10",
+          "clue_id": "R2-07",
+          "part": "B",
+          "is_decoy": false,
+          "chain": "records",
+          "seq": 10,
+          "hiding": {
+            "room": "records",
+            "object_id": "clerk_desk",
+            "spot": "inside the locked top drawer (key under the desk lamp base)",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "TEST: Shutdown forgery document",
+            "style": {
+              "ink": "black",
+              "paper": "bureaucratic"
+            },
+            "lines": [
+              "TEST: OFFICIAL CLOSURE NOTICE \u2014 SUBSTATION DELTA",
+              "TEST: Signed: DR. M. CORVIN",
+              "TEST: Date: 14 AUG 1983",
+              "TEST: [Signature verified as FORGED by archival analysis]"
+            ],
+            "corner_mark": "CLO-83-001",
+            "image_file": "",
+            "audio_file": ""
+          },
+          "locate_hint": "TEST: Top drawer of the clerk desk. The key is under the lamp base.",
+          "secret": {
+            "note": "TEST: Document signature does not match Corvin's authenticated handwriting sample from 1979."
+          }
+        },
+        {
+          "id": "XR01",
+          "clue_id": null,
+          "part": null,
+          "is_decoy": true,
+          "chain": "records",
+          "seq": null,
+          "hiding": {
+            "room": "records",
+            "object_id": "waste_basket",
+            "spot": "crumpled in the waste basket",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "TEST: DECOY \u2014 Crumpled memo",
+            "style": {
+              "ink": "black",
+              "paper": "bureaucratic"
+            },
+            "lines": [
+              "TEST: DECOY CONTENT",
+              "TEST: Nothing relevant here.",
+              "TEST: Discard."
+            ],
+            "corner_mark": "DCY-01",
+            "image_file": "",
+            "audio_file": ""
+          },
+          "locate_hint": "TEST: In the waste basket.",
+          "secret": {
+            "note": "TEST: Decoy \u2014 no story relevance."
+          }
+        },
+        {
+          "id": "XR02",
+          "clue_id": null,
+          "part": null,
+          "is_decoy": true,
+          "chain": "records",
+          "seq": null,
+          "hiding": {
+            "room": "records",
+            "object_id": "archive_shelves",
+            "spot": "loose on the top shelf among water-damaged folders",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "TEST: DECOY \u2014 Supply invoice",
+            "style": {
+              "ink": "black",
+              "paper": "bureaucratic"
+            },
+            "lines": [
+              "TEST: DECOY CONTENT",
+              "TEST: Standard supply invoice.",
+              "TEST: No anomalies."
+            ],
+            "corner_mark": "DCY-02",
+            "image_file": "",
+            "audio_file": ""
+          },
+          "locate_hint": "TEST: Loose on the top shelf.",
+          "secret": {
+            "note": "TEST: Decoy \u2014 no story relevance."
+          }
+        }
+      ],
       "basket": {
-        "opens_when": "not_used"
+        "opens_when": "all_room_pieces_collected"
       }
     },
     {
@@ -1970,11 +2462,422 @@
           "kind": "decor",
           "clue_id": null,
           "visible": true
+        },
+        {
+          "id": "relay_rack",
+          "label": "TEST: Relay rack",
+          "kind": "interactive_fragment",
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "tape_deck_cart",
+          "label": "TEST: Tape deck cart",
+          "kind": "interactive_fragment",
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "operator_chair",
+          "label": "TEST: Operator chair",
+          "kind": "interactive_fragment",
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "cable_trench",
+          "label": "TEST: Cable trench",
+          "kind": "interactive_fragment",
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "wall_clipboard",
+          "label": "TEST: Wall clipboard",
+          "kind": "interactive_fragment",
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "fuse_box",
+          "label": "TEST: Fuse box",
+          "kind": "interactive_fragment",
+          "clue_id": null,
+          "visible": true
         }
       ],
-      "evidence": [],
+      "evidence": [
+        {
+          "id": "EC01",
+          "clue_id": "R2-01",
+          "part": "A",
+          "is_decoy": false,
+          "chain": "control",
+          "seq": 1,
+          "hiding": {
+            "room": "control",
+            "object_id": "relay_rack",
+            "spot": "slipped behind the top relay panel",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "TEST: Transmission log fragment",
+            "style": {
+              "ink": "black",
+              "paper": "typewriter"
+            },
+            "lines": [
+              "TEST: TRANSMISSION LOG \u2014 CHANNEL 7",
+              "TEST: 14 AUG 1983 \u2014 23:41",
+              "TEST: FROM: DELTA CONTROL",
+              "TEST: TO: EXTERNAL \u2014 UNREGISTERED"
+            ],
+            "corner_mark": "TXL-83-114",
+            "image_file": "",
+            "audio_file": ""
+          },
+          "locate_hint": "TEST: Behind the top panel of the relay rack.",
+          "secret": {
+            "note": "TEST: Outbound transmission sent night of official shutdown \u2014 to unknown recipient."
+          }
+        },
+        {
+          "id": "EC02",
+          "clue_id": "R2-01",
+          "part": "B",
+          "is_decoy": false,
+          "chain": "control",
+          "seq": 2,
+          "hiding": {
+            "room": "control",
+            "object_id": "relay_rack",
+            "spot": "folded in the cable bundle at the base of the relay rack",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "TEST: Equipment requisition",
+            "style": {
+              "ink": "black",
+              "paper": "bureaucratic"
+            },
+            "lines": [
+              "TEST: EQUIPMENT REQUISITION",
+              "TEST: Item: Long-range radio repeater x2",
+              "TEST: Requested by: CORVIN, M.",
+              "TEST: Date: 20 SEP 1983"
+            ],
+            "corner_mark": "EQR-83-220",
+            "image_file": "",
+            "audio_file": ""
+          },
+          "locate_hint": "TEST: Tucked in the cable bundle at the base of the relay rack.",
+          "secret": {
+            "note": "TEST: Equipment requested five weeks after official shutdown."
+          }
+        },
+        {
+          "id": "EC03",
+          "clue_id": "R2-05",
+          "part": "A",
+          "is_decoy": false,
+          "chain": "control",
+          "seq": 3,
+          "hiding": {
+            "room": "control",
+            "object_id": "tape_deck_cart",
+            "spot": "on the shelf beneath the tape deck, inside a padded case",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "TEST: Maintenance report",
+            "style": {
+              "ink": "black",
+              "paper": "typewriter"
+            },
+            "lines": [
+              "TEST: MAINTENANCE REPORT \u2014 CRT BANK",
+              "TEST: Date: 07 NOV 1983",
+              "TEST: Fault: Continuous loop feed from Chamber 3",
+              "TEST: Action taken: NONE \u2014 do not disconnect"
+            ],
+            "corner_mark": "MNT-83-311",
+            "image_file": "",
+            "audio_file": ""
+          },
+          "locate_hint": "TEST: Inside the padded case under the tape deck cart.",
+          "secret": {
+            "note": "TEST: Chamber 3 feed running continuously after closure \u2014 by order."
+          }
+        },
+        {
+          "id": "EC04",
+          "clue_id": "R2-05",
+          "part": "B",
+          "is_decoy": false,
+          "chain": "control",
+          "seq": 4,
+          "hiding": {
+            "room": "control",
+            "object_id": "tape_deck_cart",
+            "spot": "wedged between two tape reels at the top of the cart",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "TEST: Handwritten incident note",
+            "style": {
+              "ink": "blue",
+              "paper": "handwritten"
+            },
+            "lines": [
+              "TEST: Handwritten note, undated",
+              "TEST: 'Monitor 6 is showing again.'",
+              "TEST: 'Same corridor. Same figure.'",
+              "TEST: 'I'm not logging this.'"
+            ],
+            "corner_mark": "",
+            "image_file": "",
+            "audio_file": ""
+          },
+          "locate_hint": "TEST: Between the tape reels on top of the cart.",
+          "secret": {
+            "note": "TEST: Unnamed operator witnessing recurring anomalous figure \u2014 refuses to log it."
+          }
+        },
+        {
+          "id": "EC05",
+          "clue_id": "R2-06",
+          "part": "A",
+          "is_decoy": false,
+          "chain": "control",
+          "seq": 5,
+          "hiding": {
+            "room": "control",
+            "object_id": "operator_chair",
+            "spot": "slipped into the seat cushion pocket",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "TEST: Radio intercept printout",
+            "style": {
+              "ink": "black",
+              "paper": "thermal"
+            },
+            "lines": [
+              "TEST: RADIO INTERCEPT \u2014 AUTOMATED",
+              "TEST: Freq: 7.455 MHz",
+              "TEST: Content: 'Echo Zero authorised. Do not enter.'",
+              "TEST: Received: 14 AUG 1983 \u2014 23:58"
+            ],
+            "corner_mark": "RIC-83-001",
+            "image_file": "",
+            "audio_file": ""
+          },
+          "locate_hint": "TEST: In the pocket of the operator chair's seat cushion.",
+          "secret": {
+            "note": "TEST: Echo Zero mentioned in an intercepted signal \u2014 same code as the emergency protocol."
+          }
+        },
+        {
+          "id": "EC06",
+          "clue_id": "R2-06",
+          "part": "B",
+          "is_decoy": false,
+          "chain": "control",
+          "seq": 6,
+          "hiding": {
+            "room": "control",
+            "object_id": "cable_trench",
+            "spot": "inside a waterproof sleeve taped to the trench wall",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "TEST: Wiring schematic annotation",
+            "style": {
+              "ink": "red",
+              "paper": "technical"
+            },
+            "lines": [
+              "TEST: [SCHEMATIC ANNOTATION]",
+              "TEST: Loop 7-C: DO NOT CUT",
+              "TEST: Connected to: Chamber 3 biometric feed",
+              "TEST: Note: severing will trigger containment alarm"
+            ],
+            "corner_mark": "SCH-83-7C",
+            "image_file": "",
+            "audio_file": ""
+          },
+          "locate_hint": "TEST: Waterproof sleeve taped to the wall inside the cable trench.",
+          "secret": {
+            "note": "TEST: Chamber 3 biometric feed is still live \u2014 cutting it triggers an alarm."
+          }
+        },
+        {
+          "id": "EC07",
+          "clue_id": "R2-01",
+          "part": "C",
+          "is_decoy": false,
+          "chain": "control",
+          "seq": 7,
+          "hiding": {
+            "room": "control",
+            "object_id": "wall_clipboard",
+            "spot": "clipped beneath the top sheet on the wall-mounted clipboard",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "TEST: Shift handover note",
+            "style": {
+              "ink": "black",
+              "paper": "handwritten"
+            },
+            "lines": [
+              "TEST: Shift handover \u2014 Night, 14 AUG",
+              "TEST: 'Do not acknowledge the signal from Delta.'",
+              "TEST: 'Dr C has authorised blackout.'",
+              "TEST: 'Log nothing after 23:00.'"
+            ],
+            "corner_mark": "",
+            "image_file": "",
+            "audio_file": ""
+          },
+          "locate_hint": "TEST: Under the top sheet on the wall clipboard.",
+          "secret": {
+            "note": "TEST: Operator instructed to log nothing after 23:00 on the shutdown night."
+          }
+        },
+        {
+          "id": "EC08",
+          "clue_id": "R2-05",
+          "part": "C",
+          "is_decoy": false,
+          "chain": "control",
+          "seq": 8,
+          "hiding": {
+            "room": "control",
+            "object_id": "fuse_box",
+            "spot": "taped to the inside door of the fuse box",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "TEST: Fuse box override note",
+            "style": {
+              "ink": "red",
+              "paper": "handwritten"
+            },
+            "lines": [
+              "TEST: DO NOT RESTORE FUSES 4, 7, 9",
+              "TEST: These feed Chamber 3.",
+              "TEST: They are supposed to be on.",
+              "TEST: \u2014 M.C."
+            ],
+            "corner_mark": "",
+            "image_file": "",
+            "audio_file": ""
+          },
+          "locate_hint": "TEST: Taped inside the fuse box door.",
+          "secret": {
+            "note": "TEST: Corvin's initials \u2014 fuses to Chamber 3 kept live deliberately."
+          }
+        },
+        {
+          "id": "XC01",
+          "clue_id": null,
+          "part": null,
+          "is_decoy": true,
+          "chain": "control",
+          "seq": null,
+          "hiding": {
+            "room": "control",
+            "object_id": "operator_chair",
+            "spot": "between the seat and backrest cushion",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "TEST: DECOY \u2014 Canteen menu",
+            "style": {
+              "ink": "black",
+              "paper": "bureaucratic"
+            },
+            "lines": [
+              "TEST: DECOY CONTENT",
+              "TEST: Standard canteen menu.",
+              "TEST: Irrelevant."
+            ],
+            "corner_mark": "DCY-C01",
+            "image_file": "",
+            "audio_file": ""
+          },
+          "locate_hint": "TEST: Between the cushions of the operator chair.",
+          "secret": {
+            "note": "TEST: Decoy \u2014 no story relevance."
+          }
+        },
+        {
+          "id": "XC02",
+          "clue_id": null,
+          "part": null,
+          "is_decoy": true,
+          "chain": "control",
+          "seq": null,
+          "hiding": {
+            "room": "control",
+            "object_id": "wall_clipboard",
+            "spot": "top sheet of the clipboard",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "TEST: DECOY \u2014 Blank sign-in sheet",
+            "style": {
+              "ink": "black",
+              "paper": "bureaucratic"
+            },
+            "lines": [
+              "TEST: DECOY CONTENT",
+              "TEST: Routine sign-in sheet, all entries standard.",
+              "TEST: Nothing unusual."
+            ],
+            "corner_mark": "DCY-C02",
+            "image_file": "",
+            "audio_file": ""
+          },
+          "locate_hint": "TEST: The top sheet on the wall clipboard.",
+          "secret": {
+            "note": "TEST: Decoy \u2014 no story relevance."
+          }
+        }
+      ],
       "basket": {
-        "opens_when": "not_used"
+        "opens_when": "all_room_pieces_collected"
       }
     },
     {
@@ -3383,7 +4286,7 @@
       "unlock": {
         "requires_resolved": []
       },
-      "input_gate": null,
+      "input_gate": "room_evidence_complete",
       "payload": {
         "columns": [
           "badge_id",
@@ -3862,7 +4765,7 @@
           "text": "Test help 1."
         }
       ],
-      "attempts_max": null,
+      "attempts_max": 3,
       "lockout": {
         "after_wrong": null,
         "seconds": 0
@@ -3897,7 +4800,7 @@
       "unlock": {
         "requires_resolved": []
       },
-      "input_gate": null,
+      "input_gate": "room_evidence_complete",
       "payload": {
         "copies": [
           {
@@ -4042,7 +4945,7 @@
           "text": "Test help 1."
         }
       ],
-      "attempts_max": null,
+      "attempts_max": 3,
       "lockout": {
         "after_wrong": null,
         "seconds": 0
@@ -4081,7 +4984,7 @@
           "R2-02"
         ]
       },
-      "input_gate": null,
+      "input_gate": "room_evidence_complete",
       "payload": {
         "image_file": "portrait_round1.png",
         "dial": true
@@ -4179,7 +5082,7 @@
           "text": "Test help 2."
         }
       ],
-      "attempts_max": null,
+      "attempts_max": 3,
       "lockout": {
         "after_wrong": null,
         "seconds": 0
@@ -4213,7 +5116,7 @@
       "unlock": {
         "requires_resolved": []
       },
-      "input_gate": null,
+      "input_gate": "room_evidence_complete",
       "payload": {
         "cards": [
           {
@@ -4299,7 +5202,7 @@
           "text": "Test help 1."
         }
       ],
-      "attempts_max": null,
+      "attempts_max": 3,
       "lockout": {
         "after_wrong": null,
         "seconds": 0
@@ -4335,7 +5238,7 @@
           "R2-01"
         ]
       },
-      "input_gate": null,
+      "input_gate": "room_evidence_complete",
       "payload": {
         "messages": [
           {
@@ -4435,7 +5338,7 @@
           "text": "Test help 1."
         }
       ],
-      "attempts_max": null,
+      "attempts_max": 3,
       "lockout": {
         "after_wrong": null,
         "seconds": 0
@@ -4472,7 +5375,7 @@
           "R2-05"
         ]
       },
-      "input_gate": null,
+      "input_gate": "room_evidence_complete",
       "payload": {
         "files": [
           {
@@ -4541,7 +5444,7 @@
           "text": "Test help 1."
         }
       ],
-      "attempts_max": null,
+      "attempts_max": 3,
       "lockout": {
         "after_wrong": null,
         "seconds": 0
@@ -4578,7 +5481,7 @@
           "R2-04"
         ]
       },
-      "input_gate": null,
+      "input_gate": "room_evidence_complete",
       "payload": {},
       "assets": [],
       "stages": [
@@ -4632,7 +5535,7 @@
           "text": "Test help 1."
         }
       ],
-      "attempts_max": null,
+      "attempts_max": 3,
       "lockout": {
         "after_wrong": null,
         "seconds": 0
@@ -4724,7 +5627,7 @@
           "text": "Test help 1."
         }
       ],
-      "attempts_max": null,
+      "attempts_max": 3,
       "lockout": {
         "after_wrong": null,
         "seconds": 0
@@ -4924,7 +5827,7 @@
           "text": "Test help 1."
         }
       ],
-      "attempts_max": null,
+      "attempts_max": 3,
       "lockout": {
         "after_wrong": 5,
         "seconds": 60
@@ -5022,7 +5925,7 @@
           "text": "Test help 1."
         }
       ],
-      "attempts_max": null,
+      "attempts_max": 3,
       "lockout": {
         "after_wrong": 1,
         "seconds": 180

@@ -2,6 +2,7 @@ import * as THREE from 'three'
 import * as X from './tex.js'
 import {TX,bgeo,mat,wm} from './kit.js'
 import {buildBedroom} from './scene.js'
+import {buildStudy} from './studyScene.js'
 import {createScares} from './scares.js'
 import {setupControls} from './controls.js'
 export {posterCanvas} from './tex.js'
@@ -37,7 +38,7 @@ export function createEngine(el,room,h){
  const hemi=new THREE.HemisphereLight(0x6a72d8,0x2a1a4a,1.5);S.add(hemi)
  const moonL=new THREE.DirectionalLight(T.moon,2.2);moonL.position.set(-9,5,win?win.z:0);moonL.target.position.set(2,0,win?win.z:0);S.add(moonL.target);moonL.castShadow=true;moonL.shadow.mapSize.set(512,512);moonL.shadow.autoUpdate=false;moonL.shadow.needsUpdate=true;moonL.shadow.bias=-.0004;moonL.shadow.normalBias=.03;Object.assign(moonL.shadow.camera,{left:-8,right:8,top:8,bottom:-8,far:30});S.add(moonL);E.bakeShadows=()=>{moonL.shadow.needsUpdate=true;}
  const lamp=new THREE.PointLight(T.lamp,room.lamp?9:0,10,2);if(room.lamp)lamp.position.set(...room.lamp.pos);lamp.castShadow=false;lamp.shadow.mapSize.set(256,256);lamp.shadow.bias=-.002;S.add(lamp);const LB=9
- if(room.haunted)buildBedroom(E);else{
+ if(room.id==='study'||room.builder==='study')buildStudy(E);else if(room.haunted)buildBedroom(E);else{
   S.add(new THREE.PointLight(T.accent,3,10,2));(room.boxes||[]).forEach(b=>{const o=new THREE.Mesh(new THREE.BoxGeometry(...b.s),new THREE.MeshStandardMaterial({color:b.c,roughness:.9}));o.position.set(...b.p);S.add(o);if(b.solid){const[x,y,z]=b.p,[w,hh,d]=b.s;solids.push({x0:x-w/2,x1:x+w/2,z0:z-d/2,z1:z+d/2})}})}
  const scares=room.haunted?createScares(E,h):null
  if(debug)console.info('[ctc] scene built in',Math.round(performance.now()-tb0),'ms')
@@ -153,9 +154,9 @@ export function createEngine(el,room,h){
   lock(){ controls.requestLock(); },
   unlock(){ controls.unlock(); },
   setView(x,z,y,p=0){ controls.setView(x,z,y,p); },
-  openDoor(){ if(ref.roomDoor) ref.roomDoor.isOpen = true; },
-  closeDoor(){ if(ref.roomDoor) ref.roomDoor.isOpen = false; },
-  isDoorOpen(){ return !!ref.roomDoor?.isOpen; },
+  openDoor(){ if(ref.roomDoor) ref.roomDoor.isOpen = true; if(ref.studyExitDoor) ref.studyExitDoor.isOpen = true; },
+  closeDoor(){ if(ref.roomDoor) ref.roomDoor.isOpen = false; if(ref.studyExitDoor) ref.studyExitDoor.isOpen = false; },
+  isDoorOpen(){ return !!(ref.roomDoor?.isOpen || ref.studyExitDoor?.isOpen); },
   halt(){ halt=true; cancelAnimationFrame(raf); },
   frame(){ last=performance.now()-16; loop(performance.now()); },
   step(n,ms=50){ api._skip=true; for(let i=0;i<n;i++){ last=performance.now()-ms; loop(performance.now()); } api._skip=false; last=performance.now()-16; loop(performance.now()); },
