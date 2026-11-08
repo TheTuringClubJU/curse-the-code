@@ -711,10 +711,10 @@ Each room has a dedicated suite of **100 tests**:
 - [ ] **FE-R6-07** Implement JS-08 vault entry sequence: door slams shut, human scratching and muffled pleading from the outside, then sudden silence.
 
 #### Detailed Tasks for Backend (Room 6)
-- [ ] **BE-R6-01** Create `GET /api/game/room/vault/state` (no fragment checking).
-- [ ] **BE-R6-02** Route `POST /api/game/clue/R2-08/submit`: tampered steps verification, returning clean steps array in reveal payload.
-- [ ] **BE-R6-03** Route `POST /api/game/clue/R2-09/submit`: 4-digit circuit authorization code verification.
-- [ ] **BE-R6-04** Route `POST /api/game/clue/R2-10/submit`: atomic compound verification of all 3 fields (Clean Steps + Auth Code + Operator Badge). On success: set `qualified_at`, set `completed_at`, update leaderboard rank, and return `round_complete: true`.
+- [x] **BE-R6-01** Create `GET /api/game/room/vault/state` (no fragment checking).
+- [x] **BE-R6-02** Route `POST /api/game/clue/R2-08/submit`: tampered steps verification, returning clean steps array in reveal payload.
+- [x] **BE-R6-03** Route `POST /api/game/clue/R2-09/submit`: 4-digit circuit authorization code verification.
+- [x] **BE-R6-04** Route `POST /api/game/clue/R2-10/submit`: atomic compound verification of all 3 fields (Clean Steps + Auth Code + Operator Badge). On success: set `qualified_at`, set `completed_at`, update leaderboard rank, and return `round_complete: true`.
 
 ---
 
@@ -821,7 +821,7 @@ Total Round 2 QA Target: 300 Tests
 
 #### Room 6: The Anointing Vault (100 Tests: `QA-R6-*`)
 - [ ] `QA-R6-E2E-01` **`e2e_vault_complete_containment_victory_journey`** (Full walkthrough: enter vault -> flashlight cut -> R2-08 manual diff -> R2-09 logic gate circuit throw -> R2-10 triple-field containment console -> victory sequence -> leaderboard lock).
-- [ ] `QA-R6-BE-01` to `QA-R6-BE-49` Backend validation: R2-08 diff verification, R2-09 logic circuit truth table, R2-10 atomic 3-field compound validation (Clean Steps + Auth Code + Badge ID), tournament completion timestamp recording, leaderboard tie-breaker calculation.
+- [x] `QA-R6-BE-01` to `QA-R6-BE-49` Backend validation: R2-08 diff verification, R2-09 logic circuit truth table, R2-10 atomic 3-field compound validation (Clean Steps + Auth Code + Badge ID), tournament completion timestamp recording, leaderboard tie-breaker calculation.
 - [ ] `QA-R6-FE-01` to `QA-R6-FE-50` Frontend validation: organic core pulsing shader, cracked glass dome shaders, `ManualDiffModal` copy utility, `FailsafeCircuitModal` knife-switch throw animations, `FinalConsoleModal` typewriter sound and victory sequence, split-flap countdown display animation.
 
 
