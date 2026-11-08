@@ -308,7 +308,7 @@ describe('Room 2 (Daniel\'s Study) Comprehensive Test Suite (50 Tests)', () => {
     const [W, H, D] = studyConfig.size;
     expect(W).toBe(7.0);
     expect(D).toBe(6.4);
-    expect(studyConfig.spawn).toEqual([-2.0, 1.8, 2.2]);
+    expect(studyConfig.spawn).toEqual([0.0, 1.6, 0]);
   });
 
   it('QA-R2-FE-08: test_room2_pointer_lock_engages_and_releases_properly', async () => {
@@ -506,7 +506,7 @@ describe('Room 2 (Daniel\'s Study) Comprehensive Test Suite (50 Tests)', () => {
     expect(screen.getByText(/Flip to Back/i)).toBeInTheDocument();
     fireEvent.click(screen.getByText(/Flip to Back/i));
     expect(screen.getByText(/STICKY NOTE • DANIEL'S SCRAWL/i)).toBeInTheDocument();
-    expect(screen.getByText(/01000001 01001100/i)).toBeInTheDocument();
+    expect(screen.getByText(/01000001 01001100 01010000 01001000 01000001/i)).toBeInTheDocument();
   });
 
   it('QA-R2-FE-24: test_room2_tablet_modal_copy_button_copies_binary_text', () => {

@@ -1,4 +1,4 @@
-import os
+from pathlib import Path
 import struct
 import zlib
 
@@ -91,26 +91,16 @@ def make_fragment_pixel(frag_id):
     return pixel_func
 
 def main():
-    target_dirs = [
-        os.path.join(r"c:\Users\SUBHAM DAS\CODING\CURSE THE CODE 2\curse-the-code\frontend\public\evidence\study"),
-        os.path.join(r"c:\Users\SUBHAM DAS\CODING\CURSE THE CODE 2\curse-the-code\frontend\public\evidence")
-    ]
-    
-    for d in target_dirs:
-        os.makedirs(d, exist_ok=True)
+    project_root = Path(__file__).resolve().parent.parent
+    target_dir = project_root / "frontend" / "public" / "evidence" / "study"
+    target_dir.mkdir(parents=True, exist_ok=True)
         
     for frag_id in FRAGMENTS:
         png_data = create_png(256, 256, make_fragment_pixel(frag_id))
-        for d in target_dirs:
-            file_path = os.path.join(d, f"{frag_id}.png")
-            with open(file_path, "wb") as f:
-                f.write(png_data)
-        # Also save as evidence_<id_lowercase>.png in public/evidence for consistency
-        legacy_path = os.path.join(target_dirs[1], f"evidence_{frag_id.lower()}.png")
-        with open(legacy_path, "wb") as f:
-            f.write(png_data)
+        file_path = target_dir / f"{frag_id}.png"
+        file_path.write_bytes(png_data)
             
-    print(f"Generated {len(FRAGMENTS)} study evidence PNGs successfully!")
+    print(f"Generated {len(FRAGMENTS)} study evidence PNGs into {target_dir} successfully!")
 
 if __name__ == '__main__':
     main()

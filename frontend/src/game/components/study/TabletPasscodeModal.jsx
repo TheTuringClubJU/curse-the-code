@@ -16,8 +16,8 @@ export default function TabletPasscodeModal({
 
   if (!isOpen || !clue) return null;
 
-  const binaryText = "01000001 01001100 01010000 01001000"; // ALPHA in binary bits
-  const stickyNoteText = "Passcode: First Greek letter. Five letters.\n01000001 01001100 01010000 01001000";
+  const binaryText = "01000001 01001100 01010000 01001000 01000001"; // ALPHA in binary bits
+  const stickyNoteText = "Passcode: First Greek letter. Five letters.\n01000001 01001100 01010000 01001000 01000001";
 
   const handleCopy = () => {
     navigator.clipboard?.writeText(binaryText);
