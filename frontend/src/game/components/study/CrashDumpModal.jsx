@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Send, Copy, Check, Terminal, ShieldAlert, CheckCircle2 } from 'lucide-react';
+import { X, Send, Copy, Check, Terminal, ShieldAlert, CheckCircle2, ArrowLeft, ArrowRight, Layers, AlertCircle } from 'lucide-react';
 
 export default function CrashDumpModal({
   isOpen,
@@ -13,21 +13,61 @@ export default function CrashDumpModal({
   const [copied, setCopied] = useState(false);
   const [feedback, setFeedback] = useState(null);
 
+  // 3 Memory Dump Blocks reordering state
+  // Index 0: Block A (ES01: Terminal printout -> "ERROR 02:15:00 KERNEL PANIC")
+  // Index 1: Block B (ES06: Armchair crash excerpt -> "FATAL FAULT 0x04 THREAD 4")
+  // Index 2: Block C (ES11: Floor lamp memo -> "ORBIT.SYS HALTED 0xFFFFFFFF")
+  const [blockOrder, setBlockOrder] = useState([2, 0, 1]); // Starts scrambled (C, A, B)
+
   if (!isOpen || !clue) return null;
 
-  const hexLines = [
-    { offset: "0x00000000", hex: "45 52 52 4F 52 20 30 32 3A 31 35 3A 30 30 20 54", ascii: "ERROR 02:15:00 T", isFault: false },
-    { offset: "0x00000010", hex: "45 53 54 20 4B 45 52 4E 45 4C 20 50 41 4E 49 43", ascii: "EST KERNEL PANIC", isFault: false },
-    { offset: "0x00000020", hex: "46 41 54 41 4C 20 46 41 55 4C 54 20 30 78 30 34", ascii: "FATAL FAULT 0x04", isFault: true },
-    { offset: "0x00000030", hex: "4F 52 42 49 54 2E 53 59 53 20 48 41 4C 54 45 44", ascii: "ORBIT.SYS HALTED", isFault: true },
-    { offset: "0x00000040", hex: "30 78 46 46 46 46 46 46 46 46 20 53 54 41 43 4B", ascii: "0xFFFFFFFF STACK", isFault: false },
-    { offset: "0x00000050", hex: "44 55 4D 50 20 43 4F 4D 50 4C 45 54 45 2E 2E 2E", ascii: "DUMP COMPLETE...", isFault: false },
+  const blocks = [
+    {
+      id: 0,
+      label: 'Memory Segment A (Bookshelf)',
+      offset: '0x00000000',
+      hex: '45 52 52 4F 52 20 30 32 3A 31 35 3A 30 30 20 54',
+      ascii: 'ERROR 02:15:00 T',
+      isFault: false,
+    },
+    {
+      id: 1,
+      label: 'Memory Segment B (Armchair)',
+      offset: '0x00000020',
+      hex: '46 41 54 41 4C 20 46 41 55 4C 54 20 30 78 30 34',
+      ascii: 'FATAL FAULT 0x04',
+      isFault: true,
+    },
+    {
+      id: 2,
+      label: 'Memory Segment C (Floor Lamp)',
+      offset: '0x00000030',
+      hex: '4F 52 42 49 54 2E 53 59 53 20 48 41 4C 54 45 44',
+      ascii: 'ORBIT.SYS HALTED',
+      isFault: true,
+    },
   ];
 
-  const fullLog = hexLines.map(l => `${l.offset}  ${l.hex}  |${l.ascii}|`).join('\n');
+  const isAligned = blockOrder[0] === 0 && blockOrder[1] === 1 && blockOrder[2] === 2;
+
+  const moveBlock = (fromIndex, dir) => {
+    const toIndex = fromIndex + dir;
+    if (toIndex < 0 || toIndex >= blockOrder.length) return;
+    setBlockOrder(prev => {
+      const next = [...prev];
+      const temp = next[fromIndex];
+      next[fromIndex] = next[toIndex];
+      next[toIndex] = temp;
+      return next;
+    });
+  };
 
   const handleCopyLog = () => {
-    navigator.clipboard?.writeText(fullLog);
+    const dumpLines = blockOrder.map((idx, pos) => {
+      const b = blocks[idx];
+      return `0x000000${(pos + 1) * 10}  ${b.hex}  |${b.ascii}|`;
+    }).join('\n');
+    navigator.clipboard?.writeText(dumpLines);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -81,30 +121,73 @@ export default function CrashDumpModal({
 
         {/* Hex Dump Viewer Body */}
         <div className="p-6 overflow-y-auto flex-1 font-mono space-y-4">
-          <div className="p-4 rounded-lg bg-[#020804] border border-[#1b3d27] overflow-x-auto">
-            <div className="text-[11px] text-[#52996e] mb-2 pb-2 border-b border-[#1b3d27] flex justify-between">
-              <span>OFFSET</span>
-              <span>HEX BYTES (00 - 0F)</span>
-              <span>ASCII TRANSLATION</span>
+          
+          {/* Interactive Memory Block Assembly Tray */}
+          <div className="p-4 rounded-lg bg-[#020804] border border-[#1b3d27] space-y-3">
+            <div className="flex items-center justify-between pb-2 border-b border-[#1b3d27]">
+              <div className="flex items-center gap-2 text-xs text-[#b6ffd1] font-bold">
+                <Layers className="w-4 h-4 text-[#3dff8b]" />
+                <span>HEX MEMORY OFFSET ALIGNMENT TRAY</span>
+              </div>
+              <span className={`text-[10px] px-2 py-0.5 rounded border flex items-center gap-1 ${
+                isAligned 
+                  ? 'bg-[#0e331c] text-[#7dffb0] border-[#3dff8b]' 
+                  : 'bg-[#291414] text-[#ff9999] border-[#662b2b]'
+              }`}>
+                {isAligned ? <Check className="w-3 h-3 text-[#3dff8b]" /> : <AlertCircle className="w-3 h-3 text-[#ff8a8a]" />}
+                {isAligned ? 'Trace Contiguous' : 'Trace Discontinuous'}
+              </span>
             </div>
-            <div className="space-y-1 text-xs">
-              {hexLines.map((line, idx) => (
-                <div
-                  key={idx}
-                  className={`flex justify-between p-1 rounded transition ${
-                    line.isFault ? 'bg-[#184a28] text-[#7dffb0] font-bold border border-[#2b6641]' : 'text-[#7dffb0]/80 hover:bg-[#0a2014]'
-                  }`}
-                >
-                  <span className="text-[#3dff8b] mr-4">{line.offset}</span>
-                  <span className="tracking-widest mr-4 text-center flex-1">{line.hex}</span>
-                  <span className="text-[#b6ffd1]">|{line.ascii}|</span>
-                </div>
-              ))}
-            </div>
-          </div>
 
-          <div className="text-xs text-[#52996e]">
-            Fragments Correlated: ES01 (Terminal printout), ES06 (Crash excerpt), ES11 (Printed memo)
+            <p className="text-[11px] text-[#52996e]">
+              Shift memory segments into chronological offset order using ◀ and ▶ buttons:
+            </p>
+
+            <div className="space-y-1.5">
+              {blockOrder.map((blockIdx, slot) => {
+                const b = blocks[blockIdx];
+                return (
+                  <div
+                    key={b.id}
+                    className={`flex items-center justify-between p-2 rounded border transition text-xs ${
+                      isAligned && b.isFault 
+                        ? 'bg-[#184a28] border-[#3dff8b] text-[#b6ffd1]' 
+                        : 'bg-[#07160c] border-[#163822] text-[#7dffb0]'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-black/60 text-[#52996e]">
+                        {b.offset}
+                      </span>
+                      <span className="text-[#3dff8b] font-bold">{b.label}</span>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      <span className="tracking-widest hidden sm:inline text-[11px]">{b.hex}</span>
+                      <span className="font-bold text-[#b6ffd1]">|{b.ascii}|</span>
+                      <div className="flex gap-1">
+                        <button
+                          type="button"
+                          disabled={slot === 0}
+                          onClick={() => moveBlock(slot, -1)}
+                          className="p-1 rounded bg-black/40 hover:bg-white/10 disabled:opacity-20 text-[#b6ffd1]"
+                        >
+                          <ArrowLeft className="w-3 h-3" />
+                        </button>
+                        <button
+                          type="button"
+                          disabled={slot === blockOrder.length - 1}
+                          onClick={() => moveBlock(slot, 1)}
+                          className="p-1 rounded bg-black/40 hover:bg-white/10 disabled:opacity-20 text-[#b6ffd1]"
+                        >
+                          <ArrowRight className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
 
           {/* Submission Section */}
@@ -125,7 +208,7 @@ export default function CrashDumpModal({
                     type="text"
                     value={answer}
                     onChange={(e) => setAnswer(e.target.value)}
-                    placeholder="Enter deduced process name (e.g. ORBIT)..."
+                    placeholder="Enter deduced process name..."
                     disabled={isSubmitting}
                     className="flex-1 px-4 py-2.5 bg-[#020804] border border-[#235235] focus:border-[#3dff8b] rounded-lg text-[#b6ffd1] font-mono text-sm tracking-wider uppercase focus:outline-none"
                   />

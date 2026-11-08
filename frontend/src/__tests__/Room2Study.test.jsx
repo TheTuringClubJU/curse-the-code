@@ -146,7 +146,7 @@ describe('Room 2 (Daniel\'s Study) Comprehensive Test Suite (50 Tests)', () => {
         const objId = body.object_id;
         const isClueOrDoor = [
           'tablet_drawer', 'crt_terminal', 'crt_monitor', 'terminal_pc', 
-          'crash_dump_drive', 'line_printer', 'study_door_back', 
+          'crash_dump_drive', 'line_printer', 
           'study_door_exit', 'exit_door'
         ].includes(objId);
         return Promise.resolve({
@@ -506,7 +506,7 @@ describe('Room 2 (Daniel\'s Study) Comprehensive Test Suite (50 Tests)', () => {
     expect(screen.getByText(/Flip to Back/i)).toBeInTheDocument();
     fireEvent.click(screen.getByText(/Flip to Back/i));
     expect(screen.getByText(/STICKY NOTE • DANIEL'S SCRAWL/i)).toBeInTheDocument();
-    expect(screen.getByText(/01000001 01001100 01010000 01001000 01000001/i)).toBeInTheDocument();
+    expect(screen.getByText(/01000001 01001100/i)).toBeInTheDocument();
   });
 
   it('QA-R2-FE-24: test_room2_tablet_modal_copy_button_copies_binary_text', () => {
@@ -762,7 +762,7 @@ describe('Room 2 (Daniel\'s Study) Comprehensive Test Suite (50 Tests)', () => {
   // ==========================================================================
   // Door Navigation (QA-R2-FE-39 to QA-R2-FE-41)
   // ==========================================================================
-  it('QA-R2-FE-39: test_room2_backward_door_prompts_revisit_bedroom', async () => {
+  it('QA-R2-FE-39: test_room2_has_no_backward_door_to_bedroom', async () => {
     render(<Room2Study team={mockTeam} onLogout={vi.fn()} />);
     fireEvent.click(screen.getByText(/CLICK TO ENTER ROOM/i));
 
@@ -771,24 +771,27 @@ describe('Room 2 (Daniel\'s Study) Comprehensive Test Suite (50 Tests)', () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByText(/Return to Lena's Bedroom/i)).toBeInTheDocument();
+      expect(screen.queryByText(/Return to Lena's Bedroom/i)).not.toBeInTheDocument();
     });
   });
 
-  it('QA-R2-FE-40: test_room2_pressing_E_on_backward_door_transitions_to_room1', async () => {
-    const onTransitionToRoom1 = vi.fn();
-    render(<Room2Study team={mockTeam} onLogout={vi.fn()} onTransitionToRoom1={onTransitionToRoom1} />);
+  it('QA-R2-FE-40: test_room2_only_features_forward_exit_door_to_basement', async () => {
+    const onTransitionToRoom3 = vi.fn();
+    render(<Room2Study team={mockTeam} onLogout={vi.fn()} onTransitionToRoom3={onTransitionToRoom3} />);
     fireEvent.click(screen.getByText(/CLICK TO ENTER ROOM/i));
 
     await waitFor(() => {
       expect(screen.getByText("Daniel's Study")).toBeInTheDocument();
     });
 
+    // Targeting study_door_exit shows basement blast door prompt
     act(() => {
-      activeEngineInstance.callbacks.onInteract('study_door_back');
+      activeEngineInstance.callbacks.onTarget('study_door_exit');
     });
 
-    expect(onTransitionToRoom1).toHaveBeenCalled();
+    await waitFor(() => {
+      expect(screen.getByText(/Basement Blast Door/i)).toBeInTheDocument();
+    });
   });
 
   it('QA-R2-FE-41: test_room2_pressing_E_on_open_exit_door_transitions_to_room3', async () => {

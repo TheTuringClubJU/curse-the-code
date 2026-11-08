@@ -163,15 +163,7 @@ export default function Room2Study({
   const handleInteract = async (objectId) => {
     const currentData = roomDataRef.current;
 
-    // 1. Check if this is the Bedroom Return Door
-    if (objectId === 'study_door_back') {
-      if (onTransitionToRoom1) {
-        onTransitionToRoom1();
-      } else {
-        showNotification("Heading back to Lena's Bedroom...");
-      }
-      return;
-    }
+// No return door to Room 1 (Room 2 only exits forward to Room 3)
 
     // 2. Check if this is the Basement Exit Door
     if (objectId === 'study_door_exit' || objectId === 'exit_door') {
@@ -296,10 +288,6 @@ export default function Room2Study({
         }
 
         const data = roomDataRef.current;
-        if (targetId === 'study_door_back') {
-          setActiveHoverPrompt('Return to Lena\'s Bedroom [E]');
-          return;
-        }
         if (targetId === 'study_door_exit') {
           if (data?.is_completed) {
             setActiveHoverPrompt('Step into Subterranean Bunker / Enter Room 3 [E]');

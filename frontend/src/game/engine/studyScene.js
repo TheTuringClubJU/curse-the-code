@@ -646,23 +646,7 @@ export function buildStudy(E) {
     solid(1.95, 2.45, 2.25, 2.75);
   }
 
-  // 21. Bedroom Return Door (study_door_back) - South Wall at x: -2.5, z: 2.9
-  {
-    const backDoorGroup = new THREE.Group();
-    backDoorGroup.position.set(-2.5, 0.0, 2.9);
-
-    const doorFrame = new THREE.Mesh(bgeo(1.1, 2.2, 0.12), darkOak);
-    doorFrame.position.y = 1.1;
-    const doorLeaf = new THREE.Mesh(bgeo(0.95, 2.1, 0.05), wornWood);
-    doorLeaf.position.set(0, 1.1, 0);
-    const handle = new THREE.Mesh(new THREE.SphereGeometry(0.03, 8, 8), brassMat);
-    handle.position.set(0.38, 1.05, 0.04);
-    backDoorGroup.add(doorFrame, doorLeaf, handle);
-
-    interact(backDoorGroup, 'study_door_back');
-    add(backDoorGroup);
-    solid(-3.1, -1.9, 2.8, 3.1);
-  }
+  // Bedroom Return Door removed: Room 2 has only 1 exit door to Room 3
 
   // 22. Basement Exit Door (study_door_exit) - North Wall at x: 0.0, z: -2.95
   {

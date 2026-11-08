@@ -201,8 +201,12 @@ export default function Room1Bedroom({ team, onLogout, onTransitionToRoom2 }) {
     // Check if this is the Bedroom Exit Door
     if (objectId === 'room_door' || objectId === 'door') {
       if (currentData?.is_completed) {
-        setIsRoomCompleteModalOpen(true);
-        engineRef.current?.unlock();
+        if (onTransitionToRoom2) {
+          onTransitionToRoom2();
+        } else {
+          setIsRoomCompleteModalOpen(true);
+          engineRef.current?.unlock();
+        }
       } else {
         const solvedCount = currentData?.clues?.filter(c => c.solved)?.length || 0;
         showNotification(

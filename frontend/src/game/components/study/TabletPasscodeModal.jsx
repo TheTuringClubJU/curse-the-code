@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Send, RotateCw, Copy, Check, Tablet, ShieldAlert, CheckCircle2 } from 'lucide-react';
+import { X, Send, RotateCw, Copy, Check, Tablet, ShieldAlert, CheckCircle2, ArrowLeftRight, Layers, AlertCircle } from 'lucide-react';
 
 export default function TabletPasscodeModal({
   isOpen,
@@ -14,13 +14,27 @@ export default function TabletPasscodeModal({
   const [copied, setCopied] = useState(false);
   const [feedback, setFeedback] = useState(null);
 
+  // Scraps reordering state on back of tablet
+  // 0 = Scrap A (ES03: 01000001 01001100 -> 'AL')
+  // 1 = Scrap B (ES08: 01010000 01001000 01000001 -> 'PHA')
+  const [scrapOrder, setScrapOrder] = useState([1, 0]); // Starts scrambled (B, A)
+
   if (!isOpen || !clue) return null;
 
-  const binaryText = "01000001 01001100 01010000 01001000 01000001"; // ALPHA in binary bits
-  const stickyNoteText = "Passcode: First Greek letter. Five letters.\n01000001 01001100 01010000 01001000 01000001";
+  const scraps = [
+    { id: 0, label: 'Scrap A (Torn Slip)', binary: '01000001 01001100', char: 'AL' },
+    { id: 1, label: 'Scrap B (Cable Tag)', binary: '01010000 01001000 01000001', char: 'PHA' },
+  ];
+
+  const isAligned = scrapOrder[0] === 0 && scrapOrder[1] === 1;
+  const currentBinary = isAligned ? "01000001 01001100 01010000 01001000 01000001" : "[MISALIGNED TAPE - REARRANGE POSITIONS]";
+
+  const handleSwap = () => {
+    setScrapOrder(prev => [prev[1], prev[0]]);
+  };
 
   const handleCopy = () => {
-    navigator.clipboard?.writeText(binaryText);
+    navigator.clipboard?.writeText(currentBinary);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -61,7 +75,7 @@ export default function TabletPasscodeModal({
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#0e2619] hover:bg-[#183b27] border border-[#2b6641] text-[#7dffb0] text-xs font-mono transition"
             >
               <RotateCw className="w-3.5 h-3.5" />
-              <span>{isFlipped ? 'View Screen' : 'Flip to Back'}</span>
+              <span>{isFlipped ? 'View Screen' : 'Flip to Back (Scraps Tray)'}</span>
             </button>
             <button
               onClick={onClose}
@@ -97,7 +111,7 @@ export default function TabletPasscodeModal({
                     {clue.stages?.[0]?.prompt || "Enter the tablet passcode (a word)."}
                   </h3>
                   <p className="text-xs text-[#52996e] mt-2">
-                    5-letter alphanumeric key required. Check the sticky note adhered to the back.
+                    5-letter alphanumeric key required. Flip to the back chassis to reassemble the recovered binary scraps.
                   </p>
                 </div>
               </div>
@@ -115,7 +129,7 @@ export default function TabletPasscodeModal({
                       type="text"
                       value={answer}
                       onChange={(e) => setAnswer(e.target.value)}
-                      placeholder="Enter deduced answer (e.g. ALPHA)..."
+                      placeholder="Enter deduced answer..."
                       disabled={isSubmitting}
                       className="flex-1 px-4 py-3 bg-[#06120a] border border-[#235235] focus:border-[#3dff8b] rounded-lg text-[#b6ffd1] font-mono text-sm tracking-widest uppercase focus:outline-none focus:ring-1 focus:ring-[#3dff8b]"
                     />
@@ -144,29 +158,87 @@ export default function TabletPasscodeModal({
               )}
             </div>
           ) : (
-            /* BACK: Chassis with Sticky Note & Binary Bits */
-            <div className="p-8 rounded-xl bg-[#141b16] border border-[#28382c] min-h-[300px] flex flex-col items-center justify-center relative shadow-inner">
-              <div className="w-full max-w-md p-6 bg-[#3b3a1a] border border-[#6b6727] rounded-lg shadow-xl text-[#f5eed6] transform -rotate-1">
-                <div className="flex items-center justify-between pb-2 mb-3 border-b border-[#6b6727]/60">
-                  <span className="text-xs font-bold tracking-widest text-[#d6cd7a]">STICKY NOTE • DANIEL'S SCRAWL</span>
+            /* BACK: Interactive Evidence Reassembly Chassis */
+            <div className="p-6 rounded-xl bg-[#030a05] border border-[#1b3d27] min-h-[300px] flex flex-col justify-between shadow-inner space-y-4">
+              
+              {/* Assembly Tray Header */}
+              <div className="flex items-center justify-between pb-3 border-b border-[#1b3d27]">
+                <div className="flex items-center gap-2 text-xs text-[#b6ffd1] font-bold">
+                  <Layers className="w-4 h-4 text-[#3dff8b]" />
+                  <span>STICKY NOTE • DANIEL'S SCRAWL (SCRAPS TRAY)</span>
+                </div>
+                <span className={`text-[10px] px-2 py-0.5 rounded border flex items-center gap-1 ${
+                  isAligned 
+                    ? 'bg-[#0e331c] text-[#7dffb0] border-[#3dff8b]' 
+                    : 'bg-[#291414] text-[#ff9999] border-[#662b2b]'
+                }`}>
+                  {isAligned ? <Check className="w-3 h-3 text-[#3dff8b]" /> : <AlertCircle className="w-3 h-3 text-[#ff8a8a]" />}
+                  {isAligned ? 'Seams Aligned' : 'Misaligned'}
+                </span>
+              </div>
+
+              {/* Rearrangeable Binary Scrap Slots */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between text-xs text-[#52996e]">
+                  <span>Rearrange recovered strips into positions 1 and 2:</span>
                   <button
-                    onClick={handleCopy}
-                    className="flex items-center gap-1 px-2 py-1 rounded bg-[#2a2912] hover:bg-[#4a4920] text-[#fff9b0] text-xs transition"
+                    type="button"
+                    onClick={handleSwap}
+                    className="flex items-center gap-1 px-2.5 py-1 rounded bg-[#0e2619] hover:bg-[#183b27] border border-[#2b6641] text-[#7dffb0] text-xs transition"
                   >
-                    {copied ? <Check className="w-3.5 h-3.5 text-green-400" /> : <Copy className="w-3.5 h-3.5" />}
+                    <ArrowLeftRight className="w-3.5 h-3.5" />
+                    <span>Swap Positions</span>
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  {scrapOrder.map((scrapIdx, pos) => {
+                    const scrap = scraps[scrapIdx];
+                    return (
+                      <div
+                        key={scrap.id}
+                        onClick={handleSwap}
+                        className={`p-3 rounded-lg border transition cursor-pointer ${
+                          isAligned ? 'bg-[#06180c] border-[#3dff8b]' : 'bg-[#0b140e] border-[#20472e] hover:border-[#3dff8b]/60'
+                        }`}
+                      >
+                        <div className="flex justify-between items-center mb-1 text-[10px] text-[#52996e]">
+                          <span>POSITION {pos + 1}</span>
+                          <span className="text-[#7dffb0]">{scrap.label}</span>
+                        </div>
+                        <div className="font-mono text-xs text-[#b6ffd1] tracking-wider break-all bg-black/40 p-2 rounded border border-white/5">
+                          {scrap.binary}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Combined Assembled Stream */}
+              <div className="p-3 bg-[#020804] rounded-lg border border-[#1b3d27] space-y-2">
+                <div className="flex items-center justify-between text-[11px]">
+                  <span className="text-[#52996e]">ASSEMBLED BINARY STREAM:</span>
+                  <button
+                    type="button"
+                    onClick={handleCopy}
+                    className="flex items-center gap-1 px-2 py-0.5 rounded bg-[#0e2619] hover:bg-[#183b27] text-[#7dffb0] text-[10px] transition border border-[#2b6641]"
+                  >
+                    {copied ? <Check className="w-3 h-3 text-green-400" /> : <Copy className="w-3 h-3" />}
                     <span>{copied ? 'Copied' : 'Copy Binary'}</span>
                   </button>
                 </div>
-                <p className="text-xs text-[#e8dfa2] mb-3 leading-relaxed">
-                  "Test passcode: the first Greek letter. Five letters."
-                </p>
-                <div className="p-3 bg-[#24230e] rounded border border-[#524f1c] font-mono text-sm tracking-widest text-[#fff9b0] break-all">
-                  {binaryText}
-                </div>
-                <div className="mt-3 text-[11px] text-[#bbb26a]">
-                  Fragment Reference: ES03 [Part A], ES08 [Part B], ES12 [Part C]
+                <div className={`p-2.5 rounded font-mono text-xs tracking-widest break-all ${isAligned ? 'bg-[#0b2414] text-[#3dff8b] border border-[#3dff8b]/50' : 'bg-black/50 text-[#52996e]'}`}>
+                  {currentBinary}
                 </div>
               </div>
+
+              {/* Context Scrap Note (From Wastebin) */}
+              <div className="p-3 bg-[#1c1c0e] rounded-lg border border-[#4d4a1b] text-xs text-[#e8dfa2] leading-relaxed">
+                <span className="font-bold text-[#fff9b0] block mb-1">RECOVERED NOTE • CONTEXT RIDDLE:</span>
+                "Test passcode: the first Greek letter. Five letters."
+              </div>
+
             </div>
           )}
         </div>

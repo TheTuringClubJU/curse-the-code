@@ -161,7 +161,6 @@ export default function App() {
         <Room2Study
           team={team}
           onLogout={handleLogout}
-          onTransitionToRoom1={() => setCurrentRoom('bedroom')}
           onTransitionToRoom3={() => setCurrentRoom('basement')}
         />
       );
