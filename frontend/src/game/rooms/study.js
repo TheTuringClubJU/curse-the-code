@@ -5,7 +5,7 @@ export default {
   id: 'study',
   title: "Daniel's Study",
   size: [7.0, 3.2, 6.4],
-  spawn: [-2.0, 1.8, 2.2],
+  spawn: [0.0, 1.6, 0],
   haunted: false,
   theme: {
     bg: '#04120b',
