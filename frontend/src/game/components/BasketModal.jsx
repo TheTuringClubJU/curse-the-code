@@ -28,26 +28,26 @@ const EVIDENCE_IMAGE_MAP = {
 };
 
 const EVIDENCE_DETAILS_MAP = {
-  EB01: { clue: 'R1-03 (Carnival Poster)', part: 'Piece A', hiding: 'Trunk Lid Lining', tip: 'Left third of the dark carnival poster. Hidden text: TEST DATE 07/' },
-  EB02: { clue: 'R1-01 (Diary Entry)', part: 'Piece A', hiding: 'Nightstand Drawer', tip: 'Aged diary page corner mark 41: "Rex turned 5 today. YJXY JSYWD Y"' },
-  EB03: { clue: 'R1-04 (Torn Portrait)', part: 'Piece A', hiding: 'Small Portrait Frame', tip: 'Left canvas backing with faint pencil mark: "SHA"' },
-  EB04: { clue: 'R1-02 (Gate Notebook)', part: 'Piece A', hiding: 'Desk Cubby', tip: 'Grid paper with 3 margin tallies: "WKH WHVW JDW"' },
-  EB05: { clue: 'R1-01 (Diary Entry)', part: 'Piece B', hiding: 'Under Mattress Edge', tip: 'Torn page with blue ink: "MJ PJDBTWI NX QFS"' },
-  EB06: { clue: 'R1-03 (Carnival Poster)', part: 'Piece B', hiding: 'Wardrobe Coat Pocket', tip: 'Center third of the dark carnival poster. Hidden text: 04/20' },
-  EB07: { clue: 'R1-02 (Gate Notebook)', part: 'Piece B', hiding: 'Music Box Compartment', tip: 'Torn notebook scrap: "H RSHQV DW VXQ"' },
-  EB08: { clue: 'R1-04 (Torn Portrait)', part: 'Piece B', hiding: 'Under Pillow', tip: 'Center canvas backing with pencil mark: "D"' },
-  EB09: { clue: 'R1-01 (Diary Entry)', part: 'Piece C', hiding: 'Behind Clock Face', tip: 'Page corner scrap: "YJWS"' },
-  EB10: { clue: 'R1-02 (Gate Notebook)', part: 'Piece C', hiding: 'Bookshelf Nook', tip: 'Bottom scrap: "ULVH"' },
-  EB11: { clue: 'R1-03 (Carnival Poster)', part: 'Piece C', hiding: 'Behind Mirror Frame', tip: 'Right third of carnival poster. Hidden text: 01' },
-  EB12: { clue: 'R1-04 (Torn Portrait)', part: 'Piece C', hiding: 'Chair Cushion Lining', tip: 'Right canvas backing with pencil mark: "OW"' },
-  EK01: { clue: 'R1-10 (Doll Slip)', part: 'Key Note', hiding: 'Porcelain Doll', tip: 'Folded parchment note: "KYFV MVV HZ"' },
-  XB01: { clue: 'Decoy (No Target)', part: 'Decoy', hiding: 'Photo Frame', tip: 'Faded childhood photograph. Decoy specimen.' },
-  XB02: { clue: 'Decoy (No Target)', part: 'Decoy', hiding: 'Portrait Canvas', tip: 'Varnished linen frame backing. Decoy specimen.' },
-  EK04: { clue: 'R1-09 (Intercom)', part: 'Fragment C', hiding: 'Server Rack', tip: 'Glitched printer report from the containment rack.' },
-  EK05: { clue: 'R1-09 (Intercom)', part: 'Fragment A', hiding: 'Maintenance Terminal', tip: 'Scrambled terminal audio packet with external-log metadata.' },
-  EK06: { clue: 'R1-10 (Rack Note)', part: 'Fragment C', hiding: 'Toolbox', tip: 'Folded cipher note found beneath the toolbox tray.' },
-  XK01: { clue: 'Decoy (No Target)', part: 'Decoy', hiding: 'Floor Seal', tip: 'Clean printed note with decoy ciphertext. Decoy specimen.' },
-  XK02: { clue: 'Decoy (No Target)', part: 'Decoy', hiding: 'Server Rack Drive Bay', tip: 'Maintenance checklist scrap. Decoy specimen.' },
+  EB01: { part: 'Piece A', hiding: 'Trunk Lid Lining' },
+  EB02: { part: 'Piece A', hiding: 'Nightstand Drawer' },
+  EB03: { part: 'Piece A', hiding: 'Small Portrait Frame' },
+  EB04: { part: 'Piece A', hiding: 'Desk Cubby' },
+  EB05: { part: 'Piece B', hiding: 'Under Mattress Edge' },
+  EB06: { part: 'Piece B', hiding: 'Wardrobe Coat Pocket' },
+  EB07: { part: 'Piece B', hiding: 'Music Box Compartment' },
+  EB08: { part: 'Piece B', hiding: 'Under Pillow' },
+  EB09: { part: 'Piece C', hiding: 'Behind Clock Face' },
+  EB10: { part: 'Piece C', hiding: 'Bookshelf Nook' },
+  EB11: { part: 'Piece C', hiding: 'Behind Mirror Frame' },
+  EB12: { part: 'Piece C', hiding: 'Chair Cushion Lining' },
+  EK01: { part: 'Key Note', hiding: 'Porcelain Doll' },
+  XB01: { part: 'Fragment', hiding: 'Photo Frame' },
+  XB02: { part: 'Fragment', hiding: 'Portrait Canvas' },
+  EK04: { part: 'Fragment C', hiding: 'Server Rack' },
+  EK05: { part: 'Fragment A', hiding: 'Maintenance Terminal' },
+  EK06: { part: 'Fragment C', hiding: 'Toolbox' },
+  XK01: { part: 'Fragment', hiding: 'Floor Seal' },
+  XK02: { part: 'Fragment', hiding: 'Server Rack Drive Bay' },
 };
 
 function getFragmentImage(ev) {
@@ -73,14 +73,16 @@ export default function BasketModal({
 }) {
   const [activeTab, setActiveTab] = useState('all');
   const [inspectingEv, setInspectingEv] = useState(null);
+  const [inspectingIndex, setInspectingIndex] = useState(null);
   const [inspectContrast, setInspectContrast] = useState(100);
   const [inspectBrightness, setInspectBrightness] = useState(100);
   const [inspectInvert, setInspectInvert] = useState(false);
 
   if (!isOpen) return null;
 
-  const handleOpenInspector = (ev) => {
+  const handleOpenInspector = (ev, idx) => {
     setInspectingEv(ev);
+    setInspectingIndex(idx);
     setInspectContrast(100);
     setInspectBrightness(100);
     setInspectInvert(false);
@@ -114,7 +116,7 @@ export default function BasketModal({
           </div>
           <button
             onClick={() => {
-              setInspectingEv(null);
+              setInspectingEv(null); setInspectingIndex(null);
               onClose();
             }}
             className="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition"
@@ -160,7 +162,7 @@ export default function BasketModal({
                     key={ev.id || index}
                     onClick={() => {
                       if (!isWrapped) {
-                        handleOpenInspector(ev);
+                        handleOpenInspector(ev, index);
                       }
                     }}
                     className={`group relative p-3 rounded-lg border transition flex flex-col justify-between ${
@@ -173,7 +175,7 @@ export default function BasketModal({
                       {/* Badge bar */}
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-black/60 text-[#cdbfff] border border-white/5 font-bold">
-                          {ev.id}
+                          Fragment #{index + 1}
                         </span>
                         {isWrapped ? (
                           <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-[#3c1e14] text-[#fdba74]">
@@ -190,7 +192,7 @@ export default function BasketModal({
                       <div className="relative w-full h-32 rounded-md bg-black/60 border border-white/10 overflow-hidden mb-2.5 flex items-center justify-center">
                         <img
                           src={imgSrc}
-                          alt={ev.display?.title || ev.id}
+                          alt={ev.display?.title || `Fragment #${index + 1}`}
                           className="w-full h-full object-contain p-1 transition-transform duration-300 group-hover:scale-105"
                           onError={(e) => {
                             // Fallback if image fails
@@ -208,7 +210,7 @@ export default function BasketModal({
 
                       {/* Title & Metadata */}
                       <h3 className="text-xs font-bold text-[#e8e0ff] font-serif mb-0.5 truncate">
-                        {ev.display?.title || `Evidence ${ev.id}`}
+                        {ev.display?.title || `Fragment #${index + 1}`}
                       </h3>
 
                       {isWrapped ? (
@@ -259,7 +261,7 @@ export default function BasketModal({
           <span>Curse the Code • Hollow House Archives</span>
           <button
             onClick={() => {
-              setInspectingEv(null);
+              setInspectingEv(null); setInspectingIndex(null);
               onClose();
             }}
             className="px-4 py-1.5 rounded bg-[#2b1f47] text-[#e8e0ff] hover:bg-[#3b2a59] transition text-xs"
@@ -283,10 +285,10 @@ export default function BasketModal({
                 </button>
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-mono px-2 py-0.5 rounded bg-[#8f7bff]/20 text-[#cdbfff] border border-[#8f7bff]/30">
-                    {inspectingEv.id}
+                    Fragment #{inspectingIndex != null ? inspectingIndex + 1 : "?"}
                   </span>
                   <h3 className="text-base font-bold text-[#e8e0ff] font-serif">
-                    {inspectingEv.display?.title || `Evidence ${inspectingEv.id}`}
+                    {inspectingEv.display?.title || `Fragment #${inspectingIndex != null ? inspectingIndex + 1 : "?"}`}
                   </h3>
                 </div>
               </div>
@@ -313,7 +315,7 @@ export default function BasketModal({
                 >
                   <img
                     src={getFragmentImage(inspectingEv)}
-                    alt={inspectingEv.display?.title}
+                    alt={inspectingEv.display?.title || `Fragment #${inspectingIndex != null ? inspectingIndex + 1 : '?'}`}
                     className="max-h-full max-w-full object-contain rounded shadow-2xl"
                   />
                 </div>
@@ -378,20 +380,16 @@ export default function BasketModal({
                   </h4>
                   <div className="space-y-1.5 text-gray-300">
                     <div className="flex justify-between border-b border-white/5 pb-1">
-                      <span className="text-gray-500">Fragment ID:</span>
-                      <span className="text-[#e8e0ff] font-bold">{inspectingEv.id}</span>
+                      <span className="text-gray-500">Fragment Label:</span>
+                      <span className="text-[#e8e0ff] font-bold">Fragment #{inspectingIndex != null ? inspectingIndex + 1 : '?'}</span>
                     </div>
                     <div className="flex justify-between border-b border-white/5 pb-1">
-                      <span className="text-gray-500">Associated Clue:</span>
-                      <span className="text-[#cdbfff]">{EVIDENCE_DETAILS_MAP[inspectingEv.id]?.clue || 'Unassigned'}</span>
+                      <span className="text-gray-500">Document Style:</span>
+                      <span className="text-[#e8e0ff] capitalize">{inspectingEv.display?.style?.paper || 'Archival document'}</span>
                     </div>
                     <div className="flex justify-between border-b border-white/5 pb-1">
-                      <span className="text-gray-500">Hiding Spot:</span>
-                      <span className="text-[#e8e0ff]">{EVIDENCE_DETAILS_MAP[inspectingEv.id]?.hiding || 'Room fixture'}</span>
-                    </div>
-                    <div className="flex justify-between border-b border-white/5 pb-1">
-                      <span className="text-gray-500">Assembly Part:</span>
-                      <span className="text-[#8f7bff]">{inspectingEv.part || EVIDENCE_DETAILS_MAP[inspectingEv.id]?.part || 'A'}</span>
+                      <span className="text-gray-500">Ink Characteristic:</span>
+                      <span className="text-[#8f7bff] capitalize">{inspectingEv.display?.style?.ink || 'Standard ink'}</span>
                     </div>
                   </div>
                 </div>
@@ -424,7 +422,7 @@ export default function BasketModal({
 
                 {/* Case Note */}
                 <div className="p-3 rounded-lg bg-black/30 border border-white/5 text-[11px] text-gray-400 italic">
-                  💡 Hint: {EVIDENCE_DETAILS_MAP[inspectingEv.id]?.tip || 'Examine the typography and connect with other fragments in this room.'}
+                  Forensic item securely cataloged in the investigation archive.
                 </div>
 
               </div>

@@ -186,7 +186,7 @@ describe('Room 3 (The Basement) Comprehensive Test Suite (49 Tests)', () => {
   });
   it('QA-R3-FE-12: test_room3_basket_renders_basement_png_thumbnails', () => {
     render(<BasketModal isOpen onClose={vi.fn()} evidence={basementContent.evidence} collectedIds={['EK04']} basketUnlocked totalInRoom={5} roomTitle="The Basement" />);
-    expect(screen.getByText(/EK04/i)).toBeInTheDocument();
+    expect(screen.getByText(/Fragment #1/i)).toBeInTheDocument();
   });
   it('QA-R3-FE-13: test_room3_pressing_C_opens_clues_modal_for_basement', async () => {
     render(<Room3Basement team={mockTeam} onLogout={vi.fn()} />);
