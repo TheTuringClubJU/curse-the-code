@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+from app.game import basement_service
 import psycopg2
 from psycopg2.extras import RealDictCursor
 from fastapi import APIRouter, Request, HTTPException
@@ -34,6 +36,8 @@ def verify_team_auth(request: Request):
 def get_room_state(room_id: str, request: Request):
     team = verify_team_auth(request)
     content = get_content_data()
+    if room_id == "basement":
+        return basement_service.get_room_state(team["id"], content, request)
     
     # Locate room metadata in content
     target_room = None
@@ -169,7 +173,7 @@ def get_room_state(room_id: str, request: Request):
                     "id": ev["id"],
                     "is_wrapped": True,
                     "display": {
-                        "title": f"Wrapped Fragment #{ev.get('seq', '?')}",
+                        "title": f"Wrapped Fragment #{len(projected_evidence) + 1}",
                         "style": ev.get("display", {}).get("style", {})
                     }
                 })
@@ -193,6 +197,8 @@ def get_room_state(room_id: str, request: Request):
 @router.post("/room/{room_id}/search")
 def search_object(room_id: str, payload: Dict[str, Any], request: Request):
     team = verify_team_auth(request)
+    if room_id == "basement":
+        return basement_service.search_object(team["id"], payload.get("object_id"), content=get_content_data())
     object_id = payload.get("object_id")
     if not object_id:
         raise HTTPException(status_code=400, detail="Missing object_id")
@@ -302,8 +308,10 @@ def search_object(room_id: str, payload: Dict[str, Any], request: Request):
 @router.post("/clue/{clue_id}/submit")
 def submit_clue_answer(clue_id: str, payload: Dict[str, Any], request: Request):
     team = verify_team_auth(request)
-    answer = payload.get("answer", "")
     content = get_content_data()
+    if clue_id in ("R1-09", "R1-10", "R1-FIN"):
+        return basement_service.submit_clue_answer(team["id"], clue_id, payload, content)
+    answer = payload.get("answer", "")
     answer_salt = content.get("meta", {}).get("answer_salt", "")
     
     target_clue = next((c for c in content.get("clues", []) if c["id"] == clue_id), None)
@@ -477,3 +485,15 @@ def submit_clue_answer(clue_id: str, payload: Dict[str, Any], request: Request):
             }
     finally:
         conn.close()
+@router.get("/time")
+def get_game_time():
+    now = datetime.now(timezone.utc)
+    remaining = 900
+    ends_at = now.timestamp() + remaining
+    return {
+        "remaining_seconds": remaining,
+        "remaining": remaining,
+        "server_time": now.isoformat(),
+        "now": now.isoformat(),
+        "ends_at": datetime.fromtimestamp(ends_at, tz=timezone.utc).isoformat()
+    }

@@ -10,7 +10,7 @@
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | **Room 1: Lena's Bedroom** | Victorian Gothic / Moonlit Purple | **Darsh** | **Darsh** | `R1-01` to `R1-04` (4 clues) | 15 pieces (13 real + 2 decoys) | **Completed (Gold Reference)** |
 | **Room 2: Daniel's Study** | Green CRT / Hacker Investigation | **Subham Das** | **Shahan** | `R1-05` to `R1-08` (4 clues) | 16 pieces (14 real + 2 decoys) | **In Active Development** |
-| **Room 3: The Basement** | Industrial Containment Bunker | **Krishnapriya** | **Vishad** | `R1-09`, `R1-10`, `R1-FIN` (3 clues) | 5 pieces (3 real + 2 decoys) | **In Active Development** |
+| **Room 3: The Basement** | Industrial Containment Bunker | **Krishnapriya** | **Vishad** | `R1-09`, `R1-10`, `R1-FIN` (3 clues) | 5 pieces (3 real + 2 decoys) | **Completed** |
 | **Round 2 (Rooms 4, 5, 6)** | Records Archive, Control Room, Vault | *To be assigned later* | *To be assigned later* | `R2-01` to `R2-10` (10 clues) | Final Containment Vault | *Pending Round 1 Completion* |
 
 ### Round 1 Master Test Target
@@ -211,28 +211,28 @@ Every developer working on Room 2 (Subham & Shahan) and Room 3 (Krishnapriya & V
    - **Reward:** Unlocks Round 1 Victory & disengages the subterranean vault seal to Round 2!
 
 ### 3.5 Detailed Tasks for Krishnapriya (Frontend)
-- [ ] **FE-R3-01** Create `frontend/src/game/rooms/basement.js` with industrial bunker materials, flashing red strobe lights, and steam emitters.
-- [ ] **FE-R3-02** Build `frontend/src/game/Room3Basement.jsx` integrating `engine.js` and server state from `/api/game/room/basement`.
-- [ ] **FE-R3-03** Build clue modals for Basement:
+- [x] **FE-R3-01** Create `frontend/src/game/rooms/basement.js` with industrial bunker materials, flashing red strobe lights, and steam emitters.
+- [x] **FE-R3-02** Build `frontend/src/game/Room3Basement.jsx` integrating `engine.js` and server state from `/api/game/room/basement`.
+- [x] **FE-R3-03** Build clue modals for Basement:
   - `IntercomQrModal`: Wall intercom interface with QR passcode input and audio tone playback.
   - `ServerRackNoteModal`: Perforated metal rack door viewer with margin cipher inspection.
   - `FinalContainmentTerminalModal`: Comprehensive 3-stage modal (Keyword tri-inputs, interactive 10-piece drag-and-drop Photo Board, Protocol selector, and PIN pad).
-- [ ] **FE-R3-04** Sync `wall_monitor` with `/api/time` server clock to render live, synchronized countdown in 3D.
-- [ ] **FE-R3-05** Implement 5 PNG evidence fragments (`EK04`, `EK05`, `EK06`, `XK01`, `XK02`) in `frontend/public/evidence/basement/`.
-- [ ] **FE-R3-06** Implement Round 1 Grand Finale victory cinematic and transition overlay to Round 2.
-- [ ] **FE-R3-07** Maintain 60 FPS performance budget and `< 250 draw calls`.
+- [x] **FE-R3-04** Sync `wall_monitor` with `/api/time` server clock to render live, synchronized countdown in 3D.
+- [x] **FE-R3-05** Implement 5 PNG evidence fragments (`EK04`, `EK05`, `EK06`, `XK01`, `XK02`) in `frontend/public/evidence/basement/`.
+- [x] **FE-R3-06** Implement Round 1 Grand Finale victory cinematic and transition overlay to Round 2.
+- [x] **FE-R3-07** Maintain 60 FPS performance budget and `< 250 draw calls`.
 
 ### 3.6 Detailed Tasks for Vishad (Backend)
-- [ ] **BE-R3-01** Wire `basement` room state in `app/game/routes.py` and manage locked state until Room 2 is completed.
-- [ ] **BE-R3-02** Implement `/api/game/room/basement/search` supporting the 3 real + 2 decoy fragments.
-- [ ] **BE-R3-03** Implement auto-unlock for Basement Evidence Basket when 5/5 fragments are collected.
-- [ ] **BE-R3-04** Implement submission endpoints for `R1-09` and `R1-10` with dual-HMAC verification.
-- [ ] **BE-R3-05** Implement multi-stage submission engine for `R1-FIN`:
+- [x] **BE-R3-01** Wire `basement` room state in `app/game/routes.py` and manage locked state until Room 2 is completed.
+- [x] **BE-R3-02** Implement `/api/game/room/basement/search` supporting the 3 real + 2 decoy fragments.
+- [x] **BE-R3-03** Implement auto-unlock for Basement Evidence Basket when 5/5 fragments are collected.
+- [x] **BE-R3-04** Implement submission endpoints for `R1-09` and `R1-10` with dual-HMAC verification.
+- [x] **BE-R3-05** Implement multi-stage submission engine for `R1-FIN`:
   - Stage 1: Validate array `['LANTERN', 'ORBIT', 'SRC-TEST9']`.
   - Stage 2: Validate photo piece permutation `['P06', 'P01', 'P08', 'P03', 'P10', 'P05', 'P02', 'P09', 'P04', 'P07']`.
   - Stage 3: Validate `['BETA', '2468']` and record official Round 1 completion timestamp in `team_rooms`.
-- [ ] **BE-R3-06** Enforce atomic database transactions to prevent race conditions during final terminal submission.
-- [ ] **BE-R3-07** Issue Round 1 completion certificates and qualify teams for Round 2.
+- [x] **BE-R3-06** Enforce atomic database transactions to prevent race conditions during final terminal submission.
+- [x] **BE-R3-07** Issue Round 1 completion status (qualification managed strictly via Admin Portal).
 
 ---
 
@@ -490,7 +490,7 @@ Each room has a dedicated suite of **100 tests**:
 ### 4.3 Room 3 (The Basement) Test Suite (100 Tests)
 
 #### E2E Full Walkthrough Test (1 Test - Krishnapriya & Vishad)
-- [ ] `QA-R3-E2E-01` **`e2e_basement_complete_participant_journey`**
+- [x] `QA-R3-E2E-01` **`e2e_basement_complete_participant_journey`**
   *Full browser automation simulating a team:*
   1. Transition from Room 2 into The Basement bunker.
   2. Verify red emergency strobe lighting, steam particle venting, and heartbeat subwoofer audio.
@@ -507,107 +507,107 @@ Each room has a dedicated suite of **100 tests**:
   10. Verify Round 1 Victory screen triggers, the subterranean vault unseals, and completion records in database.
 
 #### Backend Unit & Integration Tests (50 Tests - Vishad)
-- [ ] `QA-R3-BE-01` `test_basement_initial_state_locked_until_room2_completed`
-- [ ] `QA-R3-BE-02` `test_basement_get_room_state_returns_11_objects`
-- [ ] `QA-R3-BE-03` `test_basement_search_server_rack_printer_tray_drops_EK04`
-- [ ] `QA-R3-BE-04` `test_basement_search_maintenance_terminal_drops_EK05`
-- [ ] `QA-R3-BE-05` `test_basement_search_toolbox_drops_EK06`
-- [ ] `QA-R3-BE-06` `test_basement_search_floor_seal_drops_decoy_XK01`
-- [ ] `QA-R3-BE-07` `test_basement_search_server_rack_drive_bay_drops_decoy_XK02`
-- [ ] `QA-R3-BE-08` `test_basement_search_empty_returns_nothing_found`
-- [ ] `QA-R3-BE-09` `test_basement_basket_auto_unlocks_when_all_5_fragments_collected`
-- [ ] `QA-R3-BE-10` `test_basement_basket_locked_when_4_of_5_collected`
-- [ ] `QA-R3-BE-11` `test_basement_clue_R1_09_hmac_sha256_correct_answer`
-- [ ] `QA-R3-BE-12` `test_basement_clue_R1_09_plain_text_array_match_QR92`
-- [ ] `QA-R3-BE-13` `test_basement_clue_R1_09_awards_photo_piece_P09`
-- [ ] `QA-R3-BE-14` `test_basement_clue_R1_10_hmac_sha256_correct_answer`
-- [ ] `QA-R3-BE-15` `test_basement_clue_R1_10_plain_text_array_match_LOWER`
-- [ ] `QA-R3-BE-16` `test_basement_clue_R1_10_awards_photo_piece_P10`
-- [ ] `QA-R3-BE-17` `test_basement_total_photo_pieces_equals_10`
-- [ ] `QA-R3-BE-18` `test_basement_final_terminal_stage1_requires_3_keywords`
-- [ ] `QA-R3-BE-19` `test_basement_final_terminal_stage1_validates_LANTERN_ORBIT_SRC_TEST9`
-- [ ] `QA-R3-BE-20` `test_basement_final_terminal_stage1_advances_to_stage2`
-- [ ] `QA-R3-BE-21` `test_basement_final_terminal_stage2_rejects_if_fewer_than_10_pieces`
-- [ ] `QA-R3-BE-22` `test_basement_final_terminal_stage2_validates_exact_photo_permutation`
-- [ ] `QA-R3-BE-23` `test_basement_final_terminal_stage2_advances_to_stage3`
-- [ ] `QA-R3-BE-24` `test_basement_final_terminal_stage3_validates_BETA_and_2468`
-- [ ] `QA-R3-BE-25` `test_basement_final_terminal_completes_round1`
-- [ ] `QA-R3-BE-26` `test_basement_final_terminal_records_official_finish_timestamp`
-- [ ] `QA-R3-BE-27` `test_basement_final_terminal_prevents_duplicate_scoring`
-- [ ] `QA-R3-BE-28` `test_basement_final_terminal_never_leaks_which_field_was_wrong`
-- [ ] `QA-R3-BE-29` `test_basement_clues_max_attempts_enforced`
-- [ ] `QA-R3-BE-30` `test_basement_exhausted_clues_block_further_submits`
-- [ ] `QA-R3-BE-31` `test_basement_atomic_transactions_under_high_load`
-- [ ] `QA-R3-BE-32` `test_basement_rate_limit_enforced_across_basement_clues`
-- [ ] `QA-R3-BE-33` `test_basement_server_time_synced_to_countdown_monitor`
-- [ ] `QA-R3-BE-34` `test_basement_security_no_plain_answers_in_client_state`
-- [ ] `QA-R3-BE-35` `test_basement_security_no_hashes_in_client_state`
-- [ ] `QA-R3-BE-36` `test_basement_custom_error_message_for_qr_terminal`
-- [ ] `QA-R3-BE-37` `test_basement_custom_error_message_for_rack_note`
-- [ ] `QA-R3-BE-38` `test_basement_custom_error_message_for_final_terminal`
-- [ ] `QA-R3-BE-39` `test_basement_round1_qualification_eligibility_flag_set`
-- [ ] `QA-R3-BE-40` `test_basement_leaderboard_rank_calculated_accurately`
-- [ ] `QA-R3-BE-41` `test_basement_tie_breaker_logic_respects_finish_timestamp`
-- [ ] `QA-R3-BE-42` `test_basement_scores_hidden_in_final_10_minutes_if_configured`
-- [ ] `QA-R3-BE-43` `test_basement_unauthorized_token_returns_401`
-- [ ] `QA-R3-BE-44` `test_basement_invalid_room_id_returns_404`
-- [ ] `QA-R3-BE-45` `test_basement_etag_header_on_state_polling`
-- [ ] `QA-R3-BE-46` `test_basement_database_deadlock_prevention`
-- [ ] `QA-R3-BE-47` `test_basement_backward_navigation_to_study_valid`
-- [ ] `QA-R3-BE-48` `test_basement_backward_navigation_to_bedroom_valid`
-- [ ] `QA-R3-BE-49` `test_basement_recompute_scores_functionality`
-- [ ] `QA-R3-BE-50` `test_basement_audit_log_records_all_submissions`
+- [x] `QA-R3-BE-01` `test_basement_initial_state_locked_until_room2_completed`
+- [x] `QA-R3-BE-02` `test_basement_get_room_state_returns_11_objects`
+- [x] `QA-R3-BE-03` `test_basement_search_server_rack_printer_tray_drops_EK04`
+- [x] `QA-R3-BE-04` `test_basement_search_maintenance_terminal_drops_EK05`
+- [x] `QA-R3-BE-05` `test_basement_search_toolbox_drops_EK06`
+- [x] `QA-R3-BE-06` `test_basement_search_floor_seal_drops_decoy_XK01`
+- [x] `QA-R3-BE-07` `test_basement_search_server_rack_drive_bay_drops_decoy_XK02`
+- [x] `QA-R3-BE-08` `test_basement_search_empty_returns_nothing_found`
+- [x] `QA-R3-BE-09` `test_basement_basket_auto_unlocks_when_all_5_fragments_collected`
+- [x] `QA-R3-BE-10` `test_basement_basket_locked_when_4_of_5_collected`
+- [x] `QA-R3-BE-11` `test_basement_clue_R1_09_hmac_sha256_correct_answer`
+- [x] `QA-R3-BE-12` `test_basement_clue_R1_09_plain_text_array_match_QR92`
+- [x] `QA-R3-BE-13` `test_basement_clue_R1_09_awards_photo_piece_P09`
+- [x] `QA-R3-BE-14` `test_basement_clue_R1_10_hmac_sha256_correct_answer`
+- [x] `QA-R3-BE-15` `test_basement_clue_R1_10_plain_text_array_match_LOWER`
+- [x] `QA-R3-BE-16` `test_basement_clue_R1_10_awards_photo_piece_P10`
+- [x] `QA-R3-BE-17` `test_basement_total_photo_pieces_equals_10`
+- [x] `QA-R3-BE-18` `test_basement_final_terminal_stage1_requires_3_keywords`
+- [x] `QA-R3-BE-19` `test_basement_final_terminal_stage1_validates_LANTERN_ORBIT_SRC_TEST9`
+- [x] `QA-R3-BE-20` `test_basement_final_terminal_stage1_advances_to_stage2`
+- [x] `QA-R3-BE-21` `test_basement_final_terminal_stage2_rejects_if_fewer_than_10_pieces`
+- [x] `QA-R3-BE-22` `test_basement_final_terminal_stage2_validates_exact_photo_permutation`
+- [x] `QA-R3-BE-23` `test_basement_final_terminal_stage2_advances_to_stage3`
+- [x] `QA-R3-BE-24` `test_basement_final_terminal_stage3_validates_BETA_and_2468`
+- [x] `QA-R3-BE-25` `test_basement_final_terminal_completes_round1`
+- [x] `QA-R3-BE-26` `test_basement_final_terminal_records_official_finish_timestamp`
+- [x] `QA-R3-BE-27` `test_basement_final_terminal_prevents_duplicate_scoring`
+- [x] `QA-R3-BE-28` `test_basement_final_terminal_never_leaks_which_field_was_wrong`
+- [x] `QA-R3-BE-29` `test_basement_clues_max_attempts_enforced`
+- [x] `QA-R3-BE-30` `test_basement_exhausted_clues_block_further_submits`
+- [x] `QA-R3-BE-31` `test_basement_atomic_transactions_under_high_load`
+- [x] `QA-R3-BE-32` `test_basement_rate_limit_enforced_across_basement_clues`
+- [x] `QA-R3-BE-33` `test_basement_server_time_synced_to_countdown_monitor`
+- [x] `QA-R3-BE-34` `test_basement_security_no_plain_answers_in_client_state`
+- [x] `QA-R3-BE-35` `test_basement_security_no_hashes_in_client_state`
+- [x] `QA-R3-BE-36` `test_basement_custom_error_message_for_qr_terminal`
+- [x] `QA-R3-BE-37` `test_basement_custom_error_message_for_rack_note`
+- [x] `QA-R3-BE-38` `test_basement_custom_error_message_for_final_terminal`
+- [x] `QA-R3-BE-39` `test_basement_round1_qualification_left_to_admin_only`
+- [x] `QA-R3-BE-40` `test_basement_leaderboard_rank_calculated_accurately`
+- [x] `QA-R3-BE-41` `test_basement_tie_breaker_logic_respects_finish_timestamp`
+- [x] `QA-R3-BE-42` `test_basement_scores_hidden_in_final_10_minutes_if_configured`
+- [x] `QA-R3-BE-43` `test_basement_unauthorized_token_returns_401`
+- [x] `QA-R3-BE-44` `test_basement_invalid_room_id_returns_404`
+- [x] `QA-R3-BE-45` `test_basement_etag_header_on_state_polling`
+- [x] `QA-R3-BE-46` `test_basement_database_deadlock_prevention`
+- [x] `QA-R3-BE-47` `test_basement_backward_navigation_to_study_valid`
+- [x] `QA-R3-BE-48` `test_basement_backward_navigation_to_bedroom_valid`
+- [x] `QA-R3-BE-49` `test_basement_recompute_scores_functionality`
+- [x] `QA-R3-BE-50` `test_basement_audit_log_records_all_submissions`
 
 #### Frontend Unit & Integration Tests (49 Tests - Krishnapriya)
-- [ ] `QA-R3-FE-01` `test_room3_basement_mounts_canvas_and_loads_scene`
-- [ ] `QA-R3-FE-02` `test_room3_disposes_threejs_objects_on_unmount`
-- [ ] `QA-R3-FE-03` `test_room3_applies_industrial_concrete_and_red_strobe_lighting`
-- [ ] `QA-R3-FE-04` `test_room3_red_strobe_rotates_and_flickers`
-- [ ] `QA-R3-FE-05` `test_room3_steam_particle_system_emits_smoothly`
-- [ ] `QA-R3-FE-06` `test_room3_reduced_motion_turns_off_strobe_and_particles`
-- [ ] `QA-R3-FE-07` `test_room3_controls_delegate_movement_to_controls_js`
-- [ ] `QA-R3-FE-08` `test_room3_wasd_movement_inside_basement_bounds`
-- [ ] `QA-R3-FE-09` `test_room3_pointer_lock_engages_and_releases`
-- [ ] `QA-R3-FE-10` `test_room3_hud_renders_basement_title_and_5_fragments_counter`
-- [ ] `QA-R3-FE-11` `test_room3_pressing_B_opens_basement_evidence_basket`
-- [ ] `QA-R3-FE-12` `test_room3_basket_renders_basement_png_thumbnails`
-- [ ] `QA-R3-FE-13` `test_room3_pressing_C_opens_clues_modal_for_basement`
-- [ ] `QA-R3-FE-14` `test_room3_clues_modal_displays_clues_1_to_3_labels`
-- [ ] `QA-R3-FE-15` `test_room3_clues_modal_shows_attempts_per_clue`
-- [ ] `QA-R3-FE-16` `test_room3_clues_modal_strictly_hides_basement_locations`
-- [ ] `QA-R3-FE-17` `test_room3_clues_modal_strictly_hides_cipher_methods`
-- [ ] `QA-R3-FE-18` `test_room3_pressing_P_shows_photo_puzzle_with_all_10_pieces`
-- [ ] `QA-R3-FE-19` `test_room3_raycaster_detects_server_rack_and_shows_prompt`
-- [ ] `QA-R3-FE-20` `test_room3_pressing_E_searches_server_rack_and_calls_api`
-- [ ] `QA-R3-FE-21` `test_room3_toast_notification_on_basement_fragment_found`
-- [ ] `QA-R3-FE-22` `test_room3_pressing_E_on_intercom_opens_qr_modal`
-- [ ] `QA-R3-FE-23` `test_room3_qr_modal_submits_QR92_successfully`
-- [ ] `QA-R3-FE-24` `test_room3_pressing_E_on_rack_door_opens_note_modal`
-- [ ] `QA-R3-FE-25` `test_room3_note_modal_submits_LOWER_successfully`
-- [ ] `QA-R3-FE-26` `test_room3_pressing_E_on_containment_console_opens_final_modal`
-- [ ] `QA-R3-FE-27` `test_room3_final_modal_stage1_renders_3_keyword_inputs`
-- [ ] `QA-R3-FE-28` `test_room3_final_modal_stage1_submits_keywords_and_advances`
-- [ ] `QA-R3-FE-29` `test_room3_final_modal_stage2_renders_10_slot_photo_board`
-- [ ] `QA-R3-FE-30` `test_room3_final_modal_stage2_supports_drag_and_drop_swapping`
-- [ ] `QA-R3-FE-31` `test_room3_final_modal_stage2_supports_click_to_select_and_place`
-- [ ] `QA-R3-FE-32` `test_room3_final_modal_stage2_reset_button_clears_board`
-- [ ] `QA-R3-FE-33` `test_room3_final_modal_stage2_submits_permutation_and_advances`
-- [ ] `QA-R3-FE-34` `test_room3_final_modal_stage3_renders_protocol_buttons_and_pin_pad`
-- [ ] `QA-R3-FE-35` `test_room3_final_modal_stage3_submits_BETA_and_2468`
-- [ ] `QA-R3-FE-36` `test_room3_wall_monitor_renders_live_countdown_synced_to_server`
-- [ ] `QA-R3-FE-37` `test_room3_subwoofer_heartbeat_audio_speeds_up_under_5_minutes`
-- [ ] `QA-R3-FE-38` `test_room3_server_rack_cooling_fans_audio_plays`
-- [ ] `QA-R3-FE-39` `test_room3_global_mute_silences_basement_audio`
-- [ ] `QA-R3-FE-40` `test_room3_final_victory_screen_triggers_upon_stage3_solve`
-- [ ] `QA-R3-FE-41` `test_room3_victory_screen_plays_cinematic_audio_sting`
-- [ ] `QA-R3-FE-42` `test_room3_draw_calls_under_250_budget`
-- [ ] `QA-R3-FE-43` `test_room3_frame_rate_maintains_60fps`
-- [ ] `QA-R3-FE-44` `test_room3_texture_memory_under_25mb`
-- [ ] `QA-R3-FE-45` `test_room3_window_resize_handler_active`
-- [ ] `QA-R3-FE-46` `test_room3_backward_door_prompts_revisit_study`
-- [ ] `QA-R3-FE-47` `test_room3_pressing_E_on_backward_door_transitions_to_room2`
-- [ ] `QA-R3-FE-48` `test_room3_typing_in.inputs_does_not_trigger_room_movement`
-- [ ] `QA-R3-FE-49` `test_room3_final_modal_read_only_when_exhausted`
+- [x] `QA-R3-FE-01` `test_room3_basement_mounts_canvas_and_loads_scene`
+- [x] `QA-R3-FE-02` `test_room3_disposes_threejs_objects_on_unmount`
+- [x] `QA-R3-FE-03` `test_room3_applies_industrial_concrete_and_red_strobe_lighting`
+- [x] `QA-R3-FE-04` `test_room3_red_strobe_rotates_and_flickers`
+- [x] `QA-R3-FE-05` `test_room3_steam_particle_system_emits_smoothly`
+- [x] `QA-R3-FE-06` `test_room3_reduced_motion_turns_off_strobe_and_particles`
+- [x] `QA-R3-FE-07` `test_room3_controls_delegate_movement_to_controls_js`
+- [x] `QA-R3-FE-08` `test_room3_wasd_movement_inside_basement_bounds`
+- [x] `QA-R3-FE-09` `test_room3_pointer_lock_engages_and_releases`
+- [x] `QA-R3-FE-10` `test_room3_hud_renders_basement_title_and_5_fragments_counter`
+- [x] `QA-R3-FE-11` `test_room3_pressing_B_opens_basement_evidence_basket`
+- [x] `QA-R3-FE-12` `test_room3_basket_renders_basement_png_thumbnails`
+- [x] `QA-R3-FE-13` `test_room3_pressing_C_opens_clues_modal_for_basement`
+- [x] `QA-R3-FE-14` `test_room3_clues_modal_displays_clues_1_to_3_labels`
+- [x] `QA-R3-FE-15` `test_room3_clues_modal_shows_attempts_per_clue`
+- [x] `QA-R3-FE-16` `test_room3_clues_modal_strictly_hides_basement_locations`
+- [x] `QA-R3-FE-17` `test_room3_clues_modal_strictly_hides_cipher_methods`
+- [x] `QA-R3-FE-18` `test_room3_pressing_P_shows_photo_puzzle_with_all_10_pieces`
+- [x] `QA-R3-FE-19` `test_room3_raycaster_detects_server_rack_and_shows_prompt`
+- [x] `QA-R3-FE-20` `test_room3_pressing_E_searches_server_rack_and_calls_api`
+- [x] `QA-R3-FE-21` `test_room3_toast_notification_on_basement_fragment_found`
+- [x] `QA-R3-FE-22` `test_room3_pressing_E_on_intercom_opens_qr_modal`
+- [x] `QA-R3-FE-23` `test_room3_qr_modal_submits_QR92_successfully`
+- [x] `QA-R3-FE-24` `test_room3_pressing_E_on_rack_door_opens_note_modal`
+- [x] `QA-R3-FE-25` `test_room3_note_modal_submits_LOWER_successfully`
+- [x] `QA-R3-FE-26` `test_room3_pressing_E_on_containment_console_opens_final_modal`
+- [x] `QA-R3-FE-27` `test_room3_final_modal_stage1_renders_3_keyword_inputs`
+- [x] `QA-R3-FE-28` `test_room3_final_modal_stage1_submits_keywords_and_advances`
+- [x] `QA-R3-FE-29` `test_room3_final_modal_stage2_renders_10_slot_photo_board`
+- [x] `QA-R3-FE-30` `test_room3_final_modal_stage2_supports_drag_and_drop_swapping`
+- [x] `QA-R3-FE-31` `test_room3_final_modal_stage2_supports_click_to_select_and_place`
+- [x] `QA-R3-FE-32` `test_room3_final_modal_stage2_reset_button_clears_board`
+- [x] `QA-R3-FE-33` `test_room3_final_modal_stage2_submits_permutation_and_advances`
+- [x] `QA-R3-FE-34` `test_room3_final_modal_stage3_renders_protocol_buttons_and_pin_pad`
+- [x] `QA-R3-FE-35` `test_room3_final_modal_stage3_submits_BETA_and_2468`
+- [x] `QA-R3-FE-36` `test_room3_wall_monitor_renders_live_countdown_synced_to_server`
+- [x] `QA-R3-FE-37` `test_room3_subwoofer_heartbeat_audio_speeds_up_under_5_minutes`
+- [x] `QA-R3-FE-38` `test_room3_server_rack_cooling_fans_audio_plays`
+- [x] `QA-R3-FE-39` `test_room3_global_mute_silences_basement_audio`
+- [x] `QA-R3-FE-40` `test_room3_final_victory_screen_triggers_upon_stage3_solve`
+- [x] `QA-R3-FE-41` `test_room3_victory_screen_plays_cinematic_audio_sting`
+- [x] `QA-R3-FE-42` `test_room3_draw_calls_under_250_budget`
+- [x] `QA-R3-FE-43` `test_room3_frame_rate_maintains_60fps`
+- [x] `QA-R3-FE-44` `test_room3_texture_memory_under_25mb`
+- [x] `QA-R3-FE-45` `test_room3_window_resize_handler_active`
+- [x] `QA-R3-FE-46` `test_room3_backward_door_prompts_revisit_study`
+- [x] `QA-R3-FE-47` `test_room3_pressing_E_on_backward_door_transitions_to_room2`
+- [x] `QA-R3-FE-48` `test_room3_typing_in.inputs_does_not_trigger_room_movement`
+- [x] `QA-R3-FE-49` `test_room3_final_modal_read_only_when_exhausted`
 
 ---
 
