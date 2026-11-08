@@ -31,6 +31,7 @@ def verify_team_auth(request: Request):
     return team_res['team']
 
 @router.get("/room/{room_id}")
+@router.get("/room/{room_id}/state")
 def get_room_state(room_id: str, request: Request):
     team = verify_team_auth(request)
     content = get_content_data()
@@ -190,6 +191,85 @@ def get_room_state(room_id: str, request: Request):
         "photo_pieces_collected": photo_pieces_count
     }
 
+@router.get("/room/{room_id}/basket")
+def get_room_basket(room_id: str, request: Request):
+    team = verify_team_auth(request)
+    content = get_content_data()
+    target_room = next((r for r in content.get("rooms", []) if r["id"] == room_id), None)
+    if not target_room:
+        raise HTTPException(status_code=404, detail="Room not found")
+        
+    conn = get_db_connection()
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute(
+                "SELECT fragment_id, is_wrapped, collected_at FROM team_fragments WHERE team_id = %s AND room_id = %s",
+                (team["id"], room_id)
+            )
+            collected_fragments = [dict(row) for row in cur.fetchall()]
+            
+            cur.execute(
+                "SELECT is_basket_unlocked, is_completed FROM team_rooms WHERE team_id = %s AND room_id = %s",
+                (team["id"], room_id)
+            )
+            room_status = cur.fetchone()
+    finally:
+        conn.close()
+        
+    collected_ids = [f["fragment_id"] for f in collected_fragments]
+    room_evidence = target_room.get("evidence", [])
+    total_in_room = len(room_evidence)
+    is_basket_unlocked = bool(room_status and room_status["is_basket_unlocked"])
+    
+    # Auto-unlock if all collected
+    if not is_basket_unlocked and total_in_room > 0 and len(collected_ids) >= total_in_room:
+        conn = get_db_connection()
+        try:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    INSERT INTO team_rooms (team_id, room_id, is_basket_unlocked)
+                    VALUES (%s, %s, TRUE)
+                    ON CONFLICT (team_id, room_id) DO UPDATE SET is_basket_unlocked = TRUE
+                    """,
+                    (team["id"], room_id)
+                )
+                conn.commit()
+            is_basket_unlocked = True
+        finally:
+            conn.close()
+
+    items = []
+    for ev in room_evidence:
+        if ev["id"] in collected_ids:
+            if is_basket_unlocked:
+                items.append({
+                    "id": ev["id"],
+                    "clue_id": ev.get("clue_id"),
+                    "part": ev.get("part"),
+                    "is_wrapped": False,
+                    "display": ev.get("display", {}),
+                    "secret": ev.get("secret", {})
+                })
+            else:
+                items.append({
+                    "id": ev["id"],
+                    "is_wrapped": True,
+                    "display": {
+                        "title": f"Wrapped Fragment #{ev.get('seq', '?')}",
+                        "style": ev.get("display", {}).get("style", {})
+                    }
+                })
+
+    return {
+        "ok": True,
+        "room_id": room_id,
+        "basket_unlocked": is_basket_unlocked,
+        "total_fragments_in_room": total_in_room,
+        "collected_count": len(collected_ids),
+        "fragments": items
+    }
+
 @router.post("/room/{room_id}/search")
 def search_object(room_id: str, payload: Dict[str, Any], request: Request):
     team = verify_team_auth(request)
@@ -230,36 +310,46 @@ def search_object(room_id: str, payload: Dict[str, Any], request: Request):
                     "message": "You have already recovered the hidden fragment from here."
                 }
                 
-            target_ev = uncollected_evs[0]
-                
+            cur.execute(
+                """
+                SELECT fragment_id FROM team_fragments
+                WHERE team_id = %s AND room_id = %s
+                """,
+                (team["id"], room_id)
+            )
+            collected_in_room = {row["fragment_id"] for row in cur.fetchall()}
+
             # Verify sequence lock:
-            # Target piece requires all lower seq in this chain to have been collected
-            target_seq = target_ev.get("seq")
-            target_chain = target_ev.get("chain", room_id)
-            
-            if target_seq is not None and target_seq > 1:
-                cur.execute(
-                    """
-                    SELECT fragment_id FROM team_fragments
-                    WHERE team_id = %s AND room_id = %s
-                    """,
-                    (team["id"], room_id)
-                )
-                collected_in_room = {row["fragment_id"] for row in cur.fetchall()}
-                
-                # Check preceding items in same chain
-                preceding = [
-                    ev["id"] for ev in room_evidence
-                    if ev.get("chain", room_id) == target_chain and ev.get("seq") is not None and ev.get("seq") < target_seq
-                ]
-                missing = [pid for pid in preceding if pid not in collected_in_room]
-                if missing:
-                    # Locked out of order prompt (Option 3 discussed)
+            # Check for candidate fragment on this prop that is unlocked (or decoy with seq=None)
+            target_ev = None
+            is_locked = False
+
+            for ev in uncollected_evs:
+                t_seq = ev.get("seq")
+                t_chain = ev.get("chain", room_id)
+                if t_seq is not None and t_seq > 1:
+                    preceding = [
+                        p["id"] for p in room_evidence
+                        if p.get("chain", room_id) == t_chain and p.get("seq") is not None and p.get("seq") < t_seq
+                    ]
+                    missing = [pid for pid in preceding if pid not in collected_in_room]
+                    if missing:
+                        is_locked = True
+                        continue
+                target_ev = ev
+                break
+
+            if not target_ev:
+                if is_locked:
                     return {
                         "found": False,
                         "locked": True,
                         "message": "Locked for now. Follow the investigation trail in order to unlock this."
                     }
+                return {
+                    "found": False,
+                    "message": "You search carefully, but this object contains no hidden compartments."
+                }
                     
             # Valid pickup! Insert into team_fragments
             cur.execute(
@@ -307,7 +397,14 @@ def search_object(room_id: str, payload: Dict[str, Any], request: Request):
 @router.post("/clue/{clue_id}/submit")
 def submit_clue_answer(clue_id: str, payload: Dict[str, Any], request: Request):
     team = verify_team_auth(request)
-    answer = payload.get("answer", "")
+    answer = payload.get("answer")
+    if answer is None and payload:
+        if len(payload) == 1:
+            answer = next(iter(payload.values()))
+        else:
+            answer = payload
+    if answer is None:
+        answer = ""
     content = get_content_data()
     answer_salt = content.get("meta", {}).get("answer_salt", "")
     
@@ -317,6 +414,25 @@ def submit_clue_answer(clue_id: str, payload: Dict[str, Any], request: Request):
         
     room_id = target_clue.get("room")
     attempts_max = target_clue.get("attempts_max", 3)
+
+    # Enforce input gate: if room evidence must be complete, ensure basket is unlocked (Round 2)
+    input_gate = target_clue.get("input_gate")
+    if input_gate == "room_evidence_complete" and room_id and target_clue.get("round") == 2:
+        conn = get_db_connection()
+        try:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "SELECT is_basket_unlocked FROM team_rooms WHERE team_id = %s AND room_id = %s",
+                    (team["id"], room_id)
+                )
+                r_status = cur.fetchone()
+                if not r_status or not r_status[0]:
+                    raise HTTPException(
+                        status_code=403,
+                        detail="Arcane seal unbroken: Recover all room evidence fragments to inspect this clue terminal."
+                    )
+        finally:
+            conn.close()
 
     # Prepare candidate answer representations (handles both string and dictionary payloads)
     if isinstance(answer, dict):
@@ -504,7 +620,7 @@ def submit_clue_answer(clue_id: str, payload: Dict[str, Any], request: Request):
                     INSERT INTO team_rooms (team_id, room_id, is_completed, completed_at)
                     VALUES (%s, %s, TRUE, NOW())
                     ON CONFLICT (team_id, room_id)
-                    DO UPDATE SET is_completed = TRUE, completed_at = NOW()
+                    DO UPDATE SET is_completed = TRUE, completed_at = COALESCE(team_rooms.completed_at, NOW())
                     """,
                     (team["id"], room_id)
                 )
@@ -520,12 +636,18 @@ def submit_clue_answer(clue_id: str, payload: Dict[str, Any], request: Request):
                 "room_completed": all_resolved,
                 "reward": target_clue.get("reward") if is_correct else None,
                 "message": (
-                    ("Correct! The hidden date has been decrypted and verified." if (target_clue.get("object_id") == "poster" or clue_id == "R1-03")
+                    ("Correct! Active operator badge verified." if clue_id == "R2-01"
+                    else "Correct! Authentic voicemail transmission identified." if clue_id == "R2-05"
+                    else "Correct! Audio spectrogram code verified." if clue_id == "R2-06"
+                    else "Correct! The hidden date has been decrypted and verified." if (target_clue.get("object_id") == "poster" or clue_id == "R1-03")
                     else "Correct! The canvas inscription has been recovered." if (target_clue.get("object_id") == "portrait" or clue_id == "R1-04")
                     else "Correct! Cipher decrypted." if target_clue.get("solution", {}).get("method") == "caesar"
                     else "Correct! Evidence decrypted.")
                     if is_correct else
-                    ("Incorrect date. Ensure the scraps are assembled in order and verify the date format MM/DD/YYYY." if (target_clue.get("object_id") == "poster" or clue_id == "R1-03")
+                    ("Incorrect badge ID. Check the personnel register against the report date." if clue_id == "R2-01"
+                    else "Incorrect transmission file. Verify the authentic sender header." if clue_id == "R2-05"
+                    else "Incorrect spectrogram code. Check the waveform audio pattern." if clue_id == "R2-06"
+                    else "Incorrect date. Ensure the scraps are assembled in order and verify the date format MM/DD/YYYY." if (target_clue.get("object_id") == "poster" or clue_id == "R1-03")
                     else "Incorrect inscription. Check your assembled canvas fragments and exposure settings." if (target_clue.get("object_id") == "portrait" or clue_id == "R1-04")
                     else "Incorrect submission. Check your Caesar cipher shift." if target_clue.get("solution", {}).get("method") == "caesar"
                     else "Incorrect submission. Please verify your answer.")
@@ -533,6 +655,20 @@ def submit_clue_answer(clue_id: str, payload: Dict[str, Any], request: Request):
             }
     finally:
         conn.close()
+
+@router.get("/clue/{clue_id}/hints")
+def get_clue_hints(clue_id: str, request: Request):
+    team = verify_team_auth(request)
+    content = get_content_data()
+    target_clue = next((c for c in content.get("clues", []) if c["id"] == clue_id), None)
+    if not target_clue:
+        raise HTTPException(status_code=404, detail="Clue not found")
+
+    return {
+        "ok": True,
+        "clue_id": clue_id,
+        "hints": target_clue.get("hints", [])
+    }
 
 # -------------------------------------------------------------
 # DUAL-PATH FORK SYSTEM (ROUND 2 BRANCHING MECHANICS)
@@ -549,12 +685,28 @@ FORK_CONFIG = {
         },
         "success_message": "Route confirmed. Bulkhead seal to Sub-Station Primary Wing unsealed.",
         "trap_message": "Auxiliary quarantine trap sprung. 60-second penalty applied."
+    },
+    "fork_2": {
+        "round": 2,
+        "source_room": "control",
+        "target_room": "vault",
+        "correct_choice": "B",
+        "trap_penalties": {
+            "A": 60
+        },
+        "success_message": "Primary containment valve engaged. Hydraulic seal to The Anointing Vault unsealed.",
+        "trap_message": "Auxiliary feed valve failure. Contaminated aerosol released. 60-second penalty applied."
     }
 }
 
 @router.get("/fork/{fork_id}/status")
 def get_fork_status(fork_id: str, request: Request):
     team = verify_team_auth(request)
+    if fork_id in ("airlock", "fork_airlock", "fork2", "fork_2", "valve"):
+        fork_id = "fork_2"
+    elif fork_id in ("records", "fork_records", "fork1", "fork_1"):
+        fork_id = "fork_1"
+
     if fork_id not in FORK_CONFIG:
         raise HTTPException(status_code=404, detail=f"Fork '{fork_id}' not found")
 
@@ -590,6 +742,11 @@ def get_fork_status(fork_id: str, request: Request):
 @router.post("/fork/{fork_id}/choose")
 def choose_fork_path(fork_id: str, payload: Dict[str, Any], request: Request):
     team = verify_team_auth(request)
+    if fork_id in ("airlock", "fork_airlock", "fork2", "fork_2", "valve"):
+        fork_id = "fork_2"
+    elif fork_id in ("records", "fork_records", "fork1", "fork_1"):
+        fork_id = "fork_1"
+
     raw_choice = payload.get("choice")
     if not raw_choice:
         raise HTTPException(status_code=400, detail="Missing fork choice")
@@ -708,3 +865,76 @@ def choose_fork_path(fork_id: str, payload: Dict[str, Any], request: Request):
                 }
     finally:
         conn.close()
+
+@router.post("/round/{round_num}/fork/{fork_id}/choose")
+def choose_round_fork(round_num: int, fork_id: str, payload: Dict[str, Any], request: Request):
+    return choose_fork_path(fork_id, payload, request)
+
+@router.get("/round/{round_num}/fork/{fork_id}/status")
+def get_round_fork_status(round_num: int, fork_id: str, request: Request):
+    return get_fork_status(fork_id, request)
+
+@router.post("/round/{round_num}/fork/airlock/choose")
+def choose_airlock_fork(round_num: int, payload: Dict[str, Any], request: Request):
+    return choose_fork_path("fork_2", payload, request)
+
+@router.get("/round/{round_num}/fork/airlock/status")
+def get_airlock_fork_status(round_num: int, request: Request):
+    return get_fork_status("fork_2", request)
+
+@router.get("/round/{round_num}/dossier")
+def get_round_dossier(round_num: int, request: Request):
+    team = verify_team_auth(request)
+    content = get_content_data()
+    
+    conn = get_db_connection()
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute(
+                """
+                SELECT clue_id, solved, score, attempts, solved_at
+                FROM team_clues
+                WHERE team_id = %s AND round = %s
+                """,
+                (team["id"], round_num)
+            )
+            clue_records_map = {r["clue_id"]: dict(r) for r in cur.fetchall()}
+    finally:
+        conn.close()
+
+    round_clues = [c for c in content.get("clues", []) if c.get("round") == round_num]
+    records = []
+    for c in round_clues:
+        cid = c["id"]
+        c_info = clue_records_map.get(cid, {})
+        is_solved = bool(c_info.get("solved", False))
+        attempts = c_info.get("attempts", 0)
+        attempts_max = c.get("attempts_max", 3)
+        is_exhausted = not is_solved and (attempts_max is not None and attempts >= attempts_max)
+
+        first_stage = c.get("stages", [{}])[0]
+        reveal = first_stage.get("reveal", {})
+        
+        record = {
+            "clue_id": cid,
+            "title": c.get("title", ""),
+            "case_file_id": c.get("case_file_id") or f"CF-{cid}",
+            "room": c.get("room"),
+            "solved": is_solved,
+            "attempts": attempts,
+            "attempts_max": attempts_max,
+            "exhausted": is_exhausted,
+            "score": float(c_info.get("score", 0.0)) if is_solved else 0.0,
+            "solved_at": c_info["solved_at"].isoformat() if is_solved and c_info.get("solved_at") else None,
+            "reveal": reveal if is_solved else None
+        }
+        records.append(record)
+
+    return {
+        "ok": True,
+        "round": round_num,
+        "total_records": len(records),
+        "solved_count": sum(1 for r in records if r["solved"]),
+        "records": records
+    }
+
