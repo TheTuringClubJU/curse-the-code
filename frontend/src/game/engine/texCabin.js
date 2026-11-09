@@ -575,3 +575,4 @@ export function villageMemoTexture() {
 
   return c;
 }
+

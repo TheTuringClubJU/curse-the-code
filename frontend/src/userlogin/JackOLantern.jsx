@@ -3,56 +3,35 @@ import React from 'react';
 export default function JackOLantern({ className = '' }) {
   return (
     <div className={`select-none flex flex-col items-center justify-center ${className}`}>
+      {/* Resident Evil 4 Survival Horror Biohazard / Los Illuminados Crest */}
       <svg
         viewBox="0 0 100 100"
-        className="w-24 h-24 stroke-[#ff7a1a] fill-none drop-shadow-[0_0_12px_rgba(255,122,26,0.6)] animate-pulse"
-        style={{ animationDuration: '4s' }}
+        className="w-24 h-24 stroke-[#d4a040] fill-none drop-shadow-[0_0_14px_rgba(212,160,64,0.65)] animate-pulse"
+        style={{ animationDuration: '3.5s' }}
       >
-        {/* Pumpkin Stem */}
-        <path
-          d="M 50 16 Q 52 8 58 6 Q 56 12 52 18"
-          strokeWidth="3.5"
-          strokeLinecap="round"
-          stroke="#4ade80"
-          fill="#166534"
-        />
-        {/* Pumpkin Body */}
-        <ellipse cx="50" cy="55" rx="38" ry="32" strokeWidth="2.5" />
-        <path d="M 32 28 Q 22 55 32 82" strokeWidth="2" strokeDasharray="3 2" />
-        <path d="M 68 28 Q 78 55 68 82" strokeWidth="2" strokeDasharray="3 2" />
-        <path d="M 50 23 Q 44 55 50 87" strokeWidth="2" strokeDasharray="4 2" />
-        {/* Left Eye */}
-        <polygon
-          points="35,46 44,52 32,54"
-          fill="#ff9d42"
-          stroke="#ff7a1a"
-          strokeWidth="1.5"
-        />
-        {/* Right Eye */}
-        <polygon
-          points="65,46 68,54 56,52"
-          fill="#ff9d42"
-          stroke="#ff7a1a"
-          strokeWidth="1.5"
-        />
-        {/* Nose */}
-        <polygon
-          points="50,56 46,62 54,62"
-          fill="#ff9d42"
-          stroke="#ff7a1a"
-          strokeWidth="1.5"
-        />
-        {/* Creepy Mouth */}
-        <path
-          d="M 28 68 Q 36 78 50 78 Q 64 78 72 68 Q 67 74 60 72 L 57 66 L 53 72 L 47 72 L 44 66 L 40 72 Q 33 74 28 68 Z"
-          fill="#ff7a1a"
-          stroke="#ffaa55"
-          strokeWidth="1.5"
-        />
+        {/* Outer Circular Reticle Ring */}
+        <circle cx="50" cy="50" r="44" strokeWidth="2" strokeDasharray="6 3" stroke="#8a6e3d" />
+        <circle cx="50" cy="50" r="38" strokeWidth="1.5" stroke="#d4a040" />
+
+        {/* Tactical Crosshair Marks */}
+        <line x1="50" y1="2" x2="50" y2="10" strokeWidth="2.5" stroke="#d4a040" />
+        <line x1="50" y1="90" x2="50" y2="98" strokeWidth="2.5" stroke="#d4a040" />
+        <line x1="2" y1="50" x2="10" y2="50" strokeWidth="2.5" stroke="#d4a040" />
+        <line x1="90" y1="50" x2="98" y2="50" strokeWidth="2.5" stroke="#d4a040" />
+
+        {/* Biohazard / Crest Triple Blades */}
+        <circle cx="50" cy="38" r="14" strokeWidth="2.2" stroke="#e6b85c" />
+        <circle cx="39" cy="58" r="14" strokeWidth="2.2" stroke="#e6b85c" />
+        <circle cx="61" cy="58" r="14" strokeWidth="2.2" stroke="#e6b85c" />
+
+        {/* Central Core */}
+        <circle cx="50" cy="50" r="6" fill="#d4a040" stroke="#ffde8a" strokeWidth="1.5" />
+
+        {/* Warning Spikes */}
+        <path d="M 50 16 L 53 28 L 47 28 Z" fill="#c47a00" />
+        <path d="M 20 68 L 32 63 L 28 57 Z" fill="#c47a00" />
+        <path d="M 80 68 L 72 57 L 68 63 Z" fill="#c47a00" />
       </svg>
-      <span className="text-[10px] text-[#ff7a1a]/70 font-terminal tracking-widest mt-1">
-        CURSED BEACON
-      </span>
     </div>
   );
 }

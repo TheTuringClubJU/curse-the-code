@@ -142,6 +142,21 @@ export default function App() {
   }
 
   // Participant Route Branch
+  // Direct dev preview: ?room=1, ?room=4, ?room=5 (Instant 3D room loading, no login block)
+  if (typeof window !== 'undefined') {
+    const params = new URLSearchParams(window.location.search);
+    const roomParam = params.get('room');
+    if (roomParam === '1' || roomParam === 'bedroom' || (!roomParam && !team && window.location.port === '5173')) {
+      return <Room1Bedroom team={team || { name: 'Leon S. Kennedy' }} onLogout={handleLogout} />;
+    }
+    if (roomParam === '4' || roomParam === 'records') {
+      return <Room4Records team={team || { name: 'Leon S. Kennedy' }} onLogout={handleLogout} />;
+    }
+    if (roomParam === '5' || roomParam === 'control') {
+      return <Room5Control team={team || { name: 'Leon S. Kennedy' }} onLogout={handleLogout} />;
+    }
+  }
+
   if (checkingAuth || (team && roundStatus === null)) {
     return (
       <div className="min-h-screen w-full bg-[#07060b] flex items-center justify-center">
@@ -152,17 +167,6 @@ export default function App() {
 
   if (!team) {
     return <UserLogin onLoginSuccess={handleLoginSuccess} />;
-  }
-
-  // Direct dev preview: ?room=1, ?room=4, ?room=5
-  if (typeof window !== 'undefined' && (window.location.search.includes('room=1') || window.location.search.includes('room=bedroom'))) {
-    return <Room1Bedroom team={team || { name: 'Player' }} onLogout={handleLogout} />;
-  }
-  if (typeof window !== 'undefined' && (window.location.search.includes('room=4') || window.location.search.includes('room=records'))) {
-    return <Room4Records team={team || { name: 'Player' }} onLogout={handleLogout} />;
-  }
-  if (typeof window !== 'undefined' && (window.location.search.includes('room=5') || window.location.search.includes('room=control'))) {
-    return <Room5Control team={team || { name: 'Player' }} onLogout={handleLogout} />;
   }
 
   // When Round 1 is live, display Room 1 (Lena's Bedroom)

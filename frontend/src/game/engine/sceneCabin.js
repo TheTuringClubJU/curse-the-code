@@ -277,6 +277,16 @@ export function buildCabinScene(E) {
   const mug = mkCyl(0.045, 0.04, 0.1, 12, new THREE.MeshStandardMaterial({ color: 0x6e6456, roughness: 0.6 }), 0.55, 0.89, -0.22);
   tableGroup.add(mug);
 
+  // (E) Pesetas Gold Pouch (Item 0x1A from RE4 sample_room_spawns.json)
+  const goldPouchMat = new THREE.MeshStandardMaterial({ color: 0x5a3e20, roughness: 0.85 });
+  const goldPouch = mkCyl(0.07, 0.09, 0.1, 12, goldPouchMat, 0.55, 0.86, 0.25);
+  tableGroup.add(goldPouch);
+  const coinMat = new THREE.MeshStandardMaterial({ color: 0xe8b923, metalness: 0.9, roughness: 0.2 });
+  for (let c = 0; c < 5; c++) {
+    const coin = mkCyl(0.02, 0.02, 0.005, 12, coinMat, 0.52 + c * 0.025, 0.85, 0.22 + (c % 2) * 0.03, Math.PI / 2 + 0.1, 0, c * 0.4);
+    tableGroup.add(coin);
+  }
+
   tableGroup.position.set(0.0, 0, 0.0);
   interact(tableGroup, 'lamp'); // Interacting with table/lamp
   interact(memoMesh, 'diary');  // Reading memo opens diary/file modal
@@ -453,6 +463,31 @@ export function buildCabinScene(E) {
   shelfGroup.add(mkBox(0.18, 0.22, 0.1, clockMat, 0.35, 1.63, 0));
   const clockFace = mkCyl(0.07, 0.07, 0.02, 16, brassMat, 0.35, 1.63, 0.05, Math.PI / 2, 0, 0);
   shelfGroup.add(clockFace);
+
+  // First Aid Spray (Item 0x03 from RE4 sample_room_spawns.json)
+  const sprayMat = new THREE.MeshStandardMaterial({ color: 0xefede8, roughness: 0.3, metalness: 0.4 });
+  const sprayBody = mkCyl(0.04, 0.04, 0.14, 16, sprayMat, -0.32, 1.59, 0);
+  const sprayCap = mkCyl(0.038, 0.038, 0.035, 16, new THREE.MeshStandardMaterial({ color: 0x1f883d, roughness: 0.5 }), -0.32, 1.67, 0);
+  const crossMat = new THREE.MeshBasicMaterial({ color: 0xcc2222 });
+  const crossH = mkBox(0.04, 0.012, 0.005, crossMat, -0.32, 1.59, 0.042);
+  const crossV = mkBox(0.012, 0.04, 0.005, crossMat, -0.32, 1.59, 0.042);
+  shelfGroup.add(sprayBody);
+  shelfGroup.add(sprayCap);
+  shelfGroup.add(crossH);
+  shelfGroup.add(crossV);
+
+  // Floating Item Sparkle Beacons (Classic RE4 Kira-Kira effect)
+  const mkSparkle = (x, y, z, colorHex = 0xffe899) => {
+    const spL = new THREE.PointLight(colorHex, 0.8, 2.2, 2);
+    spL.position.set(x, y, z);
+    S.add(spL);
+    anim?.((t) => {
+      spL.intensity = 0.4 + 0.4 * Math.sin(t * 3.5 + x * 2.0);
+    });
+  };
+  mkSparkle(0.0, 1.0, 0.0, 0xffd700); // gold & ammo on table
+  mkSparkle(0.6, 1.75, -D / 2 + 0.2, 0x44ff66); // green herb on shelf
+  mkSparkle(-1.8, 1.0, D / 2 - 0.8, 0x88ccff); // typewriter save station
 
   shelfGroup.position.set(0.6, 0, -D / 2 + 0.18);
   interact(shelfGroup, 'photo_frame'); // Inspect green herb
@@ -634,3 +669,4 @@ export function buildCabinScene(E) {
     dustGeo.attributes.position.needsUpdate = true;
   });
 }
+

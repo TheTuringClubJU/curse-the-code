@@ -397,18 +397,18 @@ export default function Room1Bedroom({ team, onLogout }) {
       {/* Enter Room Splash Modal */}
       {!isStarted && (
         <div className="ov">
-          <h1>CURSE THE CODE</h1>
-          <h3>Lena's Bedroom</h3>
+          <h1 style={{ letterSpacing: '0.15em', color: '#d4a040' }}>RESIDENT EVIL 4</h1>
+          <h3 style={{ color: '#e0d4be' }}>Village Cabin — Abandoned Homestead (r100 / r102)</h3>
           <ul>
-            <li><b>W A S D</b> move</li>
-            <li><b>Mouse</b> look</li>
-            <li><b>E</b> interact / search</li>
-            <li><b>B</b> toggle evidence basket</li>
-            <li><b>C</b> view case files & clues</li>
-            <li><b>P</b> view photo pieces</li>
+            <li><b>W A S D</b> move (Tactical First-Person)</li>
+            <li><b>Mouse</b> look & aim flashlight</li>
+            <li><b>E</b> examine RE4 props / collect ammo & herbs</li>
+            <li><b>B</b> toggle attache case & items</li>
+            <li><b>C</b> examine officer reports & village files</li>
+            <li><b>P</b> examine crest puzzle fragments</li>
             <li><b>Esc</b> release cursor</li>
           </ul>
-          <button onClick={handleStartGame}>
+          <button onClick={handleStartGame} style={{ background: '#c47a00', color: '#000', fontWeight: 'bold' }}>
             CLICK TO ENTER ROOM
           </button>
         </div>
@@ -416,7 +416,7 @@ export default function Room1Bedroom({ team, onLogout }) {
 
       {/* Floating System Notification */}
       {systemNotification && (
-        <div className="absolute top-20 left-1/2 -translate-x-1/2 z-50 bg-[#160f26]/95 backdrop-blur-md px-6 py-3 rounded-xl border border-[#8f7bff]/60 shadow-2xl text-xs font-mono text-[#e8e0ff] max-w-lg text-center animate-fade-in pointer-events-none">
+        <div className="absolute top-20 left-1/2 -translate-x-1/2 z-50 bg-[#0e0c08]/95 backdrop-blur-md px-6 py-3 rounded-xl border border-[#d4a040]/70 shadow-2xl text-xs font-mono text-[#f3eedd] max-w-lg text-center animate-fade-in pointer-events-none">
           {systemNotification}
         </div>
       )}
