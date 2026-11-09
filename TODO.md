@@ -689,13 +689,13 @@ Each room has a dedicated suite of **100 tests**:
 - [ ] **FE-R5-10** Implement situation-triggered horror events for Room 5: JS-03 (Corner entity 10-minute slow crawl and lunge), JS-07 (Personnel roster injected with real player team name as active subject), and progressive room fog desaturation.
 
 #### Detailed Tasks for Backend (Room 5)
-- [ ] **BE-R5-01** Create `GET /api/game/room/control/state`.
-- [ ] **BE-R5-02** Create `POST /api/game/room/control/search` enforcing strict sequence for `EC01`–`EC08` and handling decoys `XC01`, `XC02`.
-- [ ] **BE-R5-03** Create `GET /api/game/room/control/basket`.
-- [ ] **BE-R5-04** Enforce `input_gate: room_evidence_complete` on `R2-01`, `R2-05`, `R2-06`.
-- [ ] **BE-R5-05** Route `POST /api/game/clue/R2-01/submit`: badge verification, recording genuine active badge into dossier.
-- [ ] **BE-R5-06** Route `POST /api/game/clue/R2-05/submit`: authentic transmission file validation.
-- [ ] **BE-R5-07** Route `POST /api/game/clue/R2-06/submit`: 4-digit spectrogram code validation.
+- [x] **BE-R5-01** Create `GET /api/game/room/control/state`.
+- [x] **BE-R5-02** Create `POST /api/game/room/control/search` enforcing strict sequence for `EC01`–`EC08` and handling decoys `XC01`, `XC02`.
+- [x] **BE-R5-03** Create `GET /api/game/room/control/basket`.
+- [x] **BE-R5-04** Enforce `input_gate: room_evidence_complete` on `R2-01`, `R2-05`, `R2-06`.
+- [x] **BE-R5-05** Route `POST /api/game/clue/R2-01/submit`: badge verification, recording genuine active badge into dossier.
+- [x] **BE-R5-06** Route `POST /api/game/clue/R2-05/submit`: authentic transmission file validation.
+- [x] **BE-R5-07** Route `POST /api/game/clue/R2-06/submit`: 4-digit spectrogram code validation.
 
 ---
 
@@ -711,10 +711,10 @@ Each room has a dedicated suite of **100 tests**:
 - [ ] **FE-R6-07** Implement JS-08 vault entry sequence: door slams shut, human scratching and muffled pleading from the outside, then sudden silence.
 
 #### Detailed Tasks for Backend (Room 6)
-- [ ] **BE-R6-01** Create `GET /api/game/room/vault/state` (no fragment checking).
-- [ ] **BE-R6-02** Route `POST /api/game/clue/R2-08/submit`: tampered steps verification, returning clean steps array in reveal payload.
-- [ ] **BE-R6-03** Route `POST /api/game/clue/R2-09/submit`: 4-digit circuit authorization code verification.
-- [ ] **BE-R6-04** Route `POST /api/game/clue/R2-10/submit`: atomic compound verification of all 3 fields (Clean Steps + Auth Code + Operator Badge). On success: set `qualified_at`, set `completed_at`, update leaderboard rank, and return `round_complete: true`.
+- [x] **BE-R6-01** Create `GET /api/game/room/vault/state` (no fragment checking).
+- [x] **BE-R6-02** Route `POST /api/game/clue/R2-08/submit`: tampered steps verification, returning clean steps array in reveal payload.
+- [x] **BE-R6-03** Route `POST /api/game/clue/R2-09/submit`: 4-digit circuit authorization code verification.
+- [x] **BE-R6-04** Route `POST /api/game/clue/R2-10/submit`: atomic compound verification of all 3 fields (Clean Steps + Auth Code + Operator Badge). On success: set `qualified_at`, set `completed_at`, update leaderboard rank, and return `round_complete: true`.
 
 ---
 
@@ -814,14 +814,14 @@ Total Round 2 QA Target: 300 Tests
 
 #### Room 5: The Surveillance Morgue (100 Tests: `QA-R5-*`)
 - [ ] `QA-R5-E2E-01` **`e2e_control_complete_participant_journey`** (Full walkthrough: enter bunker -> search 8 fragments -> basket auto-unlock -> filter R2-01 personnel DB -> read R2-05 paper tape -> scrub R2-06 spectrogram -> choose Fork 2 valve -> unlock Vault tunnel).
-- [ ] `QA-R5-BE-01` to `QA-R5-BE-49` Backend validation: strict sequence `EC01`–`EC08`, R2-01 active badge query, R2-05 transmission identification, R2-06 4-digit audio code check, 3-attempts exhaustion handling, Fork 2 valve penalty logic.
+- [x] `QA-R5-BE-01` to `QA-R5-BE-49` Backend validation (49 Tests in `tests/test_room5_control.py` - 49/49 PASSED): strict sequence `EC01`–`EC08`, R2-01 active badge query, R2-05 transmission identification, R2-06 4-digit audio code check, 3-attempts exhaustion handling, Fork 2 valve penalty logic.
 - [ ] `QA-R5-FE-01` to `QA-R5-FE-50` Frontend validation: 9-CRT monitor canvas shaders, `PersonnelIndexModal` filtering, `TransmissionArchiveModal` paper tape dragging, `SpectrogramModal` oscilloscope dial scrub, Fork 2 valve selection, and horror triggers (JS-03 corner entity build, JS-05 CCTV playback, JS-07 team name injection).
 
 ---
 
 #### Room 6: The Anointing Vault (100 Tests: `QA-R6-*`)
 - [ ] `QA-R6-E2E-01` **`e2e_vault_complete_containment_victory_journey`** (Full walkthrough: enter vault -> flashlight cut -> R2-08 manual diff -> R2-09 logic gate circuit throw -> R2-10 triple-field containment console -> victory sequence -> leaderboard lock).
-- [ ] `QA-R6-BE-01` to `QA-R6-BE-49` Backend validation: R2-08 diff verification, R2-09 logic circuit truth table, R2-10 atomic 3-field compound validation (Clean Steps + Auth Code + Badge ID), tournament completion timestamp recording, leaderboard tie-breaker calculation.
+- [x] `QA-R6-BE-01` to `QA-R6-BE-49` Backend validation: R2-08 diff verification, R2-09 logic circuit truth table, R2-10 atomic 3-field compound validation (Clean Steps + Auth Code + Badge ID), tournament completion timestamp recording, leaderboard tie-breaker calculation.
 - [ ] `QA-R6-FE-01` to `QA-R6-FE-50` Frontend validation: organic core pulsing shader, cracked glass dome shaders, `ManualDiffModal` copy utility, `FailsafeCircuitModal` knife-switch throw animations, `FinalConsoleModal` typewriter sound and victory sequence, split-flap countdown display animation.
 
 
