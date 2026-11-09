@@ -585,3 +585,4 @@ def test_r5_49_unauthenticated_room_access_denied(auth_headers):
     """Room state endpoint rejects requests without a session token."""
     res = client.get("/api/game/room/control")
     assert res.status_code in (401, 403)
+

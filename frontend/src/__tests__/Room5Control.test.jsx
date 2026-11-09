@@ -605,3 +605,4 @@ describe('Room 5 (The Surveillance Morgue) Frontend Test Suite', () => {
     expect(activeEngineInstance.openDoor).toBeDefined();
   });
 });
+
