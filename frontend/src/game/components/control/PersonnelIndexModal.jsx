@@ -148,9 +148,12 @@ export default function PersonnelIndexModal({ isOpen, onClose, onSubmit, clueSta
            style={{ width: '90vw', maxWidth: 860, height: '82vh', maxHeight: 680, background: '#000000' }}>
 
         {/* Close button */}
-        <button onClick={onClose}
-          className="absolute top-2 right-3 text-[#2db84d] hover:text-[#4dff78] text-xs tracking-widest z-10 phosphor-text-dim">
-          [ESC]
+        <button
+          type="button"
+          onClick={onClose}
+          className="absolute top-2.5 right-3 text-[#76a880] hover:text-[#4dff78] text-xs font-mono font-bold tracking-widest z-20 px-2 py-1 border border-white/10 hover:border-[#4dff78]/50 rounded cursor-pointer transition-all"
+        >
+          [ESC] EXIT
         </button>
 
         {/* Terminal header */}
@@ -243,8 +246,11 @@ export default function PersonnelIndexModal({ isOpen, onClose, onSubmit, clueSta
                 placeholder="BDG-XXXX"
               />
               {!submitting && !clueState?.exhausted && (
-                <button onClick={handleSubmit}
-                  className="text-[#2db84d] hover:text-[#4dff78] text-[10px] tracking-widest ml-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={handleSubmit}
+                  className="px-3 py-1 bg-[#1a3d1f] hover:bg-[#4dff78] text-[#4dff78] hover:text-[#030e05] font-bold text-xs tracking-widest ml-2 shrink-0 rounded border border-[#4dff78]/40 transition-all cursor-pointer shadow-[0_0_10px_rgba(77,255,120,0.2)]"
+                >
                   [QUERY]
                 </button>
               )}

@@ -1,0 +1,308 @@
+[
+  {
+    "round": 1,
+    "room_number": 1,
+    "name": "Room 1: Lena's Bedroom",
+    "code_id": "bedroom",
+    "is_compound": true,
+    "total_sections": 3,
+    "theme": "Victorian Gothic / Moonlit Purple",
+    "atmosphere": {
+      "ambient_color": "#12081a",
+      "fog_color": "#0a0312",
+      "fog_density": 0.07,
+      "lighting": "dim_flicker"
+    },
+    "sub_sections": [
+      {
+        "section_id": "1A_hallway",
+        "name": "Creaking Entry Hallway",
+        "re4_blueprint": "r100",
+        "props": [
+          "Rusted Iron Coat Rack",
+          "Torn Wallpaper",
+          "Flickering Sconce"
+        ],
+        "connection": "Unlocked door to 1B_bedroom"
+      },
+      {
+        "section_id": "1B_bedroom",
+        "name": "Victorian Master Bedroom",
+        "re4_blueprint": "r102",
+        "props": [
+          "Canopy Bed",
+          "Carved Wardrobe",
+          "Vanity Mirror",
+          "Iron-Barred Window"
+        ],
+        "connection": "Secret passage behind wardrobe opens to 1C_closet"
+      },
+      {
+        "section_id": "1C_closet",
+        "name": "Hidden Ritual Alcove",
+        "re4_blueprint": "r101",
+        "props": [
+          "Floor Pentagram",
+          "Hidden Fragment Lockbox",
+          "Suspended Birdcage"
+        ],
+        "connection": "Exit key unlocks door in 1A leading to Room 2"
+      }
+    ],
+    "horror_progression": [
+      "Step 1: Enter 1A - Wind rattles the front door shut, latch locks automatically.",
+      "Step 2: Enter 1B - Player sees figure outside window; inspecting wardrobe causes closet doors to creak open.",
+      "Step 3: In 1C - Collect ritual fragment; audio footsteps echo in 1B bedroom behind player.",
+      "Step 4: Returning to 1A - Mirror in hallway reflects figure raising hand; door to Room 2 unlocks."
+    ]
+  },
+  {
+    "round": 1,
+    "room_number": 2,
+    "name": "Room 2: Daniel's Study",
+    "code_id": "study",
+    "is_compound": true,
+    "total_sections": 2,
+    "theme": "Green CRT / Hacker Investigation",
+    "atmosphere": {
+      "ambient_color": "#0d1a10",
+      "fog_color": "#061208",
+      "fog_density": 0.08,
+      "lighting": "phosphor_crt_glow"
+    },
+    "sub_sections": [
+      {
+        "section_id": "2A_study",
+        "name": "Investigation Office",
+        "re4_blueprint": "r103",
+        "props": [
+          "CRT Terminal Desk",
+          "Bookshelves with False Book Mechanism",
+          "Rotary Dial Safe"
+        ],
+        "connection": "Moving fake book swings open bookshelf into 2B_darkroom"
+      },
+      {
+        "section_id": "2B_darkroom",
+        "name": "Red-Light Audio/Photo Lab",
+        "re4_blueprint": "r104",
+        "props": [
+          "Red Safe-Light",
+          "Hanging Audio Reel Tapes",
+          "Spectrogram Film Developing Tray"
+        ],
+        "connection": "Unlocks heavy iron trapdoor leading down into Basement (Room 3)"
+      }
+    ],
+    "horror_progression": [
+      "Step 1: In 2A - Terminal hums; entering failed code triggers siren blare and cuts lights to emergency green.",
+      "Step 2: Solving bookcase mechanism reveals 2B bathed in blood-red chemical light.",
+      "Step 3: Playing tape in 2B broadcasts distorted breathing that follows player into 2A.",
+      "Step 4: Basement trapdoor bolts slam open with heavy metallic clang."
+    ]
+  },
+  {
+    "round": 1,
+    "room_number": 3,
+    "name": "Room 3: The Basement Bunker",
+    "code_id": "basement",
+    "is_compound": true,
+    "total_sections": 2,
+    "theme": "Industrial Containment Bunker",
+    "atmosphere": {
+      "ambient_color": "#1a1208",
+      "fog_color": "#0f0a07",
+      "fog_density": 0.09,
+      "lighting": "amber_filament_hazard"
+    },
+    "sub_sections": [
+      {
+        "section_id": "3A_boiler",
+        "name": "Boiler & Electrical Hub",
+        "re4_blueprint": "r106",
+        "props": [
+          "Steam Valves",
+          "Pressure Gauges",
+          "Breaker Switchboard",
+          "Submerged Drain"
+        ],
+        "connection": "Equalizing valve pressure unlocks rusted security gate into 3B_cells"
+      },
+      {
+        "section_id": "3B_cells",
+        "name": "Flooded Detention Cages",
+        "re4_blueprint": "r108",
+        "props": [
+          "Rusted Iron Cages",
+          "Dripping Pipes",
+          "Round 1 Master Failsafe Console"
+        ],
+        "connection": "Round 1 Complete! Heavy blast hatch opens to Round 2"
+      }
+    ],
+    "horror_progression": [
+      "Step 1: In 3A - Steam hisses from broken pipes; player must turn 3 valves in correct sequence.",
+      "Step 2: Security gate raises into 3B; water is knee-deep, splashing with every step.",
+      "Step 3: While entering final code on 3B console, unseen entity splashes through water behind player.",
+      "Step 4: Blast hatch unlocks; emergency amber sirens guide player into Round 2."
+    ]
+  },
+  {
+    "round": 2,
+    "room_number": 4,
+    "name": "Room 4: The Rotting Archive",
+    "code_id": "records",
+    "is_compound": true,
+    "total_sections": 3,
+    "theme": "Flooded Sub-Basement / Decay",
+    "atmosphere": {
+      "ambient_color": "#1a1a12",
+      "fog_color": "#1f2e0a",
+      "fog_density": 0.085,
+      "lighting": "cold_fluorescent_flicker"
+    },
+    "sub_sections": [
+      {
+        "section_id": "4A_submerged",
+        "name": "Flooded Records Corridor",
+        "re4_blueprint": "r200",
+        "props": [
+          "Toppled Filing Cabinets",
+          "Water Reflections",
+          "Dripping Ceiling Seams"
+        ],
+        "connection": "Waterlogged wooden door leads to 4B_vault"
+      },
+      {
+        "section_id": "4B_vault",
+        "name": "Sub-Basement Microfilm Vault",
+        "re4_blueprint": "r201",
+        "props": [
+          "Microfilm Projection Unit",
+          "Personnel Cardholder",
+          "Corvin's Locked Desk"
+        ],
+        "connection": "Fork Selector Archway connects to 4C_airlock"
+      },
+      {
+        "section_id": "4C_airlock",
+        "name": "Decontamination Fork Chamber",
+        "re4_blueprint": "r202",
+        "props": [
+          "Rotary Wing Selector",
+          "Warning Stencil Signs",
+          "Pressurized Steel Bulkhead Door"
+        ],
+        "connection": "Correct wing choice unlocks transition to Room 5"
+      }
+    ],
+    "horror_progression": [
+      "Step 1: In 4A - JS-01: Filing cabinet drawer violently ejects when passing within 1.5m.",
+      "Step 2: In 4B - Inspecting Polaroid on microfilm viewer triggers JS-02: photograph head turns.",
+      "Step 3: In 4B - Water ripples form from dark corner of 4A; follower footstep echoes start.",
+      "Step 4: In 4C - Rotary fork selection locks in; bulkhead door unseals with decompression blast."
+    ]
+  },
+  {
+    "round": 2,
+    "room_number": 5,
+    "name": "Room 5: The Surveillance Morgue",
+    "code_id": "control",
+    "is_compound": true,
+    "total_sections": 3,
+    "theme": "Narrow Observation Bunker / Plastic Quarantine",
+    "atmosphere": {
+      "ambient_color": "#141316",
+      "fog_color": "#1a3d1f",
+      "fog_density": 0.09,
+      "lighting": "monochrome_crt_morgue"
+    },
+    "sub_sections": [
+      {
+        "section_id": "5A_console",
+        "name": "Observation Command Deck",
+        "re4_blueprint": "r300",
+        "props": [
+          "9-Bank CRT Surveillance Console",
+          "Radio Transmitter",
+          "Spectrogram Sound Deck"
+        ],
+        "connection": "Reinforced observation window overlooks 5B; keycard door unlocks 5B"
+      },
+      {
+        "section_id": "5B_morgue",
+        "name": "Autopsy & Cold Storage Hall",
+        "re4_blueprint": "r301",
+        "props": [
+          "Steel Autopsy Gurneys with Tarps",
+          "Plastic Quarantine Sheeting",
+          "Cold Storage Wall Lockers"
+        ],
+        "connection": "Keycard found inside morgue locker unlocks airlock 5C"
+      },
+      {
+        "section_id": "5C_airlock",
+        "name": "High-Security Containment Airlock",
+        "re4_blueprint": "r303",
+        "props": [
+          "Biometric Hand Scanner",
+          "Decontamination Spray Vents",
+          "Reinforced Vault Door"
+        ],
+        "connection": "Leads directly to Room 6 (The Anointing Vault)"
+      }
+    ],
+    "horror_progression": [
+      "Step 1: In 5A - Intercom crackles to life; mid-sentence voice cuts out. Monitor 4 displays empty gurney in 5B.",
+      "Step 2: Enter 5B - Plastic sheeting billows with no air currents; opening cold storage reveals Corvin's active badge.",
+      "Step 3: Looking back through window from 5B to 5A: monitor screens display the team's live name as active subjects.",
+      "Step 4: JS-03: The corner entity slowly crawls out from beneath plastic quarantine tarp; airlock 5C unlocks!"
+    ]
+  },
+  {
+    "round": 2,
+    "room_number": 6,
+    "name": "Room 6: The Anointing Vault",
+    "code_id": "vault",
+    "is_compound": true,
+    "total_sections": 2,
+    "theme": "Occult Containment Tomb",
+    "atmosphere": {
+      "ambient_color": "#030104",
+      "fog_color": "#141316",
+      "fog_density": 0.1,
+      "lighting": "pulsing_flesh_bioluminescent"
+    },
+    "sub_sections": [
+      {
+        "section_id": "6A_conduit",
+        "name": "Power Failsafe Conduit",
+        "re4_blueprint": "r30d",
+        "props": [
+          "High-Voltage Cable Conduits",
+          "Logic Gate Circuit Breaker",
+          "Manual Protocol Checklist Board"
+        ],
+        "connection": "Restoring circuit power opens massive vault doors to 6B_tomb"
+      },
+      {
+        "section_id": "6B_tomb",
+        "name": "The Core Containment Chamber",
+        "re4_blueprint": "r30c",
+        "props": [
+          "Central Master Console",
+          "Suspended Iron Cage with Entity",
+          "Emergency Protocol Levers",
+          "Final Vault Exit Door"
+        ],
+        "connection": "Final Containment Sealed! Game Complete & Victory Achieved!"
+      }
+    ],
+    "horror_progression": [
+      "Step 1: In 6A - Siren wails; 4-digit spectrogram code is entered into logic gate switchboard.",
+      "Step 2: In 6B - Corvin's badge inserted into master console; countdown timer initiates on massive wall display.",
+      "Step 3: Suspended cage violently thrashes on iron chains; flesh organism pulses red light in time with alarm.",
+      "Step 4: All 3 containment levers pulled simultaneously; steam hisses and final containment locks down!"
+    ]
+  }
+]

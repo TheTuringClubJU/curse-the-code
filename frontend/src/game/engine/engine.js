@@ -40,6 +40,50 @@ export function createEngine(el,room,h){
 
    buildRecordsScene(E);
    scares = createRecordsScares(E, h);
+ } else if (room.id === 'control') {
+   // Tactical First-Person Horror Flashlight (Image 1 style)
+   const flashL = new THREE.SpotLight(0xdcf0ff, 4.8, 20, Math.PI / 5.2, 0.45, 1.5);
+   flashL.position.set(0.22, -0.16, 0.12);
+   flashL.target.position.set(0, 0, -6);
+   cam.add(flashL);
+   cam.add(flashL.target);
+   E.flashlight = flashL;
+
+   // Physical 3D flashlight model held in player's first-person hand
+   const flashGroup = new THREE.Group();
+   const bodyMat = new THREE.MeshStandardMaterial({ color: 0x16181c, metalness: 0.88, roughness: 0.35 });
+   const gripMat = new THREE.MeshStandardMaterial({ color: 0x0c0d10, metalness: 0.7, roughness: 0.8 });
+   const bezelMat = new THREE.MeshStandardMaterial({ color: 0x3d4654, metalness: 0.92, roughness: 0.25 });
+   const lensMat = new THREE.MeshStandardMaterial({ color: 0xa0d4ff, emissive: new THREE.Color(0xa0d4ff), emissiveIntensity: 0.85, roughness: 0.1 });
+
+   const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.025, 0.22, 16), bodyMat);
+   barrel.rotation.x = Math.PI / 2;
+   flashGroup.add(barrel);
+
+   for (let g = 0; g < 4; g++) {
+     const grip = new THREE.Mesh(new THREE.CylinderGeometry(0.026, 0.026, 0.018, 16), gripMat);
+     grip.rotation.x = Math.PI / 2;
+     grip.position.z = -0.04 + g * 0.028;
+     flashGroup.add(grip);
+   }
+
+   const headBezel = new THREE.Mesh(new THREE.CylinderGeometry(0.034, 0.025, 0.055, 16), bezelMat);
+   headBezel.rotation.x = Math.PI / 2;
+   headBezel.position.z = -0.11;
+   flashGroup.add(headBezel);
+
+   const lens = new THREE.Mesh(new THREE.CircleGeometry(0.03, 16), lensMat);
+   lens.position.z = -0.138;
+   flashGroup.add(lens);
+
+   flashGroup.position.set(0.24, -0.22, -0.36);
+   flashGroup.rotation.set(0.06, -0.10, 0.04);
+   cam.add(flashGroup);
+   E.flashlightModel = flashGroup;
+
+   // Cold bunker surveillance ambient fill
+   const ambHemi = new THREE.HemisphereLight(0x1a2e22, 0x060c08, 0.9);
+   S.add(ambHemi);
  } else {
    // ---- shell: textured walls, floor, ceiling, trim ----
    const wp=X.tex(X.wallpaper()),wmat=new THREE.MeshStandardMaterial({map:wp,bumpMap:wp,bumpScale:.5,roughness:.92,color:0xffffff})
@@ -72,7 +116,7 @@ export function createEngine(el,room,h){
      const mats = Array.isArray(m.material) ? m.material : [m.material];
      mats.forEach(q => {
        if (q && q.emissive && typeof q.emissive.setHex === 'function') {
-         q.emissive.setHex(on ? (room.id === 'records' ? 0xb37418 : 0x4a3c9a) : 0);
+         q.emissive.setHex(on ? (room.id === 'records' ? 0xb37418 : (room.id === 'control' ? 0x228833 : 0x4a3c9a)) : 0);
        }
      });
    });
@@ -156,6 +200,13 @@ export function createEngine(el,room,h){
    if(shakeT>0&&!reduce){shakeT-=dt;const k=shakeA*Math.max(0,shakeT)*3;sx=(Math.random()-.5)*k*.05;sy=(Math.random()-.5)*k*.05}
    cam.position.set(px+sx, 1.6 + (mv && !reduce ? Math.sin(walk)*.022 : 0) + Math.sin(t*.9)*.004 + sy, pz);
    cam.rotation.set(pitch, yaw, 0);
+
+   if(E.flashlightModel && !reduce){
+     const swayAmt = mv ? 0.012 : 0.002;
+     const spd = mv ? 8 : 1.5;
+     E.flashlightModel.position.y = -0.22 + Math.sin(t * spd) * swayAmt;
+     E.flashlightModel.position.x = 0.24 + Math.cos(t * (spd * 0.5)) * (swayAmt * 0.8);
+   }
 
    // lamp flicker
    if(lamp){

@@ -7,7 +7,9 @@ import * as X from './tex.js';
 const rnd = (a, b) => a + Math.random() * (b - a);
 
 export function createControlScares(E, handlers) {
-  const { cam, sc: S, ref } = E;
+  const S = E.S;
+  const cam = E.cam;
+  const ref = E.ref;
   const A = () => handlers.audio;
   const flash = (color, opacity, durationMs) => handlers.onFlash?.(color, opacity, durationMs);
 
@@ -262,6 +264,6 @@ export function createControlScares(E, handlers) {
     }
   };
 
-  return { update, triggerCCTVHorror, triggerTeamNameInjection, maybeFragmentScare };
+  return { update, tick: update, triggerCCTVHorror, triggerTeamNameInjection, maybeFragmentScare };
 }
 

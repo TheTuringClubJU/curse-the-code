@@ -353,18 +353,14 @@ export default function TransmissionArchiveModal({ isOpen, onClose, onSubmit, cl
                       }}
                     />
                     <button
+                      type="button"
                       onClick={handleSubmit}
-                      className="font-teletype"
                       disabled={submitted}
+                      className="px-3 py-1 font-mono font-bold text-xs tracking-wider uppercase rounded transition-all cursor-pointer shadow-[0_0_10px_rgba(77,255,120,0.2)]"
                       style={{
-                        background: 'transparent',
+                        background: '#1a3d1f',
                         border: '1px solid #4dff78',
                         color: '#4dff78',
-                        fontFamily: 'Courier, monospace',
-                        fontSize: 11,
-                        padding: '3px 10px',
-                        cursor: 'pointer',
-                        letterSpacing: 1,
                       }}
                     >
                       SUBMIT

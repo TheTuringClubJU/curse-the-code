@@ -511,18 +511,16 @@ export default function SpectrogramModal({ isOpen, onClose, onSubmit, clueState 
                   }}
                 />
                 <button
+                  type="button"
                   onClick={handleSubmit}
                   disabled={submitted || inputValue.length !== 4}
+                  className="px-3 py-1 font-mono font-bold text-xs tracking-wider uppercase rounded transition-all cursor-pointer shadow-[0_0_10px_rgba(77,255,120,0.2)]"
                   style={{
-                    background: 'transparent',
+                    background: inputValue.length === 4 ? '#1a3d1f' : 'transparent',
                     border: '1px solid #4dff78',
                     color: '#4dff78',
-                    fontFamily: 'Courier, monospace',
-                    fontSize: 11,
-                    padding: '3px 10px',
-                    cursor: 'pointer',
-                    letterSpacing: 1,
-                    opacity: inputValue.length !== 4 ? 0.5 : 1,
+                    opacity: inputValue.length !== 4 ? 0.4 : 1,
+                    cursor: inputValue.length === 4 ? 'pointer' : 'not-allowed',
                   }}
                 >
                   SUBMIT

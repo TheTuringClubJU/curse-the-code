@@ -166,6 +166,13 @@ export default function Room5Control({ team, onLogout }) {
       const tag = (e.target?.tagName || document.activeElement?.tagName || '').toUpperCase();
       if (tag === 'INPUT' || tag === 'TEXTAREA' || e.target?.isContentEditable) return;
 
+      // Start game shortcut
+      if (!isStarted && (e.key === 'Enter' || e.key === ' ' || e.code === 'Space')) {
+        e.preventDefault();
+        handleStartGame();
+        return;
+      }
+
       // Escape — close all modals and re-lock pointer
       if (e.key === 'Escape' || e.code === 'Escape') {
         setIsBasketOpen(false);
@@ -260,6 +267,40 @@ export default function Room5Control({ team, onLogout }) {
     if (objectId === 'monitor_bank') {
       scaresRef.current?.triggerCCTVHorror?.();
       showNotification('Static bursts across all nine monitors. For a moment — a figure that shouldn\'t be there.');
+      return;
+    }
+
+    // ── Compound RE4 Sub-Section Interactions ──
+    if (objectId === 'morgue_access_door') {
+      audioRef.current?.relay?.();
+      showNotification('Hydraulic latch unsealed. The Cold Morgue & Autopsy Hall is now open.');
+      if (engineRef.current?.ref?.morgueDoor) {
+        engineRef.current.ref.morgueDoor.position.z += 1.2;
+      }
+      return;
+    }
+
+    if (objectId === 'autopsy_gurney') {
+      audioRef.current?.stinger?.(0.6);
+      showNotification('A steel autopsy slab covered in discoloured quarantine plastic. A faint outline stirs underneath.');
+      return;
+    }
+
+    if (objectId === 'cold_storage') {
+      audioRef.current?.slam?.(W / 2 - 0.5, 0);
+      showNotification('Cold storage locker #04 slides outward with a blast of sub-zero condensation. Scratches line the interior ceiling.');
+      return;
+    }
+
+    if (objectId === 'biometric_terminal') {
+      if (currentData?.is_completed) {
+        audioRef.current?.good?.();
+        showNotification('Biometric identity confirmed: Dr. Milo Corvin. Decontamination airlock pressurised. Vault door unlocked.');
+        engineRef.current?.openDoor?.();
+      } else {
+        audioRef.current?.bad?.();
+        showNotification('Access Denied. Emergency containment protocol active. All three verification terminals (R2-01, R2-05, R2-06) required.');
+      }
       return;
     }
 
@@ -421,84 +462,96 @@ export default function Room5Control({ team, onLogout }) {
       {/* ── Enter Room splash ── */}
       {!isStarted && (
         <div
-          className="ov"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
           style={{
-            '--ov-bg': '#030e05',
-            '--ov-border': 'rgba(77,255,120,0.3)',
-            '--ov-text': '#4dff78',
+            background: 'radial-gradient(circle at center, rgba(6, 14, 9, 0.96) 0%, rgba(2, 4, 3, 0.99) 100%)',
           }}
         >
           <div
-            className="font-mono text-center"
-            style={{ color: '#4dff78', letterSpacing: 4, fontSize: 11, marginBottom: 8 }}
+            className="relative w-full max-w-lg p-6 sm:p-8 rounded-2xl border backdrop-blur-xl shadow-2xl flex flex-col items-center text-center overflow-hidden"
+            style={{
+              background: 'rgba(5, 10, 7, 0.94)',
+              borderColor: 'rgba(77, 255, 120, 0.35)',
+              boxShadow: '0 0 50px rgba(0, 0, 0, 0.9), 0 0 30px rgba(77, 255, 120, 0.1)',
+            }}
           >
-            ◈ ROUND 2 • SUBSTATION DELTA ◈
+            {/* Top Tactical Terminal Header */}
+            <div className="flex items-center gap-2 mb-3">
+              <span className="w-2.5 h-2.5 rounded-full bg-red-600 animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.9)]" />
+              <span className="text-[10px] font-mono tracking-[0.25em] text-[#4dff78] uppercase">
+                SECURITY ARCHIVE FEED // SECTOR 5
+              </span>
+            </div>
+
+            <h1
+              className="text-2xl sm:text-3xl font-black font-mono tracking-widest uppercase mb-1"
+              style={{
+                color: '#e8f5ec',
+                textShadow: '0 0 20px rgba(77, 255, 120, 0.4)',
+              }}
+            >
+              CURSE THE CODE
+            </h1>
+
+            <div
+              className="text-xs sm:text-sm font-mono font-bold tracking-widest uppercase mb-6"
+              style={{ color: '#c47a00' }}
+            >
+              ROOM 5: THE SURVEILLANCE MORGUE
+            </div>
+
+            {/* Tactical Keybindings Deck */}
+            <div
+              className="w-full bg-black/60 rounded-xl border border-white/10 p-4 mb-6 text-left font-mono text-xs space-y-2.5"
+              style={{ color: '#9cb5a0' }}
+            >
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-[#e8f5ec]">W A S D / ARROWS</span>
+                <span className="text-gray-400">Tactical First-Person Movement</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-[#e8f5ec]">MOUSE LOOK</span>
+                <span className="text-gray-400">Aim Flashlight &amp; Look Around</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-[#4dff78]">[E] / CLICK</span>
+                <span className="text-gray-300">Interact &amp; Search Props</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-[#c47a00]">[B] KEY</span>
+                <span className="text-gray-400">Evidence Basket (8 Fragments)</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-[#c47a00]">[C] KEY</span>
+                <span className="text-gray-400">Case Dossier &amp; Clue Terminals</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-gray-300">[ESC] KEY</span>
+                <span className="text-gray-400">Release Pointer / Close Modals</span>
+              </div>
+            </div>
+
+            {/* Start Button */}
+            <button
+              type="button"
+              onClick={handleStartGame}
+              className="w-full py-3.5 px-6 rounded-xl font-mono text-xs sm:text-sm font-bold tracking-[0.2em] uppercase transition-all duration-200 cursor-pointer hover:scale-[1.02] active:scale-[0.98]"
+              style={{
+                background: 'linear-gradient(180deg, rgba(77, 255, 120, 0.25) 0%, rgba(13, 46, 18, 0.7) 100%)',
+                border: '1px solid #4dff78',
+                color: '#4dff78',
+                boxShadow: '0 0 25px rgba(77, 255, 120, 0.35)',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'linear-gradient(180deg, rgba(77, 255, 120, 0.35) 0%, rgba(20, 70, 28, 0.9) 100%)'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'linear-gradient(180deg, rgba(77, 255, 120, 0.25) 0%, rgba(13, 46, 18, 0.7) 100%)'; }}
+            >
+              ENTER THE SURVEILLANCE MORGUE
+            </button>
+
+            <span className="text-[10px] text-gray-500 font-mono mt-3">
+              Press [ENTER] or click above to begin inspection
+            </span>
           </div>
-          <h1
-            style={{
-              color: '#4dff78',
-              fontFamily: 'Courier, monospace',
-              fontSize: 22,
-              letterSpacing: 3,
-              margin: '0 0 4px',
-              textShadow: '0 0 20px rgba(77,255,120,0.5)',
-            }}
-          >
-            CURSE THE CODE
-          </h1>
-          <h3
-            style={{
-              color: '#c47a00',
-              fontFamily: 'Courier, monospace',
-              fontSize: 14,
-              letterSpacing: 2,
-              margin: '0 0 20px',
-            }}
-          >
-            ROOM 5: THE SURVEILLANCE MORGUE
-          </h3>
-          <ul
-            style={{
-              color: '#7a9a7f',
-              fontSize: 12,
-              lineHeight: 2,
-              listStyle: 'none',
-              padding: 0,
-              margin: '0 0 24px',
-              fontFamily: 'Courier, monospace',
-              letterSpacing: 1,
-              textAlign: 'left',
-              maxWidth: 360,
-            }}
-          >
-            <li><b style={{ color: '#e8d9c0' }}>W A S D</b> — Move through the control room</li>
-            <li><b style={{ color: '#e8d9c0' }}>Mouse</b> — Look around</li>
-            <li><b style={{ color: '#e8d9c0' }}>E</b> — Interact / search props</li>
-            <li><b style={{ color: '#e8d9c0' }}>B</b> — Open Evidence Basket (8 fragments)</li>
-            <li><b style={{ color: '#e8d9c0' }}>C</b> — View Case Dossier &amp; Clues</li>
-            <li><b style={{ color: '#e8d9c0' }}>M</b> — Mute / unmute audio</li>
-            <li><b style={{ color: '#e8d9c0' }}>Esc</b> — Release mouse cursor</li>
-          </ul>
-          <button
-            onClick={handleStartGame}
-            style={{
-              padding: '12px 36px',
-              background: 'transparent',
-              border: '1px solid #4dff78',
-              color: '#4dff78',
-              fontFamily: 'Courier, monospace',
-              fontSize: 13,
-              letterSpacing: 3,
-              cursor: 'pointer',
-              boxShadow: '0 0 20px rgba(77,255,120,0.3)',
-              transition: 'all 0.2s',
-              textTransform: 'uppercase',
-            }}
-            onMouseEnter={e => { e.currentTarget.style.background = '#0d2e12'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
-          >
-            ENTER THE SURVEILLANCE MORGUE
-          </button>
         </div>
       )}
 
