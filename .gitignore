@@ -20,3 +20,4 @@ frontend/dist/
 schema.completed.sql
 
 ctc/
+.neon
