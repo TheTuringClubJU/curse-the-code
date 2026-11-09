@@ -47,7 +47,7 @@ export default function HUDControl({
               className="text-[9px] font-mono tracking-widest uppercase block"
               style={{ color: '#3a5a3f' }}
             >
-              ROUND 2 • SURVEILLANCE MORGUE
+              ROUND 2 • CONTROL BUNKER
             </span>
             <span
               className="text-xs sm:text-sm font-bold font-mono truncate block"

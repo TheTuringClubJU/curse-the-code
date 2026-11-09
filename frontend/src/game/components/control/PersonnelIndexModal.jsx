@@ -75,6 +75,7 @@ export default function PersonnelIndexModal({ isOpen, onClose, onSubmit, clueSta
   const [deptFilter, setDeptFilter]   = useState('All');
   const [statusFilter, setStatusFilter] = useState('All');
   const [sortBy, setSortBy]           = useState('Badge ID');
+  const [filterText, setFilterText]   = useState('');
   const [inputVal, setInputVal]       = useState('');
   const [response, setResponse]       = useState(null); // { type: 'ok'|'err', msg: string }
   const [submitting, setSubmitting]   = useState(false);
@@ -93,27 +94,27 @@ export default function PersonnelIndexModal({ isOpen, onClose, onSubmit, clueSta
 
   useEffect(() => {
     if (isOpen) setTimeout(() => inputRef.current?.focus(), 100);
-    else { setInputVal(''); setResponse(null); setTeamNameRow(null); }
+    else { setInputVal(''); setFilterText(''); setResponse(null); setTeamNameRow(null); }
   }, [isOpen]);
 
   const rows = useMemo(() => {
     let r = teamNameRow ? [...BASE_ROWS, teamNameRow] : BASE_ROWS;
+    if (filterText.trim()) {
+      const q = filterText.toLowerCase();
+      r = r.filter(row => row.some(cell => String(cell).toLowerCase().includes(q)));
+    }
     if (deptFilter !== 'All')   r = r.filter(row => row[2] === deptFilter);
     if (statusFilter !== 'All') r = r.filter(row => row[3] === statusFilter);
     if (sortBy === 'Name')      r = [...r].sort((a,b) => a[1].localeCompare(b[1]));
     if (sortBy === 'Status')    r = [...r].sort((a,b) => a[3].localeCompare(b[3]));
     if (sortBy === 'Last Login')r = [...r].sort((a,b) => b[4].localeCompare(a[4]));
     return r;
-  }, [deptFilter, statusFilter, sortBy, teamNameRow]);
+  }, [filterText, deptFilter, statusFilter, sortBy, teamNameRow]);
 
   const handleSubmit = async () => {
     if (!inputVal.trim() || submitting) return;
     const val = inputVal.trim().toUpperCase();
     setSubmitting(true);
-
-    // Show terminal "searching" delay
-    setResponse({ type: 'info', msg: `> QUERYING DATABASE...` });
-    await new Promise(r => setTimeout(r, 600));
 
     try {
       const res = await onSubmit(val);
@@ -154,12 +155,19 @@ export default function PersonnelIndexModal({ isOpen, onClose, onSubmit, clueSta
 
         {/* Terminal header */}
         <div className="border-b border-[#4dff78]/20 px-4 py-2.5 shrink-0">
-          <div className="phosphor-text text-[11px] tracking-[0.2em]">PROJECT CRYPT — PERSONNEL DATABASE — v2.1</div>
+          <div className="phosphor-text text-[11px] tracking-[0.2em]">PROJECT CRYPT — PERSONNEL INDEX / DATABASE — v2.1</div>
           <div className="text-[#1a3d1f] text-[9px] tracking-widest mt-0.5">SECURE ACCESS TERMINAL · AUTHORIZED PERSONNEL ONLY</div>
         </div>
 
         {/* Filter bar */}
-        <div className="flex gap-4 px-4 py-2 border-b border-[#4dff78]/10 shrink-0 flex-wrap">
+        <div className="flex gap-4 px-4 py-2 border-b border-[#4dff78]/10 shrink-0 flex-wrap items-center">
+          <input
+            type="text"
+            className="terminal-input text-xs px-2 py-1 bg-black/60 border border-[#4dff78]/30 text-[#4dff78] placeholder-[#1a3d1f] rounded"
+            placeholder="FILTER / SEARCH..."
+            value={filterText}
+            onChange={e => setFilterText(e.target.value)}
+          />
           <label className="terminal-toggle">
             <span className="toggle-label">DEPT:</span>
             <select value={deptFilter} onChange={e => setDeptFilter(e.target.value)}>
@@ -244,7 +252,7 @@ export default function PersonnelIndexModal({ isOpen, onClose, onSubmit, clueSta
           )}
           {isSolved && (
             <div className="px-4 py-2 terminal-response-ok text-[11px]">
-              ✓ CASE RECORD STAMPED — BADGE BDG-9001 — CORVIN, M. LOGGED
+              ✓ IDENTITY CONFIRMED · RECORD LOCKED — BADGE BDG-9001 — CORVIN, M. LOGGED
             </div>
           )}
         </div>
