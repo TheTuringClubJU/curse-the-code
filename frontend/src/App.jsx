@@ -154,9 +154,12 @@ export default function App() {
     return <UserLogin onLoginSuccess={handleLoginSuccess} />;
   }
 
-  // Direct dev preview: ?room=5 or ?room=control
+  // Direct dev preview: ?room=1, ?room=bedroom, ?room=5 or ?room=control
+  if (typeof window !== 'undefined' && (window.location.search.includes('room=1') || window.location.search.includes('room=bedroom'))) {
+    return <Room1Bedroom team={team || { name: 'Player' }} onLogout={handleLogout} />;
+  }
   if (typeof window !== 'undefined' && (window.location.search.includes('room=5') || window.location.search.includes('room=control'))) {
-    return <Room5Control team={team} onLogout={handleLogout} />;
+    return <Room5Control team={team || { name: 'Player' }} onLogout={handleLogout} />;
   }
 
   // When Round 1 is live, display Room 1 (Lena's Bedroom)
