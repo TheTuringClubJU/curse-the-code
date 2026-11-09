@@ -5,6 +5,10 @@ import {buildBedroom} from './scene.js'
 import {createScares} from './scares.js'
 import {buildRecordsScene} from './sceneRecords.js'
 import {createRecordsScares} from './scaresRecords.js'
+import {buildControlScene} from './sceneControl.js'
+import {createControlScares} from './scaresControl.js'
+import {buildCabinScene} from './sceneCabin.js'
+import {createCabinScares} from './scaresCabin.js'
 import {setupControls} from './controls.js'
 export {posterCanvas} from './tex.js'
 
@@ -84,6 +88,56 @@ export function createEngine(el,room,h){
    // Cold bunker surveillance ambient fill
    const ambHemi = new THREE.HemisphereLight(0x1a2e22, 0x060c08, 0.9);
    S.add(ambHemi);
+
+   buildControlScene(E);
+   scares = createControlScares(E, h);
+ } else if (room.id === 'bedroom') {
+   // Tactical First-Person Horror Flashlight (Leon's RE4 Village Cabin Flashlight)
+   const flashL = new THREE.SpotLight(0xfff4d6, 5.2, 22, Math.PI / 5.2, 0.42, 1.6);
+   flashL.position.set(0.20, -0.16, 0.12);
+   flashL.target.position.set(0, 0, -6);
+   cam.add(flashL);
+   cam.add(flashL.target);
+   E.flashlight = flashL;
+
+   // Physical 3D vintage flashlight model held in player's first-person hand
+   const flashGroup = new THREE.Group();
+   const bodyMat = new THREE.MeshStandardMaterial({ color: 0x221e1a, metalness: 0.85, roughness: 0.4 });
+   const gripMat = new THREE.MeshStandardMaterial({ color: 0x14100c, metalness: 0.7, roughness: 0.8 });
+   const bezelMat = new THREE.MeshStandardMaterial({ color: 0x483d32, metalness: 0.9, roughness: 0.3 });
+   const lensMat = new THREE.MeshStandardMaterial({ color: 0xffe8b0, emissive: new THREE.Color(0xffe8b0), emissiveIntensity: 0.9, roughness: 0.1 });
+
+   const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.025, 0.22, 16), bodyMat);
+   barrel.rotation.x = Math.PI / 2;
+   flashGroup.add(barrel);
+
+   for (let g = 0; g < 4; g++) {
+     const grip = new THREE.Mesh(new THREE.CylinderGeometry(0.026, 0.026, 0.018, 16), gripMat);
+     grip.rotation.x = Math.PI / 2;
+     grip.position.z = -0.04 + g * 0.028;
+     flashGroup.add(grip);
+   }
+
+   const headBezel = new THREE.Mesh(new THREE.CylinderGeometry(0.034, 0.025, 0.055, 16), bezelMat);
+   headBezel.rotation.x = Math.PI / 2;
+   headBezel.position.z = -0.11;
+   flashGroup.add(headBezel);
+
+   const lens = new THREE.Mesh(new THREE.CircleGeometry(0.03, 16), lensMat);
+   lens.position.z = -0.138;
+   flashGroup.add(lens);
+
+   flashGroup.position.set(0.24, -0.22, -0.36);
+   flashGroup.rotation.set(0.06, -0.10, 0.04);
+   cam.add(flashGroup);
+   E.flashlightModel = flashGroup;
+
+   // Cold moonlight & abandoned Spanish cabin ambient fill
+   const ambHemi = new THREE.HemisphereLight(0x283848, 0x080605, 0.8);
+   S.add(ambHemi);
+
+   buildCabinScene(E);
+   scares = createCabinScares(E, h);
  } else {
    // ---- shell: textured walls, floor, ceiling, trim ----
    const wp=X.tex(X.wallpaper()),wmat=new THREE.MeshStandardMaterial({map:wp,bumpMap:wp,bumpScale:.5,roughness:.92,color:0xffffff})
@@ -116,7 +170,7 @@ export function createEngine(el,room,h){
      const mats = Array.isArray(m.material) ? m.material : [m.material];
      mats.forEach(q => {
        if (q && q.emissive && typeof q.emissive.setHex === 'function') {
-         q.emissive.setHex(on ? (room.id === 'records' ? 0xb37418 : (room.id === 'control' ? 0x228833 : 0x4a3c9a)) : 0);
+         q.emissive.setHex(on ? (room.id === 'records' ? 0xb37418 : (room.id === 'control' ? 0x228833 : (room.id === 'bedroom' ? 0xd4a040 : 0x4a3c9a))) : 0);
        }
      });
    });

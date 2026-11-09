@@ -144,7 +144,8 @@ export default function Room1Bedroom({ team, onLogout }) {
                 setActiveHoverPrompt('Inspect Locked Bedroom Door');
               }
             } else {
-              setActiveHoverPrompt(`Inspect ${targetId.replace('_', ' ')}`);
+              const configLabel = bedroomConfig.interact?.[targetId]?.label;
+              setActiveHoverPrompt(configLabel || `Inspect ${targetId.replace(/_/g, ' ')}`);
             }
           } else {
             setActiveHoverPrompt(null);
@@ -199,6 +200,12 @@ export default function Room1Bedroom({ team, onLogout }) {
     const currentData = roomDataRef.current;
 
     // ── Compound RE4 Sub-Section Interactions (Room 1) ──
+    if (objectId === 'entry_door') {
+      audioRef.current?.slam?.(-5.5, 0);
+      showNotification('The heavy timber front door is bolted from the outside. Freezing rain rattles against the wood.');
+      return;
+    }
+
     if (objectId === 'coat_rack') {
       audioRef.current?.step?.(0.5);
       showNotification('The trenchcoat is dripping with freezing rainwater. A small brass key clinks against a buckle.');
@@ -207,7 +214,7 @@ export default function Room1Bedroom({ team, onLogout }) {
 
     if (objectId === 'hallway_sconce') {
       audioRef.current?.stinger?.(0.4);
-      showNotification('The gas sconce sputters with a hiss. A cold draft blows past your neck from the front door.');
+      showNotification('The oil wall sconce sputters with a low hiss. A cold draft blows through the floorboards.');
       return;
     }
 
@@ -222,19 +229,19 @@ export default function Room1Bedroom({ team, onLogout }) {
 
     if (objectId === 'ritual_pentagram') {
       audioRef.current?.whisper?.('behind', -3.8, -1.5);
-      showNotification('Crude violet chalk sigils etched into the floorboards. The wax pool is still warm to the touch.');
+      showNotification('Dark dried blood sigils etched into the stone floor. The air turns icy cold around it.');
       return;
     }
 
     if (objectId === 'suspended_cage') {
       audioRef.current?.stinger?.(0.6);
-      showNotification('An iron birdcage hanging from the ceiling. A fragment of an occult diagram glows inside.');
+      showNotification('An iron birdcage hanging from the ceiling. A fragment of an occult crest glows inside.');
       return;
     }
 
     if (objectId === 'ritual_lockbox') {
       audioRef.current?.step?.(0.6);
-      showNotification('An antique iron lockbox. It requires an arcane 4-letter sequence to release the latch.');
+      showNotification('A heavy iron-banded cellar trapdoor and padlock. Faint scratching echoes from the dark below.');
       return;
     }
 

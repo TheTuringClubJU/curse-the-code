@@ -1,62 +1,60 @@
-// Room 1: Lena's Bedroom — Compound Victorian Gothic / Moonlit Purple Environment
-// Sections: 1A Entry Porch (r100) -> 1B Master Bedroom (r102) -> 1C Hidden Ritual Alcove (r101)
+// Room 1: Village Cabin — Abandoned Homestead (RE4 r100 / r102 / r101)
+// Sections: 1A Entry Porch (r100) -> 1B Abandoned Cabin (r102) -> 1C Hidden Ritual Cellar (r101)
 export default {
   id: 'bedroom',
-  title: "Lena's Bedroom",
-  size: [12, 3.2, 8],
-  spawn: [0.8, 1.8, 0],
+  title: "Village Cabin — Abandoned Homestead",
+  size: [8, 3, 6],
+  spawn: [-4.0, 1.8, 0],
   haunted: true,
   theme: {
-    bg: '#0a0514',
-    wall: '#2e2548',
-    floor: '#453a61',
-    ceil: '#140c26',
-    accent: '#8f7bff',
-    glow: '#cdbfff',
-    lamp: '#ffcf8a',
-    moon: '#7895e6',
+    bg: '#050403',
+    wall: '#1e1812',
+    floor: '#140f0a',
+    ceil: '#0a0806',
+    accent: '#d4a040',
+    glow: '#ffbe40',
+    lamp: '#ff9933',
+    moon: '#486488',
     amber: '#c47a00',
     bone: '#c8b89a',
-    decay: '#1a1208'
+    decay: '#120d09'
   },
-  window: { z: -0.8, w: 1.6, y0: 1, y1: 2.3 },
-  lamp: { pos: [3.0, 1.3, -2.5], shadow: true },
-  clock: { pos: [2.7, 2.3, -2.95] },
+  window: { z: -1.2, w: 1.8, y0: 0.8, y1: 2.6 },
+  lamp: { pos: [0.3, 1.1, 0.15], shadow: true },
+  clock: { pos: [0.95, 1.63, -3.8] },
   audio: {
     tick: true,
-    every: [16, 38],
-    whisperCooldown: 40,
-    clock: [2.7, -2.95],
+    every: [14, 32],
+    whisperCooldown: 35,
+    clock: [0.95, -3.8],
     voices: ['seeyou', 'getout', 'behind', 'rex', 'wrongroom']
   },
   interact: {
-    // ── 1A: Hallway & Porch ──
-    entry_door:       { label: 'Inspect Locked Front Entry Door' },
-    coat_rack:        { label: 'Search Trenchcoat Pockets' },
-    hallway_sconce:   { label: 'Examine Flickering Wall Sconce' },
-    bedroom_door:     { label: 'Unlock Master Bedroom Door' },
+    // ── 1A: Entry Porch & Creaking Hallway (r100) ──
+    entry_door:       { label: 'Inspect Heavy Timber Front Door [Locked from Outside]' },
+    coat_rack:        { label: 'Inspect coat rack (Sodden Trenchcoat)' },
+    hallway_sconce:   { label: 'Inspect hallway sconce (Flickering Oil Sconce)' },
+    bedroom_door:     { label: 'Pass into Main Cabin Living Area' },
 
-    // ── 1B: Master Bedroom ──
-    bed:              { label: 'Examine Canopy Bed' },
-    pillow:           { label: 'Search Under Feather Pillow' },
-    diary:            { label: 'Read Lena\'s Diary' },
-    nightstand:       { label: 'Search Nightstand Drawers' },
-    musicbox:         { label: 'Wind Antique Music Box' },
-    candle:           { label: 'Inspect Brass Candleholder' },
-    photo_frame:      { label: 'Examine Family Portrait' },
-    desk:             { label: 'Search Writing Desk' },
-    lamp:             { label: 'Inspect Banker\'s Desk Lamp' },
-    wardrobe:         { label: 'Open Carved Oak Wardrobe' },
-    wardrobe_secret:  { label: 'Push Concealed Wardrobe Backboard' },
-    vanity_mirror:    { label: 'Peer into Vanity Mirror' },
-    clock:            { label: 'Inspect Grandfather Clock' },
+    // ── 1B: Abandoned Cabin / Master Room (r102 / r103) ──
+    lamp:             { label: 'Inspect lamp (Kerosene Oil Lantern)' },
+    diary:            { label: 'Inspect diary (Officer\'s Village Report)' },
+    nightstand:       { label: 'Inspect nightstand (Handgun Ammo Box)' },
+    trunk:            { label: 'Inspect trunk (Wooden Supply Crate)' },
+    candle:           { label: 'Inspect candle (Cast-Iron Woodstove)' },
+    photo_frame:      { label: 'Inspect photo frame (Potted Green Herb)' },
+    clock:            { label: 'Inspect clock (Vintage Mantel Clock)' },
+    desk:             { label: 'Inspect desk (Vintage Save Typewriter)' },
+    bed:              { label: 'Inspect bed (Rustic Timber Cot)' },
+    pillow:           { label: 'Inspect pillow (Search Feather Pillow)' },
+    wardrobe:         { label: 'Inspect wardrobe (Carved Spanish Armoire)' },
+    wardrobe_secret:  { label: 'Push False Wardrobe Backboard' },
 
-    // ── 1C: Hidden Ritual Alcove ──
-    ritual_pentagram: { label: 'Examine Floor Chalk Pentagram' },
-    suspended_cage:   { label: 'Inspect Suspended Birdcage' },
-    ritual_lockbox:   { label: 'Unlock Antique Iron Lockbox' },
-    exit_door:        { label: 'Unbolt Study Passage Door' }
+    // ── 1C: Hidden Cellar Nook & Ritual Alcove (r101) ──
+    ritual_lockbox:   { label: 'Inspect Heavy Cellar Trapdoor & Padlock' },
+    suspended_cage:   { label: 'Inspect Suspended Iron Birdcage' },
+    ritual_pentagram: { label: 'Inspect Floor Blood Sigil' },
+    exit_door:        { label: 'Unbolt Study Passage Door (Room 2)' }
   },
   boxes: []
 };
-
