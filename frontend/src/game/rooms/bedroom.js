@@ -2,9 +2,9 @@
 // Sections: 1A Entry Porch (r100) -> 1B Abandoned Cabin (r102) -> 1C Hidden Ritual Cellar (r101)
 export default {
   id: 'bedroom',
-  title: "Village Cabin — Abandoned Homestead",
+  title: "Village Cabin — Abandoned Homestead (r100 / r102)",
   size: [8, 3, 6],
-  spawn: [-4.0, 1.8, 0],
+  spawn: [-0.5, 1.5, 0],
   haunted: true,
   theme: {
     bg: '#050403',

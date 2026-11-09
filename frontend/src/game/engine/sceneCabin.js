@@ -117,12 +117,6 @@ export function buildCabinScene(E) {
   const westWall  = mkBox(0.2, H, D, logMat, -W / 2, H / 2, 0);
   add(westWall);
 
-  // Room Wall Collision Solids
-  solid(-W / 2, W / 2, -D / 2, -D / 2 + 0.35);
-  solid(-W / 2, W / 2, D / 2 - 0.35, D / 2);
-  solid(-W / 2, -W / 2 + 0.35, -D / 2, D / 2);
-  solid(W / 2 - 0.35, W / 2, -D / 2, D / 2);
-
   // Heavy ceiling rafters across the room
   for (let rz = -D / 2 + 1.2; rz < D / 2; rz += 1.8) {
     const rafter = mkBox(W, 0.22, 0.2, darkWoodMat, 0, H - 0.11, rz);
@@ -138,24 +132,31 @@ export function buildCabinScene(E) {
 
   // ── Compound Partition Walls ──────────────────────────────────────────────────
   // Partition 1: Separating 1A (Entry Porch) and 1B (Master Cabin) at X = -2.2
-  // North partition segment
-  const part1North = mkBox(0.18, H, 2.6, logMat, -2.2, H / 2, -D / 2 + 1.3);
+  // North partition segment (with 2.2m wide central archway)
+  const part1North = mkBox(0.18, H, 1.8, logMat, -2.2, H / 2, -D / 2 + 0.9);
   add(part1North);
-  solid(-2.35, -2.05, -D / 2, -D / 2 + 2.6);
+  solid(-2.35, -2.05, -D / 2, -D / 2 + 1.8);
 
   // South partition segment
-  const part1South = mkBox(0.18, H, 2.6, logMat, -2.2, H / 2, D / 2 - 1.3);
+  const part1South = mkBox(0.18, H, 1.8, logMat, -2.2, H / 2, D / 2 - 0.9);
   add(part1South);
-  solid(-2.35, -2.05, D / 2 - 2.6, D / 2);
+  solid(-2.35, -2.05, D / 2 - 1.8, D / 2);
 
   // Door lintel above central archway
-  const lintel1 = mkBox(0.24, 0.8, 2.8, darkWoodMat, -2.2, H - 0.4, 0);
+  const lintel1 = mkBox(0.24, 0.8, 2.6, darkWoodMat, -2.2, H - 0.4, 0);
   add(lintel1);
 
-  // Partition 2: Separating 1B and 1C (Cellar Nook) at X = 2.4
-  const part2Wall = mkBox(0.18, H, D, plasterMat, 2.4, H / 2, 0);
-  add(part2Wall);
-  solid(2.25, 2.55, -D / 2, D / 2);
+  // Partition 2: Separating 1B and 1C (Cellar Nook) at X = 2.4 (with doorway to cellar)
+  const part2North = mkBox(0.18, H, 2.2, plasterMat, 2.4, H / 2, -D / 2 + 1.1);
+  add(part2North);
+  solid(2.25, 2.55, -D / 2, -D / 2 + 2.2);
+
+  const part2South = mkBox(0.18, H, 1.6, plasterMat, 2.4, H / 2, D / 2 - 0.8);
+  add(part2South);
+  solid(2.25, 2.55, D / 2 - 1.6, D / 2);
+
+  const lintel2 = mkBox(0.24, 0.8, 2.2, darkWoodMat, 2.4, H - 0.4, 0.1);
+  add(lintel2);
 
   // ══════════════════════════════════════════════════════════════════════════════
   // SECTION 1A: ENTRY PORCH & CREAKING HALLWAY (r100 Approach)

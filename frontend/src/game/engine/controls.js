@@ -55,10 +55,27 @@ export function setupControls({
       const s = solids[i];
       const dx = Math.max(s.x0 - x, 0, x - s.x1);
       const dz = Math.max(s.z0 - z, 0, z - s.z1);
-      if (dx * dx + dz * dz < 0.08) return true;
+      if (dx * dx + dz * dz < 0.045) return true;
     }
     return false;
   };
+
+  // Safe Spawn Unstuck: ensure player never spawns wedged in walls or furniture
+  if (checkCollision(px, pz)) {
+    let unstuck = false;
+    for (let r = 0.2; r <= 3.0 && !unstuck; r += 0.2) {
+      for (let a = 0; a < Math.PI * 2; a += Math.PI / 4) {
+        const testX = px + Math.cos(a) * r;
+        const testZ = pz + Math.sin(a) * r;
+        if (!checkCollision(testX, testZ)) {
+          px = testX;
+          pz = testZ;
+          unstuck = true;
+          break;
+        }
+      }
+    }
+  }
 
   // Mouse Look: Continuous 360 rotation
   let prevClientX = null, prevClientY = null;
