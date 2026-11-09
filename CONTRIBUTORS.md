@@ -19,6 +19,10 @@ This list is maintained by hand alongside the GitHub [contributors graph](https:
   - Implemented Top N Qualification system with live preview ranking (sorted by clues solved, score, and earliest submission tie-breaker) and automatic Round 2 database access provisioning ([#3](https://github.com/TheTuringClubJU/curse-the-code/pull/3))
   - Developed full-screen Live Leaderboard view with 4-second auto-sync, round switcher, top-3 podium badges, and Round 2 qualification indicators ([#3](https://github.com/TheTuringClubJU/curse-the-code/pull/3))
 
+- Swapnil Ghosh ([@Swapnil-Ghosh06](https://github.com/Swapnil-Ghosh06))
+  - Implemented Room 5 (The Surveillance Morgue) complete 3D scene engine, CRT monitor bank, procedural textures, Web Audio horror soundscape, and horror director ([#19](https://github.com/TheTuringClubJU/curse-the-code/pull/19))
+  - Built zero-spoonfeeding clue modals (`PersonnelIndexModal`, `TransmissionArchiveModal`, `SpectrogramModal`), phosphor-green HUD, and 10 authentic Evidence SVGs ([#19](https://github.com/TheTuringClubJU/curse-the-code/pull/19))
+
 <!--
 Add new contributors below this line, following the format above.
 One bullet per contribution/PR, most recent contribution added to the bottom of their list.
