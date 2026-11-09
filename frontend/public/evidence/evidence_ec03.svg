@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 580 440" width="100%" height="100%">
+    <defs>
+        <radialGradient id="paperV" cx="50%" cy="50%" r="70%"><stop offset="60%" stop-color="#f0ebe0"/><stop offset="100%" stop-color="#ccc0a0"/></radialGradient>
+    </defs>
+    <rect width="580" height="440" fill="url(#paperV)" rx="5"/>
+    <rect width="564" height="424" x="8" y="8" fill="none" stroke="#6a5a30" stroke-width="1.5" opacity="0.4" rx="4"/>
+
+    <!-- Tape deck label area -->
+    <rect x="80" y="40" width="420" height="80" rx="6" fill="#1a1a14" opacity="0.85"/>
+    <text x="290" y="72" font-family="Courier, monospace" font-size="13" font-weight="bold" letter-spacing="3" fill="#c47a00" text-anchor="middle">DELTA CONTROL ARCHIVE</text>
+    <text x="290" y="92" font-family="Courier, monospace" font-size="11" letter-spacing="2" fill="#8a6a30" text-anchor="middle">REEL-TO-REEL MAGNETIC ARCHIVE TAPE</text>
+    <text x="290" y="110" font-family="Courier, monospace" font-size="10" letter-spacing="1" fill="#6a5a2a" text-anchor="middle">TAPE ID: VM-ARCHIVE-83 // SIDE A</text>
+
+    <!-- Document body -->
+    <text x="60" y="160" font-family="Courier, monospace" font-size="12" font-weight="bold" fill="#4a3a18">TAPE DECK CART INVENTORY</text>
+    <line x1="60" y1="170" x2="520" y2="170" stroke="#6a5a30" stroke-width="1" opacity="0.4"/>
+    <text x="60" y="196" font-family="Courier, monospace" font-size="11" fill="#2b2314">CART REF:</text><text x="175" y="196" font-family="Courier, monospace" font-size="11" fill="#1a1810">TAPE-DECK-CART-01</text>
+    <text x="60" y="216" font-family="Courier, monospace" font-size="11" fill="#2b2314">CONTENTS:</text><text x="175" y="216" font-family="Courier, monospace" font-size="11" fill="#1a1810">VOICEMAIL REELS — VM-A, VM-B, VM-C (mislabelled)</text>
+    <text x="60" y="236" font-family="Courier, monospace" font-size="11" fill="#2b2314">LOCATION:</text><text x="175" y="236" font-family="Courier, monospace" font-size="11" fill="#1a1810">SOUND CONSOLE — LOWER SHELF RACK 3</text>
+    <text x="60" y="256" font-family="Courier, monospace" font-size="11" fill="#2b2314">ACCESS:</text><text x="175" y="256" font-family="Courier, monospace" font-size="11" fill="#1a1810">RESTRICTED — RESEARCH DIVISION ONLY</text>
+    <text x="60" y="290" font-family="Courier, monospace" font-size="11" fill="#4a3a18" font-style="italic">WARNING: VM-B appears counterfeit — waveform inconsistencies</text>
+    <text x="60" y="308" font-family="Courier, monospace" font-size="11" fill="#4a3a18" font-style="italic">detected. Cross-reference against VM-A for authenticity.</text>
+
+    <!-- Handwritten note in red -->
+    <text x="300" y="355" font-family="Georgia, serif" font-size="12" fill="#a31818" transform="rotate(-3, 300, 355)">VM-A is the real one — trust it</text>
+
+    <!-- Footer -->
+    <line x1="60" y1="385" x2="520" y2="385" stroke="#6a5a30" stroke-width="0.8" opacity="0.4"/>
+    <text x="60" y="405" font-family="Courier, monospace" font-size="10" fill="#6a5a30">RECORD ID: EC03 — TAPE DECK CART DOCUMENT</text>
+    <text x="520" y="405" font-family="Courier, monospace" font-size="9" fill="#8a7a50" text-anchor="end">SUBSTATION DELTA // CTRL-04</text>
+</svg>

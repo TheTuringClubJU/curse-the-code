@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 580 440" width="100%" height="100%">
+    <defs>
+        <radialGradient id="paperV" cx="50%" cy="50%" r="70%"><stop offset="60%" stop-color="#f2eada"/><stop offset="100%" stop-color="#cfbe9b"/></radialGradient>
+    </defs>
+    <rect width="580" height="440" fill="url(#paperV)" rx="5"/>
+    <rect width="564" height="424" x="8" y="8" fill="none" stroke="#877556" stroke-width="1.5" opacity="0.4" rx="4"/>
+    <!-- Clipboard top bar -->
+    <rect x="220" y="4" width="140" height="22" rx="10" fill="#6a5a3a" opacity="0.8"/>
+    <rect x="276" y="1" width="28" height="12" rx="4" fill="#4a3a24"/>
+
+    <!-- Header -->
+    <text x="60" y="58" font-family="Courier, monospace" font-size="13" font-weight="bold" letter-spacing="2" fill="#2b2319">SHIFT HANDOVER RECORD — DELTA CONTROL</text>
+    <text x="60" y="76" font-family="Courier, monospace" font-size="10" letter-spacing="1" fill="#75644c">OPERATIONS DIVISION // FORM SH-83</text>
+    <line x1="60" y1="90" x2="520" y2="90" stroke="#75644c" stroke-width="1.2" opacity="0.5"/>
+
+    <!-- Form -->
+    <text x="60" y="118" font-family="Courier, monospace" font-size="12" font-weight="bold" fill="#66533c">HANDOVER DATE:</text><text x="230" y="118" font-family="Courier, monospace" font-size="12" fill="#2b2319">14 AUG 1983 — FINAL SHIFT</text>
+    <text x="60" y="140" font-family="Courier, monospace" font-size="12" font-weight="bold" fill="#66533c">OUTGOING OP:</text><text x="230" y="140" font-family="Courier, monospace" font-size="12" fill="#2b2319">BDG-4452 — STANWICK, R.</text>
+    <text x="60" y="162" font-family="Courier, monospace" font-size="12" font-weight="bold" fill="#66533c">INCOMING OP:</text><text x="230" y="162" font-family="Courier, monospace" font-size="12" fill="#2b2319">NONE — FACILITY SHUTDOWN</text>
+    <text x="60" y="184" font-family="Courier, monospace" font-size="12" font-weight="bold" fill="#66533c">SYSTEMS STATUS:</text><text x="230" y="184" font-family="Courier, monospace" font-size="12" fill="#2b2319">ALL NOMINAL — MONITORS DEACTIVATED</text>
+    <text x="60" y="206" font-family="Courier, monospace" font-size="12" font-weight="bold" fill="#66533c">OUTSTANDING:</text><text x="230" y="206" font-family="Courier, monospace" font-size="12" fill="#2b2319">BDG-9001 REFUSED EVACUATION ORDER</text>
+    <text x="60" y="240" font-family="Courier, monospace" font-size="11" fill="#5a4a30" font-style="italic">Personnel BDG-9001 (Corvin, M.) elected to remain on-site</text>
+    <text x="60" y="258" font-family="Courier, monospace" font-size="11" fill="#5a4a30" font-style="italic">citing "unresolved signal anomaly" on HF band. Refused</text>
+    <text x="60" y="276" font-family="Courier, monospace" font-size="11" fill="#5a4a30" font-style="italic">direct order from facility director. Status: UNSANCTIONED.</text>
+
+    <!-- Stamp SHUTDOWN -->
+    <g transform="translate(355, 50) rotate(12)">
+        <rect x="0" y="0" width="168" height="40" fill="none" stroke="#a31818" stroke-width="2.5" stroke-dasharray="4 2" rx="4" opacity="0.9"/>
+        <text x="84" y="26" font-family="Courier, monospace" font-size="11" font-weight="900" fill="#a31818" text-anchor="middle" letter-spacing="2">FACILITY CLOSED</text>
+    </g>
+
+    <!-- Footer -->
+    <line x1="60" y1="385" x2="520" y2="385" stroke="#75644c" stroke-width="0.8" opacity="0.4"/>
+    <text x="60" y="405" font-family="Courier, monospace" font-size="10" fill="#75644c">RECORD ID: EC06 — WALL CLIPBOARD DOC A</text>
+    <text x="520" y="405" font-family="Courier, monospace" font-size="9" fill="#998369" text-anchor="end">SUBSTATION DELTA // CTRL-04</text>
+</svg>
