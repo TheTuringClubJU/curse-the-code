@@ -581,6 +581,30 @@ export function buildRecordsScene(E) {
     solid(-1.1, 1.1, 3.7, 4.0);
   }
 
+  // --- RE4-Style Interactive Glimmer Particles (Kira Effect for Room 4) ---
+  const kiraMat = new THREE.PointsMaterial({
+    color: 0x7affb8, // Phosphor-green water tint
+    size: 0.07,
+    transparent: true,
+    opacity: 0.85,
+    blending: THREE.AdditiveBlending
+  });
+  const kiraGeo = new THREE.BufferGeometry();
+  const kiraCoords = new Float32Array([
+    -2.8, 1.1, -2.5,  // above Microfilm viewer screen
+    -4.92, 1.8, 1.0,  // on Whiteboard timeline
+    4.35, 1.2, 1.6,   // above Card Catalog
+    1.2, 0.45, -2.7,  // over Wire Waste Basket
+    0, 1.3, -3.8      // at Bulkhead Door keypad
+  ]);
+  kiraGeo.setAttribute('position', new THREE.BufferAttribute(kiraCoords, 3));
+  const kiraPoints = new THREE.Points(kiraGeo, kiraMat);
+  add(kiraPoints);
+
+  anim((t) => {
+    kiraMat.size = 0.06 + Math.sin(t * 3.2) * 0.025;
+  });
+
   // --- 15. PARANORMAL SPECTRAL ENTITY SPRITE (Billboard) ---
   const entityTex = XR.tex(XR.followerEntitySprite());
   const entitySprite = new THREE.Mesh(
