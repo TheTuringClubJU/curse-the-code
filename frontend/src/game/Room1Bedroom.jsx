@@ -198,6 +198,56 @@ export default function Room1Bedroom({ team, onLogout }) {
     console.info("[ROOM1 HANDLE_INTERACT RUNNING FOR]", objectId);
     const currentData = roomDataRef.current;
 
+    // ── Compound RE4 Sub-Section Interactions (Room 1) ──
+    if (objectId === 'coat_rack') {
+      audioRef.current?.step?.(0.5);
+      showNotification('The trenchcoat is dripping with freezing rainwater. A small brass key clinks against a buckle.');
+      return;
+    }
+
+    if (objectId === 'hallway_sconce') {
+      audioRef.current?.stinger?.(0.4);
+      showNotification('The gas sconce sputters with a hiss. A cold draft blows past your neck from the front door.');
+      return;
+    }
+
+    if (objectId === 'wardrobe_secret') {
+      audioRef.current?.slam?.(-3.8, -1.5);
+      showNotification('You push the false wardrobe backboard. The wood gives way, revealing a hidden ritual chamber!');
+      if (engineRef.current?.ref?.wardrobeSecret) {
+        engineRef.current.ref.wardrobeSecret.position.x -= 0.6;
+      }
+      return;
+    }
+
+    if (objectId === 'ritual_pentagram') {
+      audioRef.current?.whisper?.('behind', -3.8, -1.5);
+      showNotification('Crude violet chalk sigils etched into the floorboards. The wax pool is still warm to the touch.');
+      return;
+    }
+
+    if (objectId === 'suspended_cage') {
+      audioRef.current?.stinger?.(0.6);
+      showNotification('An iron birdcage hanging from the ceiling. A fragment of an occult diagram glows inside.');
+      return;
+    }
+
+    if (objectId === 'ritual_lockbox') {
+      audioRef.current?.step?.(0.6);
+      showNotification('An antique iron lockbox. It requires an arcane 4-letter sequence to release the latch.');
+      return;
+    }
+
+    if (objectId === 'exit_door') {
+      if (currentData?.is_completed) {
+        setIsRoomCompleteModalOpen(true);
+        engineRef.current?.unlock();
+      } else {
+        showNotification('The passage door into Daniel\'s Study is locked with iron deadbolts. Solve all room clues first.');
+      }
+      return;
+    }
+
     // Check if this is the Bedroom Exit Door
     if (objectId === 'room_door' || objectId === 'door') {
       if (currentData?.is_completed) {

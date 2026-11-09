@@ -145,6 +145,116 @@ export function buildBedroom(E){
   const fr=mk(new THREE.TorusGeometry(1,.1,12,56),gold,0,0,.02);fr.scale.set(.31,.48,.35);g.add(fr);const fr2=mk(new THREE.TorusGeometry(1,.05,10,56),mat({map:TX.wood('ebony'),r:.6}),0,0,.01);fr2.scale.set(.285,.455,.3);g.add(fr2)
   const cr=new THREE.Mesh(new THREE.PlaneGeometry(.56,.9),new THREE.MeshBasicMaterial({map:X.tex(X.crackC(512,512,2,{cx:.4,cy:.45,n:16}),{}),transparent:true,opacity:.85,depthWrite:false,fog:false}));cr.scale.set(.95,.95,1);cr.position.z=.012;cr.userData.np=1;g.add(cr)
   const dt=new THREE.Mesh(new THREE.PlaneGeometry(.55,.88),new THREE.MeshBasicMaterial({map:X.tex(X.mirrorDirt(),{}),transparent:true,depthWrite:false,fog:false}));dt.position.z=.011;g.add(dt);const mrHit=new THREE.Mesh(new THREE.BoxGeometry(0.8,1.2,0.2),new THREE.MeshBasicMaterial({colorWrite:false,depthWrite:false}));g.add(mrHit);interact(g,'mirror');add(g,{noShadow:true})}
+
+  // ── Compound Section 1A: Entry Porch & Coat Rack ──────────────────────────
+  {
+    const entryGrp = grp(1.2, 0, 3.4);
+    // Coat rack with pegs and damp trenchcoat
+    entryGrp.add(mk(new THREE.CylinderGeometry(0.04, 0.05, 1.9, 8), dark, 0, 0.95, 0));
+    entryGrp.add(mk(new THREE.CylinderGeometry(0.25, 0.28, 0.06, 12), dark, 0, 0.03, 0));
+    // Coat silhouette
+    const coatMat = mat({ color: 0x1f1a14, roughness: 0.9 });
+    const coat = mk(new THREE.ConeGeometry(0.28, 1.1, 8), coatMat, 0, 1.15, 0);
+    coat.scale.set(1.2, 1, 0.8);
+    entryGrp.add(coat);
+    const coatHit = new THREE.Mesh(new THREE.BoxGeometry(0.7, 1.8, 0.7), new THREE.MeshBasicMaterial({ colorWrite: false, depthWrite: false }));
+    coatHit.position.set(0, 0.9, 0);
+    entryGrp.add(coatHit);
+    interact(entryGrp, 'coat_rack');
+    add(entryGrp);
+    solid(0.8, 1.6, 3.0, 3.8);
+
+    // Flickering hallway wall sconce
+    const sconceMat = mat({ color: 0xc47a00, emissive: 0xc47a00, emissiveIntensity: 1.2 });
+    const sconce = mk(new THREE.SphereGeometry(0.07, 8, 8), sconceMat, -1.8, 2.1, 3.8);
+    interact(sconce, 'hallway_sconce');
+    add(sconce);
+  }
+
+  // ── Compound Section 1C: Hidden Ritual Alcove (Behind Wardrobe) ────────────
+  {
+    const alcoveGrp = grp(-3.8, 0, -1.5);
+    // Secret passage frame in wall
+    alcoveGrp.add(bx(0.12, 2.4, 1.5, dark, 0.8, 1.2, 0));
+    alcoveGrp.add(bx(0.12, 2.4, 0.15, dark, 0.8, 1.2, -0.75));
+    alcoveGrp.add(bx(0.12, 2.4, 0.15, dark, 0.8, 1.2, 0.75));
+
+    // Secret wardrobe backboard that slides aside
+    const secretBackboard = bx(0.06, 2.0, 1.2, ebony, 0.76, 1.05, 0);
+    secretBackboard.userData.id = 'wardrobe_secret';
+    interact(secretBackboard, 'wardrobe_secret');
+    alcoveGrp.add(secretBackboard);
+    ref.wardrobeSecret = secretBackboard;
+
+    // Floor Chalk Pentagram (Procedural glowing ritual ring)
+    const chalkMat = new THREE.MeshBasicMaterial({
+      color: 0x9b7bff,
+      wireframe: true,
+      transparent: true,
+      opacity: 0.75
+    });
+    const pentagram = mk(new THREE.CircleGeometry(0.9, 5), chalkMat, 0, 0.015, 0, -Math.PI / 2, 0, 0);
+    pentagram.userData.id = 'ritual_pentagram';
+    interact(pentagram, 'ritual_pentagram');
+    alcoveGrp.add(pentagram);
+
+    // Suspended Iron Birdcage with glowing fragment
+    const cageMat2 = mat({ color: 0x1f1b24, roughness: 0.6, metalness: 0.8 });
+    const cageMesh = mk(new THREE.CylinderGeometry(0.25, 0.25, 0.65, 12, 1, true), cageMat2, 0, 1.7, 0);
+    // Suspension chain to ceiling
+    alcoveGrp.add(mk(new THREE.CylinderGeometry(0.008, 0.008, 1.0, 6), cageMat2, 0, 2.3, 0));
+    // Glowing occult fragment inside cage
+    const fragGlowMat = new THREE.MeshBasicMaterial({ color: 0xc47a00 });
+    const fragMesh = mk(new THREE.OctahedronGeometry(0.08), fragGlowMat, 0, 1.7, 0);
+    alcoveGrp.add(fragMesh);
+    cageMesh.userData.id = 'suspended_cage';
+    interact(cageMesh, 'suspended_cage');
+    alcoveGrp.add(cageMesh);
+
+    // Antique Iron Lockbox on floor
+    const boxMesh = bx(0.4, 0.25, 0.3, mat({ map: TX.metal(), roughness: 0.5, metalness: 0.7 }), 0.3, 0.12, 0.6);
+    boxMesh.userData.id = 'ritual_lockbox';
+    interact(boxMesh, 'ritual_lockbox');
+    alcoveGrp.add(boxMesh);
+
+    // Sub-passage exit door to Room 2 (Daniel's Study)
+    const exitDoorFrame = bx(0.12, 2.3, 1.1, dark, -0.9, 1.15, 0);
+    alcoveGrp.add(exitDoorFrame);
+    const exitDoorLeaf = bx(0.05, 2.1, 0.95, mat({ color: 0x18121f, roughness: 0.8 }), -0.9, 1.05, 0);
+    exitDoorLeaf.userData.id = 'exit_door';
+    interact(exitDoorLeaf, 'exit_door');
+    alcoveGrp.add(exitDoorLeaf);
+
+    add(alcoveGrp);
+    solid(-4.8, -2.8, -2.5, -0.5);
+
+    // ── RE4 "Kira" Item Sparkle Particles ──────────────────────────────────
+    const kiraMat = new THREE.PointsMaterial({
+      color: 0xffd97d,
+      size: 0.06,
+      transparent: true,
+      opacity: 0.85,
+      blending: THREE.AdditiveBlending
+    });
+    const kiraGeo = new THREE.BufferGeometry();
+    const kiraCoords = new Float32Array([
+      0, 0.78, 0.82,     // over Lena's diary
+      -2.7, 0.82, -2.65, // over music box
+      -3.8, 1.7, -1.5,   // inside suspended birdcage
+      -3.5, 0.25, -0.9   // on antique lockbox
+    ]);
+    kiraGeo.setAttribute('position', new THREE.BufferAttribute(kiraCoords, 3));
+    const kiraPoints = new THREE.Points(kiraGeo, kiraMat);
+    add(kiraPoints);
+
+    // Particle pulse animation
+    anim((t) => {
+      fragMesh.rotation.y = t * 1.5;
+      fragMesh.rotation.x = Math.sin(t * 2) * 0.4;
+      kiraMat.size = 0.05 + Math.sin(t * 3.5) * 0.02;
+    });
+  }
+
  buildDecor(E)
 }
 export function buildDoll(s=1){const g=new THREE.Group(),sk=mat({map:TX.doll(),r:.35}),dress=mat({map:TX.sheet(),c:0xe0cfd4,r:.9,side:2})
