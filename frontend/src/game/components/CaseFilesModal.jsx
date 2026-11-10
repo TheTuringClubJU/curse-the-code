@@ -83,11 +83,11 @@ export default function CaseFilesModal({
                   )}
 <div>
                     <span className="text-sm font-bold text-[#e8e0ff]">
-                      {clue.title ? `${clue.title} (${clue.id})` : `Clue ${clueNumber}`}
+                      Clue {clueNumber}
                     </span>
                     {clue.title && (
                       <span className="text-xs text-[#a292cc] font-mono block">
-                        Clue #{clueNumber}
+                        {clue.title}
                       </span>
                     )}
                   </div>
