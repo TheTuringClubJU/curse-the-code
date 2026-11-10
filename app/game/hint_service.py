@@ -234,6 +234,8 @@ def request_hint(
                     
                     details = CLUE_HINT_DETAILS.get(target_id) if existing["hint_category"] == "clue" else None
                     return {
+                        "success": True,
+                        "penalty_seconds": 0,
                         "target_id": existing["target_id"],
                         "hint_category": existing["hint_category"],
                         "room_id": existing["room_id"],
@@ -301,6 +303,8 @@ def request_hint(
                     r_row = cur.fetchone()
                     total_pen = r_row["penalty_seconds"] if r_row and r_row["penalty_seconds"] else 0
                     return {
+                        "success": True,
+                        "penalty_seconds": 0,
                         "target_id": next_fragment_id,
                         "hint_category": "fragment",
                         "room_id": room_id,
@@ -335,6 +339,8 @@ def request_hint(
                 conn.commit()
 
                 return {
+                    "success": True,
+                    "penalty_seconds": penalty,
                     "target_id": next_fragment_id,
                     "hint_category": "fragment",
                     "room_id": room_id,
@@ -389,6 +395,8 @@ def request_hint(
                 r_row = cur.fetchone()
                 total_pen = r_row["penalty_seconds"] if r_row and r_row["penalty_seconds"] else 0
                 return {
+                    "success": True,
+                    "penalty_seconds": 0,
                     "target_id": active_clue_id,
                     "hint_category": "clue",
                     "room_id": room_id,
@@ -435,6 +443,8 @@ def request_hint(
             conn.commit()
 
             return {
+                "success": True,
+                "penalty_seconds": penalty,
                 "target_id": active_clue_id,
                 "hint_category": "clue",
                 "room_id": room_id,
