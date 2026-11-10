@@ -1,4 +1,8 @@
 import * as THREE from 'three'
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
+import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader.js'
+import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js'
+import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js'
 import * as X from './tex.js'
 import {TX,bgeo,mat,wm} from './kit.js'
 import {buildBedroom} from './scene.js'
@@ -17,13 +21,110 @@ export function createEngine(el,room,h){
  const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches,T=room.theme,[W,H,D]=room.size,debug=new URLSearchParams(location.search).has('debug')
  const R=new THREE.WebGLRenderer({antialias:true});R.setPixelRatio(Math.min(devicePixelRatio,1.0));R.powerPreference='high-performance';R.setSize(el.clientWidth,el.clientHeight);R.shadowMap.enabled=true;R.shadowMap.type=THREE.BasicShadowMap;R.shadowMap.autoUpdate=false;R.shadowMap.needsUpdate=true;
  R.toneMapping=THREE.ACESFilmicToneMapping;R.toneMappingExposure=1.6;el.appendChild(R.domElement)
- const S=new THREE.Scene();S.background=new THREE.Color(T.bg);S.fog=new THREE.FogExp2(T.bg,.045)
+ const S=new THREE.Scene();S.background=new THREE.Color(T.bg);S.fog=new THREE.FogExp2(T.bg, room.id === 'control' ? 0.035 : 0.045)
  const cam=new THREE.PerspectiveCamera(72,el.clientWidth/el.clientHeight,.05,80);cam.rotation.order='YXZ';S.add(cam)
- const solids=[],pick=[],byId={},rigL=[],rigG=[],anims=[],sc={v:1},ref={}
+ const solids=[],pick=[],byId={},visualById={},rigL=[],rigG=[],anims=[],sc={v:1},ref={}
+ let pmremGen=null,pmremRT=null,gltfLoader=null,fbxLoader=null,halt=false;
+ const TEX_KEYS=['map','normalMap','roughnessMap','metalnessMap','aoMap','emissiveMap','alphaMap'];
+ const disposeObjectResources=(root)=>{
+  if(!root)return;
+  const disposedMats=new Set(),disposedTexs=new Set();
+  root.traverse?.(o=>{
+   o.geometry?.dispose?.();
+   const mats=Array.isArray(o.material)?o.material:(o.material?[o.material]:[]);
+   mats.forEach(m=>{
+    if(!m||disposedMats.has(m))return;
+    disposedMats.add(m);
+    for(const k of TEX_KEYS){
+     const tx=m[k];
+     if(tx&&!disposedTexs.has(tx)){disposedTexs.add(tx);tx.dispose?.();}
+    }
+    m.dispose?.();
+   });
+  });
+ };
+ const getGLTFLoader = () => {
+  if (!gltfLoader) {
+   gltfLoader = new GLTFLoader();
+   gltfLoader.setMeshoptDecoder(MeshoptDecoder);
+  }
+  return gltfLoader;
+ };
  const rnd=(a,b)=>a+Math.random()*(b-a)
  const flick=(seed,amt=.3)=>t=>1-amt*Math.abs(Math.sin(t*(6.3+seed%5)+seed)*Math.sin(t*(2.9+seed%3)+seed*1.7))-.04*Math.abs(Math.sin(t*31+seed))
- let tl=performance.now();const E={lap:n=>{if(debug){const t=performance.now();console.info('[ctc] lap',n,Math.round(t-tl));tl=t}},S,cam,W,H,D,win:room.window,ref,sc,lampMats:[],lampGlow:null,flick,lightScale:()=>sc.v,audio:h.audio,
-  anim:f=>anims.push(f),solid:(x0,x1,z0,z1)=>solids.push({x0,x1,z0,z1}),glow:(m,b,f)=>rigG.push({m,b,f:f||flick(Math.floor(Math.random()*90),.3)}),lightRig:(l,b,f)=>rigL.push({l,b,f}),
+ let tl=performance.now();const E={lap:n=>{if(debug){const t=performance.now();console.info('[ctc] lap',n,Math.round(t-tl));tl=t}},S,cam,W,H,D,win:room.window,ref,sc,lampMats:[],lampGlow:null,flick,lightScale:()=>sc.v,audio:h.audio,_pick:pick,_byId:byId,_visualById:visualById,_solids:solids,
+  anim:f=>anims.push(f),
+  solid:(x0,x1,z0,z1)=>{const box={x0,x1,z0,z1};solids.push(box);return box;},
+  removeSolid:box=>{const i=solids.indexOf(box);if(i!==-1)solids.splice(i,1);},
+  glow:(m,b,f)=>rigG.push({m,b,f:f||flick(Math.floor(Math.random()*90),.3)}),lightRig:(l,b,f)=>rigL.push({l,b,f}),
+  bakeShadows:()=>{R.shadowMap.needsUpdate=true;},
+  initPMREM:(intensity=0.28)=>{
+   if(!pmremGen){
+    pmremGen=new THREE.PMREMGenerator(R);
+    pmremGen.compileEquirectangularShader();
+    const envScene=new RoomEnvironment();
+    pmremRT=pmremGen.fromScene(envScene,0.04);
+    envScene.dispose();
+    S.environment=pmremRT.texture;
+   }
+   S.environmentIntensity=intensity;
+  },
+  loadGLB:(url,onProgress)=>new Promise((resolve,reject)=>{
+   MeshoptDecoder.ready.then(()=>{
+    if(halt)return;
+    getGLTFLoader().load(
+     url,
+     (g)=>{
+      if(!halt){resolve(g);return;}
+      disposeObjectResources(g?.scene);
+     },
+     onProgress,
+     (err)=>{if(!halt)reject(err);}
+    );
+   }).catch((err)=>{if(!halt)reject(err);});
+  }),
+  loadFBX:(url,onProgress)=>new Promise((resolve,reject)=>{
+   if(halt)return;
+   if(!fbxLoader)fbxLoader=new FBXLoader();
+   fbxLoader.load(
+    url,
+    (grp)=>{
+     if(!halt){resolve(grp);return;}
+     disposeObjectResources(grp);
+    },
+    onProgress,
+    (err)=>{if(!halt)reject(err);}
+   );
+  }),
+  visualInteract:(target,id)=>{
+   const list=Array.isArray(target)?target:[target];
+   // Scope cloned highlight materials per (id, baseMat) so shared atlas textures never highlight multiple props together
+   const hlById = E._hlMatById || (E._hlMatById = new Map());
+   let idCache = hlById.get(id);
+   if (!idCache) {
+    idCache = new WeakMap();
+    hlById.set(id, idCache);
+   }
+   list.forEach(node=>{
+    if(!node)return;
+    node.traverse(o=>{
+     if(o.isMesh&&o.material){
+      if(o.userData._hlId !== id){
+       const cloneForId = (m) => {
+         if (!m) return m;
+         if (idCache.has(m)) return idCache.get(m);
+         const cm = m.clone();
+         idCache.set(m, cm);
+         return cm;
+       };
+       o.material=Array.isArray(o.material)?o.material.map(cloneForId):cloneForId(o.material);
+       o.userData._hlId = id;
+      }
+      (visualById[id]??=[]).push(o);
+     }
+    });
+   });
+  },
   interact(obj,id){obj.traverse(o=>{if(o.isMesh){o.userData.id=id;delete o.userData.np;if(o.material){o.material=Array.isArray(o.material)?o.material.map(m=>m.clone()):o.material.clone()}}})},
   add(obj,o={}){obj.traverse(m=>{if(!m.isMesh)return;if(!m.userData.ns&&!o.noShadow){m.castShadow=true}m.receiveShadow=true;if(!m.userData.np){pick.push(m);if(m.userData.id)(byId[m.userData.id]??=[]).push(m)}});S.add(obj);return obj}}
 
@@ -45,51 +146,87 @@ export function createEngine(el,room,h){
    buildRecordsScene(E);
    scares = createRecordsScares(E, h);
  } else if (room.id === 'control') {
-   // Tactical First-Person Horror Flashlight (Image 1 style)
-   const flashL = new THREE.SpotLight(0xdcf0ff, 4.8, 20, Math.PI / 5.2, 0.45, 1.5);
-   flashL.position.set(0.22, -0.16, 0.12);
+   // Tactical First-Person Horror Flashlight (piercing high-contrast beam against very dim rooms)
+   const flashL = new THREE.SpotLight(0xf3f7fa, 18.0, 32, Math.PI / 4.2, 0.55, 1.32);
+   flashL.position.set(0.22, -0.16, 0.08);
    flashL.target.position.set(0, 0, -6);
+   flashL.castShadow = false;
    cam.add(flashL);
    cam.add(flashL.target);
    E.flashlight = flashL;
+   E._flashBaseIntensity = 18.0;
+   E._userFlashlightOn = true;
+   E._flashOutageActive = false;
 
-   // Physical 3D flashlight model held in player's first-person hand
+   // Load real compressed tactical torch GLB into first-person view
    const flashGroup = new THREE.Group();
-   const bodyMat = new THREE.MeshStandardMaterial({ color: 0x16181c, metalness: 0.88, roughness: 0.35 });
-   const gripMat = new THREE.MeshStandardMaterial({ color: 0x0c0d10, metalness: 0.7, roughness: 0.8 });
-   const bezelMat = new THREE.MeshStandardMaterial({ color: 0x3d4654, metalness: 0.92, roughness: 0.25 });
-   const lensMat = new THREE.MeshStandardMaterial({ color: 0xa0d4ff, emissive: new THREE.Color(0xa0d4ff), emissiveIntensity: 0.85, roughness: 0.1 });
-
-   const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.025, 0.22, 16), bodyMat);
-   barrel.rotation.x = Math.PI / 2;
-   flashGroup.add(barrel);
-
-   for (let g = 0; g < 4; g++) {
-     const grip = new THREE.Mesh(new THREE.CylinderGeometry(0.026, 0.026, 0.018, 16), gripMat);
-     grip.rotation.x = Math.PI / 2;
-     grip.position.z = -0.04 + g * 0.028;
-     flashGroup.add(grip);
-   }
-
-   const headBezel = new THREE.Mesh(new THREE.CylinderGeometry(0.034, 0.025, 0.055, 16), bezelMat);
-   headBezel.rotation.x = Math.PI / 2;
-   headBezel.position.z = -0.11;
-   flashGroup.add(headBezel);
-
-   const lens = new THREE.Mesh(new THREE.CircleGeometry(0.03, 16), lensMat);
-   lens.position.z = -0.138;
-   flashGroup.add(lens);
-
-   flashGroup.position.set(0.24, -0.22, -0.36);
-   flashGroup.rotation.set(0.06, -0.10, 0.04);
+   flashGroup.position.set(0.24, -0.21, -0.32);
+   flashGroup.rotation.set(0.05, -0.07, 0.02);
    cam.add(flashGroup);
    E.flashlightModel = flashGroup;
 
-   // Cold bunker surveillance ambient fill
-   const ambHemi = new THREE.HemisphereLight(0x1a2e22, 0x060c08, 0.9);
+   E.loadGLB('/assets/models/room5/flashlight.glb').then((gltf) => {
+     const torch = gltf.scene;
+     let tailNode = null;
+     let lensNode = null;
+     torch.traverse((o) => {
+       if (!o.isMesh) return;
+       o.userData.np = 1;
+       o.castShadow = false;
+       o.receiveShadow = false;
+       if (o.material?.name === 'lace') {
+         o.visible = false;
+         return;
+       }
+       if (o.name === 'defaultMaterial_7') tailNode = o;
+       if (o.material?.name === 'glass' || o.name === 'defaultMaterial_11') {
+         lensNode = o;
+         o.material = o.material.clone();
+         o.material.emissive = new THREE.Color(0xdcf0ff);
+         o.material.emissiveIntensity = 1.6;
+         E._flashLensMat = o.material;
+       }
+     });
+
+     torch.updateMatrixWorld(true);
+     if (tailNode && lensNode) {
+       const tailC = new THREE.Vector3();
+       const lensC = new THREE.Vector3();
+       new THREE.Box3().setFromObject(tailNode).getCenter(tailC);
+       new THREE.Box3().setFromObject(lensNode).getCenter(lensC);
+       const dir = lensC.sub(tailC).normalize();
+       torch.quaternion.setFromUnitVectors(dir, new THREE.Vector3(0, 0, -1));
+     }
+
+     torch.updateMatrixWorld(true);
+     const bodyBox = new THREE.Box3();
+     torch.traverse((o) => {
+       if (o.isMesh && o.visible) bodyBox.expandByObject(o);
+     });
+     const sz = new THREE.Vector3();
+     const ctr = new THREE.Vector3();
+     bodyBox.getSize(sz);
+     bodyBox.getCenter(ctr);
+
+     const norm = new THREE.Group();
+     torch.position.set(-ctr.x, -ctr.y, -ctr.z);
+     norm.add(torch);
+     const scale = 0.24 / Math.max(sz.z, 0.001);
+     norm.scale.setScalar(scale);
+     flashGroup.add(norm);
+   }).catch((err) => {
+     console.warn('[ROOM5] Flashlight GLB load failed:', err);
+   });
+
+   // Native 1.0 DPR & shadowMap disabled for Control Room gives instant mouse response while keeping spooky readable lighting
+   R.shadowMap.enabled = false;
+   R.setPixelRatio(1);
+   R.toneMappingExposure = 1.24;
+   S.fog = new THREE.FogExp2(0x040606, 0.044);
+   const ambHemi = new THREE.HemisphereLight(0x4a5e52, 0x181c19, 0.68);
    S.add(ambHemi);
 
-   buildControlScene(E);
+   buildControlScene(E, h);
    scares = createControlScares(E, h);
  } else if (room.id === 'bedroom') {
    // Tactical First-Person Horror Flashlight (Leon's RE4 Village Cabin Flashlight)
@@ -166,11 +303,25 @@ export function createEngine(el,room,h){
  // ---- SINGLE SOURCE OF TRUTH CONTROLS INITIALIZATION ----
  const ray=new THREE.Raycaster(),v0=new THREE.Vector2();
  const hl = (id, on) => {
-   byId[id]?.forEach(m => {
+   const hlColor = room.id === 'records' ? 0xb37418 : (room.id === 'control' ? 0x3b3019 : (room.id === 'bedroom' ? 0xd4a040 : 0x4a3c9a));
+   const targets = [...(byId[id] || []), ...(visualById[id] || [])];
+   targets.forEach(m => {
      const mats = Array.isArray(m.material) ? m.material : [m.material];
      mats.forEach(q => {
        if (q && q.emissive && typeof q.emissive.setHex === 'function') {
-         q.emissive.setHex(on ? (room.id === 'records' ? 0xb37418 : (room.id === 'control' ? 0x228833 : (room.id === 'bedroom' ? 0xd4a040 : 0x4a3c9a))) : 0);
+         if (on) {
+           if (q.userData._origEmissive === undefined) {
+             q.userData._origEmissive = q.emissive.getHex();
+             q.userData._origEmissiveInt = q.emissiveIntensity ?? 1;
+           }
+           q.emissive.setHex(hlColor);
+           if (room.id === 'control') q.emissiveIntensity = Math.max(q.userData._origEmissiveInt || 0.08, 0.16);
+         } else if (q.userData._origEmissive !== undefined) {
+           q.emissive.setHex(q.userData._origEmissive);
+           q.emissiveIntensity = q.userData._origEmissiveInt;
+         } else {
+           q.emissive.setHex(0);
+         }
        }
      });
    });
@@ -195,6 +346,7 @@ export function createEngine(el,room,h){
    px: () => controls.getPos().x,
    pz: () => controls.getPos().z,
    yaw: () => controls.getPos().yaw,
+   isSprinting: () => Boolean(controls.isSprinting?.()),
    shake: (a,d) => { shakeA=a; shakeT=d; },
    get paused() { return false; }
  });
@@ -203,20 +355,48 @@ export function createEngine(el,room,h){
  window.addEventListener('resize',rs)
 
  const fr=new THREE.Frustum(),pm=new THREE.Matrix4(),hp=new THREE.Vector3(),lp=new THREE.Vector3()
- let last=performance.now(),raf,halt=false,frameCount=0;const t0=last
- const FPS_LIMIT = 60;
- const FRAME_INTERVAL = 1000 / FPS_LIMIT;
- let lastRenderTime = performance.now();
+ let last=performance.now(),raf,frameCount=0;const t0=last
+ let targetFov=72;
+ const defaultEco = typeof navigator !== 'undefined' && navigator.hardwareConcurrency > 0 && navigator.hardwareConcurrency <= 4;
+ let qualityMode = room.id === 'control' && defaultEco ? 'eco' : 'high';
+ if (room.id === 'control' && qualityMode === 'eco') {
+   R.setPixelRatio(Math.min(devicePixelRatio || 1, 0.78));
+ }
+ E._qualityMode = qualityMode;
+ const applyQualityMode = (mode) => {
+   qualityMode = mode === 'eco' ? 'eco' : 'high';
+   E._qualityMode = qualityMode;
+   R.setPixelRatio(qualityMode === 'eco' ? Math.min(devicePixelRatio || 1, 0.78) : Math.min(devicePixelRatio || 1, 1.0));
+   if (E._dustPoints) E._dustPoints.visible = qualityMode !== 'eco';
+   h.onQualityChange?.(qualityMode);
+ };
+ E.setQualityMode = applyQualityMode;
+ E.setCameraOverride = (active, ty, tp) => controls.setCameraOverride?.(active, ty, tp);
+ E.setTargetFov = (fov) => { targetFov = Math.max(42, Math.min(88, Number(fov) || 72)); };
+ let slowFrames = 0;
+ let autoSwitchedEco = false;
 
  const loop = now => {
-   if (!halt) raf = requestAnimationFrame(loop);
-   const elapsed = now - lastRenderTime;
-   if (elapsed < FRAME_INTERVAL) return;
-
-   lastRenderTime = now - (elapsed % FRAME_INTERVAL);
-   const dt = Math.min(0.05, elapsed / 1000);
+   if (halt) return;
+   raf = requestAnimationFrame(loop);
+   const elapsed = now - last;
+   last = now;
+   const dt = Math.min(0.05, Math.max(0.001, elapsed / 1000));
    frameCount++;
    const t = (now - t0) / 1000;
+
+   // Automatic low-spec laptop safeguard in Room 5: drop to Eco only if genuinely struggling (< 26fps sustained)
+   if (room.id === 'control' && !autoSwitchedEco && qualityMode === 'high' && t > 6.0) {
+     if (elapsed > 38 && elapsed < 150) {
+       slowFrames++;
+       if (slowFrames >= 60) {
+         autoSwitchedEco = true;
+         applyQualityMode('eco');
+       }
+     } else if (elapsed < 28) {
+       slowFrames = Math.max(0, slowFrames - 1);
+     }
+   }
 
    // 1. Single-source Controls Update (WASD & Mouse Look)
    const ctrl = controls.update(dt);
@@ -227,10 +407,12 @@ export function createEngine(el,room,h){
    const walk = ctrl.walk;
    const mv = ctrl.isMoving ? 1 : 0;
 
-   // 2. Aim Raycast check (Every 2 frames for ultra responsiveness)
+   // 2. Aim Raycast check: every 2 frames (~30Hz) on small proxy set, scoped reach in dense bunker
    if (frameCount % 2 === 0) {
-     ray.setFromCamera(v0,cam);
-     ray.far = 5.5;
+     const ndc = controls.getPointerNDC ? controls.getPointerNDC() : { x: 0, y: 0 };
+     v0.set(ndc.x, ndc.y);
+     ray.setFromCamera(v0, cam);
+     ray.far = room.id === 'control' ? 3.5 : 5.5;
      const hits = ray.intersectObjects(pick, false);
      const hitMesh = hits.find(it => it.object?.userData?.id);
      const id = hitMesh?.object?.userData?.id || null;
@@ -254,6 +436,10 @@ export function createEngine(el,room,h){
    if(shakeT>0&&!reduce){shakeT-=dt;const k=shakeA*Math.max(0,shakeT)*3;sx=(Math.random()-.5)*k*.05;sy=(Math.random()-.5)*k*.05}
    cam.position.set(px+sx, 1.6 + (mv && !reduce ? Math.sin(walk)*.022 : 0) + Math.sin(t*.9)*.004 + sy, pz);
    cam.rotation.set(pitch, yaw, 0);
+   if (Math.abs(cam.fov - targetFov) > 0.08) {
+     cam.fov += (targetFov - cam.fov) * Math.min(1, dt * 15);
+     cam.updateProjectionMatrix();
+   }
 
    if(E.flashlightModel && !reduce){
      const swayAmt = mv ? 0.012 : 0.002;
@@ -279,10 +465,22 @@ export function createEngine(el,room,h){
  raf=requestAnimationFrame(loop)
 
  const api={
-  setPaused(){ /* Intentionally no-op: movement & controls never get blocked! */ },
+  setPaused(p){ if (room.id === 'control') controls.setPaused?.(Boolean(p)); },
+  setSensitivity(s){ controls.setSensitivity?.(s); },
   lock(){ controls.requestLock(); },
   unlock(){ controls.unlock(); },
+  isLocked(){ return !!controls.isLocked?.(); },
   setView(x,z,y,p=0){ controls.setView(x,z,y,p); },
+  getPos(){ return controls.getPos(); },
+  getGhostPos(){
+    const g = E._ghost;
+    if (!g?.root) return null;
+    return {
+      x: g.root.position.x,
+      z: g.root.position.z,
+      isHunting: Boolean(g.isHunting),
+    };
+  },
   openDoor(){ 
     if(ref.bulkheadDoor) ref.bulkheadDoor.isOpen = true; 
     if(ref.roomDoor) ref.roomDoor.isOpen = true; 
@@ -292,19 +490,51 @@ export function createEngine(el,room,h){
     if(ref.roomDoor) ref.roomDoor.isOpen = false; 
   },
   isDoorOpen(){ return !!(ref.bulkheadDoor?.isOpen || ref.roomDoor?.isOpen); },
-  setFlashlight(on){ if(E.flashlight) E.flashlight.intensity = on ? 4.2 : 0; },
+  setFlashlight(on){
+    E._userFlashlightOn = Boolean(on);
+    if (E._flashOutageActive) {
+      if (E.flashlight) E.flashlight.intensity = 0;
+      if (E._flashLensMat) E._flashLensMat.emissiveIntensity = 0;
+      return;
+    }
+    if(E.flashlight) E.flashlight.intensity = on ? (E._flashBaseIntensity || 9.0) : 0;
+    if(E._flashLensMat) E._flashLensMat.emissiveIntensity = on ? 1.8 : 0;
+  },
   isFlashlightOn(){ return !!(E.flashlight && E.flashlight.intensity > 0); },
   halt(){ halt=true; cancelAnimationFrame(raf); },
   frame(){ last=performance.now()-16; loop(performance.now()); },
   step(n,ms=50){ api._skip=true; for(let i=0;i<n;i++){ last=performance.now()-ms; loop(performance.now()); } api._skip=false; last=performance.now()-16; loop(performance.now()); },
   triggerScare:n=>scares?.trigger(n),
   scares,
+  _controlBuilt: room.id === 'control',
+  toggleControlDoor: () => E.toggleControlDoor?.(),
+  toggleWingDoor: (id) => E.toggleWingDoor?.(id),
+  toggleBreakerLight: () => E.toggleBreakerLight?.(),
+  rattleDoor: (id) => E.rattleDoor?.(id),
+  setFragmentCleared: (id) => E.setFragmentCleared?.(id),
+  spawnDroppedEvidence: (rec) => E.spawnDroppedEvidence?.(rec),
+  clearDroppedEvidence: (id) => E.clearDroppedEvidence?.(id),
+  setQualityMode: (m) => E.setQualityMode?.(m),
+  getQualityMode: () => E._qualityMode || 'high',
+  get dev() { return E._dev || null; },
   dispose(){
+    halt=true;
+    E._disposed = true;
     cancelAnimationFrame(raf);
     scares?.dispose?.();
     controls.dispose();
     window.removeEventListener('resize',rs);
-    S.traverse(o=>{o.geometry?.dispose()});
+    disposeObjectResources(S);
+    E._hlMatById = null;
+    gltfLoader = null;
+    fbxLoader = null;
+    rigL.length = 0;
+    rigG.length = 0;
+    anims.length = 0;
+    pick.length = 0;
+    solids.length = 0;
+    pmremRT?.dispose?.();
+    pmremGen?.dispose?.();
     R.dispose();
     R.domElement.remove();
   }
