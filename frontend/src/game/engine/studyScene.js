@@ -156,7 +156,7 @@ export function buildStudy(E) {
   // 5. Terminal PC (clue_entry R1-07) - Right side of desk
   {
     const pcGroup = new THREE.Group();
-    pcGroup.position.set(0.9, 0.5, -0.8);
+    pcGroup.position.set(0.9, 1.06, -0.75);
 
     const tower = new THREE.Mesh(bgeo(0.35, 0.55, 0.6), beigeMetal);
     tower.castShadow = true;

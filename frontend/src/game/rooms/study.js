@@ -31,7 +31,7 @@ export default {
   objectCoordinates: {
     tablet_drawer: { pos: [-1.2, 0.72, -0.5], size: [0.6, 0.25, 0.5], role: 'clue_entry', clue_id: 'R1-05' },
     crt_monitor: { pos: [0.0, 0.95, -0.8], size: [0.55, 0.5, 0.5], role: 'clue_entry', clue_id: 'R1-06' },
-    terminal_pc: { pos: [0.9, 0.5, -0.8], size: [0.35, 0.55, 0.6], role: 'clue_entry', clue_id: 'R1-07' },
+    terminal_pc: { pos: [0.9, 1.06, -0.75], size: [0.35, 0.55, 0.6], role: 'clue_entry', clue_id: 'R1-07' },
     line_printer: { pos: [1.8, 0.75, -0.4], size: [0.65, 0.35, 0.55], role: 'clue_entry', clue_id: 'R1-08' },
     bookshelf: { pos: [-2.8, 1.5, 0.0], size: [0.45, 2.8, 2.2], role: 'interactive_fragment', fragments: ['ES01', 'EK03'] },
     corkboard: { pos: [1.5, 1.8, -2.8], size: [1.8, 1.1, 0.08], role: 'interactive_fragment', fragments: ['ES02', 'ES09'] },
