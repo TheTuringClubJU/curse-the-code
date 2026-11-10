@@ -1,58 +1,78 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { copyDocumentText, downloadDocumentFile } from '../../engine/evidenceExport';
 
 // ─── Canvas drawing helpers ───────────────────────────────────────────────────
 
-const DIGIT_GLYPHS = {
-  8: [
-    [1,1,1],
-    [1,0,1],
-    [1,1,1],
-    [1,0,1],
-    [1,1,1],
-  ],
-  1: [
-    [0,1,0],
-    [1,1,0],
-    [0,1,0],
-    [0,1,0],
-    [1,1,1],
-  ],
-  4: [
-    [1,0,1],
-    [1,0,1],
-    [1,1,1],
-    [0,0,1],
-    [0,0,1],
-  ],
-  0: [
-    [1,1,1],
-    [1,0,1],
-    [1,0,1],
-    [1,0,1],
-    [1,1,1],
-  ],
+const TELEMETRY_PROFILES = {
+  'VM-A': {
+    label: '// PRIMARY VOICE LOG',
+    peakMin: 65,
+    peakMax: 80,
+    carrierFreqKHz: '14.82',
+    frames: [
+      { idx: 0, bcd: '1000', morse: '---..', peakHz: 14820 },
+      { idx: 1, bcd: '0001', morse: '.----', peakHz: 14110 },
+      { idx: 2, bcd: '0100', morse: '....-', peakHz: 14440 },
+      { idx: 3, bcd: '0000', morse: '-----', peakHz: 14000 },
+    ],
+    midDecoy: {
+      peakMin: 25,
+      peakMax: 42,
+      carrierFreqKHz: '3.18',
+      frames: [
+        { idx: 0, bcd: '0001', morse: '.----', peakHz: 3110 },
+        { idx: 1, bcd: '1001', morse: '----.', peakHz: 3910 },
+        { idx: 2, bcd: '1000', morse: '---..', peakHz: 3820 },
+        { idx: 3, bcd: '0011', morse: '...--', peakHz: 3340 },
+      ],
+    },
+  },
+  'VM-B': {
+    label: '// SECONDARY ARCHIVE',
+    peakMin: 40,
+    peakMax: 55,
+    carrierFreqKHz: '14.41',
+    frames: [
+      { idx: 0, bcd: '1000', morse: '---..', peakHz: 14410 },
+      { idx: 1, bcd: '0100', morse: '....-', peakHz: 14440 },
+      { idx: 2, bcd: '0001', morse: '.----', peakHz: 14110 },
+      { idx: 3, bcd: '0000', morse: '-----', peakHz: 14000 },
+    ],
+  },
 };
+
+function getActiveTelemetryPacket(vmTab, band, scrubPos) {
+  const profile = TELEMETRY_PROFILES[vmTab] || TELEMETRY_PROFILES['VM-A'];
+  if (band === 'HIGH' && scrubPos >= profile.peakMin && scrubPos <= profile.peakMax) {
+    return { active: true, carrierFreqKHz: profile.carrierFreqKHz, frames: profile.frames, bandType: 'ULTRASONIC' };
+  }
+  if (band === 'MID' && profile.midDecoy && scrubPos >= profile.midDecoy.peakMin && scrubPos <= profile.midDecoy.peakMax) {
+    return { active: true, carrierFreqKHz: profile.midDecoy.carrierFreqKHz, frames: profile.midDecoy.frames, bandType: 'MID-BAND' };
+  }
+  return { active: false, carrierFreqKHz: profile.carrierFreqKHz, frames: [], bandType: band };
+}
 
 function drawOscilloscope(canvas, vmTab, band, scrubPos) {
   if (!canvas) return;
-  const ctx = canvas.getContext('2d');
+  const ctx = canvas.getContext?.('2d');
+  if (!ctx) return;
   const W = canvas.width;
   const H = canvas.height;
 
-  // Dark background
-  ctx.fillStyle = '#030e05';
+  // Matte charcoal hardware CRT tube background
+  ctx.fillStyle = '#0c0d0e';
   ctx.fillRect(0, 0, W, H);
 
   // Vignette
   const vign = ctx.createRadialGradient(W/2, H/2, H*0.2, W/2, H/2, H*0.72);
   vign.addColorStop(0, 'rgba(0,0,0,0)');
-  vign.addColorStop(1, 'rgba(0,0,0,0.6)');
+  vign.addColorStop(1, 'rgba(0,0,0,0.65)');
   ctx.fillStyle = vign;
   ctx.fillRect(0, 0, W, H);
 
-  // Grid lines
-  ctx.strokeStyle = '#0d2e12';
-  ctx.lineWidth = 0.6;
+  // Clean hairline studio reticle
+  ctx.strokeStyle = 'rgba(216, 208, 192, 0.12)';
+  ctx.lineWidth = 0.7;
   const cols = 10, rows = 8;
   for (let i = 1; i < cols; i++) {
     ctx.beginPath(); ctx.moveTo(W*i/cols, 0); ctx.lineTo(W*i/cols, H); ctx.stroke();
@@ -61,19 +81,32 @@ function drawOscilloscope(canvas, vmTab, band, scrubPos) {
     ctx.beginPath(); ctx.moveTo(0, H*j/rows); ctx.lineTo(W, H*j/rows); ctx.stroke();
   }
 
-  // Phosphor afterglow bands
+  const profile = TELEMETRY_PROFILES[vmTab] || TELEMETRY_PROFILES['VM-A'];
   const bandOffset = band === 'LOW' ? 0 : band === 'MID' ? 1.4 : 2.8;
-  const freq = 0.015 + bandOffset * 0.008;
   const amp = H * (band === 'HIGH' ? 0.22 : band === 'MID' ? 0.28 : 0.32);
   const noiseAmp = band === 'HIGH' ? 6 : band === 'MID' ? 4 : 8;
 
-  const isReveal = vmTab === 'VM-A' && band === 'HIGH' && scrubPos >= 65 && scrubPos <= 80;
+  const isCarrierPeak = band === 'HIGH' && scrubPos >= profile.peakMin && scrubPos <= profile.peakMax;
 
-  // Shadow / glow passes
+  // Draw subtle 4-frame BCD pulse columns when carrier peak is tuned
+  if (isCarrierPeak) {
+    profile.frames.forEach((f, idx) => {
+      const fx = W * (0.2 + idx * 0.2);
+      ctx.fillStyle = 'rgba(227, 178, 97, 0.08)';
+      ctx.fillRect(fx - 14, H * 0.18, 28, H * 0.64);
+      [...f.bcd].forEach((bit, bIdx) => {
+        const by = H * (0.28 + bIdx * 0.12);
+        ctx.fillStyle = bit === '1' ? 'rgba(227, 178, 97, 0.75)' : 'rgba(210, 218, 204, 0.18)';
+        ctx.fillRect(fx - 7, by, 14, bit === '1' ? 6 : 2);
+      });
+    });
+  }
+
+  // Warm amber/ivory analog trace
   for (let pass = 0; pass < 3; pass++) {
-    const alpha = [0.06, 0.12, 0.85][pass];
-    const lw = [4.5, 2.5, 1.2][pass];
-    ctx.strokeStyle = `rgba(77,255,120,${alpha})`;
+    const alpha = [0.08, 0.22, 0.9][pass];
+    const lw = [4.0, 2.2, 1.3][pass];
+    ctx.strokeStyle = isCarrierPeak ? `rgba(227, 178, 97, ${alpha})` : `rgba(210, 218, 204, ${alpha})`;
     ctx.lineWidth = lw;
     ctx.beginPath();
 
@@ -83,19 +116,13 @@ function drawOscilloscope(canvas, vmTab, band, scrubPos) {
       const noise = (Math.sin(x * 0.3 + scrubPos) * 0.5 + Math.cos(x * 0.17) * 0.5) * noiseAmp;
       let y = H / 2 + Math.sin(phase) * amp * Math.sin(t * Math.PI) + noise;
 
-      // Inject digit disruption in reveal zone
-      if (isReveal && pass === 2) {
-        const digitZone = { start: 0.28, end: 0.75 };
-        if (t > digitZone.start && t < digitZone.end) {
-          const localT = (t - digitZone.start) / (digitZone.end - digitZone.start);
-          const digit = localT < 0.25 ? 8 : localT < 0.50 ? 1 : localT < 0.75 ? 4 : 0;
-          const glyph = DIGIT_GLYPHS[digit];
-          const glyphT = ((localT * 4) % 1);
-          const col = Math.floor(glyphT * 3);
-          const row = Math.floor((Math.sin(t * 2.3) * 0.5 + 0.5) * 5);
-          if (glyph[row] && glyph[row][col]) {
-            y = H / 2 + (row - 2) * 10;
-          }
+      // Modulate trace with ultrasonic carrier envelope inside peak pocket
+      if (isCarrierPeak && pass === 2) {
+        const slot = Math.min(3, Math.floor(t * 4));
+        const bits = profile.frames[slot]?.bcd || '0000';
+        const bitIdx = Math.min(3, Math.floor(((t * 4) % 1) * 4));
+        if (bits[bitIdx] === '1') {
+          y += Math.sin(t * Math.PI * 64) * 18;
         }
       }
 
@@ -113,57 +140,46 @@ function drawOscilloscope(canvas, vmTab, band, scrubPos) {
 
 function drawWaveformStrip(canvas, vmTab, band, scrubPos) {
   if (!canvas) return;
-  const ctx = canvas.getContext('2d');
+  const ctx = canvas.getContext?.('2d');
+  if (!ctx) return;
   const W = canvas.width;
   const H = canvas.height;
 
-  ctx.fillStyle = '#020a04';
+  ctx.fillStyle = '#0c0d0e';
   ctx.fillRect(0, 0, W, H);
 
-  // Scrub marker
+  const profile = TELEMETRY_PROFILES[vmTab] || TELEMETRY_PROFILES['VM-A'];
   const markerX = (scrubPos / 100) * W;
-  ctx.fillStyle = 'rgba(196,122,0,0.15)';
-  ctx.fillRect(markerX - 20, 0, 40, H);
+  const isCarrierPeak = band === 'HIGH' && scrubPos >= profile.peakMin && scrubPos <= profile.peakMax;
 
-  ctx.strokeStyle = '#c47a00';
-  ctx.lineWidth = 1;
+  // Scrub marker
+  ctx.fillStyle = isCarrierPeak ? 'rgba(227, 178, 97, 0.22)' : 'rgba(196, 162, 101, 0.14)';
+  ctx.fillRect(markerX - 18, 0, 36, H);
+
+  ctx.strokeStyle = '#c4a265';
+  ctx.lineWidth = 1.5;
   ctx.beginPath(); ctx.moveTo(markerX, 0); ctx.lineTo(markerX, H); ctx.stroke();
 
-  const isReveal = vmTab === 'VM-A' && band === 'HIGH' && scrubPos >= 65 && scrubPos <= 80;
-
-  // Mini waveform
-  ctx.strokeStyle = isReveal ? '#4dff78' : '#1a3d1f';
-  ctx.lineWidth = 1;
+  // Mini spectral envelope — peaks subtly inside each channel's HIGH carrier pocket without spoiling digits
+  ctx.strokeStyle = isCarrierPeak ? '#e3b261' : '#737874';
+  ctx.lineWidth = 1.1;
   ctx.beginPath();
   for (let x = 0; x < W; x++) {
     const t = x / W;
-    const v = Math.sin(t * Math.PI * 48) * (H * 0.3) + Math.sin(t * Math.PI * 11 + 1) * (H * 0.1);
+    const pct = t * 100;
+    const inPocket = band === 'HIGH' && pct >= profile.peakMin && pct <= profile.peakMax;
+    const burst = inPocket ? (H * 0.24) : 0;
+    const v = Math.sin(t * Math.PI * (inPocket ? 92 : 48)) * (H * 0.16 + burst) + Math.sin(t * Math.PI * 11 + 1) * (H * 0.08);
     const y = H / 2 + v;
     if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
   }
   ctx.stroke();
-
-  if (isReveal) {
-    // Digit tick marks
-    ctx.fillStyle = '#4dff78';
-    ctx.font = 'bold 10px Courier, monospace';
-    ctx.textAlign = 'center';
-    const digits = [8, 1, 4, 0];
-    digits.forEach((d, i) => {
-      const dx = W * (0.3 + i * 0.12);
-      ctx.fillText(String(d), dx, H / 2 - 6);
-      ctx.beginPath();
-      ctx.moveTo(dx, H / 2);
-      ctx.lineTo(dx, H / 2 + 8);
-      ctx.stroke();
-    });
-  }
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
 const BANDS = ['LOW', 'MID', 'HIGH'];
 
-export default function SpectrogramModal({ isOpen, onClose, onSubmit, clueState }) {
+export default function SpectrogramModal({ isOpen, onClose, onSubmit, onResetLockout, clueState }) {
   const [vmTab, setVmTab] = useState('VM-A');
   const [band, setBand] = useState('MID');
   const [scrubPos, setScrubPos] = useState(0); // 0–100
@@ -171,6 +187,8 @@ export default function SpectrogramModal({ isOpen, onClose, onSubmit, clueState 
   const [errorMsg, setErrorMsg] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const [blink, setBlink] = useState(true);
+  const [copiedTelemetry, setCopiedTelemetry] = useState(false);
+  const [downloadedTelemetry, setDownloadedTelemetry] = useState(false);
 
   const oscRef = useRef(null);
   const stripRef = useRef(null);
@@ -184,17 +202,24 @@ export default function SpectrogramModal({ isOpen, onClose, onSubmit, clueState 
     return () => clearInterval(id);
   }, []);
 
-  // Reset on open
+  // Reset on open & close on Escape
   useEffect(() => {
-    if (isOpen) {
-      setVmTab('VM-A');
-      setBand('MID');
-      setScrubPos(0);
-      setInputValue('');
-      setErrorMsg('');
-      setSubmitted(false);
-    }
-  }, [isOpen]);
+    if (!isOpen) return undefined;
+    setVmTab('VM-A');
+    setBand('MID');
+    setScrubPos(0);
+    setInputValue('');
+    setErrorMsg('');
+    setSubmitted(false);
+    const onKey = (e) => {
+      if (e.key === 'Escape') {
+        e.stopPropagation();
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [isOpen, onClose]);
 
   // Redraw canvas when params change
   useEffect(() => {
@@ -240,7 +265,75 @@ export default function SpectrogramModal({ isOpen, onClose, onSubmit, clueState 
   const isExhausted = clueState?.exhausted;
   const attemptsLeft = clueState?.attempts_remaining ?? 3;
 
-  const isRevealZone = vmTab === 'VM-A' && band === 'HIGH' && scrubPos >= 65 && scrubPos <= 80;
+  const profile = TELEMETRY_PROFILES[vmTab] || TELEMETRY_PROFILES['VM-A'];
+  const activePacket = getActiveTelemetryPacket(vmTab, band, scrubPos);
+  const isCarrierPeak = activePacket.active;
+
+  const buildTelemetryDump = useCallback(() => {
+    const header = `DELTA-OSC-MK2 TELEMETRY | CHANNEL=${vmTab} (${profile.label}) | BAND=${band} | POS=${scrubPos}%`;
+    const body = isCarrierPeak
+      ? `CARRIER_LOCK=${activePacket.carrierFreqKHz}kHz (${activePacket.bandType})\n4-FRAME BCD-8421 / ITU-MORSE PACKET:\n` +
+        activePacket.frames.map(f => `F${f.idx}: BCD=${f.bcd} | MORSE=${f.morse} | PEAK=${f.peakHz}Hz`).join('\n')
+      : [
+          `STATUS=SCANNING (NO CARRIER PACKET AT POS=${scrubPos}% IN ${band} BAND)`,
+          `CHANNEL_FREQ=${profile.carrierFreqKHz}kHz`,
+          'CALIBRATION GUIDE: Low and mid bands contain background rumble and false harmonics.',
+          'Sweep the HIGH band past two-thirds travel (66%+) on the proven voicemail reel from R2-05 to capture the 4-frame BCD-8421 / ITU-Morse quartet.',
+        ].join('\n');
+    return `${header}\n${body}`;
+  }, [vmTab, profile, band, scrubPos, isCarrierPeak, activePacket]);
+
+  const handleCopyTelemetry = useCallback(async () => {
+    await copyDocumentText(buildTelemetryDump());
+    setCopiedTelemetry(true);
+    setTimeout(() => setCopiedTelemetry(false), 1800);
+  }, [buildTelemetryDump]);
+
+  const handleDownloadTelemetry = useCallback(() => {
+    downloadDocumentFile(`delta_spectrogram_${vmTab.toLowerCase()}_${band.toLowerCase()}.txt`, buildTelemetryDump());
+    setDownloadedTelemetry(true);
+    setTimeout(() => setDownloadedTelemetry(false), 1800);
+  }, [vmTab, band, buildTelemetryDump]);
+
+  const handleAuditionCarrier = useCallback(() => {
+    try {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return;
+      const ctx = new AC();
+      const now = ctx.currentTime;
+      if (!isCarrierPeak) {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.value = band === 'LOW' ? 140 : band === 'MID' ? 320 : 680;
+        gain.gain.setValueAtTime(0.05, now);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.25);
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.start(now); osc.stop(now + 0.26);
+        setTimeout(() => ctx.close().catch(() => {}), 350);
+        return;
+      }
+      let t = now + 0.02;
+      activePacket.frames.forEach(f => {
+        [...f.morse].forEach(sym => {
+          const dur = sym === '-' ? 0.14 : 0.05;
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.value = band === 'MID' ? 540 : 1180;
+          gain.gain.setValueAtTime(0.08, t);
+          gain.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+          osc.connect(gain); gain.connect(ctx.destination);
+          osc.start(t); osc.stop(t + dur + 0.01);
+          t += dur + 0.045;
+        });
+        t += 0.14;
+      });
+      setTimeout(() => ctx.close().catch(() => {}), Math.ceil((t - now + 0.2) * 1000));
+    } catch {
+      // ignore environments without Web Audio API
+    }
+  }, [isCarrierPeak, band, activePacket]);
 
   if (!isOpen) return null;
 
@@ -249,62 +342,52 @@ export default function SpectrogramModal({ isOpen, onClose, onSubmit, clueState 
       <div
         className="modal-panel spectrogram-modal"
         onClick={e => e.stopPropagation()}
-        style={{ maxWidth: 760, width: '94vw', maxHeight: '90vh', overflowY: 'auto' }}
+        style={{ maxWidth: 800, width: '94vw', maxHeight: '90vh', overflowY: 'auto' }}
       >
-        {/* ── Header ── */}
-        <div className="modal-header" style={{ borderBottom: '1px solid #1a3d1f', paddingBottom: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        {/* ── Hardware Header ── */}
+        <div className="modal-header flex justify-between items-start gap-4 pb-3 border-b border-white/10">
           <div>
-            <div className="font-teletype" style={{ color: '#4dff78', letterSpacing: 3, fontSize: 11, marginBottom: 4 }}>
-              ◈ SUBSTATION DELTA — VOICEMAIL SPECTROGRAM ANALYSER ◈
+            <div className="font-mono text-[10px] tracking-[0.2em] text-[#c4a265] mb-1">
+              SUBSTATION DELTA · AUDIO ANALYSER MK-II
             </div>
-            <h2 style={{ color: '#4dff78', fontSize: 18, fontFamily: 'Courier, monospace', margin: 0, letterSpacing: 2 }}>
+            <h2 className="font-re-display text-lg font-bold text-[#eceae4] m-0">
               SOUND CONSOLE / FREQ ANALYSIS
             </h2>
           </div>
-          <button className="modal-close-btn" onClick={onClose} aria-label="Close">✕</button>
+          <button type="button" className="re-btn" onClick={onClose} aria-label="Close">
+            <span className="re-btn-circle">ESC</span>
+            <span>Put Down</span>
+          </button>
         </div>
 
-        {/* ── VM Tab selector ── */}
-        <div style={{ display: 'flex', gap: 8, padding: '12px 0 0 0', marginBottom: 16 }}>
+        {/* ── Channel Tabs (Gothic Rounded Capsule Pills) ── */}
+        <div className="flex items-center gap-2 pt-3 pb-4">
           {['VM-A', 'VM-B'].map(tab => (
             <button
               key={tab}
-              className={`vm-tab-btn${vmTab === tab ? ' active' : ''}`}
+              type="button"
               onClick={() => { setVmTab(tab); setScrubPos(0); }}
+              className="font-sans font-semibold text-xs tracking-wider px-5 py-1.5 rounded-full border cursor-pointer transition"
               style={{
-                fontFamily: 'Courier, monospace',
-                fontSize: 13,
-                letterSpacing: 2,
-                padding: '6px 24px',
-                border: `1px solid ${vmTab === tab ? '#4dff78' : '#1a3d1f'}`,
-                background: vmTab === tab ? '#0d2e12' : 'transparent',
-                color: vmTab === tab ? '#4dff78' : '#3a5a3f',
-                cursor: 'pointer',
-                transition: 'all 0.15s',
+                borderColor: vmTab === tab ? 'rgba(208, 156, 98, 0.58)' : 'rgba(255,255,255,0.12)',
+                background: vmTab === tab ? 'linear-gradient(90deg, rgba(132,34,34,0.84), rgba(40,14,14,0.9))' : 'rgba(255,255,255,0.04)',
+                color: vmTab === tab ? '#f6efe0' : '#9c9282',
               }}
             >
               {tab}
             </button>
           ))}
-          <span className="font-teletype" style={{ color: '#3a5a3f', fontSize: 10, alignSelf: 'center', marginLeft: 12, letterSpacing: 1 }}>
-            {vmTab === 'VM-A' ? '// AUTHENTICATED VOICEMAIL' : '// SECONDARY ARCHIVE'}
+          <span className="font-mono text-[11px] text-[#9c9282] ml-2">
+            {profile.label}
           </span>
         </div>
 
-        {/* ── Oscilloscope ── */}
-        <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start', flexWrap: 'wrap' }}>
-          <div style={{ flex: 1, minWidth: 260 }}>
+        {/* ── Oscilloscope + Controls ── */}
+        <div className="flex gap-6 items-start flex-wrap">
+          <div className="flex-1 min-w-[260px] flex flex-col items-center">
             <div
-              className="oscilloscope-tube"
-              style={{
-                position: 'relative',
-                borderRadius: '50%',
-                overflow: 'hidden',
-                border: '3px solid #1a3d1f',
-                boxShadow: '0 0 24px rgba(77,255,120,0.12), inset 0 0 40px rgba(0,0,0,0.6)',
-                aspectRatio: '1',
-                maxWidth: 300,
-              }}
+              className="rounded-full overflow-hidden border-2 border-[#303234] bg-[#0c0d0e] shadow-inner relative"
+              style={{ width: 270, height: 270 }}
             >
               <canvas
                 ref={oscRef}
@@ -312,57 +395,48 @@ export default function SpectrogramModal({ isOpen, onClose, onSubmit, clueState 
                 height={300}
                 style={{ display: 'block', width: '100%', height: '100%' }}
               />
-              {/* CRT bezel overlay */}
-              <div style={{
-                position: 'absolute', inset: 0,
-                borderRadius: '50%',
-                background: 'radial-gradient(circle at 30% 30%, rgba(77,255,120,0.04), transparent 60%)',
-                pointerEvents: 'none',
-              }} />
-              {/* Tube label */}
-              <div
-                className="font-teletype"
-                style={{
-                  position: 'absolute', bottom: 8, left: 0, right: 0,
-                  textAlign: 'center', color: '#1a3d1f', fontSize: 9, letterSpacing: 2,
-                }}
-              >
+              <div className="absolute bottom-2 inset-x-0 text-center font-mono text-[9px] tracking-[0.2em] text-[#6d706e]">
                 DELTA-OSC-MK2
               </div>
             </div>
 
-            {isRevealZone && (
-              <div
-                className="font-teletype blink-cursor"
-                style={{ color: '#4dff78', fontSize: 11, letterSpacing: 2, marginTop: 8, textAlign: 'center' }}
-              >
-                ⚠ ANOMALY DETECTED IN HIGH BAND
+            {isCarrierPeak ? (
+              <div className="mt-3 w-full max-w-[300px] bg-black/45 border border-[#c4a265]/35 rounded-xl px-3.5 py-2.5 font-mono text-[10px] text-[#eceae4] space-y-1">
+                <div className="flex items-center justify-between text-[#e3b261] font-bold tracking-[0.14em]">
+                  <span>4-FRAME BCD-MORSE TELEMETRY</span>
+                  <span>{activePacket.carrierFreqKHz} kHz</span>
+                </div>
+                {activePacket.frames.map(f => (
+                  <div key={f.idx} className="flex justify-between text-[#c8c4b8]">
+                    <span>{`F${f.idx} [${f.bcd}]`}</span>
+                    <span className="text-[#e3b261] tracking-widest">{f.morse}</span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="font-mono text-[10px] tracking-[0.15em] text-[#7c7870] mt-2.5">
+                SWEEP FREQ BAND & POS TO CAPTURE CARRIER PACKET
               </div>
             )}
           </div>
 
-          {/* ── Controls column ── */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 20, flex: 1, minWidth: 200 }}>
-            {/* Band selector */}
+          <div className="flex-1 min-w-[240px] flex flex-col gap-4">
+            {/* Frequency Band Selector (Gothic Capsule Pills) */}
             <div>
-              <div className="font-teletype" style={{ color: '#c47a00', fontSize: 10, letterSpacing: 2, marginBottom: 8 }}>
+              <div className="font-mono text-[10px] tracking-[0.2em] text-[#b4a998] mb-2">
                 FREQ BAND
               </div>
-              <div style={{ display: 'flex', gap: 6 }}>
+              <div className="flex gap-2">
                 {BANDS.map(b => (
                   <button
                     key={b}
-                    className={`freq-band-btn${band === b ? ' active' : ''}`}
+                    type="button"
                     onClick={() => setBand(b)}
+                    className="font-sans font-semibold text-xs tracking-wider px-4 py-1.5 rounded-full border cursor-pointer transition"
                     style={{
-                      fontFamily: 'Courier, monospace',
-                      fontSize: 11,
-                      letterSpacing: 1,
-                      padding: '5px 14px',
-                      border: `1px solid ${band === b ? '#4dff78' : '#1a3d1f'}`,
-                      background: band === b ? '#0d2e12' : 'transparent',
-                      color: band === b ? '#4dff78' : '#3a5a3f',
-                      cursor: 'pointer',
+                      borderColor: band === b ? 'rgba(208, 156, 98, 0.58)' : 'rgba(255,255,255,0.12)',
+                      background: band === b ? 'linear-gradient(90deg, rgba(132,34,34,0.84), rgba(40,14,14,0.9))' : 'rgba(255,255,255,0.04)',
+                      color: band === b ? '#f6efe0' : '#9c9282',
                     }}
                   >
                     {b}
@@ -371,82 +445,97 @@ export default function SpectrogramModal({ isOpen, onClose, onSubmit, clueState 
               </div>
             </div>
 
-            {/* Scrub dial */}
-            <div>
-              <div className="font-teletype" style={{ color: '#c47a00', fontSize: 10, letterSpacing: 2, marginBottom: 8 }}>
-                POSITION: {scrubPos}%
+            {/* Scrub Dial + Clean Slider + Hardware Utilities */}
+            <div className="space-y-2.5">
+              <div className="flex items-center justify-between gap-2 flex-wrap font-mono text-[11px] text-[#c8c4b8]">
+                <span>POSITION: <strong className="text-[#f5e1ba]">{scrubPos}%</strong></span>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={handleAuditionCarrier}
+                    className="font-sans font-semibold text-[11px] px-3 py-1 rounded-full bg-white/8 hover:bg-white/15 border border-white/18 text-[#e5d0a4] cursor-pointer transition"
+                    title="Audition carrier pulse via Web Audio"
+                  >
+                    Pulse Tone
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleCopyTelemetry}
+                    className="font-sans font-semibold text-[11px] px-3 py-1 rounded-full bg-white/8 hover:bg-white/15 border border-white/18 text-[#f5e1ba] cursor-pointer transition"
+                    title="Copy captured spectral telemetry for external/AI decoding"
+                  >
+                    {copiedTelemetry ? '✓ Copied Pkt' : 'Copy Telemetry'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleDownloadTelemetry}
+                    className="font-sans font-semibold text-[11px] px-3 py-1 rounded-full bg-white/8 hover:bg-white/15 border border-white/18 text-[#f5e1ba] cursor-pointer transition"
+                    title="Download captured spectral telemetry as a .txt file"
+                  >
+                    {downloadedTelemetry ? '✓ Downloaded' : 'Download Pkt'}
+                  </button>
+                </div>
               </div>
-              <div
-                className="scrub-dial"
-                onPointerDown={onDialPointerDown}
-                onPointerMove={onDialPointerMove}
-                onPointerUp={onDialPointerUp}
-                onPointerCancel={onDialPointerUp}
-                style={{
-                  width: 72,
-                  height: 72,
-                  borderRadius: '50%',
-                  border: '3px solid #1a3d1f',
-                  background: 'radial-gradient(circle at 40% 40%, #1a3d1f, #030e05)',
-                  cursor: 'grab',
-                  position: 'relative',
-                  boxShadow: '0 0 12px rgba(77,255,120,0.1)',
-                  userSelect: 'none',
-                }}
-              >
-                {/* Dial indicator line */}
-                <div style={{
-                  position: 'absolute',
-                  top: '50%',
-                  left: '50%',
-                  width: 2,
-                  height: 28,
-                  background: '#4dff78',
-                  transformOrigin: '1px 0',
-                  transform: `translateX(-50%) rotate(${scrubPos * 2.7 - 135}deg)`,
-                  borderRadius: 1,
-                }} />
-                {/* Center dot */}
-                <div style={{
-                  position: 'absolute',
-                  top: '50%', left: '50%',
-                  width: 6, height: 6,
-                  borderRadius: '50%',
-                  background: '#4dff78',
-                  transform: 'translate(-50%, -50%)',
-                }} />
-              </div>
-              <div className="font-teletype" style={{ color: '#3a5a3f', fontSize: 9, letterSpacing: 1, marginTop: 6 }}>
-                DRAG TO SCRUB
+              <div className="flex items-center gap-4">
+                <div
+                  onPointerDown={onDialPointerDown}
+                  onPointerMove={onDialPointerMove}
+                  onPointerUp={onDialPointerUp}
+                  onPointerCancel={onDialPointerUp}
+                  className="shrink-0 relative rounded-full border-2 border-[#3a3d40] cursor-grab"
+                  style={{
+                    width: 60,
+                    height: 60,
+                    background: 'radial-gradient(circle at 38% 35%, #2a2c2e, #121314)',
+                    userSelect: 'none',
+                  }}
+                >
+                  <div style={{
+                    position: 'absolute',
+                    top: '50%', left: '50%',
+                    width: 2, height: 22,
+                    background: '#c4a265',
+                    transformOrigin: '1px 0',
+                    transform: `translateX(-50%) rotate(${scrubPos * 2.7 - 135}deg)`,
+                  }} />
+                </div>
+                <input
+                  type="range"
+                  min={0}
+                  max={100}
+                  value={scrubPos}
+                  onChange={e => setScrubPos(Number(e.target.value))}
+                  className="w-full accent-[#c4a265] cursor-pointer"
+                />
               </div>
             </div>
 
-            {/* Status */}
-            <div>
-              <div className="font-teletype" style={{ color: '#c47a00', fontSize: 10, letterSpacing: 2, marginBottom: 4 }}>STATUS</div>
-              <div className="font-teletype" style={{ color: '#3a5a3f', fontSize: 11, lineHeight: 1.6 }}>
-                FILE: {vmTab}<br />
-                BAND: {band}<br />
-                SIGNAL: {vmTab === 'VM-A' ? 'STRONG' : 'DEGRADED'}<br />
-                DECODE: {isRevealZone ? '⚠ ANOMALY' : 'NOMINAL'}
+            {/* Clear Readout Status Box (non-spoiling hardware telemetry) */}
+            <div className="bg-black/35 border border-white/10 p-3 font-mono text-xs space-y-1 text-[#c8c4b8]">
+              <div className="text-[10px] text-[#c4a265] tracking-widest mb-1">STATUS</div>
+              <div>{`FILE: ${vmTab}  ·  BAND: ${band}`}</div>
+              <div>
+                SIGNAL:{' '}
+                <span className={isCarrierPeak ? 'text-[#e3b261] font-bold' : 'text-[#9c9890]'}>
+                  {isCarrierPeak ? `CARRIER LOCK (${profile.carrierFreqKHz} kHz)` : band === 'HIGH' ? 'HARMONIC PRESENT' : 'AMBIENT FLOOR'}
+                </span>
+              </div>
+              <div>
+                PACKET:{' '}
+                <span className={isCarrierPeak ? 'text-[#e3b261]' : 'text-[#9c9890]'}>
+                  {isCarrierPeak ? 'BCD-8421 / MORSE READY (VERIFY SOURCE LOG)' : 'ALIGN BAND & POSITION FOR PEAK'}
+                </span>
               </div>
             </div>
           </div>
         </div>
 
-        {/* ── Waveform strip ── */}
-        <div style={{ marginTop: 20 }}>
-          <div className="font-teletype" style={{ color: '#c47a00', fontSize: 10, letterSpacing: 2, marginBottom: 6 }}>
+        {/* ── Waveform Strip ── */}
+        <div className="mt-4">
+          <div className="font-mono text-[10px] tracking-[0.16em] text-[#b4a998] mb-1.5">
             WAVEFORM STRIP — {vmTab} / {band} BAND
           </div>
-          <div
-            className="waveform-strip"
-            style={{
-              border: '1px solid #1a3d1f',
-              borderRadius: 3,
-              overflow: 'hidden',
-            }}
-          >
+          <div className="border border-white/15 bg-[#0c0d0e] overflow-hidden">
             <canvas
               ref={stripRef}
               width={700}
@@ -454,38 +543,50 @@ export default function SpectrogramModal({ isOpen, onClose, onSubmit, clueState 
               style={{ display: 'block', width: '100%', height: 56 }}
             />
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-            <span className="font-teletype" style={{ color: '#3a5a3f', fontSize: 9 }}>0:00</span>
-            <span className="font-teletype" style={{ color: '#c47a00', fontSize: 9 }}>pos {scrubPos}%</span>
-            <span className="font-teletype" style={{ color: '#3a5a3f', fontSize: 9 }}>4:17</span>
+          <div className="flex justify-between font-mono text-[10px] text-[#8d8a82] mt-1">
+            <span>0:00</span>
+            <span className="text-[#c4a265]">pos {scrubPos}%</span>
+            <span>4:17</span>
           </div>
         </div>
 
-        {/* ── Clue input ── */}
-        <div style={{ marginTop: 20, borderTop: '1px solid #1a3d1f', paddingTop: 16 }}>
+        {/* ── Code Entry Bar ── */}
+        <div className="mt-4 pt-4 border-t border-white/10">
           {isSolved && (
-            <div className="font-teletype" style={{ color: '#4dff78', fontSize: 12, letterSpacing: 2 }}>
+            <div className="font-mono text-xs tracking-widest text-[#e5d0a4] font-bold">
               ✓ CODE VERIFIED — RECORD LOCKED
             </div>
           )}
           {isExhausted && !isSolved && (
-            <div className="font-teletype" style={{ color: '#a31818', fontSize: 12, letterSpacing: 2 }}>
-              ✗ MAXIMUM ATTEMPTS EXCEEDED — ACCESS REVOKED
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="font-mono text-xs tracking-widest text-[#ef7b7b] font-bold">
+                ✗ MAXIMUM ATTEMPTS EXCEEDED — ACCESS REVOKED
+              </div>
+              {onResetLockout && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setErrorMsg('');
+                    setInputValue('');
+                    onResetLockout();
+                  }}
+                  className="re-btn"
+                >
+                  <span className="re-btn-circle">↻</span>
+                  <span>Reboot Terminal</span>
+                </button>
+              )}
             </div>
           )}
           {!isSolved && !isExhausted && (
-            <>
-              {errorMsg && (
-                <div className="font-teletype" style={{ color: '#a31818', fontSize: 11, marginBottom: 8 }}>
-                  ✗ {errorMsg}
-                </div>
-              )}
-              <div className="font-teletype" style={{ color: '#3a5a3f', fontSize: 10, marginBottom: 8, letterSpacing: 1 }}>
-                ATTEMPTS REMAINING: {attemptsLeft}
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                {errorMsg && <div className="font-mono text-xs text-[#fca5a5] mb-1">✗ {errorMsg}</div>}
+                <span className="font-mono text-[11px] text-[#9c9890]">ATTEMPTS REMAINING: {attemptsLeft}</span>
               </div>
-              <div className="terminal-input-line" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span className="font-teletype" style={{ color: '#4dff78', fontSize: 12, whiteSpace: 'nowrap' }}>
-                  &gt; ENTER FOUR-DIGIT CODE:
+              <div className="flex items-center gap-3">
+                <span className="font-mono text-xs text-[#eceae4] whitespace-nowrap">
+                  ENTER FOUR-DIGIT CODE:
                 </span>
                 <input
                   type="text"
@@ -494,44 +595,23 @@ export default function SpectrogramModal({ isOpen, onClose, onSubmit, clueState 
                   onKeyDown={handleKeyDown}
                   maxLength={4}
                   autoFocus
-                  placeholder={blink ? '_' : ''}
+                  placeholder={blink ? '____' : '0000'}
                   inputMode="numeric"
                   pattern="[0-9]*"
-                  style={{
-                    background: 'transparent',
-                    border: 'none',
-                    borderBottom: '1px solid #4dff78',
-                    color: '#4dff78',
-                    fontFamily: 'Courier, monospace',
-                    fontSize: 14,
-                    letterSpacing: 4,
-                    outline: 'none',
-                    width: 72,
-                    textAlign: 'center',
-                  }}
+                  className="bg-black/55 border-b-2 border-[#c4a265] text-[#f5e1ba] font-mono text-sm tracking-[0.25em] outline-none py-1 text-center"
+                  style={{ width: 88, flex: 'none' }}
                 />
                 <button
                   type="button"
                   onClick={handleSubmit}
                   disabled={submitted || inputValue.length !== 4}
-                  className="px-3 py-1 font-mono font-bold text-xs tracking-wider uppercase rounded transition-all cursor-pointer shadow-[0_0_10px_rgba(77,255,120,0.2)]"
-                  style={{
-                    background: inputValue.length === 4 ? '#1a3d1f' : 'transparent',
-                    border: '1px solid #4dff78',
-                    color: '#4dff78',
-                    opacity: inputValue.length !== 4 ? 0.4 : 1,
-                    cursor: inputValue.length === 4 ? 'pointer' : 'not-allowed',
-                  }}
+                  className="re-btn disabled:opacity-40"
                 >
-                  SUBMIT
+                  <span className="re-btn-circle">↵</span>
+                  <span>SUBMIT</span>
                 </button>
               </div>
-              {isRevealZone && (
-                <div className="font-teletype" style={{ color: '#c47a00', fontSize: 10, marginTop: 8, letterSpacing: 1 }}>
-                  HINT: Scan the HIGH band waveform carefully for embedded signal patterns.
-                </div>
-              )}
-            </>
+            </div>
           )}
         </div>
       </div>
