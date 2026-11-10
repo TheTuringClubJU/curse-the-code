@@ -25,6 +25,18 @@ const EVIDENCE_IMAGE_MAP = {
   EK06: '/evidence/basement/EK06.png',
   XK01: '/evidence/basement/XK01.png',
   XK02: '/evidence/basement/XK02.png',
+  ER01: '/evidence/evidence_er01.svg',
+  ER02: '/evidence/evidence_er02.svg',
+  ER03: '/evidence/evidence_er03.svg',
+  ER04: '/evidence/evidence_er04.svg',
+  ER05: '/evidence/evidence_er05.svg',
+  ER06: '/evidence/evidence_er06.svg',
+  ER07: '/evidence/evidence_er07.svg',
+  ER08: '/evidence/evidence_er08.svg',
+  ER09: '/evidence/evidence_er09.svg',
+  ER10: '/evidence/evidence_er10.svg',
+  XR01: '/evidence/evidence_xr01.svg',
+  XR02: '/evidence/evidence_xr02.svg',
 };
 
 const EVIDENCE_DETAILS_MAP = {
@@ -48,6 +60,18 @@ const EVIDENCE_DETAILS_MAP = {
   EK06: { part: 'Fragment C', hiding: 'Toolbox' },
   XK01: { part: 'Fragment', hiding: 'Floor Seal' },
   XK02: { part: 'Fragment', hiding: 'Server Rack Drive Bay' },
+  ER01: { clue: 'Incident Report (Requisition)', part: 'Doc A', hiding: 'Filing Cabinet A (Bottom Drawer)' },
+  ER02: { clue: 'Subject Intake (S-011)', part: 'Doc B', hiding: 'Filing Cabinet A (Middle Drawer)' },
+  ER03: { clue: 'Medical Autopsy Memo', part: 'Doc C', hiding: 'Filing Cabinet B (Top Drawer Dividers)' },
+  ER04: { clue: 'Facility Specimen Ledger', part: 'Doc D', hiding: 'Filing Cabinet B (Bottom Locked Drawer)' },
+  ER05: { clue: 'Sub-Station Map (Lower Levels)', part: 'Doc E', hiding: 'Archive Shelves North (Middle Rack)' },
+  ER06: { clue: 'Surveillance Camera Log (1983)', part: 'Doc F', hiding: 'Archive Shelves West (Top Collapsed Shelf)' },
+  ER07: { clue: 'Corvin Hand-Written Note', part: 'Doc G', hiding: 'Clerk Desk (Blotter Inset)' },
+  ER08: { clue: 'Personnel Index — Milo Corvin', part: 'Doc H', hiding: 'Card Catalog (Drawer 14)' },
+  ER09: { clue: 'Personnel Index — S. Vance', part: 'Doc I', hiding: 'Card Catalog (Drawer 29)' },
+  ER10: { clue: 'Shredded Document Scrap', part: 'Doc J', hiding: 'Waste Basket (Under Desk)' },
+  XR01: { clue: 'Decoy (Vent Dust Filter)', part: 'Decoy', hiding: 'Ventilation Conduit (Behind Damaged Grille)' },
+  XR02: { clue: 'Decoy (Empty Box Flap)', part: 'Decoy', hiding: 'Filing Cabinet A (Top Drawer)' }
 };
 
 function getFragmentImage(ev) {
@@ -210,7 +234,7 @@ export default function BasketModal({
 
                       {/* Title & Metadata */}
                       <h3 className="text-xs font-bold text-[#e8e0ff] font-serif mb-0.5 truncate">
-                        {ev.display?.title || `Fragment #${index + 1}`}
+                        {ev.display?.title ? ev.display.title.replace(/^TEST:\s*/i, "") : `Fragment #${index + 1}`}
                       </h3>
 
                       {isWrapped ? (
@@ -288,7 +312,7 @@ export default function BasketModal({
                     Fragment #{inspectingIndex != null ? inspectingIndex + 1 : "?"}
                   </span>
                   <h3 className="text-base font-bold text-[#e8e0ff] font-serif">
-                    {inspectingEv.display?.title || `Fragment #${inspectingIndex != null ? inspectingIndex + 1 : "?"}`}
+                    {inspectingEv.display?.title ? inspectingEv.display.title.replace(/^TEST:\s*/i, "") : `Fragment #${inspectingIndex != null ? inspectingIndex + 1 : "?"}`}
                   </h3>
                 </div>
               </div>

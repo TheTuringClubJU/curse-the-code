@@ -5,6 +5,7 @@ import AdminLogin from './admin/AdminLogin';
 import AdminDashboard from './admin/AdminDashboard';
 import Room1Bedroom from './game/Room1Bedroom';
 import Room3Basement from './game/Room3Basement';
+import Room4Records from './game/Room4Records';
 import { checkAuthStatus, logoutTeam } from './userlogin/authApi';
 
 export default function App() {
@@ -16,7 +17,7 @@ export default function App() {
 
   const [team, setTeam] = useState(null);
   const [checkingAuth, setCheckingAuth] = useState(true);
-  const [roundStatus, setRoundStatus] = useState('live'); // Default to live so players enter directly
+  const [roundStatus, setRoundStatus] = useState(null); // Pure DB-driven: null until verified from DB
   const [currentRoundNum, setCurrentRoundNum] = useState(1);
 
   // Listen to popstate or route changes if needed
@@ -66,9 +67,6 @@ export default function App() {
   useEffect(() => {
     if (!team || isAdminRoute) return;
 
-    // Pause continuous polling while actively playing Room 1 to free server bandwidth for instant interactions
-    if (roundStatus === 'live' && currentRoundNum === 1) return;
-
     let isMounted = true;
     const checkState = async () => {
       try {
@@ -78,16 +76,24 @@ export default function App() {
         if (res.ok) {
           const data = await res.json();
           if (isMounted) {
-            setRoundStatus(data.round_status || 'live');
+            setRoundStatus(data.round_status || 'pending');
             setCurrentRoundNum(data.current_round || 1);
           }
+        } else {
+          if (isMounted) setRoundStatus(prev => prev || 'pending');
         }
       } catch (err) {
         console.error('State polling error:', err);
+        if (isMounted) setRoundStatus(prev => prev || 'pending');
       }
     };
 
+    // Always execute the initial state check immediately from DB
     checkState();
+
+    // Pause continuous fast polling while actively playing Room 1 or Room 4 to free bandwidth for interactions
+    if (roundStatus === 'live' && (currentRoundNum === 1 || currentRoundNum === 2)) return;
+
     const interval = setInterval(checkState, 3000);
     return () => {
       isMounted = false;
@@ -96,12 +102,14 @@ export default function App() {
   }, [team, isAdminRoute, roundStatus, currentRoundNum]);
 
   const handleLoginSuccess = (authenticatedTeam) => {
+    setRoundStatus(null);
     setTeam(authenticatedTeam);
   };
 
   const handleLogout = async () => {
     await logoutTeam();
     setTeam(null);
+    setRoundStatus(null);
   };
 
   const handleAdminLogout = async () => {
@@ -134,7 +142,7 @@ export default function App() {
   }
 
   // Participant Route Branch
-  if (checkingAuth) {
+  if (checkingAuth || (team && roundStatus === null)) {
     return (
       <div className="min-h-screen w-full bg-[#07060b] flex items-center justify-center">
         <div className="w-6 h-6 border-2 border-[#ff7a1a] border-t-transparent rounded-full animate-spin" />
@@ -154,6 +162,11 @@ export default function App() {
   // When Round 1 is live, display Room 1 (Lena's Bedroom)
   if (roundStatus === 'live' && currentRoundNum === 1) {
     return <Room1Bedroom team={team} onLogout={handleLogout} />;
+  }
+
+  // When Round 2 is live, display Room 4 (The Rotting Archive)
+  if (roundStatus === 'live' && currentRoundNum === 2) {
+    return <Room4Records team={team} onLogout={handleLogout} />;
   }
 
   // Otherwise, player waits in the atmospheric Lobby

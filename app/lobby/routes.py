@@ -48,7 +48,7 @@ def get_lobby_state(request: Request):
 
                 if team_data:
                     cur.execute(
-                        "SELECT round, total_score, clues_solved, qualified_at, qualified_rank FROM team_rounds WHERE team_id = %s",
+                        "SELECT round, total_score, clues_solved, COALESCE(penalty_seconds, 0) as penalty_seconds, qualified_at, qualified_rank FROM team_rounds WHERE team_id = %s",
                         (team_data["team"]["id"],)
                     )
                     team_rounds = [dict(tr) for tr in cur.fetchall()]

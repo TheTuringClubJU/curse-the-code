@@ -213,6 +213,7 @@ async def admin_logout_team(team_id: int, admin: Dict[str, Any] = Depends(get_ad
 async def get_leaderboard(round_num: int = 1, admin: Dict[str, Any] = Depends(get_admin_user)):
     """
     Fetch exact scores and finish times with tie-breaking for Round 1 or Round 2.
+    Tie-breaker formula: Adjusted Elapsed Time = (last_solved_at - starts_at) + penalty_seconds
     """
     conn = get_db_connection()
     leaderboard = []
@@ -226,29 +227,59 @@ async def get_leaderboard(round_num: int = 1, admin: Dict[str, Any] = Depends(ge
                         t.name as team_name,
                         COALESCE(tr.clues_solved, 0) as clues_solved,
                         COALESCE(tr.total_score, 0)::float as total_score,
+                        COALESCE(tr.penalty_seconds, 0) as penalty_seconds,
+                        tr.last_solved_at,
                         tr.finished_at,
                         tr.qualified_at,
                         tr.qualified_rank,
+                        r.starts_at as round_starts_at,
+                        CASE 
+                            WHEN tr.last_solved_at IS NOT NULL AND r.starts_at IS NOT NULL THEN
+                                GREATEST(0, FLOOR(EXTRACT(EPOCH FROM (tr.last_solved_at - r.starts_at))))::int + COALESCE(tr.penalty_seconds, 0)
+                            WHEN tr.last_solved_at IS NOT NULL THEN
+                                GREATEST(0, FLOOR(EXTRACT(EPOCH FROM (tr.last_solved_at - tr.created_at))))::int + COALESCE(tr.penalty_seconds, 0)
+                            WHEN tr.finished_at IS NOT NULL AND r.starts_at IS NOT NULL THEN
+                                GREATEST(0, FLOOR(EXTRACT(EPOCH FROM (tr.finished_at - r.starts_at))))::int + COALESCE(tr.penalty_seconds, 0)
+                            WHEN tr.finished_at IS NOT NULL THEN
+                                GREATEST(0, FLOOR(EXTRACT(EPOCH FROM (tr.finished_at - tr.created_at))))::int + COALESCE(tr.penalty_seconds, 0)
+                            WHEN COALESCE(tr.penalty_seconds, 0) > 0 AND r.starts_at IS NOT NULL THEN
+                                GREATEST(0, FLOOR(EXTRACT(EPOCH FROM (NOW() - r.starts_at))))::int + COALESCE(tr.penalty_seconds, 0)
+                            ELSE NULL
+                        END as adjusted_elapsed_seconds,
                         EXISTS(SELECT 1 FROM team_rounds tr2 WHERE tr2.team_id = t.id AND tr2.round = 2) as is_qualified_r2
                     FROM teams t
+                    LEFT JOIN rounds r ON r.round = %s
                     LEFT JOIN team_rounds tr ON tr.team_id = t.id AND tr.round = %s
                     WHERE t.is_active = true
                     ORDER BY 
                         COALESCE(tr.clues_solved, 0) DESC,
                         COALESCE(tr.total_score, 0) DESC,
-                        tr.finished_at ASC NULLS LAST,
+                        adjusted_elapsed_seconds ASC NULLS LAST,
                         t.name ASC;
                     """,
-                    (round_num,)
+                    (round_num, round_num)
                 )
                 rows = cur.fetchall()
                 for idx, r in enumerate(rows, start=1):
                     item = dict(r)
                     item["rank"] = idx
+                    if item.get("last_solved_at"):
+                        item["last_solved_at"] = item["last_solved_at"].isoformat()
                     if item.get("finished_at"):
                         item["finished_at"] = item["finished_at"].isoformat()
                     if item.get("qualified_at"):
                         item["qualified_at"] = item["qualified_at"].isoformat()
+                    if item.get("round_starts_at"):
+                        item["round_starts_at"] = item["round_starts_at"].isoformat()
+
+                    adj_sec = item.get("adjusted_elapsed_seconds")
+                    if adj_sec is not None:
+                        mins = adj_sec // 60
+                        secs = adj_sec % 60
+                        item["adjusted_time_str"] = f"{mins:02d}:{secs:02d}"
+                    else:
+                        item["adjusted_time_str"] = "--:--"
+
                     leaderboard.append(item)
         except Exception as e:
             print("Error querying leaderboard:", e)
@@ -279,15 +310,29 @@ async def preview_qualification(count: int = 5, admin: Dict[str, Any] = Depends(
                         t.name as team_name,
                         COALESCE(tr.clues_solved, 0) as clues_solved,
                         COALESCE(tr.total_score, 0)::float as total_score,
+                        COALESCE(tr.penalty_seconds, 0) as penalty_seconds,
+                        tr.last_solved_at,
                         tr.finished_at,
+                        CASE 
+                            WHEN tr.last_solved_at IS NOT NULL AND r.starts_at IS NOT NULL THEN
+                                GREATEST(0, FLOOR(EXTRACT(EPOCH FROM (tr.last_solved_at - r.starts_at))))::int + COALESCE(tr.penalty_seconds, 0)
+                            WHEN tr.last_solved_at IS NOT NULL THEN
+                                GREATEST(0, FLOOR(EXTRACT(EPOCH FROM (tr.last_solved_at - tr.created_at))))::int + COALESCE(tr.penalty_seconds, 0)
+                            WHEN tr.finished_at IS NOT NULL AND r.starts_at IS NOT NULL THEN
+                                GREATEST(0, FLOOR(EXTRACT(EPOCH FROM (tr.finished_at - r.starts_at))))::int + COALESCE(tr.penalty_seconds, 0)
+                            WHEN tr.finished_at IS NOT NULL THEN
+                                GREATEST(0, FLOOR(EXTRACT(EPOCH FROM (tr.finished_at - tr.created_at))))::int + COALESCE(tr.penalty_seconds, 0)
+                            ELSE NULL
+                        END as adjusted_elapsed_seconds,
                         EXISTS(SELECT 1 FROM team_rounds tr2 WHERE tr2.team_id = t.id AND tr2.round = 2) as already_qualified
                     FROM teams t
+                    LEFT JOIN rounds r ON r.round = 1
                     LEFT JOIN team_rounds tr ON tr.team_id = t.id AND tr.round = 1
                     WHERE t.is_active = true
                     ORDER BY 
                         COALESCE(tr.clues_solved, 0) DESC,
                         COALESCE(tr.total_score, 0) DESC,
-                        tr.finished_at ASC NULLS LAST,
+                        adjusted_elapsed_seconds ASC NULLS LAST,
                         t.name ASC
                     LIMIT %s;
                     """,
@@ -297,8 +342,17 @@ async def preview_qualification(count: int = 5, admin: Dict[str, Any] = Depends(
                 for idx, r in enumerate(rows, start=1):
                     item = dict(r)
                     item["preview_rank"] = idx
+                    if item.get("last_solved_at"):
+                        item["last_solved_at"] = item["last_solved_at"].isoformat()
                     if item.get("finished_at"):
                         item["finished_at"] = item["finished_at"].isoformat()
+                    adj_sec = item.get("adjusted_elapsed_seconds")
+                    if adj_sec is not None:
+                        mins = adj_sec // 60
+                        secs = adj_sec % 60
+                        item["adjusted_time_str"] = f"{mins:02d}:{secs:02d}"
+                    else:
+                        item["adjusted_time_str"] = "--:--"
                     preview.append(item)
         except Exception as e:
             print("Error previewing qualification:", e)
@@ -334,12 +388,23 @@ async def qualify_top_n_teams(req: QualifyTeamsRequest, admin: Dict[str, Any] = 
                         t.id as team_id,
                         t.name as team_name
                     FROM teams t
+                    LEFT JOIN rounds r ON r.round = 1
                     LEFT JOIN team_rounds tr ON tr.team_id = t.id AND tr.round = 1
                     WHERE t.is_active = true
                     ORDER BY 
                         COALESCE(tr.clues_solved, 0) DESC,
                         COALESCE(tr.total_score, 0) DESC,
-                        tr.finished_at ASC NULLS LAST,
+                        (CASE 
+                            WHEN tr.last_solved_at IS NOT NULL AND r.starts_at IS NOT NULL THEN
+                                GREATEST(0, FLOOR(EXTRACT(EPOCH FROM (tr.last_solved_at - r.starts_at))))::int + COALESCE(tr.penalty_seconds, 0)
+                            WHEN tr.last_solved_at IS NOT NULL THEN
+                                GREATEST(0, FLOOR(EXTRACT(EPOCH FROM (tr.last_solved_at - tr.created_at))))::int + COALESCE(tr.penalty_seconds, 0)
+                            WHEN tr.finished_at IS NOT NULL AND r.starts_at IS NOT NULL THEN
+                                GREATEST(0, FLOOR(EXTRACT(EPOCH FROM (tr.finished_at - r.starts_at))))::int + COALESCE(tr.penalty_seconds, 0)
+                            WHEN tr.finished_at IS NOT NULL THEN
+                                GREATEST(0, FLOOR(EXTRACT(EPOCH FROM (tr.finished_at - tr.created_at))))::int + COALESCE(tr.penalty_seconds, 0)
+                            ELSE NULL
+                        END) ASC NULLS LAST,
                         t.name ASC
                     LIMIT %s;
                     """,

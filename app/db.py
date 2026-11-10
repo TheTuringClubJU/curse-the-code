@@ -10,6 +10,36 @@ logger = logging.getLogger("uvicorn.error")
 
 _db_pool: Optional[pool.ThreadedConnectionPool] = None
 
+def ensure_schema_updates(conn=None):
+    """Ensures Round 2 columns and tables exist in PostgreSQL."""
+    close_at_end = False
+    if conn is None:
+        conn = get_db_connection()
+        close_at_end = True
+    if conn:
+        try:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    ALTER TABLE team_rounds ADD COLUMN IF NOT EXISTS penalty_seconds INT NOT NULL DEFAULT 0;
+                    CREATE TABLE IF NOT EXISTS team_forks (
+                        id SERIAL PRIMARY KEY,
+                        team_id INT NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
+                        round SMALLINT NOT NULL DEFAULT 2,
+                        fork_id VARCHAR(50) NOT NULL,
+                        choice VARCHAR(10) NOT NULL,
+                        is_trap BOOLEAN NOT NULL DEFAULT FALSE,
+                        penalty_seconds INT NOT NULL DEFAULT 0,
+                        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+                    );
+                    CREATE INDEX IF NOT EXISTS idx_team_forks ON team_forks (team_id, fork_id);
+                """)
+                conn.commit()
+        except Exception as e:
+            logger.warning(f"ensure_schema_updates notice: {e}")
+        finally:
+            if close_at_end:
+                conn.close()
+
 def init_pool(minconn: int = 1, maxconn: int = 10) -> Optional[pool.ThreadedConnectionPool]:
     global _db_pool
     if _db_pool is None and DATABASE_URL:

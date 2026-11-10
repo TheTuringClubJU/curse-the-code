@@ -272,3 +272,20 @@ CREATE TABLE IF NOT EXISTS hint_usage (
     unlocked_at TIMESTAMPTZ DEFAULT NOW(),
     PRIMARY KEY (team_id, clue_id, hint_level)
 );
+
+
+-- 18. TEAM ROUND PENALTIES & DUAL-PATH FORK SELECTIONS
+ALTER TABLE team_rounds ADD COLUMN IF NOT EXISTS penalty_seconds INT NOT NULL DEFAULT 0;
+
+CREATE TABLE IF NOT EXISTS team_forks (
+    id SERIAL PRIMARY KEY,
+    team_id INT NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
+    round SMALLINT NOT NULL DEFAULT 2,
+    fork_id VARCHAR(50) NOT NULL,
+    choice VARCHAR(10) NOT NULL,
+    is_trap BOOLEAN NOT NULL DEFAULT FALSE,
+    penalty_seconds INT NOT NULL DEFAULT 0,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_team_forks ON team_forks (team_id, fork_id);
