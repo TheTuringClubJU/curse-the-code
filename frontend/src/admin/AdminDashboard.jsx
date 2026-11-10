@@ -5,6 +5,8 @@ import LeaderboardView from './LeaderboardView';
 export default function AdminDashboard({ admin, onLogout }) {
   const [currentView, setCurrentView] = useState('control'); // 'control' | 'leaderboard'
   const [data, setData] = useState(null);
+  const [r1Scores, setR1Scores] = useState({});
+  const [r2Scores, setR2Scores] = useState({});
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
 
@@ -15,20 +17,44 @@ export default function AdminDashboard({ admin, onLogout }) {
   const [qualifyLoading, setQualifyLoading] = useState(false);
   const [qualifySuccess, setQualifySuccess] = useState('');
 
-  // Poll dashboard data every 3 seconds
+  // Poll dashboard data & R1/R2 leaderboard progress every 3 seconds
   const fetchDashboard = async () => {
     try {
-      const res = await fetch('/api/admin/dashboard', {
-        credentials: 'include',
-        headers: {
-          'x-admin-token': localStorage.getItem('ctc_admin_token') || ''
+      const headers = {
+        'x-admin-token': localStorage.getItem('ctc_admin_token') || ''
+      };
+      const [dashResult, r1Result, r2Result] = await Promise.allSettled([
+        fetch('/api/admin/dashboard', { credentials: 'include', headers }),
+        fetch('/api/admin/leaderboard?round_num=1', { credentials: 'include', headers }),
+        fetch('/api/admin/leaderboard?round_num=2', { credentials: 'include', headers }),
+      ]);
+
+      if (dashResult.status === 'fulfilled') {
+        const res = dashResult.value;
+        if (res.ok) {
+          const json = await res.json();
+          setData(json);
+        } else if (res.status === 401 && onLogout) {
+          onLogout();
         }
-      });
-      if (res.ok) {
-        const json = await res.json();
-        setData(json);
-      } else if (res.status === 401 && onLogout) {
-        onLogout();
+      }
+
+      if (r1Result.status === 'fulfilled' && r1Result.value.ok) {
+        const j1 = await r1Result.value.json();
+        if (Array.isArray(j1?.leaderboard) && (j1.round ?? 1) === 1) {
+          const map1 = {};
+          for (const row of j1.leaderboard) map1[row.team_id] = row;
+          setR1Scores(map1);
+        }
+      }
+
+      if (r2Result.status === 'fulfilled' && r2Result.value.ok) {
+        const j2 = await r2Result.value.json();
+        if (Array.isArray(j2?.leaderboard) && (j2.round ?? 2) === 2) {
+          const map2 = {};
+          for (const row of j2.leaderboard) map2[row.team_id] = row;
+          setR2Scores(map2);
+        }
       }
     } catch (e) {
       console.error('Error fetching admin dashboard:', e);
@@ -457,11 +483,16 @@ export default function AdminDashboard({ admin, onLogout }) {
           )}
         </div>
 
-        {/* Row 4: Team List Presence Status Table */}
+        {/* Row 4: Team List Presence & Round Progress Table */}
         <div className="bg-[#0e0c14] border border-[#3a2a55] rounded-xl p-6 shadow-xl">
-          <h2 className="text-sm uppercase tracking-wider text-white font-bold mb-4">
-            Team Presence & Active Sessions
-          </h2>
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+            <h2 className="text-sm uppercase tracking-wider text-white font-bold">
+              Team Presence & Active Sessions
+            </h2>
+            <span className="text-[11px] text-gray-400">
+              R2 tracks Rooms 4–6 (+100.0 pts/clue in Room 5; ?room=5 preview runs locally until team login)
+            </span>
+          </div>
 
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
@@ -471,43 +502,63 @@ export default function AdminDashboard({ admin, onLogout }) {
                   <th className="py-2.5 px-3">Status</th>
                   <th className="py-2.5 px-3">Presence</th>
                   <th className="py-2.5 px-3">Active Devices</th>
+                  <th className="py-2.5 px-3">Round 1</th>
+                  <th className="py-2.5 px-3">Round 2 (Rooms 4–6)</th>
                   <th className="py-2.5 px-3 text-right">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#3a2a55]/40">
-                {data?.teams?.map((team) => (
-                  <tr key={team.id} className="hover:bg-[#14101e]/50">
-                    <td className="py-2.5 px-3 font-bold text-white">{team.name}</td>
-                    <td className="py-2.5 px-3">
-                      <span className={`px-2 py-0.5 rounded text-[10px] uppercase ${team.is_active ? 'bg-green-950 text-green-300 border border-green-800' : 'bg-red-950 text-red-300 border border-red-800'}`}>
-                        {team.is_active ? 'Active' : 'Disabled'}
-                      </span>
-                    </td>
-                    <td className="py-2.5 px-3">
-                      <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-bold ${team.is_logged_in ? 'text-green-400' : 'text-gray-500'}`}>
-                        <span className={`w-1.5 h-1.5 rounded-full ${team.is_logged_in ? 'bg-green-400 animate-pulse' : 'bg-gray-600'}`} />
-                        {team.is_logged_in ? 'Logged In' : 'Logged Out'}
-                      </span>
-                    </td>
-                    <td className="py-2.5 px-3 text-gray-400">
-                      {team.active_devices} device(s)
-                    </td>
-                    <td className="py-2.5 px-3 text-right">
-                      {team.is_logged_in ? (
-                        <button
-                          onClick={() => handleLogoutTeam(team.id)}
-                          disabled={loggingOutTeamId === team.id}
-                          className="px-2.5 py-1 rounded bg-red-950/50 hover:bg-red-900 border border-red-800/60 text-red-300 text-[11px] font-semibold transition-colors disabled:opacity-40"
-                          title="Forcibly logout all active sessions for this team"
-                        >
-                          {loggingOutTeamId === team.id ? 'Logging out...' : 'Force Logout'}
-                        </button>
-                      ) : (
-                        <span className="text-gray-600 text-[11px] italic">No active session</span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
+                {data?.teams?.map((team) => {
+                  const r1 = r1Scores[team.id];
+                  const r2 = r2Scores[team.id];
+                  return (
+                    <tr key={team.id} className="hover:bg-[#14101e]/50">
+                      <td className="py-2.5 px-3 font-bold text-white">{team.name}</td>
+                      <td className="py-2.5 px-3">
+                        <span className={`px-2 py-0.5 rounded text-[10px] uppercase ${team.is_active ? 'bg-green-950 text-green-300 border border-green-800' : 'bg-red-950 text-red-300 border border-red-800'}`}>
+                          {team.is_active ? 'Active' : 'Disabled'}
+                        </span>
+                      </td>
+                      <td className="py-2.5 px-3">
+                        <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[11px] font-bold ${team.is_logged_in ? 'text-green-400' : 'text-gray-500'}`}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${team.is_logged_in ? 'bg-green-400 animate-pulse' : 'bg-gray-600'}`} />
+                          {team.is_logged_in ? 'Logged In' : 'Logged Out'}
+                        </span>
+                      </td>
+                      <td className="py-2.5 px-3 text-gray-400">
+                        {team.active_devices} device(s)
+                      </td>
+                      <td className="py-2.5 px-3 text-[#ff7a1a] whitespace-nowrap">
+                        {r1 ? `${r1.clues_solved ?? 0} solved · ${Number(r1.total_score ?? 0).toFixed(1)} pts` : '—'}
+                      </td>
+                      <td className="py-2.5 px-3 text-[#8f7bff] whitespace-nowrap">
+                        {r2 ? (
+                          <span>
+                            {`${r2.clues_solved ?? 0} solved · ${Number(r2.total_score ?? 0).toFixed(1)} pts`}
+                            {r2.adjusted_time_str && r2.adjusted_time_str !== '--:--' ? ` · ${r2.adjusted_time_str}` : ''}
+                            {r2.penalty_seconds > 0 && (
+                              <span className="ml-1 text-[10px] text-red-400">+{r2.penalty_seconds}s</span>
+                            )}
+                          </span>
+                        ) : '—'}
+                      </td>
+                      <td className="py-2.5 px-3 text-right">
+                        {team.is_logged_in ? (
+                          <button
+                            onClick={() => handleLogoutTeam(team.id)}
+                            disabled={loggingOutTeamId === team.id}
+                            className="px-2.5 py-1 rounded bg-red-950/50 hover:bg-red-900 border border-red-800/60 text-red-300 text-[11px] font-semibold transition-colors disabled:opacity-40"
+                            title="Forcibly logout all active sessions for this team"
+                          >
+                            {loggingOutTeamId === team.id ? 'Logging out...' : 'Force Logout'}
+                          </button>
+                        ) : (
+                          <span className="text-gray-600 text-[11px] italic">No active session</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
