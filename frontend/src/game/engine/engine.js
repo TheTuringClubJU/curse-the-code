@@ -19,7 +19,10 @@ export {posterCanvas} from './tex.js'
 export function createEngine(el,room,h){
  const tb0=performance.now()
  const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches,T=room.theme,[W,H,D]=room.size,debug=new URLSearchParams(location.search).has('debug')
- const R=new THREE.WebGLRenderer({antialias:true});R.setPixelRatio(Math.min(devicePixelRatio,1.0));R.powerPreference='high-performance';R.setSize(el.clientWidth,el.clientHeight);R.shadowMap.enabled=true;R.shadowMap.type=THREE.BasicShadowMap;R.shadowMap.autoUpdate=false;R.shadowMap.needsUpdate=true;
+ const hwCores=typeof navigator!=='undefined'&&Number(navigator.hardwareConcurrency)>0?Number(navigator.hardwareConcurrency):8
+ const devMem=typeof navigator!=='undefined'&&Number(navigator.deviceMemory)>0?Number(navigator.deviceMemory):8
+ const isLowSpecControl=room.id==='control'&&(hwCores<=4||devMem<=4)
+ const R=new THREE.WebGLRenderer({antialias:room.id==='control'?!isLowSpecControl:true,stencil:false,powerPreference:'high-performance'});R.setPixelRatio(Math.min(devicePixelRatio,1.0));R.setSize(el.clientWidth,el.clientHeight);R.shadowMap.enabled=true;R.shadowMap.type=THREE.BasicShadowMap;R.shadowMap.autoUpdate=false;R.shadowMap.needsUpdate=true;
  R.toneMapping=THREE.ACESFilmicToneMapping;R.toneMappingExposure=1.6;el.appendChild(R.domElement)
  const S=new THREE.Scene();S.background=new THREE.Color(T.bg);S.fog=new THREE.FogExp2(T.bg, room.id === 'control' ? 0.035 : 0.045)
  const cam=new THREE.PerspectiveCamera(72,el.clientWidth/el.clientHeight,.05,80);cam.rotation.order='YXZ';S.add(cam)
@@ -357,17 +360,18 @@ export function createEngine(el,room,h){
  const fr=new THREE.Frustum(),pm=new THREE.Matrix4(),hp=new THREE.Vector3(),lp=new THREE.Vector3()
  let last=performance.now(),raf,frameCount=0;const t0=last
  let targetFov=72;
- const defaultEco = typeof navigator !== 'undefined' && navigator.hardwareConcurrency > 0 && navigator.hardwareConcurrency <= 4;
- let qualityMode = room.id === 'control' && defaultEco ? 'eco' : 'high';
+ const defaultEco = isLowSpecControl;
+ let qualityMode = defaultEco ? 'eco' : 'high';
  if (room.id === 'control' && qualityMode === 'eco') {
-   R.setPixelRatio(Math.min(devicePixelRatio || 1, 0.78));
+   R.setPixelRatio(Math.min(devicePixelRatio || 1, 0.72));
  }
  E._qualityMode = qualityMode;
  const applyQualityMode = (mode) => {
    qualityMode = mode === 'eco' ? 'eco' : 'high';
    E._qualityMode = qualityMode;
-   R.setPixelRatio(qualityMode === 'eco' ? Math.min(devicePixelRatio || 1, 0.78) : Math.min(devicePixelRatio || 1, 1.0));
+   R.setPixelRatio(qualityMode === 'eco' ? Math.min(devicePixelRatio || 1, 0.72) : Math.min(devicePixelRatio || 1, 1.0));
    if (E._dustPoints) E._dustPoints.visible = qualityMode !== 'eco';
+   E._onQualityModeChange?.(qualityMode);
    h.onQualityChange?.(qualityMode);
  };
  E.setQualityMode = applyQualityMode;
@@ -385,15 +389,15 @@ export function createEngine(el,room,h){
    frameCount++;
    const t = (now - t0) / 1000;
 
-   // Automatic low-spec laptop safeguard in Room 5: drop to Eco only if genuinely struggling (< 26fps sustained)
-   if (room.id === 'control' && !autoSwitchedEco && qualityMode === 'high' && t > 6.0) {
-     if (elapsed > 38 && elapsed < 150) {
+   // Automatic potato-PC safeguard in Room 5: drop to Eco if sustained < 30fps
+   if (room.id === 'control' && !autoSwitchedEco && qualityMode === 'high' && t > 3.5) {
+     if (elapsed > 33 && elapsed < 150) {
        slowFrames++;
-       if (slowFrames >= 60) {
+       if (slowFrames >= 45) {
          autoSwitchedEco = true;
          applyQualityMode('eco');
        }
-     } else if (elapsed < 28) {
+     } else if (elapsed < 25) {
        slowFrames = Math.max(0, slowFrames - 1);
      }
    }
