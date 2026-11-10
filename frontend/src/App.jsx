@@ -163,6 +163,10 @@ export default function App() {
 
   // When Round 1 is live, display Room 1 (Bedroom), Room 2 (Study), or Room 3 (Basement)
   if (roundStatus === 'live' && currentRoundNum === 1) {
+    if (currentRoom === 'lobby') {
+      return <Lobby team={team} onLogout={handleLogout} />;
+    }
+
     if (currentRoom === 'study') {
       return (
         <Room2Study
@@ -178,6 +182,7 @@ export default function App() {
         <Room3Basement
           team={team}
           onLogout={handleLogout}
+          onProceedToLobby={() => setCurrentRoom('lobby')}
         />
       );
     }
