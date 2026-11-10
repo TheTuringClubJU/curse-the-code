@@ -1,7 +1,7 @@
 import React from 'react';
 import { 
   Layers, Compass, Image, Volume2, VolumeX, LogOut, 
-  CheckCircle, FileText, Lock, Unlock 
+  CheckCircle, FileText, Lock, Unlock, BookOpen, HelpCircle 
 } from 'lucide-react';
 
 export default function HUD({
@@ -10,12 +10,15 @@ export default function HUD({
   collectedCount = 0,
   basketUnlocked = false,
   isRoomCompleted = false,
+  completedMessage = null,
   photoCount = 0,
   cluesSolved = 0,
   totalClues = 4,
   onOpenBasket,
   onOpenPhotoPuzzle,
   onOpenCaseFiles,
+  onOpenRules,
+  onOpenHints,
   onLogout,
   audioMuted = false,
   onToggleAudio,
@@ -93,6 +96,32 @@ export default function HUD({
             </kbd>
           </button>
 
+          {/* Ancient Rules Dossier Button (R) */}
+          <button
+            onClick={onOpenRules}
+            title="Ancient Field Dossier & Rules (Press R)"
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#21150a] text-[#ffdfba] border border-[#78441d]/70 hover:bg-[#331d0b] transition shadow-[0_0_8px_rgba(255,122,26,0.15)]"
+          >
+            <BookOpen className="w-3.5 h-3.5 text-[#ff9d54]" />
+            <span className="hidden sm:inline">Dossier</span>
+            <kbd className="px-1 py-0.2 text-[9px] bg-black/60 rounded border border-[#ff9d54]/40 text-[#ffd3a8]">
+              R
+            </kbd>
+          </button>
+
+          {/* Hints & Guidance Button (H) */}
+          <button
+            onClick={onOpenHints}
+            title="Investigation Hints & Guidance (Press H)"
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#21150a] text-[#ffd699] border border-[#854d0e]/70 hover:bg-[#382310] transition shadow-sm"
+          >
+            <HelpCircle className="w-3.5 h-3.5 text-[#fbbf24]" />
+            <span className="hidden sm:inline">Hints</span>
+            <kbd className="px-1 py-0.2 text-[9px] bg-black/60 rounded border border-[#fbbf24]/40 text-[#fde68a]">
+              H
+            </kbd>
+          </button>
+
         </div>
 
         {/* Right: Audio & Controls */}
@@ -137,7 +166,7 @@ export default function HUD({
       <div className="flex flex-col sm:flex-row items-center justify-between w-full pointer-events-auto gap-2">
         <div className="bg-[#0a0714]/85 backdrop-blur-md px-3.5 py-1.5 rounded-lg border border-white/5 text-[10px] sm:text-[11px] font-mono text-gray-400">
           <span>
-            Move: <strong className="text-white">WASD</strong> • Look: <strong className="text-white">Mouse</strong> • Interact: <strong className="text-white">E</strong> • Basket: <strong className="text-white">B</strong> • Clues: <strong className="text-white">C</strong> • Photo: <strong className="text-white">P</strong>
+            Move: <strong className="text-white">WASD</strong> • Look: <strong className="text-white">Mouse</strong> • Interact: <strong className="text-white">E</strong> • Basket: <strong className="text-white">B</strong> • Clues: <strong className="text-white">C</strong> • Photo: <strong className="text-white">P</strong> • Hints: <strong className="text-white">H</strong> • Rules: <strong className="text-white">R</strong>
           </span>
         </div>
 
@@ -145,7 +174,7 @@ export default function HUD({
           <div className="bg-[#14291e]/90 backdrop-blur-md px-4 py-2 rounded-xl border border-[#22543d] flex items-center gap-2 text-xs font-mono text-[#86efac] shadow-2xl animate-pulse">
             <CheckCircle className="w-4 h-4 text-[#86efac] shrink-0" />
             <span className="font-bold tracking-wide">
-              ROOM 1 COMPLETE • DOOR TO ROOM 2 UNLATCHED
+              {completedMessage || (roomTitle.toLowerCase().includes("study") || roomTitle.toLowerCase().includes("daniel") ? "ROOM 2 COMPLETE • BLAST DOOR TO ROOM 3 UNLATCHED" : "ROOM 1 COMPLETE • DOOR TO ROOM 2 UNLATCHED")}
             </span>
           </div>
         )}

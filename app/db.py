@@ -21,6 +21,21 @@ def ensure_schema_updates(conn=None):
             with conn.cursor() as cur:
                 cur.execute("""
                     ALTER TABLE team_rounds ADD COLUMN IF NOT EXISTS penalty_seconds INT NOT NULL DEFAULT 0;
+                    ALTER TABLE team_clues ADD COLUMN IF NOT EXISTS is_unlocked BOOLEAN DEFAULT FALSE;
+                    ALTER TABLE team_clues ADD COLUMN IF NOT EXISTS unlocked_at TIMESTAMPTZ;
+                    CREATE TABLE IF NOT EXISTS team_hints (
+                        id SERIAL PRIMARY KEY,
+                        team_id INT NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
+                        round SMALLINT NOT NULL DEFAULT 1,
+                        room_id VARCHAR(50) NOT NULL,
+                        hint_category VARCHAR(20) NOT NULL,
+                        target_id VARCHAR(50) NOT NULL,
+                        penalty_seconds INT NOT NULL DEFAULT 0,
+                        hint_text TEXT NOT NULL,
+                        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+                    );
+                    CREATE INDEX IF NOT EXISTS idx_team_hints_team_round ON team_hints (team_id, round);
+                    CREATE UNIQUE INDEX IF NOT EXISTS idx_team_hints_team_target ON team_hints (team_id, round, target_id);
                     CREATE TABLE IF NOT EXISTS team_forks (
                         id SERIAL PRIMARY KEY,
                         team_id INT NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
