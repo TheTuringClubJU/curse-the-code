@@ -429,11 +429,74 @@ export function buildControlScene(E, handlers = {}) {
   genLight.position.set(colX(5.5), 2.84, rowZ(6.8));
   S.add(genLight);
 
-  // Grounded Caged Hospital Ceiling Bulkhead Fixtures (Zero floating flashlights)
+  // Track loaded PBR textures for low-RAM / potato-PC optimization (anisotropy cap + Eco downscale)
+  const trackedTextures = new Set();
+  const applyTextureProfile = (tex, mode) => {
+    if (!tex) return;
+    tex.anisotropy = 1;
+    if (mode === 'eco') {
+      tex.minFilter = THREE.LinearMipmapNearestFilter;
+      const img = tex.image;
+      if (img && !tex.userData?._ecoDownscaled && typeof document !== 'undefined') {
+        const w = img.width || 0;
+        const h = img.height || 0;
+        if (w > 512 || h > 512) {
+          const maxDim = 512;
+          const scale = maxDim / Math.max(w, h);
+          const cw = Math.max(128, Math.round(w * scale));
+          const ch = Math.max(128, Math.round(h * scale));
+          try {
+            const cv = document.createElement('canvas');
+            cv.width = cw;
+            cv.height = ch;
+            const ctx = cv.getContext('2d');
+            if (ctx) {
+              ctx.drawImage(img, 0, 0, cw, ch);
+              tex.image = cv;
+              tex.userData = { ...(tex.userData || {}), _ecoDownscaled: true };
+              tex.needsUpdate = true;
+            }
+          } catch {
+            // Headless / non-canvas runtime safely keeps source image
+          }
+        }
+      }
+    }
+  };
+  const registerAssetTextures = (root) => {
+    if (!root) return;
+    const texKeys = ['map', 'normalMap', 'roughnessMap', 'metalnessMap', 'aoMap', 'emissiveMap'];
+    const curMode = E._qualityMode || 'high';
+    root.traverse((o) => {
+      if (!o.isMesh || !o.material) return;
+      const mats = Array.isArray(o.material) ? o.material : [o.material];
+      for (let i = 0; i < mats.length; i++) {
+        const m = mats[i];
+        if (!m) continue;
+        for (let k = 0; k < texKeys.length; k++) {
+          const tx = m[texKeys[k]];
+          if (tx && !trackedTextures.has(tx)) {
+            trackedTextures.add(tx);
+            applyTextureProfile(tx, curMode);
+          }
+        }
+      }
+    });
+  };
+  E._onQualityModeChange = (mode) => {
+    trackedTextures.forEach((tx) => applyTextureProfile(tx, mode));
+  };
+
+  // Shared geometries & housings for Grounded Caged Hospital Ceiling Bulkhead Fixtures
+  const fixtureHousingMat = new THREE.MeshStandardMaterial({ color: 0x1c211f, roughness: 0.55, metalness: 0.72 });
+  const fixtureCageMat = new THREE.MeshStandardMaterial({ color: 0x2c3330, roughness: 0.45, metalness: 0.82 });
+  const fixtureBaseGeo = new THREE.CylinderGeometry(0.18, 0.20, 0.045, 14);
+  const fixtureCollarGeo = new THREE.CylinderGeometry(0.13, 0.145, 0.04, 14);
+  const fixtureDomeGeo = new THREE.SphereGeometry(0.105, 14, 10, 0, Math.PI * 2, Math.PI * 0.5, Math.PI * 0.5);
+  const fixtureRingGeo = new THREE.TorusGeometry(0.118, 0.009, 6, 16);
+
   const makeHospitalFixture = (parent, lx, ly, lz, colorHex) => {
     const grp = new THREE.Group();
-    const housingMat = new THREE.MeshStandardMaterial({ color: 0x1c211f, roughness: 0.55, metalness: 0.72 });
-    const cageMat = new THREE.MeshStandardMaterial({ color: 0x2c3330, roughness: 0.45, metalness: 0.82 });
     const glassMat = new THREE.MeshStandardMaterial({
       color: colorHex,
       emissive: new THREE.Color(colorHex),
@@ -441,13 +504,13 @@ export function buildControlScene(E, handlers = {}) {
       roughness: 0.25,
       metalness: 0.10,
     });
-    const base = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.20, 0.045, 14), housingMat);
+    const base = new THREE.Mesh(fixtureBaseGeo, fixtureHousingMat);
     base.position.y = 0.015;
-    const collar = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.145, 0.04, 14), cageMat);
+    const collar = new THREE.Mesh(fixtureCollarGeo, fixtureCageMat);
     collar.position.y = -0.025;
-    const dome = new THREE.Mesh(new THREE.SphereGeometry(0.105, 14, 10, 0, Math.PI * 2, Math.PI * 0.5, Math.PI * 0.5), glassMat);
+    const dome = new THREE.Mesh(fixtureDomeGeo, glassMat);
     dome.position.y = -0.032;
-    const guardRing = new THREE.Mesh(new THREE.TorusGeometry(0.118, 0.009, 6, 16), cageMat);
+    const guardRing = new THREE.Mesh(fixtureRingGeo, fixtureCageMat);
     guardRing.rotation.x = Math.PI / 2;
     guardRing.position.y = -0.08;
     grp.add(base, collar, dome, guardRing);
@@ -870,6 +933,7 @@ export function buildControlScene(E, handlers = {}) {
       });
 
       S.add(envRoot);
+      registerAssetTextures(envRoot);
 
       if (controlDoorMeshes.length) {
         controlDoorHinge = createHingedDoor(S, controlDoorMeshes, new THREE.Vector3(0.58, 0, 1.78), -Math.PI * 0.52);
@@ -1445,6 +1509,7 @@ export function buildControlScene(E, handlers = {}) {
 
       batchStaticMeshes(wingGroup);
       S.add(wingGroup);
+      registerAssetTextures(wingGroup);
       reportLoaded('Security & Observation Wings');
 
       // Load lightweight HorrorPackFBX morgue furnishings into Chamber 3, 5D, 5C & 5E!
@@ -1454,6 +1519,9 @@ export function buildControlScene(E, handlers = {}) {
         const loadTex = (name) => {
           const tx = texLoader.load(`${HP}/${name}`);
           tx.colorSpace = THREE.SRGBColorSpace;
+          tx.anisotropy = 1;
+          trackedTextures.add(tx);
+          applyTextureProfile(tx, E._qualityMode || 'high');
           return tx;
         };
         const bedTex = loadTex('bed.jpg');
@@ -1503,6 +1571,8 @@ export function buildControlScene(E, handlers = {}) {
         position: [-2.72, 0.82, 0.98],
         rotationY: 0,
       });
+      batchStaticMeshes(pcGroup);
+      registerAssetTextures(pcGroup);
       S.add(pcGroup);
       visualInteract(pcGroup, 'staff_terminal');
       devItems.push({
@@ -1527,6 +1597,7 @@ export function buildControlScene(E, handlers = {}) {
         if (!o.isMesh) return;
         if (o.material?.name === 'Main_TV_Glass_Mat') {
           o.material = makeScreenMat(true, true, monitorScreens.length);
+          o.userData._noMerge = true;
         }
       });
       const tvGroup = normalizeProp(gltf.scene, {
@@ -1534,6 +1605,8 @@ export function buildControlScene(E, handlers = {}) {
         position: [0.28, 0.0, -1.28],
         rotationY: 0,
       });
+      batchStaticMeshes(tvGroup);
+      registerAssetTextures(tvGroup);
       S.add(tvGroup);
       visualInteract(tvGroup, 'monitor_bank');
       devItems.push({
@@ -1565,6 +1638,7 @@ export function buildControlScene(E, handlers = {}) {
         rotationY: Math.PI,
         fixTransparency: true,
       });
+      registerAssetTextures(akaiGroup);
       S.add(akaiGroup);
       visualInteract(akaiGroup, 'tape_deck_cart');
       devItems.push({
@@ -1589,6 +1663,7 @@ export function buildControlScene(E, handlers = {}) {
       const ghostMats = [];
       const bones = {};
       const modelGroup = normalizeProp(gltf.scene, { scale: 1.0, position: [0, 0, 0] });
+      registerAssetTextures(modelGroup);
       modelGroup.traverse((o) => {
         if (o.isBone && o.name) {
           bones[o.name] = o;
@@ -1681,7 +1756,17 @@ export function buildControlScene(E, handlers = {}) {
   let patrolIdx = 0;
 
   // ── 6. Per-Frame Animation Loop ──────────────────────────────────────────────
+  // Pre-allocated animation state & zero-GC helpers for steady frame pacing on low-end PCs
   const droppedBeacons = new Map();
+  const fragmentMarkerList = [];
+  const lightOrder = roomLights.map((_, i) => i);
+  const stepWingDoorHinge = (h, dt) => {
+    if (!h) return;
+    const closed = h.userData.closedAngle ?? 0;
+    const target = h.isOpen ? h.userData.openAngle : closed;
+    h.userData.currentAngle += (target - h.userData.currentAngle) * Math.min(1, dt * 5.0);
+    h.rotation.y = h.userData.currentAngle;
+  };
   let elapsedTime = 0;
   anim((_t, dt) => {
     elapsedTime += dt;
@@ -1694,22 +1779,14 @@ export function buildControlScene(E, handlers = {}) {
     }
 
     // Smoothly animate Annex, South Wing, Observation, Chamber 3 (South+North), Cryo, Generator & Morgue Vault doors
-    [
-      annexDoorHinge,
-      southWingDoorHinge,
-      observationDoorHinge,
-      chamber3DoorHinge,
-      chamber3NorthDoorHinge,
-      cryoDoorHinge,
-      generatorDoorHinge,
-      morgueVaultDoorHinge,
-    ].forEach((h) => {
-      if (!h) return;
-      const closed = h.userData.closedAngle ?? 0;
-      const target = h.isOpen ? h.userData.openAngle : closed;
-      h.userData.currentAngle += (target - h.userData.currentAngle) * Math.min(1, dt * 5.0);
-      h.rotation.y = h.userData.currentAngle;
-    });
+    stepWingDoorHinge(annexDoorHinge, dt);
+    stepWingDoorHinge(southWingDoorHinge, dt);
+    stepWingDoorHinge(observationDoorHinge, dt);
+    stepWingDoorHinge(chamber3DoorHinge, dt);
+    stepWingDoorHinge(chamber3NorthDoorHinge, dt);
+    stepWingDoorHinge(cryoDoorHinge, dt);
+    stepWingDoorHinge(generatorDoorHinge, dt);
+    stepWingDoorHinge(morgueVaultDoorHinge, dt);
 
     // Rattle locked doors & open Vault door when cleared
     const rattleOffset = rattleTimer.t > 0 ? Math.sin(rattleTimer.t * 48) * 0.035 * (rattleTimer.t / 0.32) : 0;
@@ -1836,14 +1913,32 @@ export function buildControlScene(E, handlers = {}) {
 
     const pCurX = E.px?.() ?? 0;
     const pCurZ = E.pz?.() ?? 0;
-    const cullMaxDist = E._qualityMode === 'eco' ? 14.5 : 18.5;
-    const cullFadeStart = cullMaxDist * 0.75;
+    const isEcoMode = E._qualityMode === 'eco';
+    const cullMaxDist = isEcoMode ? 12.0 : 16.5;
+    const cullFadeStart = cullMaxDist * 0.72;
     const cullMaxSq = cullMaxDist * cullMaxDist;
-    roomLights.forEach((entry) => {
+    const maxActiveLights = isEcoMode ? 3 : 5;
+    for (let i = 0; i < roomLights.length; i++) {
+      const entry = roomLights[i];
       const lx = entry.light.position.x - pCurX;
       const lz = entry.light.position.z - pCurZ;
-      const dSq = lx * lx + lz * lz;
-      if (dSq > cullMaxSq) {
+      entry._dSq = lx * lx + lz * lz;
+    }
+    // Zero-allocation insertion sort of 8 indices to keep only the closest N room shader lights active
+    for (let i = 1; i < lightOrder.length; i++) {
+      const key = lightOrder[i];
+      const keyDist = roomLights[key]._dSq;
+      let j = i - 1;
+      while (j >= 0 && roomLights[lightOrder[j]]._dSq > keyDist) {
+        lightOrder[j + 1] = lightOrder[j];
+        j--;
+      }
+      lightOrder[j + 1] = key;
+    }
+    for (let k = 0; k < lightOrder.length; k++) {
+      const entry = roomLights[lightOrder[k]];
+      const dSq = entry._dSq;
+      if (k >= maxActiveLights || dSq > cullMaxSq) {
         entry.light.visible = false;
       } else {
         entry.light.visible = true;
@@ -1853,19 +1948,20 @@ export function buildControlScene(E, handlers = {}) {
           entry.light.intensity *= atten;
         }
       }
-    });
+    }
 
     // Subtle CRT static flicker (shared material updated at most once per frame in High mode)
-    if (E._qualityMode !== 'eco' && sharedScreenMat.static && Math.random() < 0.08) {
+    if (!isEcoMode && sharedScreenMat.static && Math.random() < 0.08) {
       sharedScreenMat.static.emissiveIntensity = 0.55 + Math.random() * 0.5;
     }
 
-    // Pulse diegetic fragment markers
-    Object.values(fragmentMarkers).forEach((mk, idx) => {
+    // Pulse diegetic fragment markers (zero per-frame array allocation)
+    for (let i = 0; i < fragmentMarkerList.length; i++) {
+      const mk = fragmentMarkerList[i];
       if (!mk.cleared) {
-        mk.mat.opacity = mk.baseOpacity * (0.7 + 0.3 * Math.sin(elapsedTime * 2.8 + idx));
+        mk.mat.opacity = mk.baseOpacity * (0.7 + 0.3 * Math.sin(elapsedTime * 2.8 + i));
       }
-    });
+    }
 
     // Drift dust motes gently when visible
     if (dustPoints.visible) {
