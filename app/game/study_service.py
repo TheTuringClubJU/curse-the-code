@@ -18,6 +18,7 @@ from psycopg2.extras import RealDictCursor
 
 from app.config import CONTENT_FILE
 from app.db import get_db_connection
+from app.game import hint_service
 
 logger = logging.getLogger(__name__)
 ROOM_ID = "study"
@@ -175,10 +176,29 @@ def get_room_state(team_id, content):
         progress = {r["clue_id"]: r for r in cur.fetchall()}
 
     clues = []
+    STUDY_CLUES = ["R1-05", "R1-06", "R1-07", "R1-08"]
     for clue in content.get("clues", []):
         if clue.get("room") != ROOM_ID:
             continue
         saved = progress.get(clue["id"], {"solved": False, "attempts": 0})
+        
+        is_locked = False
+        lock_reason = None
+        if not basket_unlocked:
+            is_locked = True
+            lock_reason = "Find and recover all room fragments to unlock the evidence basket first."
+        elif clue["id"] in STUDY_CLUES:
+            c_idx = STUDY_CLUES.index(clue["id"])
+            if c_idx > 0:
+                prev_id = STUDY_CLUES[c_idx - 1]
+                prev_saved = progress.get(prev_id, {})
+                prev_def = next((c for c in content.get("clues", []) if c["id"] == prev_id), {})
+                prev_max = prev_def.get("attempts_max", 3)
+                prev_resolved = bool(prev_saved.get("solved") or (prev_max is not None and prev_saved.get("attempts", 0) >= prev_max))
+                if not prev_resolved:
+                    is_locked = True
+                    lock_reason = f"Previous clue '{prev_id}' in this sequence must be solved first."
+
         clues.append(
             {
                 **{
@@ -196,6 +216,8 @@ def get_room_state(team_id, content):
                 "solved": saved["solved"],
                 "attempts": saved["attempts"],
                 "attempts_max": clue.get("attempts_max", 3),
+                "is_locked": is_locked,
+                "lock_reason": lock_reason,
                 "solution_method": clue.get("solution", {}).get("method"),
                 "stages": [
                     {
@@ -333,6 +355,13 @@ def search_object(team_id, content, object_id):
             f["fragment_id"] for f in fragments if f["room_id"] == ROOM_ID
         } | {target["id"]}
         basket_unlocked = _unlock_basket(cur, team_id, room, collected_in_room)
+        if basket_unlocked:
+            cur.execute(
+                """INSERT INTO team_clues (team_id, round, clue_id, room_id, is_unlocked, unlocked_at)
+                   VALUES (%s, 1, 'R1-05', %s, TRUE, NOW())
+                   ON CONFLICT (team_id, clue_id) DO UPDATE SET is_unlocked = TRUE, unlocked_at = COALESCE(team_clues.unlocked_at, NOW())""",
+                (team_id, ROOM_ID),
+            )
         return {
             "found": True,
             "fragment_id": target["id"],
@@ -450,7 +479,7 @@ def _recompute_score(cur, team_id, round_num):
     )
 
 
-def submit_clue_answer(team_id, content, clue, answer):
+def submit_clue_answer(team_id, content, clue, answer, bypass_sequence=False):
     room = _room(content)
     stage = clue["stages"][0]
     max_len = min(
@@ -501,10 +530,38 @@ def submit_clue_answer(team_id, content, clue, answer):
                     "message": "Collect every room fragment before submitting.",
                 },
             )
+
+        # Enforce sequential clue progression in Study
+        STUDY_CLUES = ["R1-05", "R1-06", "R1-07", "R1-08"]
+        if clue["id"] in STUDY_CLUES and not bypass_sequence:
+            c_idx = STUDY_CLUES.index(clue["id"])
+            if c_idx > 0:
+                prev_id = STUDY_CLUES[c_idx - 1]
+                cur.execute(
+                    "SELECT solved, attempts FROM team_clues WHERE team_id = %s AND clue_id = %s",
+                    (team_id, prev_id),
+                )
+                prev_row = cur.fetchone()
+                prev_clue_def = next((c for c in content.get("clues", []) if c["id"] == prev_id), {})
+                prev_max = prev_clue_def.get("attempts_max", 3)
+                is_resolved = bool(prev_row and (prev_row["solved"] or (prev_max is not None and prev_row["attempts"] >= prev_max)))
+                if not is_resolved:
+                    raise HTTPException(
+                        403,
+                        detail={
+                            "code": "CLUE_LOCKED",
+                            "message": f"Previous clue '{prev_id}' in this sequence must be solved first.",
+                        },
+                    )
+
         _check_rate_limit(cur, team_id, content)
         correct = _verify_answer(content, clue, answer)
         attempts = saved["attempts"] + 1
-        score = 100 if correct else 0
+        if correct:
+            deduction = hint_service.get_clue_hint_point_deduction(cur, team_id, clue["id"])
+            score = max(0.0, 100.0 - deduction)
+        else:
+            score = 0.0
         cur.execute(
             """INSERT INTO team_clues (team_id, round, clue_id, room_id, solved, attempts, score, solved_at)
                VALUES (%s, %s, %s, %s, %s, %s, %s, CASE WHEN %s THEN NOW() ELSE NULL END)
@@ -529,6 +586,17 @@ def submit_clue_answer(team_id, content, clue, answer):
         )
         if correct:
             _recompute_score(cur, team_id, clue.get("round", 1))
+
+        if (correct or (attempts_max is not None and attempts >= attempts_max)) and clue["id"] in STUDY_CLUES:
+            c_idx = STUDY_CLUES.index(clue["id"])
+            if c_idx + 1 < len(STUDY_CLUES):
+                next_id = STUDY_CLUES[c_idx + 1]
+                cur.execute(
+                    """INSERT INTO team_clues (team_id, round, clue_id, room_id, is_unlocked, unlocked_at)
+                       VALUES (%s, %s, %s, %s, TRUE, NOW())
+                       ON CONFLICT (team_id, clue_id) DO UPDATE SET is_unlocked = TRUE, unlocked_at = COALESCE(team_clues.unlocked_at, NOW())""",
+                    (team_id, clue.get("round", 1), next_id, ROOM_ID)
+                )
         completed = _update_room_completion(cur, team_id, room_clues)
         return {
             "correct": correct,

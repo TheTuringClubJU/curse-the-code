@@ -8,6 +8,8 @@ import ClueModal from './components/ClueModal.jsx';
 import PhotoPuzzleModal from './components/PhotoPuzzleModal.jsx';
 import CaseFilesModal from './components/CaseFilesModal.jsx';
 import RoomCompleteModal from './components/RoomCompleteModal.jsx';
+import Round1DossierModal from './components/Round1DossierModal.jsx';
+import HintModal from './components/HintModal.jsx';
 import './game.css';
 
 export default function Room1Bedroom({ team, onLogout, onTransitionToRoom2 }) {
@@ -26,6 +28,8 @@ export default function Room1Bedroom({ team, onLogout, onTransitionToRoom2 }) {
   const [activeClue, setActiveClue] = useState(null);
   const [isPhotoPuzzleOpen, setIsPhotoPuzzleOpen] = useState(false);
   const [isCaseFilesOpen, setIsCaseFilesOpen] = useState(false);
+  const [isDossierOpen, setIsDossierOpen] = useState(false);
+  const [isHintOpen, setIsHintOpen] = useState(false);
   const [isRoomCompleteModalOpen, setIsRoomCompleteModalOpen] = useState(false);
   const [activeHoverPrompt, setActiveHoverPrompt] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -105,6 +109,30 @@ export default function Room1Bedroom({ team, onLogout, onTransitionToRoom2 }) {
       if (e.key === 'p' || e.key === 'P' || e.code === 'KeyP') {
         e.preventDefault();
         setIsPhotoPuzzleOpen((prev) => {
+          const next = !prev;
+          if (next) engineRef.current?.unlock();
+          else engineRef.current?.lock();
+          return next;
+        });
+        return;
+      }
+
+      // R Key - Toggle Field Dossier & Round 1 Rules
+      if (e.key === 'r' || e.key === 'R' || e.code === 'KeyR') {
+        e.preventDefault();
+        setIsDossierOpen((prev) => {
+          const next = !prev;
+          if (next) engineRef.current?.unlock();
+          else engineRef.current?.lock();
+          return next;
+        });
+        return;
+      }
+
+      // H Key - Toggle Hints & Investigation Guidance
+      if (e.key === 'h' || e.key === 'H' || e.code === 'KeyH') {
+        e.preventDefault();
+        setIsHintOpen((prev) => {
           const next = !prev;
           if (next) engineRef.current?.unlock();
           else engineRef.current?.lock();
@@ -252,6 +280,12 @@ export default function Room1Bedroom({ team, onLogout, onTransitionToRoom2 }) {
         );
         return;
       }
+      if (matchingClue.is_locked) {
+        showNotification(
+          matchingClue.lock_reason || "This clue is sealed. Complete the preceding clue in sequence first."
+        );
+        return;
+      }
       setActiveClue(matchingClue);
       engineRef.current?.unlock();
     }
@@ -290,9 +324,10 @@ export default function Room1Bedroom({ team, onLogout, onTransitionToRoom2 }) {
         return data;
       } else {
         const errData = await res.json().catch(() => ({}));
+        const errMsg = typeof errData.detail === 'object' ? (errData.detail.message || JSON.stringify(errData.detail)) : (errData.detail || 'Submission failed');
         return {
           correct: false,
-          message: errData.detail || 'Submission failed'
+          message: errMsg
         };
       }
     } catch (err) {
@@ -391,6 +426,14 @@ export default function Room1Bedroom({ team, onLogout, onTransitionToRoom2 }) {
             setIsPhotoPuzzleOpen(true);
             engineRef.current?.unlock();
           }}
+          onOpenRules={() => {
+            setIsDossierOpen(true);
+            engineRef.current?.unlock();
+          }}
+          onOpenHints={() => {
+            setIsHintOpen(true);
+            engineRef.current?.unlock();
+          }}
           onLogout={onLogout}
           audioMuted={audioMuted}
           onToggleAudio={toggleAudio}
@@ -424,6 +467,10 @@ export default function Room1Bedroom({ team, onLogout, onTransitionToRoom2 }) {
           setIsCaseFilesOpen(false);
           if (!roomData?.basket_unlocked) {
             showNotification("Arcane seal unbroken: Gather all 15 room fragments to inspect this clue terminal.");
+            return;
+          }
+          if (clue.is_locked) {
+            showNotification(clue.lock_reason || "This clue is locked. Complete the preceding clue in sequence first.");
             return;
           }
           setActiveClue(clue);
@@ -468,6 +515,23 @@ export default function Room1Bedroom({ team, onLogout, onTransitionToRoom2 }) {
             showNotification("Head to the unlatched door at the front of the room to step into Room 2.");
           }
         }}
+      />
+
+      <Round1DossierModal
+        isOpen={isDossierOpen}
+        onClose={() => {
+          setIsDossierOpen(false);
+          engineRef.current?.lock();
+        }}
+      />
+      <HintModal
+        isOpen={isHintOpen}
+        onClose={() => {
+          setIsHintOpen(false);
+          engineRef.current?.lock();
+        }}
+        roomId="bedroom"
+        roomTitle="Lena's Bedroom"
       />
     </div>
   );

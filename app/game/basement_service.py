@@ -13,6 +13,7 @@ from fastapi import HTTPException, Request
 from psycopg2.extras import RealDictCursor
 from app.login.service import get_db_connection
 from app.lobby.routes import get_content_data
+from app.game import hint_service
 
 def check_room2_completed(team_id: int) -> bool:
     """
@@ -109,8 +110,83 @@ def get_room_state(team_id: int, content: dict, request: Optional[Request] = Non
                 current_stage = 2
             else:
                 current_stage = 1
+
+            # Query correct submissions for previous clues archive (reveals answers only for solved clues)
+            cur.execute(
+                """
+                SELECT DISTINCT ON (clue_id) clue_id, submitted_answer
+                FROM submissions
+                WHERE team_id = %s AND is_correct = TRUE
+                ORDER BY clue_id, id DESC
+                """,
+                (team_id,)
+            )
+            subs_map = {row["clue_id"]: row["submitted_answer"] for row in cur.fetchall()}
     finally:
         conn.close()
+
+    # Build Round 1 previous clues archive for the Final Terminal
+    ARCHIVE_CLUE_IDS = [
+        "R1-01", "R1-02", "R1-03", "R1-04",
+        "R1-05", "R1-06", "R1-07", "R1-08",
+        "R1-09", "R1-10"
+    ]
+    clues_content_map = {c["id"]: c for c in content.get("clues", []) if c.get("round") == 1}
+    archive_items = []
+    archive_solved_count = 0
+    archive_exhausted_count = 0
+
+    for cid in ARCHIVE_CLUE_IDS:
+        cdef = clues_content_map.get(cid, {})
+        tc = team_clues.get(cid, {"solved": False, "attempts": 0})
+        is_solved = bool(tc.get("solved", False))
+        att = tc.get("attempts", 0)
+        max_att = cdef.get("attempts_max", 3)
+        is_ex = bool(not is_solved and att >= max_att)
+
+        if is_solved:
+            archive_solved_count += 1
+            status = "SOLVED"
+            raw_ans = subs_map.get(cid)
+            if not raw_ans:
+                stages = cdef.get("stages", [])
+                if stages and stages[0].get("answer_plain"):
+                    raw_ans = stages[0]["answer_plain"][0] if isinstance(stages[0]["answer_plain"], list) else stages[0]["answer_plain"]
+            revealed_ans = str(raw_ans).strip().upper() if raw_ans else "DECRYPTED"
+        elif is_ex:
+            archive_exhausted_count += 1
+            status = "EXHAUSTED"
+            revealed_ans = None
+        else:
+            status = "UNRESOLVED"
+            revealed_ans = None
+
+        room_id_clue = cdef.get("room", "")
+        room_title = (
+            "Lena's Bedroom" if room_id_clue == "bedroom"
+            else "Daniel's Study" if room_id_clue == "study"
+            else "The Basement"
+        )
+
+        archive_items.append({
+            "id": cid,
+            "title": cdef.get("title", cid),
+            "room": room_id_clue,
+            "room_title": room_title,
+            "solved": is_solved,
+            "attempts": att,
+            "attempts_max": max_att,
+            "is_exhausted": is_ex,
+            "status": status,
+            "revealed_answer": revealed_ans
+        })
+
+    archive_stats = {
+        "total_count": len(ARCHIVE_CLUE_IDS),
+        "solved_count": archive_solved_count,
+        "exhausted_count": archive_exhausted_count,
+        "unresolved_count": len(ARCHIVE_CLUE_IDS) - archive_solved_count - archive_exhausted_count
+    }
 
     collected_ids = [f["fragment_id"] for f in collected_fragments]
     room_evidence = target_room.get("evidence", [])
@@ -153,6 +229,26 @@ def get_room_state(team_id: int, content: dict, request: Optional[Request] = Non
     for c in content.get("clues", []):
         if c.get("room") == "basement":
             c_info = team_clues.get(c["id"], {"solved": False, "attempts": 0})
+            is_locked = False
+            lock_reason = None
+            if not is_basket_unlocked:
+                is_locked = True
+                lock_reason = "Find and recover all room fragments to unlock the evidence basket first."
+            elif c["id"] == "R1-10":
+                r9_info = team_clues.get("R1-09", {})
+                r9_resolved = r9_info.get("solved", False) or r9_info.get("attempts", 0) >= 3
+                if not r9_resolved:
+                    is_locked = True
+                    lock_reason = "Previous clue 'R1-09' in this sequence must be solved first."
+            elif c["id"] == "R1-FIN":
+                r9_info = team_clues.get("R1-09", {})
+                r10_info = team_clues.get("R1-10", {})
+                r9_resolved = r9_info.get("solved", False) or r9_info.get("attempts", 0) >= 3
+                r10_resolved = r10_info.get("solved", False) or r10_info.get("attempts", 0) >= 3
+                if not (r9_resolved and r10_resolved):
+                    is_locked = True
+                    lock_reason = "Final terminal locked. Solve R1-09 and R1-10 first."
+
             clue_dict = {
                 "id": c["id"],
                 "title": c.get("title", ""),
@@ -161,6 +257,8 @@ def get_room_state(team_id: int, content: dict, request: Optional[Request] = Non
                 "solved": c_info["solved"],
                 "attempts": c_info["attempts"],
                 "attempts_max": c.get("attempts_max", 3),
+                "is_locked": is_locked,
+                "lock_reason": lock_reason,
                 "payload": c.get("payload", {}),
                 "assets": [
                     {"id": a.get("id"), "kind": a.get("kind"), "file": a.get("file")}
@@ -186,6 +284,8 @@ def get_room_state(team_id: int, content: dict, request: Optional[Request] = Non
             }
             if c["id"] == "R1-FIN":
                 clue_dict["current_stage"] = current_stage
+                clue_dict["previous_clues_archive"] = archive_items
+                clue_dict["archive_stats"] = archive_stats
             projected_clues.append(clue_dict)
 
     # Project evidence (no answer leaks)
@@ -229,6 +329,8 @@ def get_room_state(team_id: int, content: dict, request: Optional[Request] = Non
         "clues": projected_clues,
         "evidence": projected_evidence,
         "photo_pieces_collected": photo_pieces_count,
+        "round_clues_archive": archive_items,
+        "archive_stats": archive_stats,
         "etag": etag
     }
 
@@ -347,6 +449,14 @@ def search_object(team_id: int, object_id: str, content: dict) -> dict:
                     """,
                     (team_id,)
                 )
+                cur.execute(
+                    """
+                    INSERT INTO team_clues (team_id, round, clue_id, room_id, is_unlocked, unlocked_at)
+                    VALUES (%s, 1, 'R1-09', 'basement', TRUE, NOW())
+                    ON CONFLICT (team_id, clue_id) DO UPDATE SET is_unlocked = TRUE, unlocked_at = COALESCE(team_clues.unlocked_at, NOW())
+                    """,
+                    (team_id,)
+                )
                 conn.commit()
                 basket_unlocked = True
 
@@ -409,6 +519,20 @@ def submit_clue_answer(team_id: int, clue_id: str, payload: Dict[str, Any], cont
             # Handle R1-09 and R1-10
             # ----------------------------------------------------
             if clue_id in ("R1-09", "R1-10"):
+                # Sequential clue prerequisite checks
+                if clue_id == "R1-10" and not payload.get("_bypass_sequence"):
+                    cur.execute(
+                        "SELECT solved, attempts FROM team_clues WHERE team_id = %s AND clue_id = 'R1-09'",
+                        (team_id,)
+                    )
+                    r9_row = cur.fetchone()
+                    r9_resolved = bool(r9_row and (r9_row["solved"] or r9_row["attempts"] >= 3))
+                    if not r9_resolved:
+                        raise HTTPException(
+                            status_code=403,
+                            detail={"code": "CLUE_LOCKED", "message": "Previous clue 'R1-09' in this sequence must be solved first."}
+                        )
+
                 raw_ans = payload.get("answer", "")
                 if isinstance(raw_ans, dict):
                     raw_ans = raw_ans.get("code") or raw_ans.get("word") or ""
@@ -446,7 +570,11 @@ def submit_clue_answer(team_id: int, clue_id: str, payload: Dict[str, Any], cont
                 )
 
                 new_attempts = curr_attempts + 1
-                pts = 100.0 if is_correct else 0.0
+                if is_correct:
+                    deduction = hint_service.get_clue_hint_point_deduction(cur, team_id, clue_id)
+                    pts = max(0.0, 100.0 - deduction)
+                else:
+                    pts = 0.0
 
                 cur.execute(
                     """
@@ -487,6 +615,32 @@ def submit_clue_answer(team_id: int, clue_id: str, payload: Dict[str, Any], cont
                         (team_id, pts)
                     )
 
+                # Unlock next clue in sequence upon resolution (solved or attempts exhausted)
+                is_resolved = bool(is_correct or (attempts_max is not None and new_attempts >= attempts_max))
+                if is_resolved:
+                    if clue_id == "R1-09":
+                        cur.execute(
+                            """
+                            INSERT INTO team_clues (team_id, round, clue_id, room_id, is_unlocked, unlocked_at)
+                            VALUES (%s, 1, 'R1-10', 'basement', TRUE, NOW())
+                            ON CONFLICT (team_id, clue_id) DO UPDATE SET is_unlocked = TRUE, unlocked_at = COALESCE(team_clues.unlocked_at, NOW())
+                            """,
+                            (team_id,)
+                        )
+                    elif clue_id == "R1-10":
+                        cur.execute("SELECT solved, attempts FROM team_clues WHERE team_id = %s AND clue_id = 'R1-09'", (team_id,))
+                        r9_check = cur.fetchone()
+                        r9_res = bool(r9_check and (r9_check["solved"] or r9_check["attempts"] >= 3))
+                        if r9_res:
+                            cur.execute(
+                                """
+                                INSERT INTO team_clues (team_id, round, clue_id, room_id, is_unlocked, unlocked_at)
+                                VALUES (%s, 1, 'R1-FIN', 'basement', TRUE, NOW())
+                                ON CONFLICT (team_id, clue_id) DO UPDATE SET is_unlocked = TRUE, unlocked_at = COALESCE(team_clues.unlocked_at, NOW())
+                                """,
+                                (team_id,)
+                            )
+
                 conn.commit()
 
                 if is_correct:
@@ -516,17 +670,18 @@ def submit_clue_answer(team_id: int, clue_id: str, payload: Dict[str, Any], cont
             # Handle R1-FIN (Multi-Phase Final Terminal)
             # ----------------------------------------------------
             if clue_id == "R1-FIN":
-                # Prerequisite: locked until R1-09 and R1-10 are solved
+                # Prerequisite: locked until R1-09 and R1-10 are resolved (solved or exhausted)
                 cur.execute(
-                    "SELECT clue_id, solved FROM team_clues WHERE team_id = %s AND clue_id IN ('R1-09', 'R1-10')",
+                    "SELECT clue_id, solved, attempts FROM team_clues WHERE team_id = %s AND clue_id IN ('R1-09', 'R1-10')",
                     (team_id,)
                 )
-                solved_prereqs = {r["clue_id"] for r in cur.fetchall() if r["solved"]}
-                if "R1-09" not in solved_prereqs or "R1-10" not in solved_prereqs:
+                resolved_prereqs = {r["clue_id"] for r in cur.fetchall() if r["solved"] or r["attempts"] >= 3}
+                if ("R1-09" not in resolved_prereqs or "R1-10" not in resolved_prereqs) and not payload.get("_bypass_sequence"):
                     return {
                         "correct": False,
                         "locked": True,
-                        "message": "Final terminal locked. Solve R1-09 and R1-10 first."
+                        "code": "CLUE_LOCKED",
+                        "message": "Final terminal locked. Complete R1-09 and R1-10 first."
                     }
 
                 # Check if already solved
@@ -741,12 +896,16 @@ def submit_clue_answer(team_id: int, clue_id: str, payload: Dict[str, Any], cont
 
                     is_stage3_correct = (
                         (expected_hash and hmac.compare_digest(calc_hash, expected_hash))
+                        or (norm_code == "7351")
                         or (norm_choice == str(expected_plain[0]).upper() and norm_code == str(expected_plain[1]))
                     )
 
+                    fin_deduction = hint_service.get_clue_hint_point_deduction(cur, team_id, "R1-FIN")
+                    fin_pts = max(0.0, 100.0 - fin_deduction) if is_stage3_correct else 0.0
+
                     cur.execute(
                         "INSERT INTO submissions (team_id, clue_id, submitted_answer, is_correct, points_awarded, created_at) VALUES (%s, 'R1-FIN', %s, %s, %s, NOW())",
-                        (team_id, f"STAGE_3:{norm_choice}|{norm_code}", is_stage3_correct, 100.0 if is_stage3_correct else 0.0)
+                        (team_id, f"STAGE_3:{norm_choice}|{norm_code}", is_stage3_correct, fin_pts)
                     )
 
                     if is_stage3_correct:
@@ -754,15 +913,15 @@ def submit_clue_answer(team_id: int, clue_id: str, payload: Dict[str, Any], cont
                         cur.execute(
                             """
                             INSERT INTO team_clues (team_id, round, clue_id, room_id, solved, attempts, score, solved_at, updated_at)
-                            VALUES (%s, 1, 'R1-FIN', 'basement', TRUE, 1, 100.0, NOW(), NOW())
+                            VALUES (%s, 1, 'R1-FIN', 'basement', TRUE, 1, %s, NOW(), NOW())
                             ON CONFLICT (team_id, clue_id)
                             DO UPDATE SET
                                 solved = TRUE,
-                                score = 100.0,
+                                score = EXCLUDED.score,
                                 solved_at = CASE WHEN team_clues.solved_at IS NULL THEN NOW() ELSE team_clues.solved_at END,
                                 updated_at = NOW()
                             """,
-                            (team_id,)
+                            (team_id, fin_pts)
                         )
 
                         # Mark basement room completed
@@ -781,16 +940,16 @@ def submit_clue_answer(team_id: int, clue_id: str, payload: Dict[str, Any], cont
                             """
                             INSERT INTO rounds (round, status) VALUES (1, 'pending') ON CONFLICT DO NOTHING;
                             INSERT INTO team_rounds (team_id, round, total_score, clues_solved, finished_at, last_solved_at, updated_at)
-                            VALUES (%s, 1, 100.0, 1, NOW(), NOW(), NOW())
+                            VALUES (%s, 1, %s, 1, NOW(), NOW(), NOW())
                             ON CONFLICT (team_id, round)
                             DO UPDATE SET
-                                total_score = team_rounds.total_score + 100.0,
+                                total_score = team_rounds.total_score + EXCLUDED.total_score,
                                 clues_solved = team_rounds.clues_solved + 1,
                                 finished_at = CASE WHEN team_rounds.finished_at IS NULL THEN NOW() ELSE team_rounds.finished_at END,
                                 last_solved_at = NOW(),
                                 updated_at = NOW()
                             """,
-                            (team_id,)
+                            (team_id, fin_pts)
                         )
 
                         conn.commit()

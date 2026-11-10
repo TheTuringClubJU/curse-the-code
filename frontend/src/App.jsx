@@ -72,6 +72,32 @@ export default function App() {
       .finally(() => setCheckingAuth(false));
   }, [isAdminRoute]);
 
+  // Determine active room progression for logged in team
+  useEffect(() => {
+    if (!team || isAdminRoute) return;
+    fetch('/api/game/room/basement', { credentials: 'include' })
+      .then((res) => {
+        if (res.ok) {
+          return res.json().then((data) => {
+            if (data.is_completed) {
+              setCurrentRoom('lobby');
+            } else {
+              setCurrentRoom('basement');
+            }
+          });
+        } else {
+          return fetch('/api/game/room/study', { credentials: 'include' }).then((r2) => {
+            if (r2.ok) {
+              setCurrentRoom('study');
+            } else {
+              setCurrentRoom('bedroom');
+            }
+          });
+        }
+      })
+      .catch(() => setCurrentRoom('bedroom'));
+  }, [team, isAdminRoute]);
+
   // Fast poll lobby/game status when team is logged in
   useEffect(() => {
     if (!team || isAdminRoute) return;
@@ -112,6 +138,7 @@ export default function App() {
 
   const handleLoginSuccess = (authenticatedTeam) => {
     setRoundStatus(null);
+    setCurrentRoom('bedroom');
     setTeam(authenticatedTeam);
   };
 
@@ -120,6 +147,7 @@ export default function App() {
     await logoutTeam();
     setTeam(null);
     setRoundStatus(null);
+    setCurrentRoom('bedroom');
   };
 
   const handleAdminLogout = async () => {
