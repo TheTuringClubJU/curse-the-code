@@ -42,7 +42,7 @@ export default {
     reel_recorder: { pos: [2.2, 0.8, 1.0], size: [0.65, 0.75, 0.55], role: 'interactive_fragment', fragments: ['ES07', 'EK02'] },
     cable_bundle: { pos: [-0.5, 0.1, -1.1], size: [0.8, 0.15, 0.6], role: 'interactive_fragment', fragments: ['ES08'] },
     floor_lamp: { pos: [-2.6, 1.2, 1.8], size: [0.45, 2.1, 0.45], role: 'interactive_fragment', fragments: ['ES11'] },
-    wastebin: { pos: [1.1, 0.3, -0.9], size: [0.35, 0.45, 0.35], role: 'interactive_fragment', fragments: ['ES12'] },
+    wastebin: { pos: [0.42, 0.22, -0.45], size: [0.35, 0.45, 0.35], role: 'interactive_fragment', fragments: ['ES12'] },
     window: { pos: [2.9, 1.5, 0.0], size: [0.2, 1.6, 1.8], role: 'interactive_fragment', fragments: ['XS01'] },
     radiator: { pos: [2.9, 0.4, 0.2], size: [0.25, 0.65, 1.2], role: 'interactive_fragment', fragments: ['XS02'] },
     desk: { pos: [0.0, 0.0, -0.7], size: [2.6, 0.75, 1.3], role: 'decor' },

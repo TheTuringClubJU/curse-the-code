@@ -519,7 +519,7 @@ export function buildStudy(E) {
   // 15. Waste Bin (interactive_fragment) - Holds ES12
   {
     const binGroup = new THREE.Group();
-    binGroup.position.set(1.1, 0.22, -0.9);
+    binGroup.position.set(0.42, 0.22, -0.45);
 
     const binMesh = new THREE.Mesh(
       new THREE.CylinderGeometry(0.16, 0.12, 0.38, 12, 1, true),
