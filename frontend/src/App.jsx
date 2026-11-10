@@ -20,7 +20,14 @@ export default function App() {
   const [checkingAuth, setCheckingAuth] = useState(true);
   const [roundStatus, setRoundStatus] = useState(null); // Pure DB-driven: null until verified from DB
   const [currentRoundNum, setCurrentRoundNum] = useState(1);
-  const [currentRoom, setCurrentRoom] = useState('bedroom');
+  const [currentRoom, setCurrentRoom] = useState(() => {
+    return localStorage.getItem('ctc_current_room') || 'bedroom';
+  });
+
+  const changeRoom = (newRoom) => {
+    localStorage.setItem('ctc_current_room', newRoom);
+    setCurrentRoom(newRoom);
+  };
 
   // Listen to popstate or route changes if needed
   useEffect(() => {
@@ -109,6 +116,7 @@ export default function App() {
   };
 
   const handleLogout = async () => {
+    localStorage.removeItem('ctc_current_room');
     await logoutTeam();
     setTeam(null);
     setRoundStatus(null);
@@ -172,7 +180,7 @@ export default function App() {
         <Room2Study
           team={team}
           onLogout={handleLogout}
-          onTransitionToRoom3={() => setCurrentRoom('basement')}
+          onTransitionToRoom3={() => changeRoom('basement')}
         />
       );
     }
@@ -182,7 +190,7 @@ export default function App() {
         <Room3Basement
           team={team}
           onLogout={handleLogout}
-          onProceedToLobby={() => setCurrentRoom('lobby')}
+          onProceedToLobby={() => changeRoom('lobby')}
         />
       );
     }
@@ -191,7 +199,7 @@ export default function App() {
       <Room1Bedroom
         team={team}
         onLogout={handleLogout}
-        onTransitionToRoom2={() => setCurrentRoom('study')}
+        onTransitionToRoom2={() => changeRoom('study')}
       />
     );
   }
