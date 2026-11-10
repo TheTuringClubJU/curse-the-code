@@ -10,7 +10,7 @@ import CaseFilesModal from './components/CaseFilesModal.jsx';
 import RoomCompleteModal from './components/RoomCompleteModal.jsx';
 import './game.css';
 
-export default function Room1Bedroom({ team, onLogout }) {
+export default function Room1Bedroom({ team, onLogout, onTransitionToRoom2 }) {
   const mountRef = useRef(null);
   const engineRef = useRef(null);
   const audioRef = useRef(null);
@@ -201,8 +201,12 @@ export default function Room1Bedroom({ team, onLogout }) {
     // Check if this is the Bedroom Exit Door
     if (objectId === 'room_door' || objectId === 'door') {
       if (currentData?.is_completed) {
-        setIsRoomCompleteModalOpen(true);
-        engineRef.current?.unlock();
+        if (onTransitionToRoom2) {
+          onTransitionToRoom2();
+        } else {
+          setIsRoomCompleteModalOpen(true);
+          engineRef.current?.unlock();
+        }
       } else {
         const solvedCount = currentData?.clues?.filter(c => c.solved)?.length || 0;
         showNotification(
@@ -458,7 +462,11 @@ export default function Room1Bedroom({ team, onLogout }) {
         onProceedToDoor={() => {
           setIsRoomCompleteModalOpen(false);
           engineRef.current?.lock();
-          showNotification("Head to the unlatched door at the front of the room to step into Room 2.");
+          if (onTransitionToRoom2) {
+            onTransitionToRoom2();
+          } else {
+            showNotification("Head to the unlatched door at the front of the room to step into Room 2.");
+          }
         }}
       />
     </div>

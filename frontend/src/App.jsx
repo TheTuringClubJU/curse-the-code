@@ -4,6 +4,7 @@ import Lobby from './lobby/Lobby';
 import AdminLogin from './admin/AdminLogin';
 import AdminDashboard from './admin/AdminDashboard';
 import Room1Bedroom from './game/Room1Bedroom';
+import Room2Study from './game/Room2Study';
 import Room3Basement from './game/Room3Basement';
 import Room4Records from './game/Room4Records';
 import { checkAuthStatus, logoutTeam } from './userlogin/authApi';
@@ -19,6 +20,7 @@ export default function App() {
   const [checkingAuth, setCheckingAuth] = useState(true);
   const [roundStatus, setRoundStatus] = useState(null); // Pure DB-driven: null until verified from DB
   const [currentRoundNum, setCurrentRoundNum] = useState(1);
+  const [currentRoom, setCurrentRoom] = useState('bedroom');
 
   // Listen to popstate or route changes if needed
   useEffect(() => {
@@ -159,9 +161,34 @@ export default function App() {
     return <Room3Basement team={team} onLogout={handleLogout} />;
   }
 
-  // When Round 1 is live, display Room 1 (Lena's Bedroom)
+  // When Round 1 is live, display Room 1 (Bedroom), Room 2 (Study), or Room 3 (Basement)
   if (roundStatus === 'live' && currentRoundNum === 1) {
-    return <Room1Bedroom team={team} onLogout={handleLogout} />;
+    if (currentRoom === 'study') {
+      return (
+        <Room2Study
+          team={team}
+          onLogout={handleLogout}
+          onTransitionToRoom3={() => setCurrentRoom('basement')}
+        />
+      );
+    }
+
+    if (currentRoom === 'basement') {
+      return (
+        <Room3Basement
+          team={team}
+          onLogout={handleLogout}
+        />
+      );
+    }
+
+    return (
+      <Room1Bedroom
+        team={team}
+        onLogout={handleLogout}
+        onTransitionToRoom2={() => setCurrentRoom('study')}
+      />
+    );
   }
 
   // When Round 2 is live, display Room 4 (The Rotting Archive)

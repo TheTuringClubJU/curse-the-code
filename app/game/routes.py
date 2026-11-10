@@ -8,6 +8,7 @@ from app.config import DATABASE_URL
 from app.login.service import get_db_connection
 from app.lobby.routes import get_content_data
 from app.login.service import LoginService
+from app.game import study_service
 import hmac
 import hashlib
 
@@ -48,6 +49,11 @@ def get_room_state(room_id: str, request: Request):
             
     if not target_room:
         raise HTTPException(status_code=404, detail="Room not found")
+
+    if room_id == "study":
+        return study_service.get_room_state(team["id"], content)
+    if "study" in target_room.get("unlock", {}).get("all_clues_resolved", []):
+        study_service.check_room_access(team["id"], target_room)
         
     conn = get_db_connection()
     try:
@@ -207,6 +213,11 @@ def search_object(room_id: str, payload: Dict[str, Any], request: Request):
     target_room = next((r for r in content.get("rooms", []) if r["id"] == room_id), None)
     if not target_room:
         raise HTTPException(status_code=404, detail="Room not found")
+
+    if room_id == "study":
+        return study_service.search_object(team["id"], content, object_id)
+    if "study" in target_room.get("unlock", {}).get("all_clues_resolved", []):
+        study_service.check_room_access(team["id"], target_room)
         
     # Find evidence attached to this object in room definition
     room_evidence = target_room.get("evidence", [])
@@ -322,6 +333,12 @@ def submit_clue_answer(clue_id: str, payload: Dict[str, Any], request: Request):
     target_clue = next((c for c in content.get("clues", []) if c["id"] == clue_id), None)
     if not target_clue:
         raise HTTPException(status_code=404, detail="Clue not found")
+
+    if target_clue.get("room") == "study":
+        return study_service.submit_clue_answer(team["id"], content, target_clue, answer)
+    target_room = next((r for r in content.get("rooms", []) if r["id"] == target_clue.get("room")), {})
+    if "study" in target_room.get("unlock", {}).get("all_clues_resolved", []):
+        study_service.check_room_access(team["id"], target_room)
         
     room_id = target_clue.get("room")
     attempts_max = target_clue.get("attempts_max", 3)
