@@ -75,7 +75,7 @@ export function buildStudy(E) {
     deskGroup.userData.np = 1;
     interact(deskGroup, 'desk');
     add(deskGroup);
-    solid(-1.4, 1.4, -1.4, 0.0);
+    solid(-1.4, 1.4, -1.4, -0.35);
   }
 
   // 2. Desk Blotter (interactive_fragment) - holds ES03
