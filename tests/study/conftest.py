@@ -108,8 +108,18 @@ class StudyTeam:
         )
 
     def snapshot(self):
+        order_by = {
+            "team_rooms": "id",
+            "team_fragments": "id",
+            "team_clues": "clue_id",
+            "team_rounds": "round",
+            "submissions": "id",
+        }
         return {
-            table: self.sql(f"SELECT * FROM {table} WHERE team_id = %s", self.id)
+            table: self.sql(
+                f"SELECT * FROM {table} WHERE team_id = %s ORDER BY {order_by[table]}",
+                self.id,
+            )
             for table in (
                 "team_rooms",
                 "team_fragments",

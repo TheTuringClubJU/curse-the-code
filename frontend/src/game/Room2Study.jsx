@@ -372,11 +372,29 @@ export default function Room2Study({
   const cluesSolvedCount = cluesList.filter((c) => c.solved).length;
   const totalCluesCount = cluesList.length || 4;
 
+  const isAnyModalOpen = Boolean(
+    activeClueModal ||
+    isBasketOpen ||
+    isCaseFilesOpen ||
+    isPhotoPuzzleOpen ||
+    isStudyCompleteModalOpen ||
+    isDossierOpen ||
+    isHintOpen
+  );
+
   return (
     <div className="relative w-full h-screen overflow-hidden bg-[#04120b] select-none">
       
       {/* 3D Canvas Mount Point */}
-      <div ref={mountRef} className="w-full h-full cursor-crosshair" />
+      <div 
+        ref={mountRef} 
+        onClick={() => {
+          if (isStarted && engineRef.current && !isAnyModalOpen) {
+            engineRef.current.lock();
+          }
+        }}
+        className="absolute inset-0 w-full h-full cursor-crosshair" 
+      />
 
       {/* 6% Scanline Overlay */}
       <div 

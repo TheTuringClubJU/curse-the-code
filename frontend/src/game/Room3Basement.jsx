@@ -192,8 +192,18 @@ export default function Room3Basement({ team, onLogout, onProceedToLobby, previe
     return () => { cancelled = true; clearTimeout(retryTimer); clearInterval(tickTimer); };
   }, []);
 
+  const isAnyModalOpen = Boolean(
+    isBasketOpen ||
+    isCaseFilesOpen ||
+    isPhotoPuzzleOpen ||
+    activeClue ||
+    isCompleteOpen ||
+    isDossierOpen ||
+    isHintOpen
+  );
+
   return <div className="relative w-full h-screen overflow-hidden bg-[#14161a] select-none font-mono">
-    <div ref={mountRef} onClick={()=>isStarted&&engineRef.current?.lock()} className="absolute inset-0" />
+    <div ref={mountRef} onClick={() => { if (isStarted && engineRef.current && !isAnyModalOpen) engineRef.current.lock(); }} className="absolute inset-0" />
     {!isStarted&&<div className="ov"><h1>CURSE THE CODE</h1><h3>The Basement</h3><ul><li><b>WASD</b> move</li><li><b>Mouse</b> look</li><li><b>E</b> interact/search</li><li><b>B/C/P</b> basket/clues/photo</li></ul><button onClick={handleStart}>CLICK TO ENTER BASEMENT</button></div>}
     {notification&&<div className="absolute top-20 left-1/2 -translate-x-1/2 z-[80] bg-red-950/95 border border-red-400/40 px-5 py-3 rounded text-xs text-red-100">{notification}</div>}
     {isStarted&&<HUD roomTitle={roomData?.title||'The Basement'} totalFragments={5} collectedCount={roomData?.collected_fragment_ids?.length||0} basketUnlocked={Boolean(roomData?.basket_unlocked)} isRoomCompleted={Boolean(roomData?.is_completed)} photoCount={roomData?.photo_pieces_collected||0} cluesSolved={roomClues.filter(c=>c.solved).length} totalClues={2} onOpenBasket={()=>{setIsBasketOpen(true);engineRef.current?.unlock();}} onOpenCaseFiles={()=>{setIsCaseFilesOpen(true);engineRef.current?.unlock();}} onOpenPhotoPuzzle={()=>{setIsPhotoPuzzleOpen(true);engineRef.current?.unlock();}} onOpenRules={()=>{setIsDossierOpen(true);engineRef.current?.unlock();}} onOpenHints={()=>{setIsHintOpen(true);engineRef.current?.unlock();}} onLogout={onLogout} audioMuted={audioMuted} onToggleAudio={()=>{const v=!audioMuted;audioRef.current?.setMuted(v);setAudioMuted(v);}} activeHoverPrompt={hoverPrompt}/>} 

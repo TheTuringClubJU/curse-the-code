@@ -365,7 +365,7 @@ export default function Room1Bedroom({ team, onLogout, onTransitionToRoom2 }) {
       <div 
         ref={mountRef} 
         onClick={() => {
-          if (isStarted && engineRef.current && !activeClue && !isBasketOpen && !isPhotoPuzzleOpen && !isCaseFilesOpen && !isRoomCompleteModalOpen) {
+          if (isStarted && engineRef.current && !activeClue && !isBasketOpen && !isPhotoPuzzleOpen && !isCaseFilesOpen && !isRoomCompleteModalOpen && !isDossierOpen && !isHintOpen) {
             engineRef.current.lock();
           }
         }}
