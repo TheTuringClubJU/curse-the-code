@@ -72,9 +72,16 @@ export default function CaseFilesModal({
                   ) : (
                     <Lock className="w-4 h-4 text-[#7c6b9b] shrink-0" />
                   )}
-                  <span className="text-sm font-bold text-[#e8e0ff]">
-                    Clue {clueNumber}
-                  </span>
+                  <div>
+                    <span className="text-sm font-bold text-[#e8e0ff]">
+                      Clue {clueNumber}
+                    </span>
+                    {clue.title && (
+                      <span className="text-xs text-[#a292cc] font-mono block">
+                        {clue.title}
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 {/* Attempts Count */}
