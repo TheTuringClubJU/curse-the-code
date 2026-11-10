@@ -10,6 +10,7 @@ export default function HUD({
   collectedCount = 0,
   basketUnlocked = false,
   isRoomCompleted = false,
+  completedMessage = null,
   photoCount = 0,
   cluesSolved = 0,
   totalClues = 4,
@@ -145,7 +146,7 @@ export default function HUD({
           <div className="bg-[#14291e]/90 backdrop-blur-md px-4 py-2 rounded-xl border border-[#22543d] flex items-center gap-2 text-xs font-mono text-[#86efac] shadow-2xl animate-pulse">
             <CheckCircle className="w-4 h-4 text-[#86efac] shrink-0" />
             <span className="font-bold tracking-wide">
-              ROOM 1 COMPLETE • DOOR TO ROOM 2 UNLATCHED
+              {completedMessage || (roomTitle.toLowerCase().includes("study") || roomTitle.toLowerCase().includes("daniel") ? "ROOM 2 COMPLETE • BLAST DOOR TO ROOM 3 UNLATCHED" : "ROOM 1 COMPLETE • DOOR TO ROOM 2 UNLATCHED")}
             </span>
           </div>
         )}

@@ -333,6 +333,11 @@ export default function Room2Study({
 
   const activeClueObj = roomData?.clues?.find((c) => c.id === activeClueModal);
 
+  // Clues count calculations
+  const cluesList = roomData?.clues || [];
+  const cluesSolvedCount = cluesList.filter((c) => c.solved).length;
+  const totalCluesCount = cluesList.length || 4;
+
   return (
     <div className="relative w-full h-screen overflow-hidden bg-[#04120b] select-none">
       
@@ -380,6 +385,11 @@ export default function Room2Study({
           collectedCount={roomData?.collected_fragment_ids?.length || 0}
           totalFragments={roomData?.total_fragments_in_room || 16}
           photoCount={roomData?.photo_pieces_collected || (roomData?.photo_piece_ids?.length || 0)}
+          cluesSolved={cluesSolvedCount}
+          totalClues={totalCluesCount}
+          basketUnlocked={Boolean(roomData?.basket_unlocked)}
+          isRoomCompleted={Boolean(roomData?.is_completed)}
+          completedMessage="ROOM 2 COMPLETE • BLAST DOOR TO ROOM 3 UNLATCHED"
           team={team}
           onOpenBasket={() => {
             setIsBasketOpen(true);
