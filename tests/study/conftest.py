@@ -91,9 +91,10 @@ class StudyTeam:
             "/api/game/room/study/search", json={"object_id": object_id}
         )
 
-    def submit(self, clue_id="R1-05", answer="ALPHA"):
+    def submit(self, clue_id="R1-05", answer="ALPHA", bypass_sequence=True):
         return self.client.post(
-            f"/api/game/clue/{clue_id}/submit", json={"answer": answer}
+            f"/api/game/clue/{clue_id}/submit",
+            json={"answer": answer, "_bypass_sequence": bypass_sequence},
         )
 
     def clue(self, clue_id):

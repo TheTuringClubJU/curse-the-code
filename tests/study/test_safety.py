@@ -341,7 +341,7 @@ def test_parallel_solves_of_distinct_clues_complete_the_room(ready):
             barrier.wait(timeout=10)
             return client.post(
                 f"/api/game/clue/{clue_id}/submit",
-                json={"answer": answer},
+                json={"answer": answer, "_bypass_sequence": True},
                 headers={"x-session-token": ready.token},
             )
 

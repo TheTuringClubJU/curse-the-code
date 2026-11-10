@@ -311,7 +311,7 @@
             "image_file": "poster_piece_1.png",
             "audio_file": ""
           },
-          "locate_hint": "TEST: search the trunk.",
+          "locate_hint": "Inside the heavy wooden storage trunk resting at the foot of the bed.",
           "secret": {
             "hidden_strip": "TEST DATE 07/"
           }
@@ -349,7 +349,7 @@
             "image_file": "",
             "audio_file": ""
           },
-          "locate_hint": "TEST: search the nightstand.",
+          "locate_hint": "Hidden within the drawer of the bedside nightstand.",
           "secret": {
             "chunk": "YJXY JSYWD Y"
           }
@@ -383,7 +383,7 @@
             "image_file": "portrait_piece_1.png",
             "audio_file": ""
           },
-          "locate_hint": "TEST: search the candle.",
+          "locate_hint": "Near the pool of hardened wax around the candle on the wooden dresser.",
           "secret": {
             "note": "points to QR-1 location"
           }
@@ -420,7 +420,7 @@
             "image_file": "",
             "audio_file": ""
           },
-          "locate_hint": "TEST: search the desk.",
+          "locate_hint": "Tucked beneath scattered papers on Lena's study desk.",
           "secret": {
             "chunk": "WKH WHVW JDW"
           }
@@ -454,7 +454,7 @@
             "image_file": "",
             "audio_file": ""
           },
-          "locate_hint": "TEST: search the bed.",
+          "locate_hint": "Concealed between the mattress and bedframe beneath the unmade blankets.",
           "secret": {
             "chunk": "MJ PJDBTWI NX QFS"
           }
@@ -486,7 +486,7 @@
             "image_file": "poster_piece_2.png",
             "audio_file": ""
           },
-          "locate_hint": "TEST: search the wardrobe.",
+          "locate_hint": "Hanging inside the tall wardrobe, tucked behind dark coats.",
           "secret": {
             "hidden_strip": "04/20"
           }
@@ -520,7 +520,7 @@
             "image_file": "",
             "audio_file": ""
           },
-          "locate_hint": "TEST: search the musicbox.",
+          "locate_hint": "Inside the ornate music box on the shelf, beside the figurine.",
           "secret": {
             "chunk": "H RSHQV DW VXQ"
           }
@@ -554,7 +554,7 @@
             "image_file": "portrait_piece_2.png",
             "audio_file": ""
           },
-          "locate_hint": "TEST: search the pillow.",
+          "locate_hint": "Slipped underneath the sleeping pillow at the head of the bed.",
           "secret": {
             "note": "points to QR-2 location"
           }
@@ -588,7 +588,7 @@
             "image_file": "",
             "audio_file": ""
           },
-          "locate_hint": "TEST: search the clock.",
+          "locate_hint": "Behind the glass casing of the tall grandfather clock.",
           "secret": {
             "chunk": "YJWS"
           }
@@ -622,7 +622,7 @@
             "image_file": "",
             "audio_file": ""
           },
-          "locate_hint": "TEST: search the bookshelf.",
+          "locate_hint": "Wedged between two dusty book spines on the bedroom bookshelf.",
           "secret": {
             "chunk": "ULVH"
           }
@@ -654,7 +654,7 @@
             "image_file": "poster_piece_3.png",
             "audio_file": ""
           },
-          "locate_hint": "TEST: search the mirror.",
+          "locate_hint": "Slid behind the bevelled edge of the wall mirror frame.",
           "secret": {
             "hidden_strip": "01"
           }
@@ -691,7 +691,7 @@
             "image_file": "portrait_piece_3.png",
             "audio_file": ""
           },
-          "locate_hint": "TEST: search the chair.",
+          "locate_hint": "Fastened under the seat cushion of the wooden desk chair.",
           "secret": {
             "note": "rule card"
           }
@@ -726,7 +726,7 @@
             "image_file": "",
             "audio_file": ""
           },
-          "locate_hint": "TEST: search the doll.",
+          "locate_hint": "Concealed in the dress seams of the porcelain doll seated in the corner.",
           "secret": {
             "chunk": "KYFV MVV HZ"
           }
@@ -761,7 +761,7 @@
             "image_file": "",
             "audio_file": ""
           },
-          "locate_hint": "TEST: search the photo_frame.",
+          "locate_hint": "Tucked into the backing of the small framed photo on the wall.",
           "secret": {
             "note": "decoy"
           }
@@ -795,7 +795,7 @@
             "image_file": "",
             "audio_file": ""
           },
-          "locate_hint": "TEST: search the portrait.",
+          "locate_hint": "Wedged behind the hanging portrait on the wall.",
           "secret": {
             "note": "decoy"
           }
@@ -1008,7 +1008,7 @@
             "image_file": "",
             "audio_file": ""
           },
-          "locate_hint": "TEST: search the bookshelf.",
+          "locate_hint": "Hidden among the thick reference volumes on the central study bookshelf.",
           "secret": {
             "chunk": "45 52 52 4F 52 20 30 32 3A 31 35 3A 30"
           }
@@ -1042,7 +1042,7 @@
             "image_file": "",
             "audio_file": ""
           },
-          "locate_hint": "TEST: search the corkboard.",
+          "locate_hint": "Pinned beneath overlapping case notes on the large corkboard.",
           "secret": {
             "chunk": "VGhlIHNpZ25hbCBtdXN0IG5l"
           }
@@ -1076,7 +1076,7 @@
             "image_file": "",
             "audio_file": ""
           },
-          "locate_hint": "TEST: search the desk_blotter.",
+          "locate_hint": "Slipped completely underneath the dark leather desk blotter mat.",
           "secret": {
             "chunk": "AL"
           }
@@ -1117,7 +1117,7 @@
             "image_file": "",
             "audio_file": ""
           },
-          "locate_hint": "TEST: search the filing_cabinet.",
+          "locate_hint": "Filed between folders inside the top metal filing cabinet drawer.",
           "secret": {
             "note": "logins"
           }
@@ -1151,7 +1151,7 @@
             "image_file": "",
             "audio_file": ""
           },
-          "locate_hint": "TEST: search the sticky_wall.",
+          "locate_hint": "Hidden behind the cluster of urgent sticky notes on the wall.",
           "secret": {
             "chunk": "dmVyIGJlIHNlbnQgZnJvbSBp"
           }
@@ -1187,7 +1187,7 @@
             "image_file": "",
             "audio_file": ""
           },
-          "locate_hint": "TEST: search the armchair.",
+          "locate_hint": "Wedged between the deep leather cushions of the study armchair.",
           "secret": {
             "chunk": "39 20 50 52 4F 43 45 53 53 20 4F 52 42"
           }
@@ -1228,7 +1228,7 @@
             "image_file": "",
             "audio_file": ""
           },
-          "locate_hint": "TEST: search the reel_recorder.",
+          "locate_hint": "Taped underneath the magnetic tape wheel on the reel-to-reel recorder.",
           "secret": {
             "note": "tokens"
           }
@@ -1262,7 +1262,7 @@
             "image_file": "",
             "audio_file": ""
           },
-          "locate_hint": "TEST: search the cable_bundle.",
+          "locate_hint": "Tangled inside the thick power cable bundle coiled under the desk.",
           "secret": {
             "chunk": "PHA"
           }
@@ -1296,7 +1296,7 @@
             "image_file": "",
             "audio_file": ""
           },
-          "locate_hint": "TEST: search the corkboard.",
+          "locate_hint": "Tacked to the lower wooden frame of the corkboard.",
           "secret": {
             "chunk": "bnNpZGUgdGhlIGxhYi4="
           }
@@ -1333,7 +1333,7 @@
             "image_file": "",
             "audio_file": ""
           },
-          "locate_hint": "TEST: search the filing_cabinet.",
+          "locate_hint": "Concealed at the very back of the lowest filing cabinet drawer.",
           "secret": {
             "note": "policy"
           }
@@ -1368,7 +1368,7 @@
             "image_file": "",
             "audio_file": ""
           },
-          "locate_hint": "TEST: search the floor_lamp.",
+          "locate_hint": "Taped along the vertical brass pole of the corner floor lamp.",
           "secret": {
             "chunk": "49 54 2E 53 59 53 20 48 41 4C 54 45 44"
           }
@@ -1403,7 +1403,7 @@
             "image_file": "",
             "audio_file": ""
           },
-          "locate_hint": "TEST: search the wastebin.",
+          "locate_hint": "Crumpled at the bottom of the wire mesh wastebin beside the desk.",
           "secret": {
             "note": "context"
           }
@@ -1438,7 +1438,7 @@
             "image_file": "",
             "audio_file": "rec_b.wav"
           },
-          "locate_hint": "TEST: search the reel_recorder.",
+          "locate_hint": "Stored inside the auxiliary compartment of the reel-to-reel recorder.",
           "secret": {
             "spoken_word": "RED"
           }
@@ -1472,7 +1472,7 @@
             "image_file": "",
             "audio_file": ""
           },
-          "locate_hint": "TEST: search the bookshelf.",
+          "locate_hint": "Hidden behind a row of technical binders on the lower bookshelf.",
           "secret": {
             "chunk": "BR TPUIZVUML ZF"
           }
@@ -1507,7 +1507,7 @@
             "image_file": "",
             "audio_file": ""
           },
-          "locate_hint": "TEST: search the window.",
+          "locate_hint": "Resting on the dust-covered outer sill of the study window.",
           "secret": {
             "note": "decoy"
           }
@@ -1542,7 +1542,7 @@
             "image_file": "",
             "audio_file": ""
           },
-          "locate_hint": "TEST: search the radiator.",
+          "locate_hint": "Slid behind the rusted cast-iron radiator pipes against the wall.",
           "secret": {
             "note": "decoy"
           }
@@ -1689,7 +1689,7 @@
             "image_file": "evidence/basement/EK04.png",
             "audio_file": ""
           },
-          "locate_hint": "TEST: search the server_rack.",
+          "locate_hint": "Slid inside the ventilated chassis bay of the primary server rack.",
           "secret": {
             "note": "metadata"
           }
@@ -1724,7 +1724,7 @@
             "image_file": "evidence/basement/EK05.png",
             "audio_file": "rec_a.wav"
           },
-          "locate_hint": "TEST: search the maintenance_terminal.",
+          "locate_hint": "Taped behind the CRT housing of the maintenance terminal desk.",
           "secret": {
             "spoken_word": "GREEN"
           }
@@ -1758,7 +1758,7 @@
             "image_file": "evidence/basement/EK06.png",
             "audio_file": ""
           },
-          "locate_hint": "TEST: search the toolbox.",
+          "locate_hint": "Hidden beneath the heavy wrenches in the rusted metal toolbox.",
           "secret": {
             "chunk": "XMK HYF NEOX"
           }
@@ -1792,7 +1792,7 @@
             "image_file": "evidence/basement/XK01.png",
             "audio_file": ""
           },
-          "locate_hint": "TEST: search the floor_seal.",
+          "locate_hint": "Etched into the iron ring around the central floor seal.",
           "secret": {
             "note": "decoy"
           }
@@ -1826,7 +1826,7 @@
             "image_file": "evidence/basement/XK02.png",
             "audio_file": ""
           },
-          "locate_hint": "TEST: search the server_rack.",
+          "locate_hint": "Tangled among the rear communication cables behind the server rack.",
           "secret": {
             "note": "decoy"
           }
@@ -1987,7 +1987,7 @@
             "image_file": "",
             "audio_file": ""
           },
-          "locate_hint": "TEST: Check the bottom drawer of cabinet A on the east wall.",
+          "locate_hint": "The lowest drawer of the first cabinet on the east wall.",
           "secret": {
             "note": "TEST: Requisition date matches official shutdown \u2014 but items ordered AFTER shutdown."
           }
@@ -2024,7 +2024,7 @@
             "image_file": "",
             "audio_file": ""
           },
-          "locate_hint": "TEST: Clipped inside cabinet A, second drawer.",
+          "locate_hint": "Clipped to the back wall of the second drawer, cabinet A \u2014 east wall.",
           "secret": {
             "note": "TEST: Subject 011 never appears on any exit record."
           }
@@ -2061,7 +2061,7 @@
             "image_file": "",
             "audio_file": ""
           },
-          "locate_hint": "TEST: Behind the folder dividers at the back of the top drawer of cabinet B.",
+          "locate_hint": "Behind the hanging folder dividers at the very back of the top drawer, cabinet B.",
           "secret": {
             "note": "TEST: Subjects recorded as deceased show persistent neural signals."
           }
@@ -2098,7 +2098,7 @@
             "image_file": "",
             "audio_file": ""
           },
-          "locate_hint": "TEST: Inside the CLASSIFIED folder in cabinet B.",
+          "locate_hint": "Inside the folder marked CLASSIFIED \u2014 DO NOT FILE. Cabinet B, mid-section.",
           "secret": {
             "note": "TEST: S-007 breach is never logged in the official record."
           }
@@ -2135,7 +2135,7 @@
             "image_file": "",
             "audio_file": ""
           },
-          "locate_hint": "TEST: Box labelled DELTA 1980 on the third shelf.",
+          "locate_hint": "Inside the box labelled DELTA 1980 \u2014 third shelf of the archive unit, left-hand side.",
           "secret": {
             "note": "TEST: No oversight body is listed \u2014 project was running unsupervised."
           }
@@ -2172,7 +2172,7 @@
             "image_file": "",
             "audio_file": ""
           },
-          "locate_hint": "TEST: Envelope taped to the back panel of the bottom shelf.",
+          "locate_hint": "Inside a manila envelope, taped to the back panel of the lowest shelf.",
           "secret": {
             "note": "TEST: Facility photograph is dated 14 months after the official shutdown."
           }
@@ -2209,7 +2209,7 @@
             "image_file": "",
             "audio_file": ""
           },
-          "locate_hint": "TEST: Look under the desk mat on the right-hand side.",
+          "locate_hint": "Lift the desk mat \u2014 it's folded beneath it on the right side.",
           "secret": {
             "note": "TEST: Corvin's handwritten note confirms he continued after the official shutdown."
           }
@@ -2246,7 +2246,7 @@
             "image_file": "",
             "audio_file": ""
           },
-          "locate_hint": "TEST: Last card behind the S index in the card catalog.",
+          "locate_hint": "Open the S drawer of the card catalog. It's the last card at the very back.",
           "secret": {
             "note": "TEST: S-011 is cross-referenced in the final vault record."
           }
@@ -2283,7 +2283,7 @@
             "image_file": "",
             "audio_file": ""
           },
-          "locate_hint": "TEST: Taped inside the vent grate near the floor.",
+          "locate_hint": "The vent grate near the floor on the north wall \u2014 the cover lifts from the bottom. It's taped inside.",
           "secret": {
             "note": "TEST: Protocol requires the same badge number as Corvin's."
           }
@@ -2320,7 +2320,7 @@
             "image_file": "",
             "audio_file": ""
           },
-          "locate_hint": "TEST: Top drawer of the clerk desk. The key is under the lamp base.",
+          "locate_hint": "The key is under the lamp base on the clerk's desk. It opens the top drawer.",
           "secret": {
             "note": "TEST: Document signature does not match Corvin's authenticated handwriting sample from 1979."
           }
@@ -2356,7 +2356,7 @@
             "image_file": "",
             "audio_file": ""
           },
-          "locate_hint": "TEST: In the waste basket.",
+          "locate_hint": "It's crumpled at the top of the waste basket \u2014 probably nothing.",
           "secret": {
             "note": "TEST: Decoy \u2014 no story relevance."
           }
@@ -2392,7 +2392,7 @@
             "image_file": "",
             "audio_file": ""
           },
-          "locate_hint": "TEST: Loose on the top shelf.",
+          "locate_hint": "Loose on the top shelf \u2014 looks like it got separated from a folder.",
           "secret": {
             "note": "TEST: Decoy \u2014 no story relevance."
           }
@@ -2539,7 +2539,7 @@
             "image_file": "",
             "audio_file": ""
           },
-          "locate_hint": "TEST: Behind the top panel of the relay rack.",
+          "locate_hint": "Reach behind the top relay panel \u2014 it's wedged against the wall.",
           "secret": {
             "note": "TEST: Outbound transmission sent night of official shutdown \u2014 to unknown recipient."
           }
@@ -2576,7 +2576,7 @@
             "image_file": "",
             "audio_file": ""
           },
-          "locate_hint": "TEST: Tucked in the cable bundle at the base of the relay rack.",
+          "locate_hint": "It's folded inside the cable bundle at the bottom of the relay rack \u2014 look inside the zip tie loops.",
           "secret": {
             "note": "TEST: Equipment requested five weeks after official shutdown."
           }
@@ -2613,7 +2613,7 @@
             "image_file": "",
             "audio_file": ""
           },
-          "locate_hint": "TEST: Inside the padded case under the tape deck cart.",
+          "locate_hint": "Open the black padded case on the shelf below the tape deck cart.",
           "secret": {
             "note": "TEST: Chamber 3 feed running continuously after closure \u2014 by order."
           }
@@ -2650,7 +2650,7 @@
             "image_file": "",
             "audio_file": ""
           },
-          "locate_hint": "TEST: Between the tape reels on top of the cart.",
+          "locate_hint": "It's folded between two tape reels on top of the cart.",
           "secret": {
             "note": "TEST: Unnamed operator witnessing recurring anomalous figure \u2014 refuses to log it."
           }
@@ -2687,7 +2687,7 @@
             "image_file": "",
             "audio_file": ""
           },
-          "locate_hint": "TEST: In the pocket of the operator chair's seat cushion.",
+          "locate_hint": "Tucked into the side pocket of the operator chair's seat cushion.",
           "secret": {
             "note": "TEST: Echo Zero mentioned in an intercepted signal \u2014 same code as the emergency protocol."
           }
@@ -2724,7 +2724,7 @@
             "image_file": "",
             "audio_file": ""
           },
-          "locate_hint": "TEST: Waterproof sleeve taped to the wall inside the cable trench.",
+          "locate_hint": "Drop into the cable trench \u2014 there's a waterproof sleeve taped to the left wall.",
           "secret": {
             "note": "TEST: Chamber 3 biometric feed is still live \u2014 cutting it triggers an alarm."
           }
@@ -2761,7 +2761,7 @@
             "image_file": "",
             "audio_file": ""
           },
-          "locate_hint": "TEST: Under the top sheet on the wall clipboard.",
+          "locate_hint": "It's clipped under the top sheet on the wall clipboard \u2014 you'll need to lift the first page.",
           "secret": {
             "note": "TEST: Operator instructed to log nothing after 23:00 on the shutdown night."
           }
@@ -2798,7 +2798,7 @@
             "image_file": "",
             "audio_file": ""
           },
-          "locate_hint": "TEST: Taped inside the fuse box door.",
+          "locate_hint": "Open the fuse box. The note is taped to the inside of the door.",
           "secret": {
             "note": "TEST: Corvin's initials \u2014 fuses to Chamber 3 kept live deliberately."
           }
@@ -2834,7 +2834,7 @@
             "image_file": "",
             "audio_file": ""
           },
-          "locate_hint": "TEST: Between the cushions of the operator chair.",
+          "locate_hint": "Jammed between the seat and backrest \u2014 probably fell out of someone's pocket.",
           "secret": {
             "note": "TEST: Decoy \u2014 no story relevance."
           }
@@ -2870,7 +2870,7 @@
             "image_file": "",
             "audio_file": ""
           },
-          "locate_hint": "TEST: The top sheet on the wall clipboard.",
+          "locate_hint": "It's the top sheet on the clipboard \u2014 this one's the first thing you see.",
           "secret": {
             "note": "TEST: Decoy \u2014 no story relevance."
           }
@@ -2995,17 +2995,17 @@
         {
           "stage": 1,
           "level": 1,
-          "text": "Test riddle: some lines are meant to be walked through."
+          "text": "Some sentences are written to be read. Others are written to be walked through, one step at a time."
         },
         {
           "stage": 1,
           "level": 2,
-          "text": "Test riddle: a small birthday sets the number of steps."
+          "text": "A birthday tells you how many steps a house takes in one night."
         },
         {
           "stage": 1,
           "level": 3,
-          "text": "Test riddle: turn back by the age on the page."
+          "text": "Turn back, as many times as there were candles on that cake."
         }
       ],
       "attempts_max": 3,
@@ -3042,7 +3042,12 @@
         ]
       },
       "tools": [],
-      "final": false
+      "final": false,
+      "hint_details": {
+        "location_prop": "Lena's Diary on the bedroom desk.",
+        "puzzle_type": "Caesar Shift Cipher",
+        "guidance": "Shift each ciphertext letter backward by Lena's age (14th birthday) to decipher the cleartext phrase."
+      }
     },
     {
       "id": "R1-02",
@@ -3090,17 +3095,17 @@
         {
           "stage": 1,
           "level": 1,
-          "text": "Test riddle: same trick, other pocket."
+          "text": "The same hand, another pocket, another count."
         },
         {
           "stage": 1,
           "level": 2,
-          "text": "Test riddle: count the drawn things."
+          "text": "A mother is honoured with paper that never falls."
         },
         {
           "stage": 1,
           "level": 3,
-          "text": "Test riddle: turn back by that count."
+          "text": "Count what was folded for her, then turn back that many."
         }
       ],
       "attempts_max": 3,
@@ -3137,7 +3142,12 @@
         ]
       },
       "tools": [],
-      "final": false
+      "final": false,
+      "hint_details": {
+        "location_prop": "Lena's Notebook beside the bedside nightstand.",
+        "puzzle_type": "Origami Count Reverse Shift",
+        "guidance": "Count the paper origami cranes folded for mother, then reverse each letter shift by that exact count."
+      }
     },
     {
       "id": "R1-03",
@@ -3208,17 +3218,17 @@
         {
           "stage": 1,
           "level": 1,
-          "text": "Test riddle: dark is light nobody asked."
+          "text": "Dark is only light nobody has asked yet."
         },
         {
           "stage": 1,
           "level": 2,
-          "text": "Test riddle: trade night for day."
+          "text": "Ask the picture to trade its night for its day."
         },
         {
           "stage": 1,
           "level": 3,
-          "text": "Test riddle: the sentence ends in a date."
+          "text": "The sentence is shy. It remembers the last time the family stood together."
         }
       ],
       "attempts_max": 3,
@@ -3256,7 +3266,12 @@
         "hidden_text": "TEST DATE 07/04/2001"
       },
       "tools": [],
-      "final": false
+      "final": false,
+      "hint_details": {
+        "location_prop": "Torn poster pinned above the bedroom wall.",
+        "puzzle_type": "Image Steganography & Inverted Contrast",
+        "guidance": "Invert the shadows across the torn canvas edge to reveal the faint charcoal inscription."
+      }
     },
     {
       "id": "R1-04",
@@ -3327,17 +3342,17 @@
         {
           "stage": 1,
           "level": 1,
-          "text": "Test riddle: inspect the darkened pigment."
+          "text": "The canvas holds more than oil and varnish."
         },
         {
           "stage": 1,
           "level": 2,
-          "text": "Test riddle: invert the lighting across the canvas seams."
+          "text": "Invert the dark shadows where the canvas tear meets."
         },
         {
           "stage": 1,
           "level": 3,
-          "text": "Test riddle: the hidden word begins with S."
+          "text": "The charcoal inscription names what stands behind them."
         }
       ],
       "attempts_max": 3,
@@ -3389,7 +3404,12 @@
         "validation_rule": "Correct identifier is the case file number of the clue whose answer contains a full year (the poster). The decoy is the diary, which has days but no year."
       },
       "tools": [],
-      "final": false
+      "final": false,
+      "hint_details": {
+        "location_prop": "Vance Family Portrait hanging on the wall.",
+        "puzzle_type": "Canvas Inversion & Faint Pigment Deciphering",
+        "guidance": "Examine the canvas tear using the visual filter tool in Case Files to read the faint keyword inscribed along the margin."
+      }
     },
     {
       "id": "R1-05",
@@ -3447,17 +3467,17 @@
         {
           "stage": 1,
           "level": 1,
-          "text": "Test riddle: the lock wants someone."
+          "text": "The lock does not want a number. It wants someone."
         },
         {
           "stage": 1,
           "level": 2,
-          "text": "Test riddle: light and dark in eights."
+          "text": "Light and dark, grouped in eights, is how machines spell."
         },
         {
           "stage": 1,
           "level": 3,
-          "text": "Test riddle: a Greek beginning."
+          "text": "Ask the diary who had the party."
         }
       ],
       "attempts_max": 3,
@@ -3494,7 +3514,12 @@
         ]
       },
       "tools": [],
-      "final": false
+      "final": false,
+      "hint_details": {
+        "location_prop": "Locked tablet in the study desk drawer (tablet_drawer).",
+        "puzzle_type": "8-bit Binary ASCII Decoding",
+        "guidance": "Each 8-bit binary block corresponds to a single ASCII character; convert each byte to reveal the recipient name."
+      }
     },
     {
       "id": "R1-06",
@@ -3542,17 +3567,17 @@
         {
           "stage": 1,
           "level": 1,
-          "text": "Test riddle: sequences of ones and zeros."
+          "text": "The monitor hums with pulses of light and shadow."
         },
         {
           "stage": 1,
           "level": 2,
-          "text": "Test riddle: eight bits make one character."
+          "text": "Each group of eight marks a letter in standard byte format."
         },
         {
           "stage": 1,
           "level": 3,
-          "text": "Test riddle: join the bits in order A, B, C."
+          "text": "Concatenate the three binary fragments from left to right."
         }
       ],
       "attempts_max": 3,
@@ -3589,7 +3614,12 @@
         ]
       },
       "tools": [],
-      "final": false
+      "final": false,
+      "hint_details": {
+        "location_prop": "Green glowing CRT monitor on the study desk (crt_monitor).",
+        "puzzle_type": "Binary Concatenation & Byte Stream Decoding",
+        "guidance": "Concatenate the three binary fragments from left to right without separators, then decode the 8-bit bytes into plain text."
+      }
     },
     {
       "id": "R1-07",
@@ -3637,17 +3667,17 @@
         {
           "stage": 1,
           "level": 1,
-          "text": "Test riddle: inspect the three terminal log fragments."
+          "text": "Assemble the continuous crash log from the three printouts."
         },
         {
           "stage": 1,
           "level": 2,
-          "text": "Test riddle: find the line marked FATAL FAULT."
+          "text": "Follow the timestamp sequence until the unhandled exception."
         },
         {
           "stage": 1,
           "level": 3,
-          "text": "Test riddle: the crashed process name is ORBIT."
+          "text": "Identify the process executing at address 0xDEAD."
         }
       ],
       "attempts_max": 3,
@@ -3684,7 +3714,12 @@
         ]
       },
       "tools": [],
-      "final": false
+      "final": false,
+      "hint_details": {
+        "location_prop": "Terminal PC tower resting on the desk surface (terminal_pc).",
+        "puzzle_type": "Memory Dump & Offset Crash Trace",
+        "guidance": "Order the three memory crash logs by ascending timestamp, then identify the faulting function address at offset 0xDEAD."
+      }
     },
     {
       "id": "R1-08",
@@ -3732,17 +3767,17 @@
         {
           "stage": 1,
           "level": 1,
-          "text": "Test riddle: three sheets, one lie."
+          "text": "A guest list, a clock, and a rule: three sheets, one lie."
         },
         {
           "stage": 1,
           "level": 2,
-          "text": "Test riddle: a pass is as honest as its day."
+          "text": "A pass is only as honest as the day it was printed."
         },
         {
           "stage": 1,
           "level": 3,
-          "text": "Test riddle: the guest printed too late."
+          "text": "Find the guest whose pass was printed after the house stopped breathing."
         }
       ],
       "attempts_max": 3,
@@ -3779,7 +3814,12 @@
         ]
       },
       "tools": [],
-      "final": false
+      "final": false,
+      "hint_details": {
+        "location_prop": "Dot-matrix line printer beside the desk (line_printer).",
+        "puzzle_type": "Timestamp Anomaly Detection & Pass Validation",
+        "guidance": "Cross-reference access badge timestamps with the building shutdown time; find the badge printed after the facility went dark."
+      }
     },
     {
       "id": "R1-09",
@@ -3827,17 +3867,17 @@
         {
           "stage": 1,
           "level": 1,
-          "text": "Test riddle: the fragments in this room are decoy telemetry."
+          "text": "The audio logs found in the basement are corrupted echoes."
         },
         {
           "stage": 1,
           "level": 2,
-          "text": "Test riddle: scan the physical QR card handed to your team."
+          "text": "The physical card in your hands holds the genuine transmission."
         },
         {
           "stage": 1,
           "level": 3,
-          "text": "Test riddle: the test code is QR92."
+          "text": "Scan the card to retrieve the external clearance sequence."
         }
       ],
       "attempts_max": 3,
@@ -3874,7 +3914,12 @@
         ]
       },
       "tools": [],
-      "final": false
+      "final": false,
+      "hint_details": {
+        "location_prop": "Wall-mounted intercom console beside the containment door (intercom).",
+        "puzzle_type": "Channel Frequency & Clearance Hash Alignment",
+        "guidance": "Align the transmission channel with the emergency broadcast frequency indicated on the keycard."
+      }
     },
     {
       "id": "R1-10",
@@ -3922,17 +3967,17 @@
         {
           "stage": 1,
           "level": 1,
-          "text": "Test riddle: a dead machine has a name."
+          "text": "A dead machine still has a name, and the margin knows where it was last seen."
         },
         {
           "stage": 1,
           "level": 2,
-          "text": "Test riddle: check the paper before the ink."
+          "text": "Not every scrap was written by a family hand. Check the paper before the ink."
         },
         {
           "stage": 1,
           "level": 3,
-          "text": "Test riddle: a repeated name moves each letter."
+          "text": "A name, repeated like a prayer, moves each letter by a different step."
         }
       ],
       "attempts_max": 3,
@@ -3969,7 +4014,12 @@
         ]
       },
       "tools": [],
-      "final": false
+      "final": false,
+      "hint_details": {
+        "location_prop": "Server rack door panel in the central server cluster (rack_door).",
+        "puzzle_type": "Vigen\u00e8re Cipher with Surname Keyword",
+        "guidance": "Decrypt the ciphered margin text using the family surname as the repeating Vigen\u00e8re key."
+      }
     },
     {
       "id": "R1-FIN",
@@ -4023,7 +4073,7 @@
           "id": "full",
           "file": "photo_full.png",
           "kind": "image",
-          "brief": "Assembled family portrait, five people, four shadows, fifth figure faceless. Faint text '2468' near the fifth figure at about 6 percent contrast."
+          "brief": "Assembled family portrait, five people, four shadows, fifth figure faceless. Faint text 7351 near the fifth figure at about 6 percent contrast."
         },
         {
           "id": "pc",
@@ -4211,47 +4261,47 @@
         {
           "stage": 1,
           "level": 1,
-          "text": "Test riddle: three words already given."
+          "text": "The door asks for three words you have already been given."
         },
         {
           "stage": 1,
           "level": 2,
-          "text": "Test riddle: from three places."
+          "text": "One from a girl's page, one from a machine's last words, one from a guest who should not exist."
         },
         {
           "stage": 1,
           "level": 3,
-          "text": "Test riddle: in the order asked."
+          "text": "In the order the door asks."
         },
         {
           "stage": 2,
           "level": 1,
-          "text": "Test riddle: ten pieces."
+          "text": "Ten pieces, ten cases."
         },
         {
           "stage": 2,
           "level": 2,
-          "text": "Test riddle: edges remember."
+          "text": "Every torn edge remembers its neighbour."
         },
         {
           "stage": 2,
           "level": 3,
-          "text": "Test riddle: floor is the bottom row."
+          "text": "Where the floor begins, the bottom row begins."
         },
         {
           "stage": 3,
           "level": 1,
-          "text": "Test riddle: count people and shadows."
+          "text": "Count the living. Count what they cast."
         },
         {
           "stage": 3,
           "level": 2,
-          "text": "Test riddle: one voice lied."
+          "text": "One of the voices lied. One of the notes did not."
         },
         {
           "stage": 3,
           "level": 3,
-          "text": "Test riddle: the number hides near a missing face."
+          "text": "Follow the honest paper. The number hides near the face that is not there."
         }
       ],
       "attempts_max": null,
@@ -4270,7 +4320,12 @@
       "assembly": null,
       "secret": null,
       "tools": [],
-      "final": true
+      "final": true,
+      "hint_details": {
+        "location_prop": "Central containment terminal console (containment_console).",
+        "puzzle_type": "3-Stage Master Override Protocol",
+        "guidance": "Stage 1: Enter the 3 clearance keywords uncovered across your investigation (from Bedroom and Study). Stage 2: Reconstruct the 10 severed photograph pieces into the 2\u00d75 grid. Stage 3: Choose the protocol and enter the security PIN."
+      }
     },
     {
       "id": "R2-01",
@@ -4752,17 +4807,17 @@
         {
           "stage": 1,
           "level": 1,
-          "text": "Test nudge 1."
+          "text": "Time is the first filter. Some doors closed long before the last light went out."
         },
         {
           "stage": 1,
           "level": 2,
-          "text": "Test method 1."
+          "text": "Not every active badge deserves suspicion. Compare the last visit with the day the lab was closed on paper."
         },
         {
           "stage": 1,
           "level": 3,
-          "text": "Test help 1."
+          "text": "Two badges look alive. One of them stopped breathing before the lab did."
         }
       ],
       "attempts_max": 3,
@@ -4932,17 +4987,17 @@
         {
           "stage": 1,
           "level": 1,
-          "text": "Test nudge 1."
+          "text": "Black ink is not removed ink."
         },
         {
           "stage": 1,
           "level": 2,
-          "text": "Test method 1."
+          "text": "Two copies of one story: only one agrees with the stamp at the bottom, and the stamp speaks in a different alphabet."
         },
         {
           "stage": 1,
           "level": 3,
-          "text": "Test help 1."
+          "text": "The footer is a sealed phrase, written the way machines write names in mail headers. Match it to the page."
         }
       ],
       "attempts_max": 3,
@@ -5054,32 +5109,32 @@
         {
           "stage": 1,
           "level": 1,
-          "text": "Test nudge 1."
+          "text": "A dial remembers a day you already paid for."
         },
         {
           "stage": 1,
           "level": 2,
-          "text": "Test method 1."
+          "text": "The day the lab closed on paper."
         },
         {
           "stage": 1,
           "level": 3,
-          "text": "Test help 1."
+          "text": "Write it the way a machine would: year first."
         },
         {
           "stage": 2,
           "level": 1,
-          "text": "Test nudge 2."
+          "text": "Pictures keep notes the eye cannot see."
         },
         {
           "stage": 2,
           "level": 2,
-          "text": "Test method 2."
+          "text": "Open what the file says about itself. The note is written in pairs of symbols."
         },
         {
           "stage": 2,
           "level": 3,
-          "text": "Test help 2."
+          "text": "Read it as letters. The number you need follows the word that names the panel."
         }
       ],
       "attempts_max": 3,
@@ -5189,17 +5244,17 @@
         {
           "stage": 1,
           "level": 1,
-          "text": "Test nudge 1."
+          "text": "The cards have forgotten their calendars."
         },
         {
           "stage": 1,
           "level": 2,
-          "text": "Test method 1."
+          "text": "Machines count seconds from a single morning in 1970."
         },
         {
           "stage": 1,
           "level": 3,
-          "text": "Test help 1."
+          "text": "Two entries were written after the lab closed. Someone else was holding the pen. The rest, in order, spell something."
         }
       ],
       "attempts_max": 3,
@@ -5325,17 +5380,17 @@
         {
           "stage": 1,
           "level": 1,
-          "text": "Test nudge 1."
+          "text": "Someone is wearing CIPHER's name."
         },
         {
           "stage": 1,
           "level": 2,
-          "text": "Test method 1."
+          "text": "Every genuine message carries a proof in its header. Proofs can be read if you know how they were wrapped."
         },
         {
           "stage": 1,
           "level": 3,
-          "text": "Test help 1."
+          "text": "Only one header, once unwrapped, matches the badge you found. That voice points to a file."
         }
       ],
       "attempts_max": 3,
@@ -5431,17 +5486,17 @@
         {
           "stage": 1,
           "level": 1,
-          "text": "Test nudge 1."
+          "text": "The static is drawn, not random."
         },
         {
           "stage": 1,
           "level": 2,
-          "text": "Test method 1."
+          "text": "Sounds can be looked at. Use something that paints frequency over time."
         },
         {
           "stage": 1,
           "level": 3,
-          "text": "Test help 1."
+          "text": "The picture lives in the upper half of the sound. Only one voicemail came from the sender you trust."
         }
       ],
       "attempts_max": 3,
@@ -5522,17 +5577,17 @@
         {
           "stage": 1,
           "level": 1,
-          "text": "Test nudge 1."
+          "text": "One number, one word. Both are already in your pockets."
         },
         {
           "stage": 1,
           "level": 2,
-          "text": "Test method 1."
+          "text": "The number lived inside a photograph. The word came from a list someone tried to corrupt."
         },
         {
           "stage": 1,
           "level": 3,
-          "text": "Test help 1."
+          "text": "Do not trust the order of the cards. Trust the dates."
         }
       ],
       "attempts_max": 3,
@@ -5614,17 +5669,17 @@
         {
           "stage": 1,
           "level": 1,
-          "text": "Test nudge 1."
+          "text": "Two manuals, one story."
         },
         {
           "stage": 1,
           "level": 2,
-          "text": "Test method 1."
+          "text": "The sealed copy only opens for the word the report buried under black ink. Read both, line against line."
         },
         {
           "stage": 1,
           "level": 3,
-          "text": "Test help 1."
+          "text": "Count the lines that disagree."
         }
       ],
       "attempts_max": 3,
@@ -5814,17 +5869,17 @@
         {
           "stage": 1,
           "level": 1,
-          "text": "Test nudge 1."
+          "text": "Numbers become switches if you look at their last footprints."
         },
         {
           "stage": 1,
           "level": 2,
-          "text": "Test method 1."
+          "text": "Write the voicemail digits in base two and keep only the tail of each."
         },
         {
           "stage": 1,
           "level": 3,
-          "text": "Test help 1."
+          "text": "Four pairs, eight wires, four lamps. Trace each lamp back to its inputs."
         }
       ],
       "attempts_max": 3,
@@ -5912,17 +5967,17 @@
         {
           "stage": 1,
           "level": 1,
-          "text": "Test nudge 1."
+          "text": "Everything has already been decided. You only have to carry it here."
         },
         {
           "stage": 1,
           "level": 2,
-          "text": "Test method 1."
+          "text": "One entry is what stayed untouched, one is what the lamps showed, one belongs to the voice you trusted."
         },
         {
           "stage": 1,
           "level": 3,
-          "text": "Test help 1."
+          "text": "Of the eight steps, remove those the manuals disagreed on."
         }
       ],
       "attempts_max": 3,

@@ -11,6 +11,8 @@ import CrtEmailModal from './components/study/CrtEmailModal.jsx';
 import CrashDumpModal from './components/study/CrashDumpModal.jsx';
 import LinePrinterModal from './components/study/LinePrinterModal.jsx';
 import StudyCompleteModal from './components/study/StudyCompleteModal.jsx';
+import Round1DossierModal from './components/Round1DossierModal.jsx';
+import HintModal from './components/HintModal.jsx';
 import './game.css';
 
 export default function Room2Study({
@@ -33,6 +35,8 @@ export default function Room2Study({
   const [isBasketOpen, setIsBasketOpen] = useState(false);
   const [isCaseFilesOpen, setIsCaseFilesOpen] = useState(false);
   const [isPhotoPuzzleOpen, setIsPhotoPuzzleOpen] = useState(false);
+  const [isDossierOpen, setIsDossierOpen] = useState(false);
+  const [isHintOpen, setIsHintOpen] = useState(false);
   const [isStudyCompleteModalOpen, setIsStudyCompleteModalOpen] = useState(false);
   const [activeClueModal, setActiveClueModal] = useState(null); // 'R1-05' | 'R1-06' | 'R1-07' | 'R1-08'
   const [activeHoverPrompt, setActiveHoverPrompt] = useState(null);
@@ -114,6 +118,30 @@ export default function Room2Study({
       if (e.key === 'p' || e.key === 'P' || e.code === 'KeyP') {
         e.preventDefault();
         setIsPhotoPuzzleOpen((prev) => {
+          const next = !prev;
+          if (next) engineRef.current?.unlock();
+          else engineRef.current?.lock();
+          return next;
+        });
+        return;
+      }
+
+      // R Key - Toggle Field Dossier & Round 1 Rules
+      if (e.key === 'r' || e.key === 'R' || e.code === 'KeyR') {
+        e.preventDefault();
+        setIsDossierOpen((prev) => {
+          const next = !prev;
+          if (next) engineRef.current?.unlock();
+          else engineRef.current?.lock();
+          return next;
+        });
+        return;
+      }
+
+      // H Key - Toggle Hints & Investigation Guidance
+      if (e.key === 'h' || e.key === 'H' || e.code === 'KeyH') {
+        e.preventDefault();
+        setIsHintOpen((prev) => {
           const next = !prev;
           if (next) engineRef.current?.unlock();
           else engineRef.current?.lock();
@@ -216,6 +244,12 @@ export default function Room2Study({
       if (!currentData?.basket_unlocked) {
         showNotification(
           "Arcane seal unbroken: Recover all 16 study fragments to inspect this clue terminal."
+        );
+        return;
+      }
+      if (matchingClue.is_locked) {
+        showNotification(
+          matchingClue.lock_reason || "This clue is sealed. Complete the preceding clue in sequence first."
         );
         return;
       }
@@ -403,6 +437,14 @@ export default function Room2Study({
             setIsPhotoPuzzleOpen(true);
             engineRef.current?.unlock();
           }}
+          onOpenRules={() => {
+            setIsDossierOpen(true);
+            engineRef.current?.unlock();
+          }}
+          onOpenHints={() => {
+            setIsHintOpen(true);
+            engineRef.current?.unlock();
+          }}
           onLogout={onLogout}
           audioMuted={audioMuted}
           onToggleAudio={toggleAudio}
@@ -443,6 +485,12 @@ export default function Room2Study({
           setIsCaseFilesOpen(false);
           if (!roomData?.basket_unlocked) {
             showNotification("Arcane seal unbroken: Recover all 16 study fragments to inspect this clue terminal.");
+            return;
+          }
+          if (clue.is_locked) {
+            showNotification(
+              clue.lock_reason || "This clue is locked. Complete the preceding clue in sequence first."
+            );
             return;
           }
           setActiveClueModal(clue.id);
@@ -531,6 +579,23 @@ export default function Room2Study({
           engineRef.current?.lock();
           showNotification("Head to the unbolted blast door at the north wall to enter Room 3 (The Basement).");
         }}
+      />
+
+      <Round1DossierModal
+        isOpen={isDossierOpen}
+        onClose={() => {
+          setIsDossierOpen(false);
+          engineRef.current?.lock();
+        }}
+      />
+      <HintModal
+        isOpen={isHintOpen}
+        onClose={() => {
+          setIsHintOpen(false);
+          engineRef.current?.lock();
+        }}
+        roomId="study"
+        roomTitle="Daniel's Study"
       />
     </div>
   );

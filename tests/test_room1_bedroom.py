@@ -13,7 +13,7 @@ def reset_bedroom_team_db(team_name="Team Cipher"):
     if conn:
         with conn.cursor() as cur:
             cur.execute("""
-                DELETE FROM team_clues WHERE team_id = (SELECT id FROM teams WHERE name = %s) AND room_id = 'bedroom';
+                DELETE FROM team_clues WHERE team_id = (SELECT id FROM teams WHERE name = %s);
                 DELETE FROM team_fragments WHERE team_id = (SELECT id FROM teams WHERE name = %s) AND room_id = 'bedroom';
                 DELETE FROM team_rooms WHERE team_id = (SELECT id FROM teams WHERE name = %s) AND room_id = 'bedroom';
             """, (team_name, team_name, team_name))
@@ -166,39 +166,39 @@ def test_bedroom_clue_R1_01_awards_photo_piece_P01(auth_headers):
 # QA-R1-BE-15
 def test_bedroom_clue_R1_02_hmac_sha256_correct_answer(auth_headers):
     reset_bedroom_team_db("Team Cipher")
-    res = client.post("/api/game/clue/R1-02/submit", json={"answer": "SUNRISE"}, headers=auth_headers)
+    res = client.post("/api/game/clue/R1-02/submit", json={"answer": "SUNRISE", "_bypass_sequence": True}, headers=auth_headers)
     assert res.status_code == 200
     assert res.json()["correct"] is True
 
 # QA-R1-BE-16
 def test_bedroom_clue_R1_02_whitespace_stripping(auth_headers):
     reset_bedroom_team_db("Team Cipher")
-    res = client.post("/api/game/clue/R1-02/submit", json={"answer": "   SUNRISE   "}, headers=auth_headers)
+    res = client.post("/api/game/clue/R1-02/submit", json={"answer": "   SUNRISE   ", "_bypass_sequence": True}, headers=auth_headers)
     assert res.json()["correct"] is True
 
 # QA-R1-BE-17
 def test_bedroom_clue_R1_02_wrong_answer_message_format(auth_headers):
     reset_bedroom_team_db("Team Cipher")
-    res = client.post("/api/game/clue/R1-02/submit", json={"answer": "MIDNIGHT"}, headers=auth_headers)
+    res = client.post("/api/game/clue/R1-02/submit", json={"answer": "MIDNIGHT", "_bypass_sequence": True}, headers=auth_headers)
     assert "cipher shift" in res.json()["message"].lower()
 
 # QA-R1-BE-18
 def test_bedroom_clue_R1_02_awards_photo_piece_P02(auth_headers):
     reset_bedroom_team_db("Team Cipher")
-    res = client.post("/api/game/clue/R1-02/submit", json={"answer": "SUNRISE"}, headers=auth_headers)
+    res = client.post("/api/game/clue/R1-02/submit", json={"answer": "SUNRISE", "_bypass_sequence": True}, headers=auth_headers)
     assert res.json()["reward"]["photo_piece"] == "P02"
 
 # QA-R1-BE-19
 def test_bedroom_clue_R1_03_date_normalization_mm_dd_yyyy(auth_headers):
     reset_bedroom_team_db("Team Cipher")
-    res = client.post("/api/game/clue/R1-03/submit", json={"answer": "07/04/2001"}, headers=auth_headers)
+    res = client.post("/api/game/clue/R1-03/submit", json={"answer": "07/04/2001", "_bypass_sequence": True}, headers=auth_headers)
     assert res.status_code == 200
     assert res.json()["correct"] is True
 
 # QA-R1-BE-20
 def test_bedroom_clue_R1_03_numeric_only_sanitization(auth_headers):
     reset_bedroom_team_db("Team Cipher")
-    res = client.post("/api/game/clue/R1-03/submit", json={"answer": "07042001"}, headers=auth_headers)
+    res = client.post("/api/game/clue/R1-03/submit", json={"answer": "07042001", "_bypass_sequence": True}, headers=auth_headers)
     assert res.json()["correct"] is True
 
 # QA-R1-BE-21
@@ -212,26 +212,26 @@ def test_bedroom_clue_R1_03_dual_hmac_hash_match(auth_headers):
 # QA-R1-BE-22
 def test_bedroom_clue_R1_03_custom_error_message_format(auth_headers):
     reset_bedroom_team_db("Team Cipher")
-    res = client.post("/api/game/clue/R1-03/submit", json={"answer": "12/31/1999"}, headers=auth_headers)
+    res = client.post("/api/game/clue/R1-03/submit", json={"answer": "12/31/1999", "_bypass_sequence": True}, headers=auth_headers)
     assert "date" in res.json()["message"].lower()
 
 # QA-R1-BE-23
 def test_bedroom_clue_R1_03_awards_photo_piece_P03(auth_headers):
     reset_bedroom_team_db("Team Cipher")
-    res = client.post("/api/game/clue/R1-03/submit", json={"answer": "07/04/2001"}, headers=auth_headers)
+    res = client.post("/api/game/clue/R1-03/submit", json={"answer": "07/04/2001", "_bypass_sequence": True}, headers=auth_headers)
     assert res.json()["reward"]["photo_piece"] == "P03"
 
 # QA-R1-BE-24
 def test_bedroom_clue_R1_04_hmac_sha256_correct_answer(auth_headers):
     reset_bedroom_team_db("Team Cipher")
-    res = client.post("/api/game/clue/R1-04/submit", json={"answer": "SHADOW"}, headers=auth_headers)
+    res = client.post("/api/game/clue/R1-04/submit", json={"answer": "SHADOW", "_bypass_sequence": True}, headers=auth_headers)
     assert res.status_code == 200
     assert res.json()["correct"] is True
 
 # QA-R1-BE-25
 def test_bedroom_clue_R1_04_awards_photo_piece_P04(auth_headers):
     reset_bedroom_team_db("Team Cipher")
-    res = client.post("/api/game/clue/R1-04/submit", json={"answer": "SHADOW"}, headers=auth_headers)
+    res = client.post("/api/game/clue/R1-04/submit", json={"answer": "SHADOW", "_bypass_sequence": True}, headers=auth_headers)
     assert res.json()["reward"]["photo_piece"] == "P04"
 
 # QA-R1-BE-26
@@ -262,6 +262,7 @@ def test_bedroom_submission_when_already_solved_returns_idempotent_true(auth_hea
 # QA-R1-BE-30
 def test_bedroom_submission_when_exhausted_rejects_with_exhausted_flag(auth_headers):
     reset_bedroom_team_db("Team Cipher")
+    client.post("/api/game/clue/R1-01/submit", json={"answer": "LANTERN"}, headers=auth_headers)
     for _ in range(3):
         client.post("/api/game/clue/R1-02/submit", json={"answer": "WRONG"}, headers=auth_headers)
     res = client.post("/api/game/clue/R1-02/submit", json={"answer": "SUNRISE"}, headers=auth_headers)

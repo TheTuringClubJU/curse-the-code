@@ -244,7 +244,7 @@ def test_basement_clue_R1_09_awards_photo_piece_P09(auth_headers):
 # QA-R3-BE-14: test_basement_clue_R1_10_hmac_sha256_correct_answer
 def test_basement_clue_R1_10_hmac_sha256_correct_answer(auth_headers):
     reset_basement_team_db("Team Cipher", study_completed=True)
-    res = client.post("/api/game/clue/R1-10/submit", json={"answer": "LOWER", "_bypass_rate_limit": True}, headers=auth_headers)
+    res = client.post("/api/game/clue/R1-10/submit", json={"answer": "LOWER", "_bypass_rate_limit": True, "_bypass_sequence": True}, headers=auth_headers)
     assert res.status_code == 200
     data = res.json()
     assert data["correct"] is True
@@ -254,7 +254,7 @@ def test_basement_clue_R1_10_hmac_sha256_correct_answer(auth_headers):
 # QA-R3-BE-15: test_basement_clue_R1_10_plain_text_array_match_LOWER
 def test_basement_clue_R1_10_plain_text_array_match_LOWER(auth_headers):
     reset_basement_team_db("Team Cipher", study_completed=True)
-    res = client.post("/api/game/clue/R1-10/submit", json={"answer": "lower", "_bypass_rate_limit": True}, headers=auth_headers)
+    res = client.post("/api/game/clue/R1-10/submit", json={"answer": "lower", "_bypass_rate_limit": True, "_bypass_sequence": True}, headers=auth_headers)
     assert res.status_code == 200
     assert res.json()["correct"] is True
 
@@ -262,7 +262,7 @@ def test_basement_clue_R1_10_plain_text_array_match_LOWER(auth_headers):
 # QA-R3-BE-16: test_basement_clue_R1_10_awards_photo_piece_P10
 def test_basement_clue_R1_10_awards_photo_piece_P10(auth_headers):
     reset_basement_team_db("Team Cipher", study_completed=True)
-    res = client.post("/api/game/clue/R1-10/submit", json={"answer": "LOWER", "_bypass_rate_limit": True}, headers=auth_headers)
+    res = client.post("/api/game/clue/R1-10/submit", json={"answer": "LOWER", "_bypass_rate_limit": True, "_bypass_sequence": True}, headers=auth_headers)
     assert res.status_code == 200
     assert res.json()["reward"]["photo_piece"] == "P10"
 
@@ -481,7 +481,7 @@ def test_basement_atomic_transactions_under_high_load(auth_headers):
     reset_basement_team_db("Team Cipher", study_completed=True)
     # Concurrent submits execute safely without deadlocks
     for _ in range(5):
-        client.post("/api/game/clue/R1-10/submit", json={"answer": "WRONG", "_bypass_rate_limit": True}, headers=auth_headers)
+        client.post("/api/game/clue/R1-10/submit", json={"answer": "WRONG", "_bypass_rate_limit": True, "_bypass_sequence": True}, headers=auth_headers)
     conn = get_db_connection()
     with conn.cursor() as cur:
         cur.execute("SELECT attempts FROM team_clues WHERE team_id = (SELECT id FROM teams WHERE name = 'Team Cipher') AND clue_id = 'R1-10'")
@@ -543,7 +543,7 @@ def test_basement_custom_error_message_for_qr_terminal(auth_headers):
 # QA-R3-BE-37: test_basement_custom_error_message_for_rack_note
 def test_basement_custom_error_message_for_rack_note(auth_headers):
     reset_basement_team_db("Team Cipher", study_completed=True)
-    res = client.post("/api/game/clue/R1-10/submit", json={"answer": "INCORRECT", "_bypass_rate_limit": True}, headers=auth_headers)
+    res = client.post("/api/game/clue/R1-10/submit", json={"answer": "INCORRECT", "_bypass_rate_limit": True, "_bypass_sequence": True}, headers=auth_headers)
     assert res.status_code == 200
     assert "vigenère" in res.json()["message"].lower() or "decryption" in res.json()["message"].lower()
 

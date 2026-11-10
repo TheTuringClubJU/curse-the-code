@@ -10,6 +10,8 @@ import IntercomQrModal from './components/IntercomQrModal.jsx';
 import ServerRackNoteModal from './components/ServerRackNoteModal.jsx';
 import Round1VictoryModal from './components/Round1VictoryModal.jsx';
 import FinalContainmentTerminalModal from './components/FinalContainmentTerminalModal.jsx';
+import Round1DossierModal from './components/Round1DossierModal.jsx';
+import HintModal from './components/HintModal.jsx';
 import './game.css';
 
 export default function Room3Basement({ team, onLogout, onProceedToLobby, previewMode = false }) {
@@ -20,6 +22,8 @@ export default function Room3Basement({ team, onLogout, onProceedToLobby, previe
   const [isStarted, setIsStarted] = useState(false), [activeClue, setActiveClue] = useState(null);
   const [isBasketOpen, setIsBasketOpen] = useState(false), [isCaseFilesOpen, setIsCaseFilesOpen] = useState(false);
   const [isPhotoPuzzleOpen, setIsPhotoPuzzleOpen] = useState(false), [isCompleteOpen, setIsCompleteOpen] = useState(false);
+  const [isDossierOpen, setIsDossierOpen] = useState(false);
+  const [isHintOpen, setIsHintOpen] = useState(false);
   const [hoverPrompt, setHoverPrompt] = useState(null), [notification, setNotification] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false), [audioMuted, setAudioMuted] = useState(false);
 
@@ -84,6 +88,7 @@ export default function Room3Basement({ team, onLogout, onProceedToLobby, previe
     } catch(e){ console.error('Search failed:',e); }
     const clue=data?.clues?.find(c=>c.object_id===objectId);
     if(clue){
+      if(clue.is_locked){showNotification(clue.lock_reason || 'This clue is sealed. Previous clue must be solved first.');return;}
       if(clue.id==='R1-FIN'){ const required=['R1-09','R1-10']; const ready=required.every(id=>data.clues.find(c=>c.id===id)?.solved); if(!ready){showNotification('Final terminal locked. Solve the prerequisite room clues first.');return;} }
       if(!data?.basket_unlocked && clue.id!=='R1-FIN'){showNotification('The evidence lock is sealed. Recover all 5 basement fragments first.');return;}
       if(!clue.solved && (clue.attempts || 0) >= (clue.attempts_max || 3)){ showNotification('Maximum attempts exhausted for this clue.'); return; }
@@ -101,6 +106,8 @@ export default function Room3Basement({ team, onLogout, onProceedToLobby, previe
       if(e.key.toLowerCase()==='b'){e.preventDefault();setIsBasketOpen(v=>{const next=!v;if(next)engineRef.current?.unlock();else engineRef.current?.lock();return next;});}
       if(e.key.toLowerCase()==='c'){e.preventDefault();setIsCaseFilesOpen(v=>{const next=!v;if(next)engineRef.current?.unlock();else engineRef.current?.lock();return next;});}
       if(e.key.toLowerCase()==='p'){e.preventDefault();setIsPhotoPuzzleOpen(v=>{const next=!v;if(next)engineRef.current?.unlock();else engineRef.current?.lock();return next;});}
+      if(e.key.toLowerCase()==='r'){e.preventDefault();setIsDossierOpen(v=>{const next=!v;if(next)engineRef.current?.unlock();else engineRef.current?.lock();return next;});}
+      if(e.key.toLowerCase()==='h'){e.preventDefault();setIsHintOpen(v=>{const next=!v;if(next)engineRef.current?.unlock();else engineRef.current?.lock();return next;});}
     };
     window.addEventListener('keydown',key,true); return()=>window.removeEventListener('keydown',key,true);
   },[]);
@@ -124,9 +131,19 @@ export default function Room3Basement({ team, onLogout, onProceedToLobby, previe
     try{
       const res=await fetch(`/api/game/clue/${clueId}/submit`,{method:'POST',credentials:'include',headers:{'Content-Type':'application/json','x-session-token':localStorage.getItem('ctc_token')||''},body:JSON.stringify({answer}),signal:controller.signal});
       const data=await res.json().catch(()=>({detail:'Invalid server response'}));
-      if(res.ok){await fetchRoomState();if(data.room_completed){engineRef.current?.openDoor?.();setIsCompleteOpen(true);}return data;}
+      if(res.ok){
+        await fetchRoomState();
+        if(data.room_completed){
+          engineRef.current?.openDoor?.();
+          engineRef.current?.shake?.(1.5, 0.8);
+          audioRef.current?.slam?.(3, 2.95);
+          setIsCompleteOpen(true);
+        }
+        return data;
+      }
       if(res.status===429)return {correct:false,message:'Submission is temporarily rate limited.'};
-      if([401,403].includes(res.status))return {correct:false,message:'Your session is no longer authorized.'};
+      if(res.status===401)return {correct:false,message:'Your session is no longer authorized.'};
+      if(res.status===403){const msg=typeof data.detail==='object'?(data.detail.message||JSON.stringify(data.detail)):(data.detail||'Access forbidden.');return {correct:false,message:msg};}
       if(res.status===404)return {correct:false,message:'This clue is unavailable.'};
       if(res.status===500)return {correct:false,message:'The server could not process this submission.'};
       return {correct:false,message:data.detail||'Submission failed'};
@@ -179,13 +196,15 @@ export default function Room3Basement({ team, onLogout, onProceedToLobby, previe
     <div ref={mountRef} onClick={()=>isStarted&&engineRef.current?.lock()} className="absolute inset-0" />
     {!isStarted&&<div className="ov"><h1>CURSE THE CODE</h1><h3>The Basement</h3><ul><li><b>WASD</b> move</li><li><b>Mouse</b> look</li><li><b>E</b> interact/search</li><li><b>B/C/P</b> basket/clues/photo</li></ul><button onClick={handleStart}>CLICK TO ENTER BASEMENT</button></div>}
     {notification&&<div className="absolute top-20 left-1/2 -translate-x-1/2 z-[80] bg-red-950/95 border border-red-400/40 px-5 py-3 rounded text-xs text-red-100">{notification}</div>}
-    {isStarted&&<HUD roomTitle={roomData?.title||'The Basement'} totalFragments={5} collectedCount={roomData?.collected_fragment_ids?.length||0} basketUnlocked={Boolean(roomData?.basket_unlocked)} isRoomCompleted={Boolean(roomData?.is_completed)} photoCount={roomData?.photo_pieces_collected||0} cluesSolved={roomClues.filter(c=>c.solved).length} totalClues={2} onOpenBasket={()=>{setIsBasketOpen(true);engineRef.current?.unlock();}} onOpenCaseFiles={()=>{setIsCaseFilesOpen(true);engineRef.current?.unlock();}} onOpenPhotoPuzzle={()=>{setIsPhotoPuzzleOpen(true);engineRef.current?.unlock();}} onLogout={onLogout} audioMuted={audioMuted} onToggleAudio={()=>{const v=!audioMuted;audioRef.current?.setMuted(v);setAudioMuted(v);}} activeHoverPrompt={hoverPrompt}/>} 
+    {isStarted&&<HUD roomTitle={roomData?.title||'The Basement'} totalFragments={5} collectedCount={roomData?.collected_fragment_ids?.length||0} basketUnlocked={Boolean(roomData?.basket_unlocked)} isRoomCompleted={Boolean(roomData?.is_completed)} photoCount={roomData?.photo_pieces_collected||0} cluesSolved={roomClues.filter(c=>c.solved).length} totalClues={2} onOpenBasket={()=>{setIsBasketOpen(true);engineRef.current?.unlock();}} onOpenCaseFiles={()=>{setIsCaseFilesOpen(true);engineRef.current?.unlock();}} onOpenPhotoPuzzle={()=>{setIsPhotoPuzzleOpen(true);engineRef.current?.unlock();}} onOpenRules={()=>{setIsDossierOpen(true);engineRef.current?.unlock();}} onOpenHints={()=>{setIsHintOpen(true);engineRef.current?.unlock();}} onLogout={onLogout} audioMuted={audioMuted} onToggleAudio={()=>{const v=!audioMuted;audioRef.current?.setMuted(v);setAudioMuted(v);}} activeHoverPrompt={hoverPrompt}/>} 
     <BasketModal isOpen={isBasketOpen} onClose={()=>{setIsBasketOpen(false);engineRef.current?.lock();}} evidence={roomData?.evidence||[]} collectedIds={roomData?.collected_fragment_ids||[]} basketUnlocked={Boolean(roomData?.basket_unlocked)} totalInRoom={5} roomTitle="The Basement"/>
-    <CaseFilesModal isOpen={isCaseFilesOpen} onClose={()=>{setIsCaseFilesOpen(false);engineRef.current?.lock();}} clues={clues} basketUnlocked={Boolean(roomData?.basket_unlocked)} onOpenClue={clue=>{setIsCaseFilesOpen(false);if(clue.id==='R1-FIN'&&!clues.filter(c=>c.id==='R1-09'||c.id==='R1-10').every(c=>c.solved)){showNotification('Final terminal locked. Solve the prerequisite room clues first.');return;}setActiveClue(clue);engineRef.current?.unlock();}}/>
+    <CaseFilesModal isOpen={isCaseFilesOpen} onClose={()=>{setIsCaseFilesOpen(false);engineRef.current?.lock();}} clues={clues} basketUnlocked={Boolean(roomData?.basket_unlocked)} onOpenClue={clue=>{setIsCaseFilesOpen(false);if(clue.is_locked){showNotification(clue.lock_reason||'This clue is locked.');return;}if(clue.id==='R1-FIN'&&!clues.filter(c=>c.id==='R1-09'||c.id==='R1-10').every(c=>c.solved)){showNotification('Final terminal locked. Solve the prerequisite room clues first.');return;}setActiveClue(clue);engineRef.current?.unlock();}}/>
     <PhotoPuzzleModal isOpen={isPhotoPuzzleOpen} onClose={()=>{setIsPhotoPuzzleOpen(false);engineRef.current?.lock();}} photoCount={roomData?.photo_pieces_collected||0} requiredPieces={10}/>
     <IntercomQrModal isOpen={Boolean(activeClue?.id==='R1-09')} {...clueModalProps}/>
     <ServerRackNoteModal isOpen={Boolean(activeClue?.id==='R1-10')} {...clueModalProps}/>
-    <FinalContainmentTerminalModal isOpen={Boolean(activeClue?.id==='R1-FIN')} {...clueModalProps}/>
+    <FinalContainmentTerminalModal isOpen={Boolean(activeClue?.id==='R1-FIN')} {...clueModalProps} onOpenHints={() => setIsHintOpen(true)} />
     <Round1VictoryModal isOpen={isCompleteOpen} onClose={()=>setIsCompleteOpen(false)} onProceed={()=>{setIsCompleteOpen(false);onProceedToLobby?.();showNotification('Round 1 complete. The subterranean vault seal is disengaged.');}} />
+    <Round1DossierModal isOpen={isDossierOpen} onClose={()=>{setIsDossierOpen(false);engineRef.current?.lock();}} />
+    <HintModal isOpen={isHintOpen} onClose={()=>{setIsHintOpen(false);engineRef.current?.lock();}} roomId="basement" roomTitle="The Basement" />
   </div>;
 }

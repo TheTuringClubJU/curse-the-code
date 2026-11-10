@@ -270,8 +270,8 @@ describe('Room 3 (The Basement) Comprehensive Test Suite (49 Tests)', () => {
     render(<FinalContainmentTerminalModal isOpen clue={{ ...clue, current_stage: 1 }} onClose={vi.fn()} onSubmitAnswer={submit} />);
     const inputs = screen.getAllByRole('textbox');
     clue.stages[0].answer_plain.forEach((value, index) => fireEvent.change(inputs[index], { target: { value } }));
-    fireEvent.click(screen.getByText(/VERIFY PHASE/i));
-    await waitFor(() => expect(screen.getByText(/PHASE 2\/3/i)).toBeInTheDocument());
+    fireEvent.click(screen.getByText(/VERIFY (STAGE|PHASE)/i));
+    await waitFor(() => expect(screen.getByText(/(STAGE|PHASE) 2/i)).toBeInTheDocument());
   });
   it('QA-R3-FE-29: test_room3_final_modal_stage2_renders_10_slot_photo_board', () => {
     render(<FinalContainmentTerminalModal isOpen clue={{ ...clueContent['R1-FIN'], current_stage: 2 }} onClose={vi.fn()} onSubmitAnswer={vi.fn()} />);
@@ -299,7 +299,7 @@ describe('Room 3 (The Basement) Comprehensive Test Suite (49 Tests)', () => {
   it('QA-R3-FE-33: test_room3_final_modal_stage2_submits_permutation_and_advances', async () => {
     const submit = vi.fn().mockResolvedValue({ correct: true });
     render(<FinalContainmentTerminalModal isOpen clue={{ ...clueContent['R1-FIN'], current_stage: 2 }} onClose={vi.fn()} onSubmitAnswer={submit} />);
-    fireEvent.click(screen.getByText(/VERIFY PHASE/i));
+    fireEvent.click(screen.getByText(/VERIFY (STAGE|PHASE)/i));
     await waitFor(() => expect(submit).toHaveBeenCalled());
   });
   it('QA-R3-FE-34: test_room3_final_modal_stage3_renders_protocol_buttons_and_pin_pad', () => {
@@ -381,7 +381,7 @@ describe('Room 3 (The Basement) Comprehensive Test Suite (49 Tests)', () => {
   it('QA-R3-FE-49: test_room3_final_modal_read_only_when_exhausted', () => {
     render(<FinalContainmentTerminalModal isOpen clue={{ ...clueContent['R1-FIN'], attempts: 3, attempts_max: 3 }} onClose={vi.fn()} onSubmitAnswer={vi.fn()} />);
     expect(screen.getByText(/Maximum attempts exhausted/i)).toBeInTheDocument();
-    expect(screen.getByText(/VERIFY PHASE/i)).toBeDisabled();
+    expect(screen.getByText(/VERIFY (STAGE|PHASE)/i)).toBeDisabled();
   });
   it('QA-R3-E2E-01: e2e_basement_complete_participant_journey', async () => {
     render(<Room3Basement team={mockTeam} onLogout={vi.fn()} />);
