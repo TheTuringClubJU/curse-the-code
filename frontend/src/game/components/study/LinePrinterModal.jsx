@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Send, Search, Printer, ShieldAlert, CheckCircle2, ArrowLeft, ArrowRight, Layers, AlertCircle } from 'lucide-react';
+import { X, Send, Search, Printer, ShieldAlert, CheckCircle2, ArrowLeft, ArrowRight, Layers, AlertCircle, Check } from 'lucide-react';
 
 export default function LinePrinterModal({
   isOpen,
