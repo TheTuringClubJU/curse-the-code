@@ -1,21 +1,211 @@
 /* ============================================================
    control.css — Room 5: The Surveillance Morgue
-   CRT Bunker Observation Aesthetic
+   Tactile Forensic Desk, Pinned Corkboard & RE2R Translucent UI
    ============================================================ */
 
-/* ── 1. Phosphor Glow Utilities ──────────────────────────── */
+:root {
+  --font-re-display: 'Cinzel', 'Cormorant Garamond', Georgia, serif;
+  --font-re-typewriter: 'Special Elite', 'Courier Prime', 'Courier New', monospace;
+  --font-re-dossier: 'Courier Prime', 'Courier New', monospace;
+  --font-re-mono: 'IBM Plex Mono', 'Courier New', monospace;
+}
+
+.font-re-display {
+  font-family: var(--font-re-display);
+  letter-spacing: 0.14em;
+}
+
+.font-re-typewriter {
+  font-family: var(--font-re-typewriter);
+  letter-spacing: 0.03em;
+}
+
+.font-re-dossier {
+  font-family: var(--font-re-dossier);
+}
+
+/* ── 0. Physical Forensic Tabletop, Corkboard & Pinned Papers (Inspo Match) ── */
+.desk-surface {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  overflow-y: auto;
+  background:
+    radial-gradient(ellipse 68% 58% at 78% 12%, rgba(255, 224, 162, 0.22) 0%, rgba(120, 74, 34, 0.14) 36%, rgba(10, 8, 7, 0.94) 76%),
+    repeating-linear-gradient(90deg, rgba(28, 18, 11, 0.35) 0px, rgba(28, 18, 11, 0.35) 2px, rgba(16, 10, 7, 0.55) 2px, rgba(16, 10, 7, 0.55) 18px),
+    rgba(8, 6, 5, 0.92);
+  backdrop-filter: blur(7px);
+}
+
+.corkboard-surface {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: flex;
+  flex-direction: column;
+  padding: 22px;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 50% 35%, rgba(62, 42, 26, 0.45) 0%, rgba(14, 10, 8, 0.96) 78%),
+    radial-gradient(rgba(180, 140, 96, 0.06) 1px, transparent 1px);
+  background-size: 100% 100%, 14px 14px;
+  backdrop-filter: blur(8px);
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  background: radial-gradient(ellipse at 50% 25%, rgba(28, 22, 16, 0.72) 0%, rgba(6, 6, 6, 0.92) 78%);
+  backdrop-filter: blur(7px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  overflow-y: auto;
+}
+
+.modal-panel {
+  position: relative;
+  background: linear-gradient(180deg, #161312 0%, #0b0a09 100%);
+  border: 1px solid rgba(196, 162, 101, 0.2);
+  border-radius: 14px;
+  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.96), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  padding: 22px 26px;
+  max-height: 90vh;
+  overflow: hidden;
+  color: #ece6d9;
+}
+
+.paper-tape-modal,
+.spectrogram-modal {
+  border-color: rgba(196, 162, 101, 0.22);
+}
+
+.modal-header {
+  position: relative;
+  z-index: 2;
+}
+
+.modal-close-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 34px;
+  height: 30px;
+  padding: 0 14px;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(18, 16, 15, 0.9);
+  color: #e6e2da;
+  font-family: var(--font-re-ui, 'Inter', sans-serif);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+
+.modal-close-btn:hover {
+  background: rgba(138, 34, 34, 0.42);
+  border-color: rgba(208, 156, 98, 0.5);
+  color: #ffffff;
+}
+
+/* Masking tape strip (Images 4 & 5) */
+.masking-tape {
+  background: linear-gradient(90deg, rgba(226, 205, 154, 0.72), rgba(210, 188, 134, 0.82), rgba(226, 205, 154, 0.72));
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.35);
+}
+
+/* Green engineering grid sheet pinned to wooden desk (Image 5 exact inspo!) */
+.green-grid-sheet {
+  position: relative;
+  background-color: #a9cdb2;
+  background-image:
+    linear-gradient(to right, rgba(46, 98, 64, 0.18) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(46, 98, 64, 0.18) 1px, transparent 1px);
+  background-size: 18px 18px;
+  color: #162119;
+  box-shadow:
+    inset 0 0 36px rgba(24, 48, 30, 0.16),
+    0 18px 48px rgba(0, 0, 0, 0.72);
+}
+
+/* Pinned cream ruled index card (Images 4 & 5) */
+.ruled-index-card {
+  position: relative;
+  background:
+    linear-gradient(180deg, transparent 25px, rgba(168, 48, 48, 0.28) 26px, transparent 27px),
+    repeating-linear-gradient(180deg, transparent 0px, transparent 23px, rgba(72, 108, 148, 0.18) 23px, rgba(72, 108, 148, 0.18) 24px),
+    linear-gradient(180deg, #f6efe0 0%, #ebe0c6 100%);
+  color: #211a14;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.55);
+}
+
+/* Manila file folder (Image 3) */
+.manila-dossier {
+  background:
+    radial-gradient(circle at 80% 15%, rgba(255, 240, 200, 0.18), transparent 55%),
+    linear-gradient(180deg, #e7d19f 0%, #d8be85 100%);
+  color: #231910;
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.6);
+}
+
+.re-dossier-paper {
+  background:
+    repeating-linear-gradient(
+      0deg,
+      rgba(62, 42, 20, 0.04) 0px,
+      rgba(62, 42, 20, 0.04) 1px,
+      transparent 1px,
+      transparent 24px
+    ),
+    radial-gradient(circle at 85% 15%, rgba(255, 240, 200, 0.25), transparent 55%),
+    linear-gradient(180deg, #f2e8d2 0%, #e6d7b8 60%, #dcc8a2 100%);
+  color: #1c150f;
+  box-shadow:
+    inset 0 0 28px rgba(72, 46, 16, 0.16),
+    0 16px 42px rgba(0, 0, 0, 0.65);
+}
+
+.re-stamp-badge {
+  display: inline-block;
+  border: 2px solid #991b1b;
+  color: #991b1b;
+  font-family: var(--font-re-display);
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  padding: 2px 8px;
+  font-size: 10px;
+  text-transform: uppercase;
+  transform: rotate(-3deg);
+  opacity: 0.88;
+}
+
+.push-pin {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #f87171, #991b1b 72%, #450a0a);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.65);
+}
+
+/* ── 1. Muted Workstation Phosphor Utilities (No blinding lime slop) ── */
 .phosphor-glow {
-  box-shadow: 0 0 8px #4dff78, 0 0 20px rgba(77, 255, 120, 0.3), inset 0 0 10px rgba(77, 255, 120, 0.05);
+  box-shadow: 0 2px 18px rgba(0, 0, 0, 0.65);
 }
 
 .phosphor-text {
-  color: #4dff78;
-  text-shadow: 0 0 8px #4dff78, 0 0 16px rgba(77, 255, 120, 0.5);
+  color: #e4ded0;
 }
 
 .phosphor-text-dim {
-  color: #2db84d;
-  text-shadow: 0 0 5px rgba(77, 255, 120, 0.4);
+  color: #a69f91;
 }
 
 /* ── 2. CRT Scanlines Overlay ────────────────────────────── */
@@ -59,8 +249,8 @@
 .blink-cursor::after {
   content: '█';
   display: inline-block;
-  color: #4dff78;
-  text-shadow: 0 0 8px #4dff78;
+  color: #c8a25a;
+  text-shadow: 0 0 6px rgba(200, 162, 90, 0.35);
   animation: blink-block 1.1s step-end infinite;
   margin-left: 1px;
 }
@@ -74,8 +264,8 @@
   display: inline-block;
   width: 9px;
   height: 1.1em;
-  background: #4dff78;
-  box-shadow: 0 0 8px #4dff78;
+  background: #c8a25a;
+  box-shadow: 0 0 6px rgba(200, 162, 90, 0.35);
   vertical-align: text-bottom;
   animation: blink-block 1.1s step-end infinite;
   margin-left: 2px;
@@ -120,28 +310,28 @@
 
 /* ── 5. CRT Bezel ────────────────────────────────────────── */
 .crt-bezel {
-  background: #0d1a0f;
-  border: 3px solid #0a140c;
-  border-radius: 8px;
+  background: #0e0d0c;
+  border: 2px solid #26221e;
+  border-radius: 12px;
   box-shadow:
-    inset 0 0 25px rgba(0, 0, 0, 0.9),
-    inset 0 1px 0 rgba(77, 255, 120, 0.05),
-    0 4px 20px rgba(0, 0, 0, 0.8),
-    0 0 0 1px #040b05;
+    inset 0 0 28px rgba(0, 0, 0, 0.92),
+    inset 0 1px 0 rgba(212, 188, 140, 0.08),
+    0 8px 26px rgba(0, 0, 0, 0.85),
+    0 0 0 1px #090807;
 }
 
 /* ── 6. Oscilloscope Tube ────────────────────────────────── */
 .oscilloscope-tube {
   position: relative;
   border-radius: 50%;
-  background: #060e07;
+  background: #090807;
   box-shadow:
     inset 0 0 40px rgba(0, 0, 0, 0.95),
-    inset 0 0 15px rgba(10, 40, 15, 0.6),
-    0 0 20px rgba(0, 0, 0, 0.8),
-    0 0 0 4px #0a1a0c,
-    0 0 0 8px #060d07,
-    0 0 0 12px #03080a;
+    inset 0 0 16px rgba(138, 28, 28, 0.16),
+    0 0 22px rgba(0, 0, 0, 0.85),
+    0 0 0 4px #1d1916,
+    0 0 0 8px #0c0a09,
+    0 0 0 12px #050404;
   overflow: hidden;
 }
 
@@ -156,7 +346,7 @@
   position: absolute;
   inset: 4px;
   border-radius: 50%;
-  border: 1px solid rgba(77, 255, 120, 0.08);
+  border: 1px solid rgba(196, 162, 101, 0.12);
   pointer-events: none;
   z-index: 2;
 }
@@ -181,30 +371,30 @@
   background: transparent;
   border: none;
   outline: none;
-  color: #4dff78;
+  color: #efe7d6;
   font-family: 'IBM Plex Mono', 'Courier New', monospace;
   font-size: 14px;
-  caret-color: #4dff78;
-  text-shadow: 0 0 8px #4dff78;
+  caret-color: #c8a25a;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.85);
   width: 100%;
 }
 
 .terminal-input::placeholder {
-  color: rgba(77, 255, 120, 0.3);
+  color: rgba(214, 200, 174, 0.35);
 }
 
 .terminal-input-line {
   display: flex;
   align-items: center;
-  gap: 6px;
-  border-top: 1px solid rgba(77, 255, 120, 0.2);
+  gap: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
   padding: 10px 14px;
-  background: rgba(0, 10, 0, 0.6);
+  background: rgba(12, 11, 10, 0.82);
 }
 
 .terminal-input-line .prompt-symbol {
-  color: #4dff78;
-  text-shadow: 0 0 8px #4dff78;
+  color: #c8a25a;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
   font-family: monospace;
   font-size: 14px;
   white-space: nowrap;
@@ -224,7 +414,7 @@
 .terminal-toggle .toggle-label {
   font-family: 'IBM Plex Mono', monospace;
   font-size: 11px;
-  color: #2db84d;
+  color: #b7aa92;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
@@ -232,42 +422,41 @@
 .terminal-toggle select {
   appearance: none;
   -webkit-appearance: none;
-  background: #001200;
-  color: #4dff78;
-  border: 1px solid rgba(77, 255, 120, 0.4);
-  border-radius: 3px;
-  padding: 3px 22px 3px 8px;
+  background: #141210;
+  color: #e6dcc6;
+  border: 1px solid rgba(196, 162, 101, 0.35);
+  border-radius: 9999px;
+  padding: 4px 26px 4px 12px;
   font-family: 'IBM Plex Mono', 'Courier New', monospace;
   font-size: 11px;
-  text-shadow: 0 0 6px #4dff78;
   cursor: pointer;
   outline: none;
-  box-shadow: 0 0 6px rgba(77, 255, 120, 0.15);
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6'><path d='M0 0l5 6 5-6z' fill='%234dff78'/></svg>");
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.6);
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6'><path d='M0 0l5 6 5-6z' fill='%23c4a265'/></svg>");
   background-repeat: no-repeat;
-  background-position: right 6px center;
-  min-width: 100px;
+  background-position: right 10px center;
+  min-width: 108px;
 }
 
 .terminal-toggle select option {
-  background: #001200;
-  color: #4dff78;
+  background: #12100e;
+  color: #e6dcc6;
 }
 
 .terminal-toggle select:focus {
-  border-color: #4dff78;
-  box-shadow: 0 0 10px rgba(77, 255, 120, 0.3);
+  border-color: #c4a265;
+  box-shadow: 0 0 10px rgba(196, 162, 101, 0.22);
 }
 
 /* ── 9. CRT Table Rows ───────────────────────────────────── */
 .crt-table-row {
-  transition: background 0.1s ease, color 0.1s ease;
+  transition: background 0.12s ease, color 0.12s ease;
   cursor: default;
 }
 
 .crt-table-row:hover {
-  background: #003300 !important;
-  color: #ffffff !important;
+  background: rgba(154, 42, 42, 0.22) !important;
+  color: #f4eee1 !important;
 }
 
 .crt-table-row.target-row {
@@ -275,8 +464,8 @@
 }
 
 @keyframes target-pulse {
-  0%, 100% { text-shadow: 0 0 8px #4dff78; }
-  50% { text-shadow: 0 0 16px #4dff78, 0 0 30px rgba(77, 255, 120, 0.4); }
+  0%, 100% { text-shadow: 0 0 6px rgba(196, 162, 101, 0.45); }
+  50% { text-shadow: 0 0 12px rgba(196, 162, 101, 0.75); }
 }
 
 /* ── 10. Paper Tape Scroll Container ─────────────────────── */
@@ -308,13 +497,12 @@
 
 /* ── 12. CRT Modal Shell ─────────────────────────────────── */
 .crt-modal-shell {
-  background: #000000;
-  border: 2px solid rgba(77, 255, 120, 0.3);
-  border-radius: 6px;
+  background: #0b0a09;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
   box-shadow:
-    0 0 40px rgba(77, 255, 120, 0.1),
-    0 0 80px rgba(0, 0, 0, 0.9),
-    inset 0 0 60px rgba(0, 0, 0, 0.5);
+    0 18px 60px rgba(0, 0, 0, 0.92),
+    inset 0 0 50px rgba(0, 0, 0, 0.6);
 }
 
 /* ── 13. Scrub Dial ──────────────────────────────────────── */
@@ -322,12 +510,12 @@
   width: 72px;
   height: 72px;
   border-radius: 50%;
-  background: radial-gradient(circle at 35% 35%, #1a3d1f, #0a1a0c 70%, #060e07);
-  border: 3px solid #0d2a10;
+  background: radial-gradient(circle at 35% 35%, #2c2824, #141210 70%, #090807);
+  border: 3px solid #241f1b;
   box-shadow:
-    0 4px 12px rgba(0, 0, 0, 0.8),
-    inset 0 1px 3px rgba(77, 255, 120, 0.1),
-    0 0 0 1px #04090505;
+    0 4px 12px rgba(0, 0, 0, 0.85),
+    inset 0 1px 3px rgba(212, 188, 140, 0.14),
+    0 0 0 1px #050404;
   cursor: grab;
   position: relative;
   user-select: none;
@@ -343,70 +531,70 @@
   left: 50%;
   width: 3px;
   height: 10px;
-  background: #4dff78;
-  border-radius: 2px;
+  background: #c8a25a;
+  border-radius: 9999px;
   transform-origin: bottom center;
   margin-left: -1.5px;
-  box-shadow: 0 0 6px #4dff78;
+  box-shadow: 0 0 6px rgba(200, 162, 90, 0.65);
 }
 
 /* ── 14. Frequency Band Buttons ──────────────────────────── */
 .freq-band-btn {
-  font-family: 'IBM Plex Mono', monospace;
+  font-family: var(--font-re-ui, 'Inter', sans-serif);
   font-size: 11px;
+  font-weight: 600;
   letter-spacing: 0.1em;
-  padding: 5px 14px;
-  border: 1px solid rgba(77, 255, 120, 0.3);
-  background: #001200;
-  color: #2db84d;
+  padding: 6px 16px;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: linear-gradient(90deg, rgba(28, 25, 23, 0.95), rgba(14, 12, 11, 0.88));
+  color: #b4a994;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 0.16s ease;
   user-select: none;
 }
 
 .freq-band-btn:hover {
-  border-color: #4dff78;
-  color: #4dff78;
-  box-shadow: 0 0 8px rgba(77, 255, 120, 0.2);
+  border-color: rgba(196, 162, 101, 0.45);
+  color: #f3ede0;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.55);
 }
 
 .freq-band-btn.active {
-  background: #003300;
-  color: #4dff78;
-  border-color: #4dff78;
-  box-shadow: 0 0 10px rgba(77, 255, 120, 0.4), inset 0 0 8px rgba(77, 255, 120, 0.1);
-  text-shadow: 0 0 8px #4dff78;
+  background: linear-gradient(90deg, rgba(132, 34, 34, 0.88), rgba(40, 14, 14, 0.92));
+  color: #f6efe0;
+  border-color: rgba(208, 148, 86, 0.55);
+  box-shadow: 0 4px 16px rgba(120, 24, 24, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.14);
 }
 
 /* ── 15. VM Tab Buttons ──────────────────────────────────── */
 .vm-tab-btn {
-  font-family: 'IBM Plex Mono', monospace;
+  font-family: var(--font-re-ui, 'Inter', sans-serif);
   font-size: 12px;
-  letter-spacing: 0.15em;
-  padding: 8px 28px;
-  border: 2px solid rgba(77, 255, 120, 0.25);
-  border-bottom: none;
-  background: #000a00;
-  color: #2db84d;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  padding: 7px 22px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(16, 14, 13, 0.9);
+  color: #9e9380;
   cursor: pointer;
-  border-radius: 4px 4px 0 0;
+  border-radius: 9999px;
   transition: all 0.15s ease;
   user-select: none;
-  margin-right: 4px;
+  margin-right: 6px;
 }
 
 .vm-tab-btn:hover {
-  background: #001a00;
-  color: #4dff78;
+  background: rgba(34, 28, 24, 0.95);
+  color: #f3ede0;
+  border-color: rgba(196, 162, 101, 0.42);
 }
 
 .vm-tab-btn.active {
-  background: #001200;
-  color: #4dff78;
-  border-color: rgba(77, 255, 120, 0.6);
-  border-bottom: 2px solid #001200;
-  text-shadow: 0 0 8px #4dff78;
-  margin-bottom: -2px;
+  background: linear-gradient(90deg, rgba(132, 34, 34, 0.88), rgba(44, 15, 15, 0.94));
+  color: #f7f0e3;
+  border-color: rgba(208, 156, 98, 0.58);
+  box-shadow: 0 4px 14px rgba(120, 24, 24, 0.36);
   z-index: 2;
   position: relative;
 }
@@ -423,10 +611,10 @@
 
 /* ── 17. Waveform Canvas Strip ───────────────────────────── */
 .waveform-strip {
-  border: 1px solid rgba(77, 255, 120, 0.2);
-  background: #000e00;
-  border-radius: 2px;
-  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.8), 0 0 6px rgba(77, 255, 120, 0.1);
+  border: 1px solid rgba(196, 162, 101, 0.22);
+  background: #0c0a09;
+  border-radius: 10px;
+  box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.85);
 }
 
 /* ── 18. Digit Reveal Pulse ──────────────────────────────── */
@@ -444,15 +632,15 @@
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background: radial-gradient(ellipse at center, transparent 55%, rgba(0, 5, 0, 0.75) 100%);
+  background: radial-gradient(ellipse at center, transparent 55%, rgba(8, 4, 4, 0.8) 100%);
   z-index: 1;
   border-radius: inherit;
 }
 
 /* ── 20. Fade-in animation ───────────────────────────────── */
 @keyframes fade-in-fast {
-  from { opacity: 0; transform: translateY(4px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; transform: translate(-50%, 4px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
 }
 
 .animate-fade-in-fast {
@@ -461,17 +649,117 @@
 
 /* ── 21. Terminal response flash ─────────────────────────── */
 @keyframes terminal-flash {
-  0% { background-color: rgba(77, 255, 120, 0.15); }
+  0% { background-color: rgba(196, 162, 101, 0.14); }
   100% { background-color: transparent; }
 }
 
 .terminal-response-ok {
   animation: terminal-flash 0.6s ease-out forwards;
-  color: #4dff78;
-  text-shadow: 0 0 8px #4dff78;
+  color: #e6d7b8;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.85);
 }
 
 .terminal-response-err {
-  color: #ff4444;
-  text-shadow: 0 0 8px rgba(255, 68, 68, 0.6);
+  color: #ef6f6f;
+  text-shadow: 0 0 8px rgba(180, 42, 42, 0.45);
+}
+
+/* ── 22. Unified RE2R Prompt Action Button ((circle glyph) Gothic Capsule Pill) ─ */
+.re-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 22px 6px 8px;
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  border-radius: 9999px;
+  background: linear-gradient(90deg, rgba(18, 16, 15, 0.92) 0%, rgba(28, 22, 20, 0.8) 72%, rgba(16, 13, 12, 0.45) 100%);
+  color: #f3ede0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.03em;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.92);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  cursor: pointer;
+  transition: filter 0.14s ease, border-color 0.14s ease, transform 0.12s ease, box-shadow 0.14s ease;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.re-btn:hover {
+  filter: brightness(1.16);
+  border-color: rgba(196, 162, 101, 0.48);
+  box-shadow: 0 6px 20px rgba(110, 24, 24, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.re-btn:active {
+  transform: scale(0.97);
+}
+
+.re-btn-circle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 5px;
+  border-radius: 9999px;
+  background: #f3eee3;
+  color: #151210;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.85);
+  flex-shrink: 0;
+}
+
+/* ── 23. Entry Splash Screen (Resident Evil Asymmetric Corkboard Title Screen) ─ */
+.req-splash-root {
+  background-color: #070708;
+  background-image:
+    linear-gradient(
+      95deg,
+      rgba(6, 6, 7, 0.98) 0%,
+      rgba(7, 7, 8, 0.90) 36%,
+      rgba(8, 8, 9, 0.42) 56%,
+      rgba(8, 8, 9, 0.14) 82%,
+      rgba(6, 6, 7, 0.48) 100%
+    ),
+    radial-gradient(ellipse 80% 70% at 72% 45%, transparent 45%, rgba(0, 0, 0, 0.72) 100%),
+    url('/assets/ui/room5-title-board.jpg');
+  background-size: cover;
+  background-position: right center;
+  background-repeat: no-repeat;
+}
+
+.font-re-slab {
+  font-family: 'American Typewriter', 'Roboto Slab', 'Courier Prime', Georgia, serif;
+}
+
+.re-title-item {
+  display: inline-flex;
+  align-items: center;
+  min-width: 310px;
+  padding: 5px 46px 5px 12px;
+  border: none;
+  border-radius: 2px;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.24) 0%, rgba(255, 255, 255, 0.10) 58%, transparent 100%);
+  color: #ffffff;
+  font-family: 'American Typewriter', 'Roboto Slab', 'Courier Prime', Georgia, serif;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.95);
+  cursor: pointer;
+  transition: background 0.16s ease, transform 0.12s ease;
+}
+
+.re-title-item:hover {
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.34) 0%, rgba(255, 255, 255, 0.14) 68%, transparent 100%);
+  transform: translateX(3px);
+}
+
+.re-title-item:active {
+  transform: translateX(1px);
 }
