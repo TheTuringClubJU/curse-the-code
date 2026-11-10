@@ -4249,10 +4249,10 @@
             }
           ],
           "expected_fields": 2,
-          "answer_hash": "08b5653b048f46c3b2e5787d9bb45ba2d50fc59f8cc48fff0f93312f769cfa28",
+          "answer_hash": "ffe98457817840bcb8196a4fcd6d301d9f2e80c3bf2b2c0b0522cc0a27f4f2c3",
           "answer_plain": [
-            "RESTORE",
-            "7351"
+            "BETA",
+            "2468"
           ],
           "reveal": {}
         }
