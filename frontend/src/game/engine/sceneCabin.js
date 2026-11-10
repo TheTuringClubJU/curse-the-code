@@ -112,9 +112,9 @@ export function buildCabinScene(E) {
   add(northWall);
   const southWall = mkBox(W, H, 0.2, logMat, 0, H / 2, D / 2);
   add(southWall);
-  const eastWall  = mkBox(0.2, H, D, plasterMat, W / 2, H / 2, 0);
+  const eastWall = mkBox(0.2, H, D, plasterMat, W / 2, H / 2, 0);
   add(eastWall);
-  const westWall  = mkBox(0.2, H, D, logMat, -W / 2, H / 2, 0);
+  const westWall = mkBox(0.2, H, D, logMat, -W / 2, H / 2, 0);
   add(westWall);
 
   // Heavy ceiling rafters across the room
@@ -300,12 +300,12 @@ export function buildCabinScene(E) {
     const cg = new THREE.Group();
     cg.add(mkBox(0.44, 0.04, 0.44, wornWoodMat, 0, 0.44, 0));
     cg.add(mkBox(0.05, 0.44, 0.05, darkWoodMat, -0.18, 0.22, -0.18));
-    cg.add(mkBox(0.05, 0.44, 0.05, darkWoodMat,  0.18, 0.22, -0.18));
-    cg.add(mkBox(0.05, 0.44, 0.05, darkWoodMat, -0.18, 0.22,  0.18));
-    cg.add(mkBox(0.05, 0.44, 0.05, darkWoodMat,  0.18, 0.22,  0.18));
+    cg.add(mkBox(0.05, 0.44, 0.05, darkWoodMat, 0.18, 0.22, -0.18));
+    cg.add(mkBox(0.05, 0.44, 0.05, darkWoodMat, -0.18, 0.22, 0.18));
+    cg.add(mkBox(0.05, 0.44, 0.05, darkWoodMat, 0.18, 0.22, 0.18));
     // Backrest
     cg.add(mkBox(0.04, 0.48, 0.04, darkWoodMat, -0.18, 0.68, -0.18));
-    cg.add(mkBox(0.04, 0.48, 0.04, darkWoodMat,  0.18, 0.68, -0.18));
+    cg.add(mkBox(0.04, 0.48, 0.04, darkWoodMat, 0.18, 0.68, -0.18));
     cg.add(mkBox(0.42, 0.12, 0.03, wornWoodMat, 0, 0.86, -0.18));
     cg.position.set(cx, 0, cz);
     cg.rotation.y = ry;
@@ -356,7 +356,7 @@ export function buildCabinScene(E) {
   const antlerGroup = new THREE.Group();
   antlerGroup.add(mkBox(0.14, 0.16, 0.06, bloodStoneMat, 0, 0, 0)); // mount shield
   antlerGroup.add(mkCyl(0.02, 0.01, 0.6, 6, new THREE.MeshStandardMaterial({ color: 0xd0c4b0 }), -0.2, 0.25, 0.06, 0, 0, -0.5));
-  antlerGroup.add(mkCyl(0.02, 0.01, 0.6, 6, new THREE.MeshStandardMaterial({ color: 0xd0c4b0 }),  0.2, 0.25, 0.06, 0, 0,  0.5));
+  antlerGroup.add(mkCyl(0.02, 0.01, 0.6, 6, new THREE.MeshStandardMaterial({ color: 0xd0c4b0 }), 0.2, 0.25, 0.06, 0, 0, 0.5));
   antlerGroup.position.set(0, 2.4, -0.42);
   stoveGroup.add(antlerGroup);
 
@@ -370,7 +370,7 @@ export function buildCabinScene(E) {
   // Window frame
   const frameMat = darkWoodMat;
   windowGroup.add(mkBox(0.12, 1.8, 0.1, frameMat, 0, 0.9, -0.8));
-  windowGroup.add(mkBox(0.12, 1.8, 0.1, frameMat, 0, 0.9,  0.8));
+  windowGroup.add(mkBox(0.12, 1.8, 0.1, frameMat, 0, 0.9, 0.8));
   windowGroup.add(mkBox(0.12, 0.1, 1.7, frameMat, 0, 0.05, 0));
   windowGroup.add(mkBox(0.12, 0.1, 1.7, frameMat, 0, 1.75, 0));
 
@@ -446,7 +446,7 @@ export function buildCabinScene(E) {
   // Wooden plank shelf
   shelfGroup.add(mkBox(1.2, 0.04, 0.32, darkWoodMat, 0, 1.5, 0));
   shelfGroup.add(mkBox(0.04, 0.3, 0.3, ironMat, -0.5, 1.35, 0));
-  shelfGroup.add(mkBox(0.04, 0.3, 0.3, ironMat,  0.5, 1.35, 0));
+  shelfGroup.add(mkBox(0.04, 0.3, 0.3, ironMat, 0.5, 1.35, 0));
 
   // Terracotta flowerpot with green herb
   const potMat = new THREE.MeshStandardMaterial({ color: 0x8a4524, roughness: 0.8 });
@@ -501,9 +501,9 @@ export function buildCabinScene(E) {
   bedGroup.add(mkBox(1.3, 0.12, 2.2, darkWoodMat, 0, 0.35, 0));
   // 4 rough log corner posts
   bedGroup.add(mkBox(0.12, 0.9, 0.12, darkWoodMat, -0.6, 0.45, -1.05));
-  bedGroup.add(mkBox(0.12, 0.9, 0.12, darkWoodMat,  0.6, 0.45, -1.05));
-  bedGroup.add(mkBox(0.12, 0.6, 0.12, darkWoodMat, -0.6, 0.3,   1.05));
-  bedGroup.add(mkBox(0.12, 0.6, 0.12, darkWoodMat,  0.6, 0.3,   1.05));
+  bedGroup.add(mkBox(0.12, 0.9, 0.12, darkWoodMat, 0.6, 0.45, -1.05));
+  bedGroup.add(mkBox(0.12, 0.6, 0.12, darkWoodMat, -0.6, 0.3, 1.05));
+  bedGroup.add(mkBox(0.12, 0.6, 0.12, darkWoodMat, 0.6, 0.3, 1.05));
   // Headboard
   bedGroup.add(mkBox(1.2, 0.45, 0.06, darkWoodMat, 0, 0.65, -1.05));
 
@@ -549,7 +549,7 @@ export function buildCabinScene(E) {
   wardrobeGroup.add(doorL);
 
   // Tarnished brass teardrop handles
-  wardrobeGroup.add(mkBox(0.03, 0.09, 0.04, brassMat,  0.06, 1.2, 0.36));
+  wardrobeGroup.add(mkBox(0.03, 0.09, 0.04, brassMat, 0.06, 1.2, 0.36));
   wardrobeGroup.add(mkBox(0.03, 0.09, 0.04, brassMat, -0.06, 1.2, 0.36));
 
   // The Concealed Secret Backboard leading into Section 1C
@@ -644,7 +644,7 @@ export function buildCabinScene(E) {
   const dustCount = 180;
   const dustPos = new Float32Array(dustCount * 3);
   for (let i = 0; i < dustCount * 3; i += 3) {
-    dustPos[i]     = -W / 2 + Math.random() * W;
+    dustPos[i] = -W / 2 + Math.random() * W;
     dustPos[i + 1] = 0.2 + Math.random() * (H - 0.4);
     dustPos[i + 2] = -D / 2 + Math.random() * D;
   }
