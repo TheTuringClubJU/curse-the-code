@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+from app.game import basement_service
 import psycopg2
 from psycopg2.extras import RealDictCursor
 from fastapi import APIRouter, Request, HTTPException
@@ -35,6 +37,8 @@ def verify_team_auth(request: Request):
 def get_room_state(room_id: str, request: Request):
     team = verify_team_auth(request)
     content = get_content_data()
+    if room_id == "basement":
+        return basement_service.get_room_state(team["id"], content, request)
     
     # Locate room metadata in content
     target_room = None
@@ -79,10 +83,10 @@ def get_room_state(room_id: str, request: Request):
             )
             team_clues = {row["clue_id"]: dict(row) for row in cur.fetchall()}
             
-            # Query total photo pieces earned
+            # Query total photo pieces earned in this round (Round 1 photo pieces)
             cur.execute(
-                "SELECT COUNT(DISTINCT clue_id) as photo_count FROM team_clues WHERE team_id = %s AND solved = TRUE",
-                (team["id"],)
+                "SELECT COUNT(DISTINCT clue_id) as photo_count FROM team_clues WHERE team_id = %s AND round = %s AND solved = TRUE",
+                (team["id"], target_room.get("round", 1))
             )
             photo_row = cur.fetchone()
             photo_pieces_count = photo_row["photo_count"] if photo_row else 0
@@ -175,7 +179,7 @@ def get_room_state(room_id: str, request: Request):
                     "id": ev["id"],
                     "is_wrapped": True,
                     "display": {
-                        "title": f"Wrapped Fragment #{ev.get('seq', '?')}",
+                        "title": f"Wrapped Fragment #{len(projected_evidence) + 1}",
                         "style": ev.get("display", {}).get("style", {})
                     }
                 })
@@ -199,6 +203,8 @@ def get_room_state(room_id: str, request: Request):
 @router.post("/room/{room_id}/search")
 def search_object(room_id: str, payload: Dict[str, Any], request: Request):
     team = verify_team_auth(request)
+    if room_id == "basement":
+        return basement_service.search_object(team["id"], payload.get("object_id"), content=get_content_data())
     object_id = payload.get("object_id")
     if not object_id:
         raise HTTPException(status_code=400, detail="Missing object_id")
@@ -215,9 +221,9 @@ def search_object(room_id: str, payload: Dict[str, Any], request: Request):
         
     # Find evidence attached to this object in room definition
     room_evidence = target_room.get("evidence", [])
-    target_ev = next((ev for ev in room_evidence if ev.get("hiding", {}).get("object_id") == object_id), None)
+    matching_evs = [ev for ev in room_evidence if ev.get("hiding", {}).get("object_id") == object_id]
     
-    if not target_ev:
+    if not matching_evs:
         return {
             "found": False,
             "message": "You search carefully, but this object contains no hidden compartments."
@@ -226,17 +232,22 @@ def search_object(room_id: str, payload: Dict[str, Any], request: Request):
     conn = get_db_connection()
     try:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            # Check if team already collected this piece
+            # Check which pieces from this object have already been collected
             cur.execute(
-                "SELECT fragment_id FROM team_fragments WHERE team_id = %s AND fragment_id = %s",
-                (team["id"], target_ev["id"])
+                "SELECT fragment_id FROM team_fragments WHERE team_id = %s AND fragment_id = ANY(%s)",
+                (team["id"], [ev["id"] for ev in matching_evs])
             )
-            if cur.fetchone():
+            collected_matching = {row["fragment_id"] for row in cur.fetchall()}
+            
+            uncollected_evs = [ev for ev in matching_evs if ev["id"] not in collected_matching]
+            if not uncollected_evs:
                 return {
                     "found": False,
                     "already_collected": True,
                     "message": "You have already recovered the hidden fragment from here."
                 }
+                
+            target_ev = uncollected_evs[0]
                 
             # Verify sequence lock:
             # Target piece requires all lower seq in this chain to have been collected
@@ -313,8 +324,10 @@ def search_object(room_id: str, payload: Dict[str, Any], request: Request):
 @router.post("/clue/{clue_id}/submit")
 def submit_clue_answer(clue_id: str, payload: Dict[str, Any], request: Request):
     team = verify_team_auth(request)
-    answer = payload.get("answer", "")
     content = get_content_data()
+    if clue_id in ("R1-09", "R1-10", "R1-FIN"):
+        return basement_service.submit_clue_answer(team["id"], clue_id, payload, content)
+    answer = payload.get("answer", "")
     answer_salt = content.get("meta", {}).get("answer_salt", "")
     
     target_clue = next((c for c in content.get("clues", []) if c["id"] == clue_id), None)
@@ -328,36 +341,68 @@ def submit_clue_answer(clue_id: str, payload: Dict[str, Any], request: Request):
         study_service.check_room_access(team["id"], target_room)
         
     room_id = target_clue.get("room")
-    stage_idx = 1
-    stage_def = target_clue.get("stages", [{}])[0]
-    expected_hash = stage_def.get("answer_hash")
     attempts_max = target_clue.get("attempts_max", 3)
-    
-    # Normalise answer according to field rule
-    field_norm = stage_def.get("fields", [{}])[0].get("normalize", "alnum")
-    if field_norm == "digits":
-        norm_val = "".join(ch for ch in str(answer).strip() if ch.isdigit())
-    elif field_norm == "alnum":
-        norm_val = "".join(ch for ch in str(answer).strip().upper() if ch.isalnum())
+
+    # Prepare candidate answer representations (handles both string and dictionary payloads)
+    if isinstance(answer, dict):
+        val_strings = [str(v).strip() for v in answer.values() if v is not None and str(v).strip()]
+        candidates = [str(answer), " ".join(val_strings)] + val_strings
     else:
-        norm_val = str(answer).strip().upper()
-    
-    # Calculate HMAC against normalized value
-    msg = f"{clue_id}:{stage_idx}:{norm_val}".encode("utf-8")
-    calc_hash = hmac.new(answer_salt.encode("utf-8"), msg, hashlib.sha256).hexdigest()
+        val_strings = [str(answer).strip()]
+        candidates = [str(answer).strip()]
 
-    # Also check raw uppercase stripped value
-    raw_val = str(answer).strip().upper()
-    msg_raw = f"{clue_id}:{stage_idx}:{raw_val}".encode("utf-8")
-    calc_hash_raw = hmac.new(answer_salt.encode("utf-8"), msg_raw, hashlib.sha256).hexdigest()
+    is_correct = False
 
-    answer_plain_list = stage_def.get("answer_plain", [])
-    matches_plain = any(
-        str(answer).strip().upper() == str(p).strip().upper() or
-        norm_val == "".join(ch for ch in str(p).strip().upper() if ch.isalnum() or ch.isdigit())
-        for p in answer_plain_list
-    )
-    is_correct = ((expected_hash and (hmac.compare_digest(calc_hash, expected_hash) or hmac.compare_digest(calc_hash_raw, expected_hash))) or matches_plain) if (expected_hash or answer_plain_list) else False
+    # Check match against all stages of this clue
+    for stage_def in target_clue.get("stages", [{}]):
+        stage_idx = stage_def.get("index", 1)
+        expected_hash = stage_def.get("answer_hash")
+        answer_plain_list = stage_def.get("answer_plain", [])
+        field_norm = stage_def.get("fields", [{}])[0].get("normalize", "alnum")
+
+        for cand in candidates:
+            if field_norm == "digits":
+                norm_c = "".join(ch for ch in cand if ch.isdigit())
+            elif field_norm == "alnum":
+                norm_c = "".join(ch for ch in cand.upper() if ch.isalnum())
+            else:
+                norm_c = cand.upper()
+
+            # HMAC comparison against normalized candidate and raw candidate
+            msg = f"{clue_id}:{stage_idx}:{norm_c}".encode("utf-8")
+            calc_hash = hmac.new(answer_salt.encode("utf-8"), msg, hashlib.sha256).hexdigest()
+
+            msg_raw = f"{clue_id}:{stage_idx}:{cand.strip().upper()}".encode("utf-8")
+            calc_hash_raw = hmac.new(answer_salt.encode("utf-8"), msg_raw, hashlib.sha256).hexdigest()
+
+            if expected_hash and (hmac.compare_digest(calc_hash, expected_hash) or hmac.compare_digest(calc_hash_raw, expected_hash)):
+                is_correct = True
+                break
+
+            for p in answer_plain_list:
+                p_str = str(p).strip().upper()
+                norm_p = "".join(ch for ch in p_str if ch.isalnum() or ch.isdigit())
+                if cand.strip().upper() == p_str or (norm_c and norm_c == norm_p):
+                    is_correct = True
+                    break
+
+            if is_correct:
+                break
+
+        # Also check if all items in answer_plain_list are satisfied by dictionary values
+        if not is_correct and answer_plain_list and isinstance(answer, dict):
+            all_found = all(
+                any(
+                    "".join(ch for ch in str(v).strip().upper() if ch.isalnum()) == "".join(ch for ch in str(p).strip().upper() if ch.isalnum())
+                    for v in val_strings
+                )
+                for p in answer_plain_list
+            )
+            if all_found:
+                is_correct = True
+
+        if is_correct:
+            break
     
     conn = get_db_connection()
     try:
@@ -438,6 +483,25 @@ def submit_clue_answer(clue_id: str, payload: Dict[str, Any], request: Request):
                     """,
                     (round_num, team["id"], round_num, pts_awarded)
                 )
+            else:
+                round_num = target_clue.get("round", 1)
+                if attempts_max is not None and curr_attempts < attempts_max and new_attempts >= attempts_max:
+                    # Burning all attempts gives 0 pts and adds +90s lockout penalty to team_rounds (Round 1 & Round 2)
+                    cur.execute(
+                        """
+                        INSERT INTO rounds (round, status)
+                        VALUES (%s, 'pending')
+                        ON CONFLICT (round) DO NOTHING;
+
+                        INSERT INTO team_rounds (team_id, round, penalty_seconds, updated_at)
+                        VALUES (%s, %s, 90, NOW())
+                        ON CONFLICT (team_id, round)
+                        DO UPDATE SET
+                            penalty_seconds = team_rounds.penalty_seconds + 90,
+                            updated_at = NOW();
+                        """,
+                        (round_num, team["id"], round_num)
+                    )
             
             # Check if all clues in this room are now resolved (solved or exhausted)
             cur.execute(
@@ -494,5 +558,190 @@ def submit_clue_answer(clue_id: str, payload: Dict[str, Any], request: Request):
             }
     finally:
         conn.close()
+@router.get("/time")
+def get_game_time():
+    now = datetime.now(timezone.utc)
+    remaining = 900
+    ends_at = now.timestamp() + remaining
+    return {
+        "remaining_seconds": remaining,
+        "remaining": remaining,
+        "server_time": now.isoformat(),
+        "now": now.isoformat(),
+        "ends_at": datetime.fromtimestamp(ends_at, tz=timezone.utc).isoformat()
+    }
 
+# -------------------------------------------------------------
+# DUAL-PATH FORK SYSTEM (ROUND 2 BRANCHING MECHANICS)
+# -------------------------------------------------------------
 
+FORK_CONFIG = {
+    "fork_1": {
+        "round": 2,
+        "source_room": "records",
+        "target_room": "control",
+        "correct_choice": "B",
+        "trap_penalties": {
+            "A": 60
+        },
+        "success_message": "Route confirmed. Bulkhead seal to Sub-Station Primary Wing unsealed.",
+        "trap_message": "Auxiliary quarantine trap sprung. 60-second penalty applied."
+    }
+}
+
+@router.get("/fork/{fork_id}/status")
+def get_fork_status(fork_id: str, request: Request):
+    team = verify_team_auth(request)
+    if fork_id not in FORK_CONFIG:
+        raise HTTPException(status_code=404, detail=f"Fork '{fork_id}' not found")
+
+    cfg = FORK_CONFIG[fork_id]
+    conn = get_db_connection()
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute(
+                """
+                SELECT choice, is_trap, penalty_seconds
+                FROM team_forks
+                WHERE team_id = %s AND fork_id = %s
+                """,
+                (team["id"], fork_id)
+            )
+            history = cur.fetchall()
+
+            resolved = any(not r["is_trap"] and r["choice"] == cfg["correct_choice"] for r in history)
+            barred_choices = [r["choice"] for r in history if r["is_trap"]]
+            total_penalty = sum(r["penalty_seconds"] for r in history)
+
+            return {
+                "ok": True,
+                "fork_id": fork_id,
+                "resolved": resolved,
+                "barred_choices": barred_choices,
+                "available_choices": [c for c in ["A", "B"] if c not in barred_choices],
+                "total_penalty_seconds": total_penalty
+            }
+    finally:
+        conn.close()
+
+@router.post("/fork/{fork_id}/choose")
+def choose_fork_path(fork_id: str, payload: Dict[str, Any], request: Request):
+    team = verify_team_auth(request)
+    raw_choice = payload.get("choice")
+    if not raw_choice:
+        raise HTTPException(status_code=400, detail="Missing fork choice")
+
+    choice = str(raw_choice).strip().upper()
+    if fork_id not in FORK_CONFIG:
+        raise HTTPException(status_code=404, detail=f"Fork '{fork_id}' not found")
+
+    cfg = FORK_CONFIG[fork_id]
+    if choice not in ["A", "B"]:
+        raise HTTPException(status_code=400, detail="Invalid choice. Must be 'A' or 'B'.")
+
+    conn = get_db_connection()
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            # Query existing attempts on this fork
+            cur.execute(
+                """
+                SELECT choice, is_trap, penalty_seconds
+                FROM team_forks
+                WHERE team_id = %s AND fork_id = %s
+                """,
+                (team["id"], fork_id)
+            )
+            history = cur.fetchall()
+
+            # If already resolved correctly
+            if any(not r["is_trap"] and r["choice"] == cfg["correct_choice"] for r in history):
+                return {
+                    "ok": True,
+                    "fork_id": fork_id,
+                    "choice": cfg["correct_choice"],
+                    "is_correct": True,
+                    "already_resolved": True,
+                    "is_trap": False,
+                    "penalty_seconds": 0,
+                    "next_room": cfg["target_room"],
+                    "message": cfg["success_message"]
+                }
+
+            # If this choice was already barred
+            if any(r["is_trap"] and r["choice"] == choice for r in history):
+                return {
+                    "ok": False,
+                    "barred": True,
+                    "choice": choice,
+                    "message": f"Choice {choice} has already been triggered and is barred."
+                }
+
+            if choice == cfg["correct_choice"]:
+                # Success: record choice and unseal target room
+                cur.execute(
+                    """
+                    INSERT INTO team_forks (team_id, round, fork_id, choice, is_trap, penalty_seconds, created_at)
+                    VALUES (%s, %s, %s, %s, FALSE, 0, NOW())
+                    """,
+                    (team["id"], cfg["round"], fork_id, choice)
+                )
+
+                # Unseal target room in team_rooms
+                cur.execute(
+                    """
+                    INSERT INTO team_rooms (team_id, room_id, is_basket_unlocked, is_completed)
+                    VALUES (%s, %s, FALSE, FALSE)
+                    ON CONFLICT (team_id, room_id) DO NOTHING
+                    """,
+                    (team["id"], cfg["target_room"])
+                )
+                conn.commit()
+
+                return {
+                    "ok": True,
+                    "fork_id": fork_id,
+                    "choice": choice,
+                    "is_correct": True,
+                    "is_trap": False,
+                    "penalty_seconds": 0,
+                    "next_room": cfg["target_room"],
+                    "message": cfg["success_message"]
+                }
+            else:
+                # Trap sprung!
+                penalty = cfg["trap_penalties"].get(choice, 60)
+                cur.execute(
+                    """
+                    INSERT INTO team_forks (team_id, round, fork_id, choice, is_trap, penalty_seconds, created_at)
+                    VALUES (%s, %s, %s, %s, TRUE, %s, NOW())
+                    """,
+                    (team["id"], cfg["round"], fork_id, choice, penalty)
+                )
+
+                # Add penalty_seconds to team_rounds
+                cur.execute(
+                    """
+                    INSERT INTO rounds (round, status) VALUES (%s, 'pending') ON CONFLICT (round) DO NOTHING;
+                    INSERT INTO team_rounds (team_id, round, penalty_seconds, updated_at)
+                    VALUES (%s, %s, %s, NOW())
+                    ON CONFLICT (team_id, round)
+                    DO UPDATE SET
+                        penalty_seconds = team_rounds.penalty_seconds + %s,
+                        updated_at = NOW()
+                    """,
+                    (cfg["round"], team["id"], cfg["round"], penalty, penalty)
+                )
+                conn.commit()
+
+                return {
+                    "ok": True,
+                    "fork_id": fork_id,
+                    "choice": choice,
+                    "is_correct": False,
+                    "is_trap": True,
+                    "penalty_seconds": penalty,
+                    "barred_choices": [choice],
+                    "message": cfg["trap_message"]
+                }
+    finally:
+        conn.close()

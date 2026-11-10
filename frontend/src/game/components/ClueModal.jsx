@@ -20,6 +20,11 @@ const SCRAP_IMAGE_MAP = {
   EK01: '/key_piece.png',
   XB01: '/decoy_photo.png',
   XB02: '/decoy_portrait.png',
+  EK04: '/evidence/basement/EK04.png',
+  EK05: '/evidence/basement/EK05.png',
+  EK06: '/evidence/basement/EK06.png',
+  XK01: '/evidence/basement/XK01.png',
+  XK02: '/evidence/basement/XK02.png',
 };
 
 // Static fragments reference dictionary for Room 1 Bedroom
@@ -449,7 +454,6 @@ export default function ClueModal({
                         <div className="grid grid-cols-3 gap-1 h-24">
                           {scrapOrder.map((sid) => (
                             <div key={sid} className="border border-dashed border-red-500/30 p-1 bg-black/40 rounded flex flex-col justify-between overflow-hidden">
-                              <span className="block text-[8px] text-gray-600 font-mono text-left">{sid}</span>
                               <img src={SCRAP_IMAGE_MAP[sid]} alt={sid} className="w-full h-12 object-contain" />
                               <span className="block text-gray-800 font-black text-[10px] truncate">
                                 {SCRAP_DATA[sid]?.dateFragment || '...'}
@@ -481,7 +485,6 @@ export default function ClueModal({
                         <div className="grid grid-cols-3 gap-1 h-24">
                           {scrapOrder.map((sid) => (
                             <div key={sid} className="border border-dashed border-red-500/30 p-1 bg-black/40 rounded flex flex-col justify-between overflow-hidden">
-                              <span className="block text-[8px] text-gray-600 font-mono text-left">{sid}</span>
                               <img src={SCRAP_IMAGE_MAP[sid]} alt={sid} className="w-full h-12 object-contain" />
                               <span className="text-gray-800 font-black text-xs">
                                 {SCRAP_DATA[sid]?.contentFragment || sid}

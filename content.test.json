@@ -1686,7 +1686,7 @@
               "DO NOT TRUST INTERNAL RECORDINGS"
             ],
             "corner_mark": "",
-            "image_file": "",
+            "image_file": "evidence/basement/EK04.png",
             "audio_file": ""
           },
           "locate_hint": "TEST: search the server_rack.",
@@ -1721,7 +1721,7 @@
               "CHECK EXTERNAL PHYSICAL LOG"
             ],
             "corner_mark": "",
-            "image_file": "",
+            "image_file": "evidence/basement/EK05.png",
             "audio_file": "rec_a.wav"
           },
           "locate_hint": "TEST: search the maintenance_terminal.",
@@ -1755,7 +1755,7 @@
               "XMK HYF NEOX"
             ],
             "corner_mark": "",
-            "image_file": "",
+            "image_file": "evidence/basement/EK06.png",
             "audio_file": ""
           },
           "locate_hint": "TEST: search the toolbox.",
@@ -1789,7 +1789,7 @@
               "FRJAX HYF NEOX BB GCFO"
             ],
             "corner_mark": "",
-            "image_file": "",
+            "image_file": "evidence/basement/XK01.png",
             "audio_file": ""
           },
           "locate_hint": "TEST: search the floor_seal.",
@@ -1823,7 +1823,7 @@
               "QZX VMT KLP RWN BHD"
             ],
             "corner_mark": "",
-            "image_file": "",
+            "image_file": "evidence/basement/XK02.png",
             "audio_file": ""
           },
           "locate_hint": "TEST: search the server_rack.",

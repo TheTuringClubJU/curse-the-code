@@ -5,6 +5,8 @@ import AdminLogin from './admin/AdminLogin';
 import AdminDashboard from './admin/AdminDashboard';
 import Room1Bedroom from './game/Room1Bedroom';
 import Room2Study from './game/Room2Study';
+import Room3Basement from './game/Room3Basement';
+import Room4Records from './game/Room4Records';
 import { checkAuthStatus, logoutTeam } from './userlogin/authApi';
 
 export default function App() {
@@ -91,8 +93,8 @@ export default function App() {
     // Always execute the initial state check immediately from DB
     checkState();
 
-    // Pause continuous fast polling while actively playing Room 1 to free bandwidth for interactions
-    if (roundStatus === 'live' && currentRoundNum === 1) return;
+    // Pause continuous fast polling while actively playing Room 1 or Room 4 to free bandwidth for interactions
+    if (roundStatus === 'live' && (currentRoundNum === 1 || currentRoundNum === 2)) return;
 
     const interval = setInterval(checkState, 3000);
     return () => {
@@ -154,8 +156,17 @@ export default function App() {
     return <UserLogin onLoginSuccess={handleLoginSuccess} />;
   }
 
-  // When Round 1 is live, display Room 1 (Bedroom), Room 2 (Study), or Room 3 (Basement Transition)
+  // Direct Room 3 entry points (frontend routing only)
+  if (window.location.pathname === '/basement' || window.location.pathname === '/room3') {
+    return <Room3Basement team={team} onLogout={handleLogout} />;
+  }
+
+  // When Round 1 is live, display Room 1 (Bedroom), Room 2 (Study), or Room 3 (Basement)
   if (roundStatus === 'live' && currentRoundNum === 1) {
+    if (currentRoom === 'lobby') {
+      return <Lobby team={team} onLogout={handleLogout} />;
+    }
+
     if (currentRoom === 'study') {
       return (
         <Room2Study
@@ -168,38 +179,11 @@ export default function App() {
 
     if (currentRoom === 'basement') {
       return (
-        <div className="min-h-screen w-full bg-[#080503] text-[#fcd34d] flex flex-col items-center justify-center p-6 text-center font-mono select-none">
-          <div className="max-w-lg p-8 bg-[#120a05] border-2 border-[#b45309] rounded-2xl shadow-[0_0_80px_rgba(245,158,11,0.2)] space-y-6">
-            <div className="w-16 h-16 mx-auto rounded-full bg-[#451a03] border border-[#f59e0b] flex items-center justify-center animate-pulse">
-              <span className="text-2xl">⚠️</span>
-            </div>
-            <div className="space-y-2">
-              <span className="text-[10px] tracking-widest text-[#d97706] uppercase block">
-                ROUND 1 • ROOM 3 TRANSITION
-              </span>
-              <h1 className="text-2xl sm:text-3xl font-black text-[#fbbf24] tracking-wider uppercase font-serif">
-                The Subterranean Bunker
-              </h1>
-            </div>
-            <p className="text-xs text-[#fef3c7] leading-relaxed">
-              The heavy pneumatic blast door has unlatched. Cold, damp air rushes up from the server vaults below. Subterranean access conduits and Room 3 are initializing...
-            </p>
-            <div className="flex flex-col sm:flex-row gap-3 pt-2">
-              <button
-                onClick={() => setCurrentRoom('study')}
-                className="flex-1 py-3 px-4 bg-[#2e1507] hover:bg-[#451a03] text-[#fbbf24] rounded-xl font-bold text-xs tracking-wider uppercase transition border border-[#b45309]"
-              >
-                ← Return to Study
-              </button>
-              <button
-                onClick={handleLogout}
-                className="py-3 px-4 bg-transparent hover:bg-white/5 text-gray-400 hover:text-white rounded-xl text-xs font-mono transition border border-white/10"
-              >
-                Sign Out
-              </button>
-            </div>
-          </div>
-        </div>
+        <Room3Basement
+          team={team}
+          onLogout={handleLogout}
+          onProceedToLobby={() => setCurrentRoom('lobby')}
+        />
       );
     }
 
@@ -210,6 +194,11 @@ export default function App() {
         onTransitionToRoom2={() => setCurrentRoom('study')}
       />
     );
+  }
+
+  // When Round 2 is live, display Room 4 (The Rotting Archive)
+  if (roundStatus === 'live' && currentRoundNum === 2) {
+    return <Room4Records team={team} onLogout={handleLogout} />;
   }
 
   // Otherwise, player waits in the atmospheric Lobby

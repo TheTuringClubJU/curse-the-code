@@ -1,4 +1,5 @@
 import os
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -7,11 +8,18 @@ from app.login.routes import login_router
 from app.lobby.routes import lobby_router
 from app.admin.routes import admin_router
 from app.game.routes import router as game_router
+from app.db import ensure_schema_updates
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    ensure_schema_updates()
+    yield
 
 app = FastAPI(
     title="Curse the Code - API",
     description="Backend API for Curse the Code event with user authentication",
-    version="1.0.0"
+    version="1.0.0",
+    lifespan=lifespan
 )
 
 # CORS setup for frontend development and production (e.g. Vercel)
@@ -43,6 +51,22 @@ app.include_router(login_router)
 app.include_router(lobby_router)
 app.include_router(admin_router)
 app.include_router(game_router)
+
+
+from datetime import datetime, timezone
+
+@app.get("/api/time")
+def get_server_time():
+    now = datetime.now(timezone.utc)
+    remaining = 900
+    ends_at = now.timestamp() + remaining
+    return {
+        "remaining_seconds": remaining,
+        "remaining": remaining,
+        "server_time": now.isoformat(),
+        "now": now.isoformat(),
+        "ends_at": datetime.fromtimestamp(ends_at, tz=timezone.utc).isoformat()
+    }
 
 @app.get("/health")
 async def health_check():

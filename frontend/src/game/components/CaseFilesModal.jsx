@@ -10,7 +10,7 @@ export default function CaseFilesModal({
 
   // Filter Room 1 clues and sort in deterministic order (R1-01, R1-02, R1-03, R1-04)
   const roomClues = clues
-    .filter(c => c.id && c.id.startsWith('R1-') && c.id !== 'R1-FIN')
+    .filter(c => c.id && c.id.startsWith('R1-'))
     .sort((a, b) => (a.id > b.id ? 1 : -1));
 
   const solvedCount = roomClues.filter(c => c.solved).length;
