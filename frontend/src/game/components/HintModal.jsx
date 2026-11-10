@@ -71,7 +71,7 @@ export default function HintModal({
         body: JSON.stringify({ room_id: roomId })
       });
       const data = await res.json();
-      if (res.ok && data.success) {
+      if (res.ok && (data.success !== false && (data.success || data.target_id || data.hint_text))) {
         setLatestHint(data);
         await fetchStatus();
       } else {
@@ -199,7 +199,7 @@ export default function HintModal({
                   Newly Unlocked: {latestHint.target_title || latestHint.target_id}
                 </span>
                 <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-black/60 text-[#fde68a] border border-[#f59e0b]/40">
-                  +{latestHint.penalty_seconds}s PENALTY
+                  +{latestHint.penalty_applied ?? latestHint.penalty_seconds ?? 0}s PENALTY
                 </span>
               </div>
 
