@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { copyDocumentText, downloadDocumentFile } from '../../engine/evidenceExport';
 
 // ─── Transmission data ────────────────────────────────────────────────────────
 const TRANSMISSIONS = [
@@ -8,8 +9,8 @@ const TRANSMISSIONS = [
     freq: '7.420 MHz',
     duration: '0:08',
     classification: 'SIGNAL / UNCLASSIFIED',
+    xAuth: 'QkRHLTkwMDI=',
     body: '[GARBLED — STATIC NOISE — NO INTELLIGIBLE CONTENT]\n[END OF RECORD]',
-    authentic: false,
   },
   {
     id: 'TX-2',
@@ -17,27 +18,26 @@ const TRANSMISSIONS = [
     freq: '3.100 MHz',
     duration: '1:24',
     classification: 'INTERNAL / SHIFT CHANGE',
+    xAuth: 'QkRHLTkwMDM=',
     body: 'STANDARD HANDOVER. NO ANOMALIES LOGGED.\nALL SYSTEMS NOMINAL. GENERATOR FUEL AT 61%.\nRELIEF OPERATOR: PENDING CONFIRMATION.\n[END OF RECORD]',
-    authentic: false,
   },
   {
     id: 'TX-3',
     date: '1983-08-21 23:41',
     freq: '7.420 MHz',
     duration: '4:17',
-    classification: 'PRIORITY / POST-SHUTDOWN ACTIVE',
-    from: 'BDG-9001 / DELTA-CONTROL',
-    body: 'Protocol deviation confirmed.\nVM-A contains the operational record.\nVoicemail archive VM-A is the authenticated source.\nDo not access VM-B.\nThis transmission is filed as evidence of continued activity\nafter facility shutdown date 1983-08-14.\n[SIGNAL STRENGTH: 9 — AUTHENTICATED]\n[END OF RECORD]',
-    authentic: true,
+    classification: 'PRIORITY / DELTA-CONTROL',
+    xAuth: 'QkRHLTkwMDE=',
+    body: 'Protocol deviation confirmed.\nVM-A contains the operational record.\nVoicemail archive VM-A is the authenticated source.\nDo not access VM-B.\nThis transmission is filed as evidence of continued post-shutdown activity.\n[END OF RECORD]',
   },
   {
     id: 'TX-4',
     date: '1983-08-22 02:30',
     freq: '7.420 MHz',
     duration: '0:52',
-    classification: 'NOTICE / EVACUATION',
-    body: 'ALL NON-ESSENTIAL PERSONNEL MUST VACATE SECTOR C.\nDO NOT ACCESS ARCHIVAL TERMINALS.\nREPORT TO SURFACE CHECKPOINT BRAVO.\n[ORIGIN UNVERIFIED — POSSIBLE DISINFORMATION]\n[END OF RECORD]',
-    authentic: false,
+    classification: 'PRIORITY / RELAY OVERRIDE',
+    xAuth: 'QkRHLTkwMDQ=',
+    body: 'ARCHIVE MIRROR NOTICE — SECTOR C.\nRoute telemetry audit to voicemail archive VM-B.\nDisregard earlier channel pointer VM-A pending security clearance.\n[VERIFY X-AUTH HEADER AGAINST PERSONNEL INDEX]\n[END OF RECORD]',
   },
   {
     id: 'TX-5',
@@ -45,8 +45,8 @@ const TRANSMISSIONS = [
     freq: '11.800 MHz',
     duration: '0:11',
     classification: 'SIGNAL / TEST',
+    xAuth: 'QkRHLTkwMDU=',
     body: '[GARBLED — CARRIER ONLY — NO CONTENT]\n[END OF RECORD]',
-    authentic: false,
   },
   {
     id: 'TX-6',
@@ -54,13 +54,13 @@ const TRANSMISSIONS = [
     freq: '3.100 MHz',
     duration: '2:05',
     classification: 'INTERNAL / MAINTENANCE',
+    xAuth: 'QkRHLTkwMDA=',
     body: 'MAINTENANCE SCHEDULE UPDATE — ROUTINE.\nGENERATOR SERVICE DUE CYCLE 83-24.\nREPLACE COOLANT FILTERS SUB-LEVEL 2.\nNO ANOMALIES — STANDARD LOG.\n[END OF RECORD]',
-    authentic: false,
   },
 ];
 
 // ─── Component ────────────────────────────────────────────────────────────────
-export default function TransmissionArchiveModal({ isOpen, onClose, onSubmit, clueState }) {
+export default function TransmissionArchiveModal({ isOpen, onClose, onSubmit, onResetLockout, clueState }) {
   const scrollRef = useRef(null);
   const inputRef = useRef(null);
 
@@ -69,6 +69,8 @@ export default function TransmissionArchiveModal({ isOpen, onClose, onSubmit, cl
   const [errorMsg, setErrorMsg] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const [blink, setBlink] = useState(true);
+  const [copiedLog, setCopiedLog] = useState(false);
+  const [downloadedLog, setDownloadedLog] = useState(false);
 
   // Drag-scroll inertia
   const dragState = useRef({ dragging: false, startY: 0, startScroll: 0, velY: 0, lastY: 0, rafId: null });
@@ -79,16 +81,24 @@ export default function TransmissionArchiveModal({ isOpen, onClose, onSubmit, cl
     return () => clearInterval(id);
   }, []);
 
-  // Reset state when modal opens
+  // Reset state when modal opens & allow ESC to close cleanly
   useEffect(() => {
-    if (isOpen) {
-      setScrolledToEnd(false);
-      setInputValue('');
-      setErrorMsg('');
-      setSubmitted(false);
-      if (scrollRef.current) scrollRef.current.scrollTop = 0;
-    }
-  }, [isOpen]);
+    if (!isOpen) return undefined;
+    setScrolledToEnd(false);
+    setInputValue('');
+    setErrorMsg('');
+    setSubmitted(false);
+    if (scrollRef.current) scrollRef.current.scrollTop = 0;
+
+    const onKey = (e) => {
+      if (e.key === 'Escape') {
+        e.stopPropagation();
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [isOpen, onClose]);
 
   // Scroll detection
   const handleScroll = useCallback(() => {
@@ -132,6 +142,25 @@ export default function TransmissionArchiveModal({ isOpen, onClose, onSubmit, cl
     ds.rafId = requestAnimationFrame(coast);
   }, []);
 
+  // ── Copy / Download Raw Intercepts for AI / External Analysis ──────────────
+  const buildRawInterceptLog = useCallback(() => {
+    return TRANSMISSIONS.map(tx =>
+      `${tx.id} | DATE ${tx.date} | FREQ ${tx.freq} | DUR ${tx.duration}\nCLASS: ${tx.classification} | X-AUTH: ${tx.xAuth}\n${tx.body}`
+    ).join('\n\n---\n\n');
+  }, []);
+
+  const handleCopyIntercepts = useCallback(async () => {
+    await copyDocumentText(buildRawInterceptLog());
+    setCopiedLog(true);
+    setTimeout(() => setCopiedLog(false), 1800);
+  }, [buildRawInterceptLog]);
+
+  const handleDownloadIntercepts = useCallback(() => {
+    downloadDocumentFile('delta_transmission_archive.txt', buildRawInterceptLog());
+    setDownloadedLog(true);
+    setTimeout(() => setDownloadedLog(false), 1800);
+  }, [buildRawInterceptLog]);
+
   // ── Submit ──────────────────────────────────────────────────────────────────
   const handleSubmit = useCallback(() => {
     const val = inputValue.trim().toUpperCase();
@@ -152,31 +181,68 @@ export default function TransmissionArchiveModal({ isOpen, onClose, onSubmit, cl
   if (!isOpen) return null;
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="desk-surface" onClick={onClose}>
       <div
-        className="modal-panel paper-tape-modal"
         onClick={e => e.stopPropagation()}
-        style={{ maxWidth: 740, width: '94vw', maxHeight: '88vh', display: 'flex', flexDirection: 'column' }}
+        style={{ maxWidth: 740, width: '94vw', maxHeight: '90vh', display: 'flex', flexDirection: 'column', gap: 10 }}
       >
-        {/* ── Header ── */}
-        <div className="modal-header" style={{ borderBottom: '1px solid #1a3d1f', paddingBottom: 12, flexShrink: 0 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-            <div>
-              <div className="font-teletype" style={{ color: '#4dff78', letterSpacing: 3, fontSize: 11, marginBottom: 4 }}>
-                ◈ SUBSTATION DELTA — RADIO INTERCEPT ARCHIVE ◈
-              </div>
-              <h2 style={{ color: '#4dff78', fontSize: 18, fontFamily: 'Courier, monospace', margin: 0, letterSpacing: 2 }}>
-                TRANSMISSION LOG
-              </h2>
-              <div className="font-teletype" style={{ color: '#c47a00', fontSize: 10, marginTop: 4, letterSpacing: 1 }}>
-                FREQ RANGE: 3.100–11.800 MHz // PERIOD: 1983-08-20 TO 1983-08-24
-              </div>
+        {/* ── Header: Tactile Torn Tape Strip Title & Subtle Actions ── */}
+        <div className="modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+          <div className="re-dossier-paper" style={{ padding: '8px 18px', borderRadius: 2, transform: 'rotate(-0.6deg)' }}>
+            <div className="font-re-typewriter" style={{ color: '#6b4822', letterSpacing: 2, fontSize: 10 }}>
+              SUBSTATION DELTA — RADIO ARCHIVE
             </div>
-            <button className="modal-close-btn" onClick={onClose} aria-label="Close">✕</button>
+            <h2 className="font-re-typewriter" style={{ color: '#1b140d', fontSize: 20, margin: 0, letterSpacing: 1.5, fontWeight: 700 }}>
+              TRANSMISSION LOG
+            </h2>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              onClick={handleCopyIntercepts}
+              className="re-btn"
+              title="Copy full teletype intercept log with X-Auth headers"
+            >
+              <span className="re-btn-circle">{copiedLog ? '✓' : '⎘'}</span>
+              <span>{copiedLog ? 'Copied Log' : 'Copy Log'}</span>
+            </button>
+            <button
+              type="button"
+              onClick={handleDownloadIntercepts}
+              className="re-btn"
+              title="Download teletype archive with Base64 X-Auth headers"
+            >
+              <span className="re-btn-circle">{downloadedLog ? '✓' : '⬇'}</span>
+              <span>{downloadedLog ? 'Downloaded' : 'Download Log'}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                if (scrollRef.current) {
+                  scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+                  setScrolledToEnd(true);
+                }
+              }}
+              className="re-btn"
+            >
+              <span className="re-btn-circle">▼</span>
+              <span>Jump to End</span>
+            </button>
+            <button
+              type="button"
+              className="re-btn"
+              onClick={onClose}
+              aria-label="Close"
+              title="Close (ESC)"
+            >
+              <span className="re-btn-circle">ESC</span>
+              <span>Put Down</span>
+            </button>
           </div>
         </div>
 
-        {/* ── Tape Scroll ── */}
+        {/* ── Continuous Cream Paper Teletype Tape on Wooden Desk ── */}
         <div
           ref={scrollRef}
           className="tape-scroll-container"
@@ -190,79 +256,85 @@ export default function TransmissionArchiveModal({ isOpen, onClose, onSubmit, cl
             overflowY: 'auto',
             cursor: 'grab',
             userSelect: 'none',
-            padding: '8px 0',
             scrollBehavior: 'auto',
+            borderRadius: 2,
+            boxShadow: '0 18px 50px rgba(0, 0, 0, 0.78)',
           }}
         >
           {/* Paper tape wrapper */}
-          <div className="paper-tape" style={{ position: 'relative', padding: '0 24px' }}>
+          <div className="paper-tape" style={{ position: 'relative', padding: '16px 26px', borderRadius: 3 }}>
             {/* Top sprocket holes decoration */}
-            <div style={{ display: 'flex', gap: 24, marginBottom: 16, opacity: 0.4 }}>
+            <div style={{ display: 'flex', gap: 24, marginBottom: 14, opacity: 0.45 }}>
               {Array.from({ length: 18 }).map((_, i) => (
-                <div key={i} style={{ width: 8, height: 8, borderRadius: '50%', border: '1px solid #4dff78', flexShrink: 0 }} />
+                <div key={i} style={{ width: 8, height: 8, borderRadius: '50%', border: '1.5px solid #5d4930', flexShrink: 0 }} />
               ))}
             </div>
 
-            <div className="font-teletype" style={{ color: '#c47a00', fontSize: 10, letterSpacing: 2, marginBottom: 20, textAlign: 'center' }}>
+            <div className="font-re-typewriter" style={{ color: '#6d3e14', fontSize: 11, letterSpacing: 2, marginBottom: 18, textAlign: 'center', fontWeight: 700 }}>
               ─── SCROLL DOWN TO READ ALL TRANSMISSIONS ───
             </div>
 
             {TRANSMISSIONS.map((tx, idx) => (
               <div
                 key={tx.id}
-                className={`transmission-entry${tx.authentic ? ' authentic-transmission' : ''}`}
+                className="transmission-entry"
                 style={{
-                  borderTop: idx > 0 ? '1px dashed #1a3d1f' : 'none',
-                  paddingTop: idx > 0 ? 20 : 0,
-                  marginBottom: 24,
+                  borderTop: idx > 0 ? '1px dashed rgba(68, 46, 22, 0.35)' : 'none',
+                  paddingTop: idx > 0 ? 18 : 0,
+                  marginBottom: 20,
+                  padding: '12px 4px 0 4px',
+                  background: 'transparent',
                 }}
               >
                 {/* TX Header line */}
                 <div
-                  className="font-teletype"
+                  className="font-re-dossier"
                   style={{
-                    color: tx.authentic ? '#4dff78' : '#c47a00',
-                    fontSize: 11,
-                    letterSpacing: 1.5,
-                    marginBottom: 6,
+                    color: '#4e371c',
+                    fontSize: 12,
+                    letterSpacing: 1.2,
+                    marginBottom: 4,
                     display: 'flex',
                     flexWrap: 'wrap',
+                    alignItems: 'center',
                     gap: '0 16px',
-                    borderLeft: tx.authentic ? '3px solid #4dff78' : '3px solid #1a3d1f',
+                    borderLeft: '3px solid #7d6747',
                     paddingLeft: 10,
+                    fontWeight: 700,
                   }}
                 >
-                  <span style={{ fontWeight: 'bold' }}>{tx.id}</span>
+                  <span>{tx.id}</span>
                   <span>DATE {tx.date}</span>
                   <span>FREQ {tx.freq}</span>
                   <span>DUR {tx.duration}</span>
                 </div>
 
-                {/* Classification */}
+                {/* Classification & Encoded X-Auth Header */}
                 <div
-                  className="font-teletype"
+                  className="font-re-dossier"
                   style={{
-                    color: tx.authentic ? '#4dff78' : '#3a5a3f',
-                    fontSize: 10,
+                    color: '#635039',
+                    fontSize: 10.5,
                     letterSpacing: 1,
                     marginBottom: 2,
                     paddingLeft: 13,
+                    fontWeight: 600,
                   }}
                 >
                   CLASS: {tx.classification}
-                  {tx.from && <span style={{ marginLeft: 16 }}>FROM: {tx.from}</span>}
+                  <span style={{ marginLeft: 16, fontFamily: 'monospace' }}>X-AUTH: {tx.xAuth}</span>
                 </div>
 
                 {/* Body */}
                 <pre
-                  className="font-teletype"
+                  className="font-re-typewriter"
                   style={{
-                    color: tx.authentic ? '#e8d9c0' : '#7a9a7f',
-                    fontSize: 12,
+                    color: '#2f261c',
+                    fontSize: 12.5,
                     lineHeight: 1.7,
                     whiteSpace: 'pre-wrap',
-                    margin: '10px 0 0 13px',
-                    fontFamily: 'Courier, monospace',
+                    margin: '8px 0 0 13px',
+                    fontWeight: 400,
                   }}
                 >
                   {tx.body}
@@ -272,62 +344,80 @@ export default function TransmissionArchiveModal({ isOpen, onClose, onSubmit, cl
 
             {/* ── End-of-tape marker ── */}
             <div style={{ textAlign: 'center', margin: '24px 0 16px' }}>
-              <div className="font-teletype" style={{ color: '#1a3d1f', fontSize: 11, letterSpacing: 3 }}>
+              <div className="font-teletype" style={{ color: '#6b5336', fontSize: 11, letterSpacing: 3 }}>
                 ══════════════════════════
               </div>
-              <div className="font-teletype" style={{ color: '#c47a00', fontSize: 10, letterSpacing: 2, margin: '8px 0' }}>
+              <div className="font-re-display" style={{ color: '#7c2d12', fontSize: 11, letterSpacing: 2.5, margin: '8px 0', fontWeight: 700 }}>
                 END OF ARCHIVE RECORD
               </div>
-              <div className="font-teletype" style={{ color: '#1a3d1f', fontSize: 11, letterSpacing: 3 }}>
+              <div className="font-teletype" style={{ color: '#6b5336', fontSize: 11, letterSpacing: 3 }}>
                 ══════════════════════════
               </div>
             </div>
 
             {/* Bottom sprocket holes */}
-            <div style={{ display: 'flex', gap: 24, marginTop: 16, opacity: 0.4 }}>
+            <div style={{ display: 'flex', gap: 24, marginTop: 16, opacity: 0.45 }}>
               {Array.from({ length: 18 }).map((_, i) => (
-                <div key={i} style={{ width: 8, height: 8, borderRadius: '50%', border: '1px solid #4dff78', flexShrink: 0 }} />
+                <div key={i} style={{ width: 8, height: 8, borderRadius: '50%', border: '1.5px solid #5d4930', flexShrink: 0 }} />
               ))}
             </div>
           </div>
         </div>
 
-        {/* ── Scroll prompt or input ── */}
-        <div style={{ flexShrink: 0, borderTop: '1px solid #1a3d1f', padding: '12px 24px' }}>
+        {/* ── Ruled Index Card Response Strip on Desk ── */}
+        <div className="ruled-index-card" style={{ flexShrink: 0, padding: '12px 20px', borderRadius: 2 }}>
           {!scrolledToEnd && (
             <div
-              className="font-teletype"
-              style={{ color: '#c47a00', fontSize: 11, letterSpacing: 2, textAlign: 'center', animation: 'pulse 1.5s ease-in-out infinite' }}
+              className="font-re-typewriter"
+              style={{ color: '#7c2d12', fontSize: 11, letterSpacing: 1.5, textAlign: 'center', fontWeight: 700 }}
             >
-              ▼  SCROLL TO END TO CONTINUE  ▼
+              ▼ SCROLL TO END TO CONTINUE ▼
             </div>
           )}
 
           {scrolledToEnd && (
             <>
               {isSolved && (
-                <div className="font-teletype" style={{ color: '#4dff78', fontSize: 12, letterSpacing: 2 }}>
+                <div className="font-re-typewriter" style={{ color: '#14532d', fontSize: 12, letterSpacing: 1.5, fontWeight: 700 }}>
                   ✓ TRANSMISSION SOURCE IDENTIFIED — RECORD LOCKED
                 </div>
               )}
               {isExhausted && !isSolved && (
-                <div className="font-teletype" style={{ color: '#a31818', fontSize: 12, letterSpacing: 2 }}>
-                  ✗ MAXIMUM ATTEMPTS EXCEEDED — ACCESS REVOKED
+                <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+                  <div className="font-re-typewriter" style={{ color: '#8b1515', fontSize: 12, letterSpacing: 1.5, fontWeight: 700 }}>
+                    ✗ MAXIMUM ATTEMPTS EXCEEDED — ACCESS REVOKED
+                  </div>
+                  {onResetLockout && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setErrorMsg('');
+                        setInputValue('');
+                        onResetLockout();
+                      }}
+                      className="re-btn"
+                    >
+                      <span className="re-btn-circle">↻</span>
+                      <span>Reboot Terminal</span>
+                    </button>
+                  )}
                 </div>
               )}
               {!isSolved && !isExhausted && (
-                <>
-                  {errorMsg && (
-                    <div className="font-teletype" style={{ color: '#a31818', fontSize: 11, marginBottom: 8, letterSpacing: 1 }}>
-                      ✗ {errorMsg}
-                    </div>
-                  )}
-                  <div className="font-teletype" style={{ color: '#3a5a3f', fontSize: 10, marginBottom: 8, letterSpacing: 1 }}>
-                    ATTEMPTS REMAINING: {attemptsLeft}
+                <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+                  <div>
+                    {errorMsg && (
+                      <div className="font-re-typewriter" style={{ color: '#8b1515', fontSize: 11, marginBottom: 4 }}>
+                        ✗ {errorMsg}
+                      </div>
+                    )}
+                    <span className="font-re-typewriter" style={{ color: '#5c4934', fontSize: 10, letterSpacing: 1 }}>
+                      ATTEMPTS REMAINING: {attemptsLeft}
+                    </span>
                   </div>
-                  <div className="terminal-input-line" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span className="font-teletype" style={{ color: '#4dff78', fontSize: 12, whiteSpace: 'nowrap' }}>
-                      &gt; IDENTIFY AUTHENTIC TRANSMISSION SOURCE:
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                    <span className="font-re-typewriter" style={{ color: '#1c140e', fontSize: 12, fontWeight: 700 }}>
+                      IDENTIFY AUTHENTIC TRANSMISSION SOURCE:
                     </span>
                     <input
                       ref={inputRef}
@@ -337,18 +427,19 @@ export default function TransmissionArchiveModal({ isOpen, onClose, onSubmit, cl
                       onKeyDown={handleKeyDown}
                       maxLength={8}
                       autoFocus
-                      placeholder={blink ? '_' : ''}
-                      className="terminal-input"
+                      placeholder={blink ? '_' : 'CODE'}
+                      className="font-re-typewriter"
                       style={{
-                        background: 'transparent',
+                        background: 'rgba(255,255,255,0.6)',
                         border: 'none',
-                        borderBottom: '1px solid #4dff78',
-                        color: '#4dff78',
-                        fontFamily: 'Courier, monospace',
-                        fontSize: 12,
+                        borderBottom: '2px solid #2b2116',
+                        color: '#1c140e',
+                        fontSize: 13,
+                        fontWeight: 700,
                         letterSpacing: 2,
                         outline: 'none',
-                        width: 100,
+                        padding: '3px 8px',
+                        width: 96,
                         textTransform: 'uppercase',
                       }}
                     />
@@ -356,17 +447,13 @@ export default function TransmissionArchiveModal({ isOpen, onClose, onSubmit, cl
                       type="button"
                       onClick={handleSubmit}
                       disabled={submitted}
-                      className="px-3 py-1 font-mono font-bold text-xs tracking-wider uppercase rounded transition-all cursor-pointer shadow-[0_0_10px_rgba(77,255,120,0.2)]"
-                      style={{
-                        background: '#1a3d1f',
-                        border: '1px solid #4dff78',
-                        color: '#4dff78',
-                      }}
+                      className="re-btn"
                     >
-                      SUBMIT
+                      <span className="re-btn-circle">↵</span>
+                      <span>SUBMIT</span>
                     </button>
                   </div>
-                </>
+                </div>
               )}
             </>
           )}
