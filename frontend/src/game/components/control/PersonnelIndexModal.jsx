@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
+import { copyDocumentText, downloadDocumentFile } from '../../engine/evidenceExport';
 import '../../control.css';
 
 // Personnel database rows — 60 entries, one is the target (BDG-9001, Corvin)
@@ -39,6 +40,7 @@ const BASE_ROWS = [
   ['BDG-0414','Eriksson, L.','Maintenance','Retired','1983-08-14 11:50'],
   ['BDG-0729','Thatcher, C.','Maintenance','Terminated','1983-05-08 13:40'],
   ['BDG-0511','Nowak, M.','Admin','Inactive','1983-08-14 08:15'],
+  ['BDG-9001','Corvin, M.','Research','Active','1984-04-23 11:38'],
   ['BDG-0303','Deschamps, R.','Research','Retired','1983-08-14 07:45'],
   ['BDG-0477','Lopes, V.','Research','Retired','1983-08-14 08:30'],
   ['BDG-0318','Baxter, H.','Security','Retired','1983-08-14 09:00'],
@@ -61,9 +63,10 @@ const BASE_ROWS = [
   ['BDG-0430','Okafor, A.','Security','Retired','1983-08-14 12:05'],
   ['BDG-0574','Christophersen, M.','Maintenance','Retired','1983-08-14 12:14'],
   ['BDG-0802','Yılmaz, B.','Medical','Retired','1983-08-14 12:25'],
-  ['BDG-9002','Tester [SYS]','Systems','Active','1983-11-02 07:30'],  // decoy active
-  // ★ TARGET: Corvin — active after shutdown (shutdown 14 AUG 1983)
-  ['BDG-9001','Corvin, M.','Research','Active','1984-04-23 11:38'],
+  ['BDG-0940','Corvin, L.','Admin','Retired','1983-08-14 19:00'],
+  ['BDG-0889','Hale, K.','Systems','Terminated','1983-08-16 04:12'],
+  ['BDG-9011','Moreau, V.','Research','Inactive','1984-01-12 08:20'],
+  ['BDG-9002','Tester [SYS]','Systems','Inactive','1983-08-14 21:18'],
 ];
 
 const DEPTS   = ['All','Admin','Archive','Maintenance','Medical','Research','Security','Systems'];
@@ -71,11 +74,13 @@ const STATUSES = ['All','Active','Inactive','Retired','Suspended','Terminated'];
 const SORTS    = ['Badge ID','Name','Status','Last Login'];
 const CORRECT  = 'BDG-9001';
 
-export default function PersonnelIndexModal({ isOpen, onClose, onSubmit, clueState, teamName }) {
+export default function PersonnelIndexModal({ isOpen, onClose, onSubmit, onResetLockout, clueState, teamName }) {
   const [deptFilter, setDeptFilter]   = useState('All');
   const [statusFilter, setStatusFilter] = useState('All');
   const [sortBy, setSortBy]           = useState('Badge ID');
   const [filterText, setFilterText]   = useState('');
+  const [copiedRoster, setCopiedRoster] = useState(false);
+  const [downloadedRoster, setDownloadedRoster] = useState(false);
   const [inputVal, setInputVal]       = useState('');
   const [response, setResponse]       = useState(null); // { type: 'ok'|'err', msg: string }
   const [submitting, setSubmitting]   = useState(false);
@@ -93,9 +98,26 @@ export default function PersonnelIndexModal({ isOpen, onClose, onSubmit, clueSta
   }, [isOpen, teamName]);
 
   useEffect(() => {
-    if (isOpen) setTimeout(() => inputRef.current?.focus(), 100);
-    else { setInputVal(''); setFilterText(''); setResponse(null); setTeamNameRow(null); }
-  }, [isOpen]);
+    if (!isOpen) {
+      setInputVal('');
+      setFilterText('');
+      setResponse(null);
+      setTeamNameRow(null);
+      return undefined;
+    }
+    const tid = setTimeout(() => inputRef.current?.focus(), 100);
+    const onKey = (e) => {
+      if (e.key === 'Escape') {
+        e.stopPropagation();
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => {
+      clearTimeout(tid);
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [isOpen, onClose]);
 
   const rows = useMemo(() => {
     let r = teamNameRow ? [...BASE_ROWS, teamNameRow] : BASE_ROWS;
@@ -110,6 +132,26 @@ export default function PersonnelIndexModal({ isOpen, onClose, onSubmit, clueSta
     if (sortBy === 'Last Login')r = [...r].sort((a,b) => b[4].localeCompare(a[4]));
     return r;
   }, [filterText, deptFilter, statusFilter, sortBy, teamNameRow]);
+
+  const getRosterCsv = () => {
+    const exportRows = rows.length > 0 ? rows : BASE_ROWS;
+    return [
+      'BADGE_ID,NAME,DEPT,STATUS,LAST_LOGIN',
+      ...exportRows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')),
+    ].join('\n');
+  };
+
+  const handleCopyRoster = async () => {
+    await copyDocumentText(getRosterCsv());
+    setCopiedRoster(true);
+    setTimeout(() => setCopiedRoster(false), 1800);
+  };
+
+  const handleDownloadRoster = () => {
+    downloadDocumentFile('delta_personnel_index.csv', getRosterCsv());
+    setDownloadedRoster(true);
+    setTimeout(() => setDownloadedRoster(false), 1800);
+  };
 
   const handleSubmit = async () => {
     if (!inputVal.trim() || submitting) return;
@@ -141,123 +183,198 @@ export default function PersonnelIndexModal({ isOpen, onClose, onSubmit, clueSta
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-sm select-none"
       onMouseDown={e => e.target === e.currentTarget && onClose()}
     >
-      <div className="crt-modal-shell crt-scanlines relative flex flex-col font-mono select-none"
-           style={{ width: '90vw', maxWidth: 860, height: '82vh', maxHeight: 680, background: '#000000' }}>
-
-        {/* Close button */}
-        <button
-          type="button"
-          onClick={onClose}
-          className="absolute top-2.5 right-3 text-[#76a880] hover:text-[#4dff78] text-xs font-mono font-bold tracking-widest z-20 px-2 py-1 border border-white/10 hover:border-[#4dff78]/50 rounded cursor-pointer transition-all"
-        >
-          [ESC] EXIT
-        </button>
-
-        {/* Terminal header */}
-        <div className="border-b border-[#4dff78]/20 px-4 py-2.5 shrink-0">
-          <div className="phosphor-text text-[11px] tracking-[0.2em]">PROJECT CRYPT — PERSONNEL INDEX / DATABASE — v2.1</div>
-          <div className="text-[#1a3d1f] text-[9px] tracking-widest mt-0.5">SECURE ACCESS TERMINAL · AUTHORIZED PERSONNEL ONLY</div>
+      <div
+        className="relative flex flex-col font-mono rounded-2xl overflow-hidden shadow-2xl"
+        style={{
+          width: '92vw',
+          maxWidth: 880,
+          height: '82vh',
+          maxHeight: 680,
+          background: '#110f0e',
+          border: '1px solid rgba(196, 162, 101, 0.22)',
+        }}
+        onMouseDown={e => e.stopPropagation()}
+      >
+        {/* Top Workstation Header */}
+        <div className="flex items-center justify-between px-5 py-3 border-b border-white/10 bg-[#171312] shrink-0">
+          <div>
+            <div className="text-xs tracking-[0.18em] text-[#e6e1d6] font-bold">
+              PROJECT CRYPT — PERSONNEL INDEX / DATABASE — v2.1
+            </div>
+            <div className="text-[11px] text-[#9c9282] mt-0.5">
+              Cross-reference collected dossier fragments to isolate the anomalous access credential
+            </div>
+          </div>
+          <button type="button" onClick={onClose} className="re-btn">
+            <span className="re-btn-circle">ESC</span>
+            <span>Put Down</span>
+          </button>
         </div>
 
-        {/* Filter bar */}
-        <div className="flex gap-4 px-4 py-2 border-b border-[#4dff78]/10 shrink-0 flex-wrap items-center">
+        {/* Clean Unclipped Filter Bar (Gothic Capsule Controls) */}
+        <div className="flex gap-3 px-5 py-2.5 border-b border-white/10 bg-[#141110] shrink-0 flex-wrap items-center">
           <input
             type="text"
-            className="terminal-input text-xs px-2 py-1 bg-black/60 border border-[#4dff78]/30 text-[#4dff78] placeholder-[#1a3d1f] rounded"
+            className="text-xs px-4 py-1.5 bg-black/55 border border-white/15 text-[#eceae4] placeholder-[#787268] rounded-full outline-none focus:border-[#c4a265]"
+            style={{ width: 210, flex: 'none' }}
             placeholder="FILTER / SEARCH..."
             value={filterText}
             onChange={e => setFilterText(e.target.value)}
           />
-          <label className="terminal-toggle">
-            <span className="toggle-label">DEPT:</span>
-            <select value={deptFilter} onChange={e => setDeptFilter(e.target.value)}>
+          <button
+            type="button"
+            onClick={handleCopyRoster}
+            className="text-[11px] px-4 py-1.5 rounded-full border cursor-pointer transition font-sans font-medium"
+            style={{
+              background: copiedRoster ? 'linear-gradient(90deg, rgba(132,34,34,0.82), rgba(40,14,14,0.9))' : 'rgba(255,255,255,0.05)',
+              borderColor: copiedRoster ? 'rgba(208,156,98,0.55)' : 'rgba(255,255,255,0.14)',
+              color: copiedRoster ? '#f5ead6' : '#c8c0b2',
+            }}
+            title="Copy visible personnel records as CSV for external/AI audit"
+          >
+            {copiedRoster ? '✓ Roster CSV Copied' : 'Copy Roster CSV'}
+          </button>
+          <button
+            type="button"
+            onClick={handleDownloadRoster}
+            className="text-[11px] px-4 py-1.5 rounded-full border cursor-pointer transition font-sans font-medium"
+            style={{
+              background: downloadedRoster ? 'linear-gradient(90deg, rgba(132,34,34,0.82), rgba(40,14,14,0.9))' : 'rgba(255,255,255,0.05)',
+              borderColor: downloadedRoster ? 'rgba(208,156,98,0.55)' : 'rgba(255,255,255,0.14)',
+              color: downloadedRoster ? '#f5ead6' : '#c8c0b2',
+            }}
+            title="Download personnel index as .csv file"
+          >
+            {downloadedRoster ? '✓ CSV Downloaded' : 'Download CSV'}
+          </button>
+          <label className="flex items-center gap-1.5 text-[11px] text-[#a6a298]">
+            <span>DEPT:</span>
+            <select
+              value={deptFilter}
+              onChange={e => setDeptFilter(e.target.value)}
+              className="bg-[#0e0c0b] text-[#e6e1d6] border border-white/15 px-3 py-1 rounded-full text-[11px] outline-none"
+            >
               {DEPTS.map(d => <option key={d}>{d}</option>)}
             </select>
           </label>
-          <label className="terminal-toggle">
-            <span className="toggle-label">STATUS:</span>
-            <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
+          <label className="flex items-center gap-1.5 text-[11px] text-[#a6a298]">
+            <span>STATUS:</span>
+            <select
+              value={statusFilter}
+              onChange={e => setStatusFilter(e.target.value)}
+              className="bg-[#0e0c0b] text-[#e6e1d6] border border-white/15 px-3 py-1 rounded-full text-[11px] outline-none"
+            >
               {STATUSES.map(s => <option key={s}>{s}</option>)}
             </select>
           </label>
-          <label className="terminal-toggle">
-            <span className="toggle-label">SORT:</span>
-            <select value={sortBy} onChange={e => setSortBy(e.target.value)}>
+          <label className="flex items-center gap-1.5 text-[11px] text-[#a6a298]">
+            <span>SORT:</span>
+            <select
+              value={sortBy}
+              onChange={e => setSortBy(e.target.value)}
+              className="bg-[#0e0c0b] text-[#e6e1d6] border border-white/15 px-3 py-1 rounded-full text-[11px] outline-none"
+            >
               {SORTS.map(s => <option key={s}>{s}</option>)}
             </select>
           </label>
-          <span className="text-[#1a3d1f] text-[10px] self-center ml-auto">{rows.length} RECORDS</span>
+          <span className="text-[#8a8880] text-[10px] ml-auto">{rows.length} RECORDS</span>
         </div>
 
-        {/* Table header */}
-        <div className="grid text-[9px] tracking-[0.14em] text-[#1a3d1f] border-b border-[#4dff78]/15 px-4 py-1 shrink-0"
-             style={{ gridTemplateColumns: '100px 1fr 100px 90px 1fr' }}>
+        {/* Table Column Headers */}
+        <div
+          className="grid text-[10px] tracking-[0.14em] text-[#c4a265] border-b border-white/10 px-5 py-1.5 shrink-0 bg-[#141617]"
+          style={{ gridTemplateColumns: '110px 1fr 110px 100px 1fr' }}
+        >
           <span>BADGE_ID</span><span>NAME</span><span>DEPT</span><span>STATUS</span><span>LAST_LOGIN</span>
         </div>
 
-        {/* Scrollable table */}
-        <div ref={tableBodyRef} className="flex-1 overflow-y-auto" style={{ scrollbarWidth: 'thin', scrollbarColor: '#1a3d1f #000' }}>
+        {/* Scrollable Personnel Records */}
+        <div ref={tableBodyRef} className="flex-1 overflow-y-auto bg-[#101213]">
           {rows.map((row, i) => {
-            const isTarget = row[0] === CORRECT;
             const isTeamRow = teamNameRow && row === teamNameRow;
-            const isActive = row[3] === 'Active';
-            const bg = i % 2 === 0 ? '#001200' : '#000000';
             return (
-              <div key={row[0] + i}
-                className={`crt-table-row grid text-[11px] px-4 py-[3px] transition-all ${isTeamRow ? 'animate-pulse' : ''}`}
+              <div
+                key={row[0] + i}
+                className="grid text-xs px-5 py-1.5 border-b border-white/[0.04] hover:bg-white/[0.07] transition-colors"
                 style={{
-                  gridTemplateColumns: '100px 1fr 100px 90px 1fr',
-                  background: bg,
-                  color: isTeamRow ? '#ff4444' : isTarget && isActive ? '#4dff78' : isActive ? '#c8f0a8' : '#2db84d',
-                  textShadow: (isTarget && isActive) || isTeamRow ? '0 0 8px currentColor' : 'none'
-                }}>
+                  gridTemplateColumns: '110px 1fr 110px 100px 1fr',
+                  background: isTeamRow
+                    ? 'rgba(139, 28, 28, 0.25)'
+                    : i % 2 === 0
+                    ? '#131516'
+                    : '#101213',
+                  color: isTeamRow ? '#fca5a5' : (i % 2 === 0 ? '#cbc6ba' : '#b7b2a6'),
+                }}
+              >
                 <span className="font-bold">{row[0]}</span>
                 <span>{row[1]}</span>
                 <span>{row[2]}</span>
-                <span className={isActive ? 'phosphor-text' : ''}>{row[3]}</span>
-                <span className="text-[10px]">{row[4]}</span>
+                <span>{row[3]}</span>
+                <span>{row[4]}</span>
               </div>
             );
           })}
         </div>
 
-        {/* Input prompt */}
-        <div className="shrink-0 border-t border-[#4dff78]/20">
+        {/* Clean Query Footer */}
+        <div className="shrink-0 border-t border-white/10 bg-[#141110] px-5 py-3">
           {response && (
-            <div className={`px-4 pt-2 text-[11px] whitespace-pre-wrap ${response.type === 'ok' ? 'terminal-response-ok' : response.type === 'err' ? 'terminal-response-err' : 'text-[#2db84d]'}`}>
+            <div className={`mb-2 text-xs whitespace-pre-wrap ${response.type === 'ok' ? 'text-[#e5d0a4]' : 'text-[#ef7b7b]'}`}>
               {response.msg}
             </div>
           )}
-          {!isSolved && (
-            <div className="terminal-input-line">
-              <span className="prompt-symbol">&gt; ENTER BADGE ID:</span>
-              <input
-                ref={inputRef}
-                className="terminal-input blink-cursor"
-                value={inputVal}
-                onChange={e => setInputVal(e.target.value.toUpperCase())}
-                onKeyDown={handleKeyDown}
-                disabled={submitting || clueState?.exhausted}
-                maxLength={12}
-                spellCheck={false}
-                placeholder="BDG-XXXX"
-              />
-              {!submitting && !clueState?.exhausted && (
+          {!isSolved && clueState?.exhausted && (
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="text-xs text-[#ef7b7b] font-bold tracking-wider">
+                ✗ SECURITY LOCKOUT (0 ATTEMPTS) — BREACH ALARM ACTIVE
+              </div>
+              {onResetLockout && (
                 <button
                   type="button"
-                  onClick={handleSubmit}
-                  className="px-3 py-1 bg-[#1a3d1f] hover:bg-[#4dff78] text-[#4dff78] hover:text-[#030e05] font-bold text-xs tracking-widest ml-2 shrink-0 rounded border border-[#4dff78]/40 transition-all cursor-pointer shadow-[0_0_10px_rgba(77,255,120,0.2)]"
+                  onClick={() => {
+                    setResponse(null);
+                    setInputVal('');
+                    onResetLockout();
+                  }}
+                  className="re-btn"
                 >
-                  [QUERY]
+                  <span className="re-btn-circle">↻</span>
+                  <span>Reboot Terminal</span>
                 </button>
               )}
             </div>
           )}
+          {!isSolved && !clueState?.exhausted && (
+            <div className="flex items-center gap-3 flex-wrap">
+              <span className="text-xs text-[#c4a265] font-bold">ENTER BADGE ID:</span>
+              <input
+                ref={inputRef}
+                className="px-4 py-1.5 bg-black/55 border border-white/20 text-[#eceae4] text-xs font-mono tracking-wider rounded-full outline-none focus:border-[#c4a265]"
+                style={{ width: 150, flex: 'none' }}
+                value={inputVal}
+                onChange={e => setInputVal(e.target.value.toUpperCase())}
+                onKeyDown={handleKeyDown}
+                disabled={submitting}
+                maxLength={12}
+                spellCheck={false}
+                placeholder="BDG-XXXX"
+              />
+              {!submitting && (
+                <button type="button" onClick={handleSubmit} className="re-btn">
+                  <span className="re-btn-circle">↵</span>
+                  <span>QUERY</span>
+                </button>
+              )}
+              <span className="text-[11px] text-[#8d8578] ml-auto">
+                Attempts: {clueState?.attempts_remaining ?? 3}
+              </span>
+            </div>
+          )}
           {isSolved && (
-            <div className="px-4 py-2 terminal-response-ok text-[11px]">
+            <div className="text-xs text-[#e5d0a4] font-bold">
               ✓ IDENTITY CONFIRMED · RECORD LOCKED — BADGE BDG-9001 — CORVIN, M. LOGGED
             </div>
           )}
