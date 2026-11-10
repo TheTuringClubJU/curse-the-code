@@ -1,16 +1,27 @@
-import React, { useState, useEffect } from 'react';
+import React, { memo } from 'react';
 import {
-  Radio,
-  Layers,
   FileText,
   Volume2,
   VolumeX,
   LogOut,
-  Camera,
-  ShieldAlert,
+  FolderOpen,
+  Crosshair,
+  MousePointer2,
 } from 'lucide-react';
 
-export default function HUDControl({
+const KeyCap = ({ children }) => (
+  <span
+    className="inline-flex items-center justify-center px-2 py-0.5 rounded-full font-mono text-[10px] font-semibold tracking-wider text-[#efe7d6]"
+    style={{
+      background: 'rgba(255, 255, 255, 0.08)',
+      border: '1px solid rgba(196, 162, 101, 0.24)',
+    }}
+  >
+    {children}
+  </span>
+);
+
+const HUDControl = memo(function HUDControl({
   roomTitle = 'The Surveillance Morgue',
   totalFragments = 8,
   collectedCount = 0,
@@ -18,251 +29,306 @@ export default function HUDControl({
   isRoomCompleted = false,
   cluesSolved = 0,
   totalClues = 3,
+  clueHint = '',
+  isSafeZone = true,
+  isThreatActive = false,
+  ghostTelemetry = null,
   onOpenBasket,
   onOpenCaseFiles,
   onLogout,
   audioMuted = false,
   onToggleAudio,
+  qualityMode = 'high',
+  onToggleQuality,
   activeHoverPrompt = null,
+  isPointerLocked = true,
+  mouseSensitivity = 1.0,
+  onCycleSensitivity,
+  onRequestLock,
 }) {
-  const [timeStr, setTimeStr] = useState('23:41:09');
-
-  useEffect(() => {
-    const updateClock = () => {
-      const now = new Date();
-      const hh = String(now.getHours()).padStart(2, '0');
-      const mm = String(now.getMinutes()).padStart(2, '0');
-      const ss = String(now.getSeconds()).padStart(2, '0');
-      setTimeStr(`${hh}:${mm}:${ss}`);
-    };
-    updateClock();
-    const iv = setInterval(updateClock, 1000);
-    return () => clearInterval(iv);
-  }, []);
+  const objectiveText = isRoomCompleted
+    ? 'VAULT SEAL BROKEN — Exit through the Vault Door'
+    : basketUnlocked
+    ? `Solve the 3 Consoles (${cluesSolved}/${totalClues}) to unlock the Vault Door`
+    : `Search props & explore wings (${collectedCount}/${totalFragments} files)`;
 
   return (
-    <div className="absolute inset-0 pointer-events-none select-none flex flex-col justify-between p-3 sm:p-5 z-40 font-mono">
-
-      {/* ── Top CCTV Surveillance Header ── */}
-      <div className="flex items-center justify-between w-full pointer-events-auto gap-3">
-
-        {/* Left: CCTV Camera Feed Tag & Room Title */}
+    <div className="absolute inset-0 pointer-events-none select-none flex flex-col justify-between p-4 sm:p-6 z-40">
+      {/* ── Top Edge Bar (Gothic Smoke-Fade Strip + Capsule Inventory Pills) ── */}
+      <div className="flex items-start justify-between w-full pointer-events-auto gap-4">
+        {/* Left: Borderless gothic smoke-fade objective strip + subtle clue hint */}
         <div
-          className="flex items-center gap-3.5 backdrop-blur-md px-4 py-2.5 rounded-xl border shadow-2xl"
+          className="pr-12 pl-3.5 py-2 rounded-r-full"
           style={{
-            background: 'rgba(5, 10, 7, 0.92)',
-            borderColor: 'rgba(77, 255, 120, 0.35)',
-            boxShadow: '0 0 25px rgba(0, 0, 0, 0.8), inset 0 0 12px rgba(77, 255, 120, 0.05)',
+            background: 'linear-gradient(90deg, rgba(12, 10, 10, 0.8) 0%, rgba(12, 10, 10, 0.36) 76%, transparent 100%)',
+            borderLeft: '2px solid rgba(184, 58, 58, 0.72)',
           }}
         >
-          {/* Pulsing REC indicator */}
-          <div className="flex items-center gap-1.5 shrink-0 pr-1 border-r border-[#1a3d1f]">
-            <span className="w-2.5 h-2.5 rounded-full bg-red-600 animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.9)]" />
-            <span className="text-[10px] font-black tracking-widest text-red-500 uppercase">REC</span>
-            <span className="text-[10px] text-gray-400 font-mono tracking-wider ml-1">{timeStr}</span>
-          </div>
-
-          <div>
-            <div className="flex items-center gap-2">
-              <Camera className="w-3.5 h-3.5 text-[#4dff78]" />
-              <span className="text-[9px] font-bold tracking-[0.2em] text-[#3a6e45] uppercase">
-                CAM-05 // BUNKER CCTV
-              </span>
-            </div>
-            <span className="text-xs sm:text-sm font-bold tracking-wide text-[#e8f5ec] block mt-0.5">
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <div className="font-re-display text-xs sm:text-sm font-bold tracking-[0.18em] text-[#f3ede0] uppercase">
               {roomTitle}
+            </div>
+            <span
+              className="font-re-dossier text-[10px] tracking-[0.14em] uppercase px-2.5 py-0.5 rounded-full border"
+              style={{
+                background: isSafeZone
+                  ? 'rgba(196, 162, 101, 0.14)'
+                  : isThreatActive
+                  ? 'rgba(154, 42, 42, 0.35)'
+                  : 'rgba(255, 255, 255, 0.05)',
+                borderColor: isSafeZone
+                  ? 'rgba(196, 162, 101, 0.45)'
+                  : isThreatActive
+                  ? 'rgba(220, 68, 68, 0.65)'
+                  : 'rgba(255, 255, 255, 0.12)',
+                color: isSafeZone ? '#e5d0a4' : isThreatActive ? '#fca5a5' : '#9c9282',
+              }}
+            >
+              {isSafeZone ? 'Safe Bay · 5B' : isThreatActive ? 'Alert · Return to 5B' : 'Outer Wings'}
             </span>
+
+            {ghostTelemetry && typeof ghostTelemetry.nextEventSec === 'number' && (() => {
+              const sec = Math.max(0, ghostTelemetry.nextEventSec);
+              const mm = String(Math.floor(sec / 60)).padStart(2, '0');
+              const ss = String(sec % 60).padStart(2, '0');
+              const active = ghostTelemetry.cyclePhase === 'MANIFESTING';
+              const approaching = ghostTelemetry.state === 'APPROACHING';
+              const cam = ghostTelemetry.incomingCam;
+              const prefix = active ? 'Danger' : approaching ? 'Caution' : 'Clear';
+              const timeStr = cam ? `${mm}:${ss} · ${cam}` : `${mm}:${ss}`;
+              return (
+                <span
+                  data-testid="ghost-cycle-timer"
+                  className="inline-flex items-center gap-1.5 font-re-dossier text-[10px] tracking-[0.14em] uppercase px-2.5 py-0.5 rounded-full border"
+                  style={{
+                    background: active
+                      ? 'rgba(154, 42, 42, 0.34)'
+                      : approaching
+                      ? 'rgba(196, 122, 0, 0.24)'
+                      : 'rgba(12, 10, 10, 0.55)',
+                    borderColor: active
+                      ? 'rgba(220, 68, 68, 0.65)'
+                      : approaching
+                      ? 'rgba(229, 178, 84, 0.65)'
+                      : 'rgba(196, 162, 101, 0.28)',
+                    color: active ? '#fca5a5' : approaching ? '#fde68a' : '#d4c8ae',
+                  }}
+                >
+                  <span
+                    className={`w-1.5 h-1.5 rounded-full ${active || approaching ? 'animate-pulse' : ''}`}
+                    style={{ background: active ? '#ef4444' : approaching ? '#eab308' : '#8b7752' }}
+                  />
+                  <span>{`${prefix} · ${timeStr}`}</span>
+                </span>
+              );
+            })()}
           </div>
+          <div
+            className="text-[11px] font-sans mt-0.5 tracking-wide"
+            style={{ color: isRoomCompleted ? '#e5d0a4' : '#d4c8ae' }}
+          >
+            {objectiveText}
+          </div>
+          {clueHint && (
+            <div className="text-[10.5px] font-sans mt-1 text-[#b4a68e]/90 tracking-wide max-w-md">
+              {clueHint}
+            </div>
+          )}
         </div>
 
-        {/* Center-Right: Tactical Action Buttons (Basket & Case Dossier) */}
-        <div
-          className="flex items-center gap-2 backdrop-blur-md px-3.5 py-2 rounded-xl border shadow-2xl text-xs"
-          style={{
-            background: 'rgba(5, 10, 7, 0.92)',
-            borderColor: 'rgba(196, 122, 0, 0.35)',
-            boxShadow: '0 0 25px rgba(0,0,0,0.8)',
-          }}
-        >
-          {/* Evidence Basket Button [B] */}
+        {/* Right: Unified RE2R Prompt-Pill HUD Controls ((key) White Sans Smoke) */}
+        <div className="flex items-center gap-1.5 text-xs font-sans">
           <button
             type="button"
             onClick={onOpenBasket}
             title="Open Evidence Basket (Press B)"
-            className="flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-all duration-150 cursor-pointer hover:scale-[1.02] active:scale-[0.98]"
-            style={{
-              background: basketUnlocked ? 'rgba(13, 46, 18, 0.9)' : 'rgba(24, 20, 14, 0.9)',
-              color: basketUnlocked ? '#4dff78' : '#e8d9c0',
-              border: `1px solid ${basketUnlocked ? 'rgba(77, 255, 120, 0.6)' : 'rgba(196, 122, 0, 0.4)'}`,
-              boxShadow: basketUnlocked ? '0 0 12px rgba(77, 255, 120, 0.25)' : 'none',
-            }}
+            className="re-btn !py-1 !px-2.5 !pr-4"
           >
-            <Layers className="w-3.5 h-3.5" style={{ color: basketUnlocked ? '#4dff78' : '#c47a00' }} />
-            <span className="hidden sm:inline font-semibold">Basket:</span>
-            <span className="font-bold">{collectedCount}/{totalFragments}</span>
-            <kbd className="px-1.5 py-0.5 text-[9px] font-bold rounded bg-black/60 border border-white/10 text-gray-300">
-              B
-            </kbd>
+            <span className="re-btn-circle">B</span>
+            <FolderOpen className="w-3.5 h-3.5 text-[#d4c8ae]" />
+            <span className="hidden sm:inline">Files</span>
+            <span className="font-semibold">{collectedCount}/{totalFragments}</span>
           </button>
 
-          {/* Case Dossier Button [C] */}
           <button
             type="button"
             onClick={onOpenCaseFiles}
             title="View Case Dossier (Press C)"
-            className="flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-all duration-150 cursor-pointer hover:scale-[1.02] active:scale-[0.98]"
-            style={{
-              background: 'rgba(24, 20, 14, 0.9)',
-              color: '#e8d9c0',
-              border: '1px solid rgba(196, 122, 0, 0.4)',
-            }}
+            className="re-btn !py-1 !px-2.5 !pr-4"
           >
-            <FileText className="w-3.5 h-3.5" style={{ color: '#c47a00' }} />
-            <span className="hidden sm:inline font-semibold">Dossier:</span>
-            <span className="font-bold">{cluesSolved}/{totalClues}</span>
-            <kbd className="px-1.5 py-0.5 text-[9px] font-bold rounded bg-black/60 border border-white/10 text-gray-300">
-              C
-            </kbd>
+            <span className="re-btn-circle">C</span>
+            <FileText className="w-3.5 h-3.5 text-[#d4c8ae]" />
+            <span className="hidden sm:inline">Dossier</span>
+            <span className="font-semibold">{cluesSolved}/{totalClues}</span>
           </button>
 
-          {/* Audio Mute [M] */}
+          {onToggleQuality && (
+            <button
+              type="button"
+              onClick={onToggleQuality}
+              title={`Graphics Mode: ${qualityMode === 'eco' ? 'ECO (Performance)' : 'HIGH (Full Detail)'} — click to toggle`}
+              className="re-btn !py-1 !px-2.5 text-[11px] font-mono tracking-wider"
+              style={{ color: qualityMode === 'eco' ? '#fde68a' : '#d4c8ae' }}
+            >
+              {qualityMode === 'eco' ? 'GFX: ECO' : 'GFX: HIGH'}
+            </button>
+          )}
+
           <button
             type="button"
             onClick={onToggleAudio}
             title={audioMuted ? 'Unmute Audio (Press M)' : 'Mute Audio (Press M)'}
-            className="p-1.5 rounded-lg border border-white/10 text-gray-400 hover:text-white hover:border-white/30 transition cursor-pointer"
+            className="re-btn !py-1 !px-2"
+            style={{ color: audioMuted ? '#fca5a5' : '#d4c8ae' }}
           >
-            {audioMuted ? <VolumeX className="w-4 h-4 text-red-400" /> : <Volume2 className="w-4 h-4 text-[#4dff78]" />}
+            <span className="re-btn-circle">M</span>
+            {audioMuted ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
           </button>
 
-          {/* Logout */}
           {onLogout && (
             <button
               type="button"
               onClick={onLogout}
-              title="Logout from Terminal"
-              className="p-1.5 rounded-lg border border-red-900/40 text-red-400 hover:text-red-300 hover:border-red-600/60 transition cursor-pointer"
+              title="Exit Session"
+              className="re-btn !py-1 !px-2"
+              style={{ color: '#fca5a5' }}
             >
-              <LogOut className="w-4 h-4" />
+              <LogOut className="w-3.5 h-3.5" />
             </button>
           )}
         </div>
       </div>
 
-      {/* ── Center Crosshair & Tactical Interaction Prompt (Image 1 Style) ── */}
+      {/* ── Center Reticle & RE2 Remake World Inspect Prompt ── */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none flex flex-col items-center">
-        {/* Circular Reticle with center dot */}
-        <div
-          className="relative flex items-center justify-center transition-all duration-150"
-          style={{
-            width: activeHoverPrompt ? '22px' : '14px',
-            height: activeHoverPrompt ? '22px' : '14px',
-          }}
-        >
-          {/* Outer Ring */}
-          <div
-            className="absolute inset-0 rounded-full border transition-all duration-150"
-            style={{
-              borderColor: activeHoverPrompt ? '#4dff78' : 'rgba(255, 255, 255, 0.75)',
-              boxShadow: activeHoverPrompt
-                ? '0 0 12px #4dff78, inset 0 0 6px #4dff78'
-                : '0 0 6px rgba(255, 255, 255, 0.4)',
-              transform: activeHoverPrompt ? 'scale(1.15)' : 'scale(1)',
-            }}
-          />
-          {/* Inner Dot */}
-          <div
-            className="w-1.5 h-1.5 rounded-full transition-all duration-150"
-            style={{
-              background: activeHoverPrompt ? '#4dff78' : 'rgba(255, 255, 255, 0.9)',
-            }}
-          />
-        </div>
+        {!activeHoverPrompt && (
+          <div className="relative flex items-center justify-center">
+            <div
+              className="rounded-full transition-all duration-150"
+              style={{
+                width: isPointerLocked ? '18px' : '14px',
+                height: isPointerLocked ? '18px' : '14px',
+                border: isPointerLocked
+                  ? '1px solid rgba(244, 239, 224, 0.28)'
+                  : '1px solid rgba(244, 239, 224, 0.18)',
+              }}
+            />
+            <div
+              className="absolute rounded-full"
+              style={{
+                width: '4px',
+                height: '4px',
+                background: isPointerLocked ? 'rgba(248, 244, 232, 0.9)' : 'rgba(248, 244, 232, 0.55)',
+                boxShadow: '0 0 6px rgba(0, 0, 0, 0.95)',
+              }}
+            />
+          </div>
+        )}
 
-        {/* Tactical Hover Pill Prompt */}
         {activeHoverPrompt && (
-          <div
-            className="mt-4 px-3.5 py-1.5 backdrop-blur-md rounded-lg text-xs font-mono flex items-center gap-2.5 shadow-2xl animate-fade-in"
-            style={{
-              background: 'rgba(3, 14, 5, 0.94)',
-              border: '1px solid rgba(77, 255, 120, 0.6)',
-              boxShadow: '0 0 20px rgba(77, 255, 120, 0.3)',
-              color: '#4dff78',
-            }}
-          >
-            <kbd
-              className="px-2 py-0.5 font-black rounded text-[10px] tracking-wider"
-              style={{ background: '#4dff78', color: '#030e05' }}
-            >
-              [E] / CLICK
-            </kbd>
-            <span className="font-semibold tracking-wide text-white">{activeHoverPrompt}</span>
+          <div className="flex flex-col items-center gap-1 animate-fade-in">
+            <div className="flex items-center gap-2.5">
+              {/* Circular white button badge matching RE2R Ink Ribbon prompt */}
+              <div
+                className="w-6 h-6 rounded-full flex items-center justify-center font-sans font-bold text-xs shadow-lg"
+                style={{
+                  background: '#f5f4f0',
+                  color: '#111213',
+                  boxShadow: '0 2px 10px rgba(0, 0, 0, 0.85)',
+                }}
+              >
+                E
+              </div>
+              {/* Borderless translucent dark smoke gradient label */}
+              <div
+                className="pl-3 pr-8 py-1 rounded-full text-xs sm:text-sm font-sans font-medium tracking-wide text-[#f4f3ef]"
+                style={{
+                  background: 'linear-gradient(90deg, rgba(14, 12, 12, 0.82) 0%, rgba(14, 12, 12, 0.35) 76%, transparent 100%)',
+                  textShadow: '0 1px 4px rgba(0,0,0,0.95)',
+                }}
+              >
+                {activeHoverPrompt}
+              </div>
+            </div>
+            {!isPointerLocked && (
+              <span
+                className="text-[10px] font-sans tracking-wider text-[#dcd2be]/90 px-2.5 py-0.5 rounded-full"
+                style={{ textShadow: '0 1px 4px rgba(0,0,0,0.95)' }}
+              >
+                Right-Click or [E]
+              </span>
+            )}
           </div>
         )}
       </div>
 
-      {/* ── Bottom Telemetry & Status Bar (Image 2 Sanity Bar Style) ── */}
-      <div className="flex items-end justify-between w-full pointer-events-auto gap-4">
-
-        {/* Bottom Left: Military Protocol & Completion Ticker */}
+      {/* ── Sleek Rounded Bottom Controls Capsule Dock ── */}
+      <div className="flex items-center justify-center w-full pointer-events-none">
         <div
-          className="backdrop-blur-md px-3.5 py-2 rounded-xl border text-[11px]"
+          className="pointer-events-auto flex flex-wrap items-center justify-center gap-x-3.5 gap-y-1.5 px-5 py-2 rounded-full text-[11px] font-sans"
           style={{
-            background: 'rgba(5, 10, 7, 0.9)',
-            borderColor: 'rgba(77, 255, 120, 0.25)',
-            color: '#76a880',
+            background: 'rgba(14, 12, 12, 0.84)',
+            border: '1px solid rgba(196, 162, 101, 0.2)',
+            backdropFilter: 'blur(8px)',
+            boxShadow: '0 10px 30px rgba(0, 0, 0, 0.72)',
+            color: '#c9bfab',
           }}
         >
-          <div className="flex items-center gap-2">
-            <Radio className="w-3.5 h-3.5 text-[#4dff78] animate-pulse" />
-            <span className="tracking-widest uppercase text-[10px]">
-              DELTA CONTROL // SURVEILLANCE FEED 98.4%
+          {isPointerLocked ? (
+            <span className="inline-flex items-center gap-1.5 text-[#e6d2ab] font-medium pr-2.5 border-r border-white/10">
+              <Crosshair className="w-3 h-3 text-[#c94a4a]" />
+              <span>FPS Aim</span>
+              <KeyCap>ESC</KeyCap>
+              <span className="text-[#8e887c]">Cursor</span>
             </span>
-          </div>
-          {isRoomCompleted ? (
-            <div className="text-[#4dff78] font-bold text-xs mt-1 animate-pulse">
-              ✓ VAULT SEAL BROKEN // ADVANCE TO SECTOR 6
-            </div>
           ) : (
-            <div className="text-gray-400 text-[10px] mt-0.5">
-              COLLECT ALL 8 FRAGMENTS TO UNLOCK MAIN CONSOLES
-            </div>
+            <button
+              type="button"
+              onClick={onRequestLock}
+              className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full cursor-pointer transition hover:brightness-115 text-[#f3e6cc] font-medium mr-1"
+              style={{
+                background: 'linear-gradient(90deg, rgba(132, 34, 34, 0.72), rgba(44, 14, 14, 0.85))',
+                border: '1px solid rgba(196, 162, 101, 0.45)',
+              }}
+              title="Lock mouse for full 360 first-person view"
+            >
+              <MousePointer2 className="w-3 h-3" />
+              <span>Click to Lock Aim</span>
+            </button>
+          )}
+
+          <span className="hidden md:inline-flex items-center gap-1.5">
+            <KeyCap>WASD</KeyCap>
+            <span className="text-[#9e9688]">Move</span>
+          </span>
+          <span className="hidden md:inline-flex items-center gap-1.5">
+            <KeyCap>{isPointerLocked ? 'MOUSE' : 'LMB'}</KeyCap>
+            <span className="text-[#9e9688]">Look 360°</span>
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <KeyCap>E / RMB</KeyCap>
+            <span className="text-[#9e9688]">Interact</span>
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <KeyCap>F</KeyCap>
+            <span className="text-[#9e9688]">Torch</span>
+          </span>
+
+          {onCycleSensitivity && (
+            <button
+              type="button"
+              onClick={onCycleSensitivity}
+              title="Cycle Mouse Look Sensitivity"
+              className="ml-1 pl-2 border-l border-white/10 inline-flex items-center gap-1 text-[10px] font-mono text-[#d4c8ae] hover:text-white cursor-pointer transition"
+            >
+              <span className="text-[#8e887c]">SENS</span>
+              <span className="font-semibold">{mouseSensitivity.toFixed(1)}×</span>
+            </button>
           )}
         </div>
-
-        {/* Bottom Right: Psychological Sanity Telemetry Bar (Image 2 Style) */}
-        <div
-          className="backdrop-blur-md px-4 py-2.5 rounded-xl border shadow-2xl flex items-center gap-3"
-          style={{
-            background: 'rgba(5, 10, 7, 0.92)',
-            borderColor: 'rgba(77, 255, 120, 0.3)',
-            boxShadow: '0 0 20px rgba(0,0,0,0.8)',
-          }}
-        >
-          <div className="text-right">
-            <span className="text-[10px] tracking-widest text-[#76a880] uppercase block">
-              Sanity
-            </span>
-            <span className="text-[9px] text-gray-500 font-mono">
-              NEURO-STABILITY
-            </span>
-          </div>
-
-          {/* High-end Glowing Progress Bar */}
-          <div className="w-28 sm:w-36 h-2.5 rounded-full bg-black/70 border border-white/20 p-0.5 overflow-hidden">
-            <div
-              className="h-full rounded-full transition-all duration-300"
-              style={{
-                width: '88%',
-                background: 'linear-gradient(90deg, #10b981 0%, #4dff78 100%)',
-                boxShadow: '0 0 10px rgba(77, 255, 120, 0.8)',
-              }}
-            />
-          </div>
-        </div>
-
       </div>
-
     </div>
   );
-}
+});
+
+export default HUDControl;
