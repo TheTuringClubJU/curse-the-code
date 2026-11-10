@@ -29,9 +29,11 @@ def reset_basement_team_db(team_name="Team Cipher", study_completed=True):
             if study_completed:
                 cur.execute("""
                     INSERT INTO team_rooms (team_id, room_id, is_completed, completed_at)
-                    VALUES ((SELECT id FROM teams WHERE name = %s), 'study', TRUE, NOW())
+                    VALUES 
+                        ((SELECT id FROM teams WHERE name = %s), 'bedroom', TRUE, NOW()),
+                        ((SELECT id FROM teams WHERE name = %s), 'study', TRUE, NOW())
                     ON CONFLICT (team_id, room_id) DO UPDATE SET is_completed = TRUE;
-                """, (team_name,))
+                """, (team_name, team_name))
             else:
                 cur.execute("""
                     DELETE FROM team_rooms WHERE team_id = (SELECT id FROM teams WHERE name = %s) AND room_id = 'study';
