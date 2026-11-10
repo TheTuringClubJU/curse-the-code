@@ -6,6 +6,7 @@ import AdminDashboard from './admin/AdminDashboard';
 import Room1Bedroom from './game/Room1Bedroom';
 import Room4Records from './game/Room4Records';
 import Room5Control from './game/Room5Control';
+import RE4RoomSwitcher from './game/components/RE4RoomSwitcher';
 import { checkAuthStatus, logoutTeam } from './userlogin/authApi';
 
 export default function App() {
@@ -17,16 +18,45 @@ export default function App() {
 
   const [team, setTeam] = useState(null);
   const [checkingAuth, setCheckingAuth] = useState(true);
-  const [roundStatus, setRoundStatus] = useState(null); // Pure DB-driven: null until verified from DB
+  const [roundStatus, setRoundStatus] = useState(null);
   const [currentRoundNum, setCurrentRoundNum] = useState(1);
 
-  // Listen to popstate or route changes if needed
+  // Active 3D room preview state (defaults to bedroom / r100)
+  const [previewRoom, setPreviewRoom] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const p = new URLSearchParams(window.location.search).get('room');
+      if (p === '4' || p === 'records') return 'records';
+      if (p === '5' || p === 'control') return 'control';
+      return 'bedroom';
+    }
+    return 'bedroom';
+  });
+
+  // Listen to popstate or explicit cross-room return requests from Room modals
   useEffect(() => {
     const handleLocationChange = () => {
       setIsAdminRoute(window.location.pathname.startsWith('/admin'));
+      const p = new URLSearchParams(window.location.search).get('room');
+      if (p === '4' || p === 'records') setPreviewRoom('records');
+      else if (p === '5' || p === 'control') setPreviewRoom('control');
+      else if (p === '1' || p === 'bedroom') setPreviewRoom('bedroom');
+    };
+    const handleNavigateRoom = (e) => {
+      const nextRoom = e?.detail;
+      if (!nextRoom) return;
+      setPreviewRoom(nextRoom);
+      try {
+        const url = new URL(window.location);
+        url.searchParams.set('room', nextRoom);
+        window.history.pushState({}, '', url);
+      } catch {}
     };
     window.addEventListener('popstate', handleLocationChange);
-    return () => window.removeEventListener('popstate', handleLocationChange);
+    window.addEventListener('ctc:navigate-room', handleNavigateRoom);
+    return () => {
+      window.removeEventListener('popstate', handleLocationChange);
+      window.removeEventListener('ctc:navigate-room', handleNavigateRoom);
+    };
   }, []);
 
   // Admin auth check
@@ -63,49 +93,6 @@ export default function App() {
       .finally(() => setCheckingAuth(false));
   }, [isAdminRoute]);
 
-  // Fast poll lobby/game status when team is logged in
-  useEffect(() => {
-    if (!team || isAdminRoute) return;
-
-    let isMounted = true;
-    const checkState = async () => {
-      try {
-        const res = await fetch('/api/lobby/state', {
-          credentials: 'include'
-        });
-        if (res.ok) {
-          const data = await res.json();
-          if (isMounted) {
-            setRoundStatus(data.round_status || 'pending');
-            setCurrentRoundNum(data.current_round || 1);
-          }
-        } else {
-          if (isMounted) setRoundStatus(prev => prev || 'pending');
-        }
-      } catch (err) {
-        console.error('State polling error:', err);
-        if (isMounted) setRoundStatus(prev => prev || 'pending');
-      }
-    };
-
-    // Always execute the initial state check immediately from DB
-    checkState();
-
-    // Pause continuous fast polling while actively playing Room 1, 4 or 5 to free bandwidth for interactions
-    if (roundStatus === 'live' && (currentRoundNum === 1 || currentRoundNum === 2 || currentRoundNum === 3)) return;
-
-    const interval = setInterval(checkState, 3000);
-    return () => {
-      isMounted = false;
-      clearInterval(interval);
-    };
-  }, [team, isAdminRoute, roundStatus, currentRoundNum]);
-
-  const handleLoginSuccess = (authenticatedTeam) => {
-    setRoundStatus(null);
-    setTeam(authenticatedTeam);
-  };
-
   const handleLogout = async () => {
     await logoutTeam();
     setTeam(null);
@@ -141,49 +128,30 @@ export default function App() {
     );
   }
 
-  // Participant Route Branch
-  // Direct dev preview: ?room=1, ?room=4, ?room=5 (Instant 3D room loading, no login block)
-  if (typeof window !== 'undefined') {
-    const params = new URLSearchParams(window.location.search);
-    const roomParam = params.get('room');
-    if (roomParam === '1' || roomParam === 'bedroom' || (!roomParam && !team && window.location.port === '5173')) {
-      return <Room1Bedroom team={team || { name: 'Leon S. Kennedy' }} onLogout={handleLogout} />;
-    }
-    if (roomParam === '4' || roomParam === 'records') {
-      return <Room4Records team={team || { name: 'Leon S. Kennedy' }} onLogout={handleLogout} />;
-    }
-    if (roomParam === '5' || roomParam === 'control') {
-      return <Room5Control team={team || { name: 'Leon S. Kennedy' }} onLogout={handleLogout} />;
-    }
-  }
+  // 3D Resident Evil 4 Horror Simulation Mode
+  return (
+    <div className="relative w-full h-full min-h-screen bg-black overflow-hidden">
+      {/* Resident Evil 4 Debug Room Jump Bar */}
+      <RE4RoomSwitcher
+        currentRoom={previewRoom}
+        onSelectRoom={(r) => {
+          setPreviewRoom(r);
+          const url = new URL(window.location);
+          url.searchParams.set('room', r);
+          window.history.pushState({}, '', url);
+        }}
+      />
 
-  if (checkingAuth || (team && roundStatus === null)) {
-    return (
-      <div className="min-h-screen w-full bg-[#07060b] flex items-center justify-center">
-        <div className="w-6 h-6 border-2 border-[#ff7a1a] border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
-
-  if (!team) {
-    return <UserLogin onLoginSuccess={handleLoginSuccess} />;
-  }
-
-  // When Round 1 is live, display Room 1 (Lena's Bedroom)
-  if (roundStatus === 'live' && currentRoundNum === 1) {
-    return <Room1Bedroom team={team} onLogout={handleLogout} />;
-  }
-
-  // When Round 2 is live, display Room 4 (The Rotting Archive)
-  if (roundStatus === 'live' && currentRoundNum === 2) {
-    return <Room4Records team={team} onLogout={handleLogout} />;
-  }
-
-  // When Round 3 is live, display Room 5 (The Surveillance Morgue)
-  if (roundStatus === 'live' && currentRoundNum === 3) {
-    return <Room5Control team={team} onLogout={handleLogout} />;
-  }
-
-  // Otherwise, player waits in the atmospheric Lobby
-  return <Lobby team={team} onLogout={handleLogout} />;
+      {/* Render Selected 3D Room */}
+      {previewRoom === 'bedroom' && (
+        <Room1Bedroom team={team || { name: 'Leon S. Kennedy' }} onLogout={handleLogout} />
+      )}
+      {previewRoom === 'records' && (
+        <Room4Records team={team || { name: 'Leon S. Kennedy' }} onLogout={handleLogout} />
+      )}
+      {previewRoom === 'control' && (
+        <Room5Control team={team || { name: 'Leon S. Kennedy' }} onLogout={handleLogout} />
+      )}
+    </div>
+  );
 }
