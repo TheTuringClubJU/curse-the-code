@@ -35,7 +35,7 @@ export default {
     line_printer: { pos: [1.8, 0.75, -0.4], size: [0.65, 0.35, 0.55], role: 'clue_entry', clue_id: 'R1-08' },
     bookshelf: { pos: [-2.8, 1.5, 0.0], size: [0.45, 2.8, 2.2], role: 'interactive_fragment', fragments: ['ES01', 'EK03'] },
     corkboard: { pos: [1.5, 1.8, -2.8], size: [1.8, 1.1, 0.08], role: 'interactive_fragment', fragments: ['ES02', 'ES09'] },
-    desk_blotter: { pos: [0.0, 0.76, -0.48], size: [0.95, 0.02, 0.65], role: 'interactive_fragment', fragments: ['ES03'] },
+    desk_blotter: { pos: [0.0, 0.79, -0.48], size: [0.95, 0.02, 0.65], role: 'interactive_fragment', fragments: ['ES03'] },
     filing_cabinet: { pos: [-2.6, 0.8, -2.5], size: [0.6, 1.5, 0.65], role: 'interactive_fragment', fragments: ['ES04', 'ES10'] },
     sticky_wall: { pos: [-1.8, 1.8, -2.9], size: [1.4, 1.2, 0.05], role: 'interactive_fragment', fragments: ['ES05'] },
     armchair: { pos: [-2.0, 0.5, 1.5], size: [0.95, 0.9, 0.95], role: 'interactive_fragment', fragments: ['ES06'] },

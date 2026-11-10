@@ -81,7 +81,7 @@ export function buildStudy(E) {
   // 2. Desk Blotter (interactive_fragment) - holds ES03
   {
     const blotterGroup = new THREE.Group();
-    blotterGroup.position.set(0.0, 0.76, -0.48);
+    blotterGroup.position.set(0.0, 0.79, -0.48);
     const pad = new THREE.Mesh(new THREE.BoxGeometry(0.95, 0.015, 0.65), greenLeather);
     const trim = new THREE.Mesh(new THREE.BoxGeometry(0.97, 0.012, 0.67), goldTrim);
     trim.position.y = -0.002;
