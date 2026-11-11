@@ -1663,7 +1663,8 @@ export function buildControlScene(E, handlers = {}) {
       const ghostMats = [];
       const bones = {};
       const modelGroup = normalizeProp(gltf.scene, { scale: 1.0, position: [0, 0, 0] });
-      registerAssetTextures(modelGroup);
+      // NOTE: Do NOT register ghost textures with registerAssetTextures,
+      // so eco mode never downscales or corrupts the creature's original 2K PBR skin & normal maps!
       modelGroup.traverse((o) => {
         if (o.isBone && o.name) {
           bones[o.name] = o;
@@ -1672,14 +1673,20 @@ export function buildControlScene(E, handlers = {}) {
         o.userData.np = 1;
         o.castShadow = false;
         o.receiveShadow = false;
-        // Never frustum-cull skinned meshes mid-lunge so arms/jaw stay visible right against camera lens
         o.frustumCulled = false;
         const mats = Array.isArray(o.material) ? o.material : [o.material];
         mats.forEach((m) => {
           if (!m) return;
-          m.roughness = Math.min(0.84, m.roughness ?? 0.68);
-          m.emissive = new THREE.Color(0x160404);
-          m.emissiveIntensity = 0.28;
+          // Preserve natural PBR textures: zero flat emissive wash, realistic skin roughness & metalness
+          m.roughness = 0.65;
+          m.metalness = 0.1;
+          m.emissive = new THREE.Color(0x000000);
+          m.emissiveIntensity = 0;
+          if (m.map) {
+            m.map.wrapS = THREE.RepeatWrapping;
+            m.map.wrapT = THREE.RepeatWrapping;
+            m.map.needsUpdate = true;
+          }
           m.needsUpdate = true;
           ghostMats.push(m);
         });
@@ -1710,13 +1717,14 @@ export function buildControlScene(E, handlers = {}) {
         }
       };
 
-      const ghostGlow = new THREE.PointLight(0x9a1c1c, 0, 6.2, 1.6);
-      ghostGlow.position.set(0, 1.28, 0.25);
+      // Subtle ambient red glow around creature body
+      const ghostGlow = new THREE.PointLight(0x9a1c1c, 0, 4.5, 1.4);
+      ghostGlow.position.set(0, 0.75, 0);
       ghostRoot.add(ghostGlow);
 
-      // Dedicated horror keylight aimed directly at ghost face & jaw (illuminates facial features clearly on jumpscares)
-      const ghostFaceLight = new THREE.PointLight(0xffedd5, 0, 5.2, 1.3);
-      ghostFaceLight.position.set(0, 1.62, 0.65);
+      // Dedicated horror keylight aimed directly at creature's head/snout (creature crawls at y ~ 0.75m)
+      const ghostFaceLight = new THREE.PointLight(0xfff5ea, 0, 4.2, 1.2);
+      ghostFaceLight.position.set(0, 0.75, 0.85);
       ghostFaceLight.castShadow = false;
       ghostRoot.add(ghostFaceLight);
 

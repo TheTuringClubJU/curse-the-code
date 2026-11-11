@@ -247,15 +247,6 @@ export function createControlScares(E, handlers) {
     return true;
   };
 
-  // ── Phantom Face (attached to camera) ─────────────────────────────────────
-  const faceTexture = X.tex(X.faceC({ seed: 7, mouth: true }));
-  const faceMat = new THREE.MeshBasicMaterial({ map: faceTexture, transparent: true, fog: false, depthWrite: false });
-  const phantomFace = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 1.9), faceMat);
-  phantomFace.position.set(0, 0, -1.1);
-  phantomFace.visible = false;
-  phantomFace.userData.np = 1;
-  cam.add(phantomFace);
-
   // ── JS-03 Corner Entity ───────────────────────────────────────────────────
   // Dark mass grows from far corner over 10 minutes then lunges
   const entityMat = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0, fog: false });
@@ -267,30 +258,18 @@ export function createControlScares(E, handlers) {
 
   const fwd = () => [-Math.sin(E.yaw()), -Math.cos(E.yaw())];
 
-  // ── Scare Definitions (Frequent atmospheric scares & visceral mini-jumpscares) ──
+  // ── Scare Definitions (Frequent atmospheric scares & grounded 3D horror moments) ──
   const scareDefinitions = {
-    // 1. Sudden phantom screaming face jumpscare in front of camera
-    phantomFace: {
+    // 1. Sudden audio-visual screech strobe and screen tremor
+    screechStrobe: {
       cond: () => scareTime > 18 && !isInsideSafeRoom5B(E.px?.() ?? 0, E.pz?.() ?? 0) && !jumpscareState && huntTimer <= 0,
       start() {
-        phantomFace.scale.set(0.38, 0.38, 0.38);
-        phantomFace.position.set(0, -0.04, -1.25);
-        phantomFace.visible = true;
         A()?.jumpscareSting?.();
         A()?.entityScream?.(E.px?.() ?? 0, E.pz?.() ?? 0, 0.95);
-        E.shake?.(1.6, 0.42);
-        flash('#b80000', 0.42, 160);
+        E.shake?.(1.4, 0.38);
+        flash('#400505', 0.42, 140);
       },
-      upd(t) {
-        const k = Math.min(1, t / 0.16);
-        phantomFace.position.z = -1.25 + 0.45 * k;
-        phantomFace.scale.set(0.38 + 0.85 * k, 0.38 + 0.85 * k, 1);
-        if (t > 0.40) {
-          phantomFace.visible = false;
-          return true;
-        }
-        return false;
-      }
+      upd(t) { return t > 0.45; }
     },
 
     // 2. Hallway apparition flash: Specimen S-011 appears down the corridor ahead with screech, then vanishes
@@ -574,30 +553,27 @@ export function createControlScares(E, handlers) {
       // Face squarely back into the camera
       ghost.root.rotation.y = Math.atan2(-jumpscareState.ux, -jumpscareState.uz);
 
-      // Horror face keylight dynamically illuminates decayed skin, teeth, and glowing eye sockets
+      // Horror keylight dynamically illuminates decayed skin, head, and teeth
       if (ghost.ghostFaceLight) {
-        ghost.ghostFaceLight.intensity = 18.0 + Math.sin(p * 26) * 3.5;
+        ghost.ghostFaceLight.intensity = 6.5 + Math.sin(p * 26) * 1.5;
       }
       if (ghost.ghostGlow) {
-        ghost.ghostGlow.intensity = 7.5 + Math.sin(p * 32) * 1.2;
+        ghost.ghostGlow.intensity = 2.5 + Math.sin(p * 32) * 0.8;
       }
       // Dynamic chattering jaw snap
       if (ghost.bones?.Jaw) {
         ghost.bones.Jaw.rotation.x = 0.35 + Math.sin(p * 28) * 0.14;
       }
 
-      // Eye-level pitch: -0.02 looks directly into ghost eyes (head at y = 1.62m, cam at 1.60m)
-      E.setCameraOverride?.(true, jumpscareState.yaw, -0.02);
+      // Look slightly down at crawling creature's head (y ~ 0.75m, cam at 1.60m)
+      E.setCameraOverride?.(true, jumpscareState.yaw, 0.18);
       E.setTargetFov?.(50);
 
       if (jumpscareState.elapsed >= jumpscareState.duration) {
         const finished = jumpscareState;
         jumpscareState = null;
-        ghost.mats?.forEach((m) => {
-          m.emissive = new THREE.Color(0x160404);
-          m.emissiveIntensity = 0.28;
-        });
         if (ghost.ghostFaceLight) ghost.ghostFaceLight.intensity = 0;
+        if (ghost.ghostGlow) ghost.ghostGlow.intensity = 0;
         if (ghost.bones?.Jaw) ghost.bones.Jaw.rotation.x = 0;
         banishGhostToDormant(DORMANT_COOLDOWN_SEC);
         E.setCameraOverride?.(false);
@@ -794,13 +770,9 @@ export function createControlScares(E, handlers) {
         ghost.root.position.set(initX, 0.02, initZ);
         ghost.root.rotation.y = Math.atan2(-ux, -uz);
         ghost.setAnim?.('JumpscareSnap', 1.35, 0.04);
-        if (ghost.ghostGlow) ghost.ghostGlow.intensity = 7.5;
-        if (ghost.ghostFaceLight) ghost.ghostFaceLight.intensity = 18.0;
-        ghost.mats?.forEach((m) => {
-          m.emissive = new THREE.Color(0x4a0e0e);
-          m.emissiveIntensity = 0.95;
-        });
-        E.setCameraOverride?.(true, yaw, -0.02);
+        if (ghost.ghostGlow) ghost.ghostGlow.intensity = 2.5;
+        if (ghost.ghostFaceLight) ghost.ghostFaceLight.intensity = 6.5;
+        E.setCameraOverride?.(true, yaw, 0.18);
         E.setTargetFov?.(50);
         E.shake?.(1.35, 1.35);
         A()?.jumpscareSting?.();
@@ -1171,11 +1143,7 @@ export function createControlScares(E, handlers) {
     }
     A()?.setChaseTension?.(0);
     A()?.setWeepingVolume?.(0);
-    cam.remove(phantomFace);
     S.remove(entityMesh);
-    phantomFace.geometry?.dispose();
-    faceMat?.dispose();
-    faceTexture?.dispose();
     entityMesh.geometry?.dispose();
     entityMat?.dispose();
   };
