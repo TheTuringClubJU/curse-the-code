@@ -274,7 +274,7 @@ export function createControlScares(E, handlers) {
 
     // 2. Hallway apparition flash: Specimen S-011 appears down the corridor ahead with screech, then vanishes
     hallwayApparition: {
-      cond: () => scareTime > 12 && !isInsideSafeRoom5B(E.px?.() ?? 0, E.pz?.() ?? 0) && Boolean(E._ghost) && huntTimer <= 0 && !peekState && !retreatState && !jumpscareState,
+      cond: () => cyclePhase === 'MANIFESTING' && scareTime > 12 && !isInsideSafeRoom5B(E.px?.() ?? 0, E.pz?.() ?? 0) && Boolean(E._ghost) && huntTimer <= 0 && !peekState && !retreatState && !jumpscareState,
       start() {
         const cx = E.px?.() ?? 0;
         const cz = E.pz?.() ?? 0;
