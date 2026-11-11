@@ -1714,6 +1714,12 @@ export function buildControlScene(E, handlers = {}) {
       ghostGlow.position.set(0, 1.28, 0.25);
       ghostRoot.add(ghostGlow);
 
+      // Dedicated horror keylight aimed directly at ghost face & jaw (illuminates facial features clearly on jumpscares)
+      const ghostFaceLight = new THREE.PointLight(0xffedd5, 0, 5.2, 1.3);
+      ghostFaceLight.position.set(0, 1.62, 0.65);
+      ghostFaceLight.castShadow = false;
+      ghostRoot.add(ghostFaceLight);
+
       ghostRoot.add(modelGroup);
       // Starts hidden in Dormant standby during the initial 3-minute grace window
       ghostRoot.position.set(-12.2, 0.02, 16.5);
@@ -1724,6 +1730,7 @@ export function buildControlScene(E, handlers = {}) {
         root: ghostRoot,
         meshWrap: modelGroup,
         ghostGlow,
+        ghostFaceLight,
         mixer,
         actions,
         bones,

@@ -53,7 +53,7 @@ export function createControlScares(E, handlers) {
   const REPEAT_MANIFEST_SEC = Number.isFinite(handlers.repeatManifestSec) ? handlers.repeatManifestSec : 12;
 
   let scareTime = 0;
-  let nextScareAt = rnd(28, 45);
+  let nextScareAt = rnd(12, 22);
   let activeScare = null;
   let hasEntryTriggered = false;
   let hasTeamNameInjected = false;
@@ -131,23 +131,27 @@ export function createControlScares(E, handlers) {
     return best;
   };
 
-  const pickBehindSpawn = (px, pz, fallbackAnchor) => {
+  const pickSpawnPoint = (px, pz, fallbackAnchor) => {
     const yaw = E.yaw?.() ?? 0;
     const fx = -Math.sin(yaw);
     const fz = -Math.cos(yaw);
-    // Target ~4.2m directly behind player's gaze vector so turning around reveals Specimen S-011
-    const rawX = Math.max(-13.3, Math.min(2.4, px - fx * 4.2));
-    const rawZ = Math.max(-1.4, Math.min(18.6, pz - fz * 4.2));
-    const safe = clampOutsideSafeRoom(rawX, rawZ);
-    const d = Math.hypot(px - safe.x, pz - safe.z);
-    if (d >= 3.0) return safe;
-    // Fallback to nearest adjacent corridor doorway (>= 3.8m away) if wall/safe-room squeezed behind-vector
-    if (fallbackAnchor) {
-      const fbSafe = clampOutsideSafeRoom(fallbackAnchor.x, fallbackAnchor.z);
-      if (Math.hypot(px - fbSafe.x, pz - fbSafe.z) >= 2.8) return fbSafe;
+    // Prioritize spawning in front of player down the corridor so the player actually sees the entity attack!
+    let rawX = px + fx * 4.8;
+    let rawZ = pz + fz * 4.8;
+
+    // In Morgue Hallway (Z: 2.5..18.0), if forward vector points back towards safe room (Z <= 4.0) or yaw is 0:
+    // advance down the active morgue corridor ahead towards higher Z
+    if (rawZ <= 4.0 || Math.hypot(fx, fz) < 0.1 || fz <= 0) {
+      rawX = fallbackAnchor?.x ?? -4.4;
+      rawZ = Math.max(pz + 4.5, fallbackAnchor?.z ?? (pz + 4.8));
     }
-    return clampOutsideSafeRoom(-4.2, Math.min(17.5, Math.max(6.2, pz + 4.4)));
+    rawX = Math.max(-13.3, Math.min(2.4, rawX));
+    rawZ = Math.max(2.4, Math.min(18.4, rawZ));
+    const safe = clampOutsideSafeRoom(rawX, rawZ);
+    if (Math.hypot(px - safe.x, pz - safe.z) >= 2.8) return safe;
+    return clampOutsideSafeRoom(-4.2, Math.min(17.5, Math.max(6.2, pz + 4.8)));
   };
+  const pickBehindSpawn = pickSpawnPoint;
 
   const banishGhostToDormant = (dormantDuration = DORMANT_COOLDOWN_SEC) => {
     const ghost = E._ghost;
@@ -263,58 +267,137 @@ export function createControlScares(E, handlers) {
 
   const fwd = () => [-Math.sin(E.yaw()), -Math.cos(E.yaw())];
 
-  // ── Scare Definitions ─────────────────────────────────────────────────────
+  // ── Scare Definitions (Frequent atmospheric scares & visceral mini-jumpscares) ──
   const scareDefinitions = {
-    // Monitor static burst with distant thud (audio/visual only — avoids distracting UI spam)
+    // 1. Sudden phantom screaming face jumpscare in front of camera
+    phantomFace: {
+      cond: () => scareTime > 18 && !isInsideSafeRoom5B(E.px?.() ?? 0, E.pz?.() ?? 0) && !jumpscareState && huntTimer <= 0,
+      start() {
+        phantomFace.scale.set(0.38, 0.38, 0.38);
+        phantomFace.position.set(0, -0.04, -1.25);
+        phantomFace.visible = true;
+        A()?.jumpscareSting?.();
+        A()?.entityScream?.(E.px?.() ?? 0, E.pz?.() ?? 0, 0.95);
+        E.shake?.(1.6, 0.42);
+        flash('#b80000', 0.42, 160);
+      },
+      upd(t) {
+        const k = Math.min(1, t / 0.16);
+        phantomFace.position.z = -1.25 + 0.45 * k;
+        phantomFace.scale.set(0.38 + 0.85 * k, 0.38 + 0.85 * k, 1);
+        if (t > 0.40) {
+          phantomFace.visible = false;
+          return true;
+        }
+        return false;
+      }
+    },
+
+    // 2. Hallway apparition flash: Specimen S-011 appears down the corridor ahead with screech, then vanishes
+    hallwayApparition: {
+      cond: () => scareTime > 12 && !isInsideSafeRoom5B(E.px?.() ?? 0, E.pz?.() ?? 0) && Boolean(E._ghost) && huntTimer <= 0 && !peekState && !retreatState && !jumpscareState,
+      start() {
+        const cx = E.px?.() ?? 0;
+        const cz = E.pz?.() ?? 0;
+        const [fx, fz] = fwd();
+        const candX = Math.max(-13.0, Math.min(2.0, cx + fx * 3.6));
+        const candZ = Math.max(2.4, Math.min(18.0, cz + fz * 3.6));
+        const g = E._ghost;
+        g.root.position.set(candX, 0.02, candZ);
+        g.root.rotation.y = Math.atan2(cx - candX, cz - candZ);
+        g.root.visible = true;
+        g.setAnim?.('DoorPeek', 1.25, 0.06);
+        if (g.ghostFaceLight) g.ghostFaceLight.intensity = 14.0;
+        if (g.ghostGlow) g.ghostGlow.intensity = 4.0;
+        A()?.peekSting?.();
+        A()?.stinger?.('hard');
+        E.shake?.(0.7, 0.35);
+        flash('#220202', 0.32, 120);
+      },
+      upd(t) {
+        if (t > 0.60) {
+          const g = E._ghost;
+          if (g && huntTimer <= 0 && !jumpscareState) {
+            g.root.visible = false;
+            if (g.ghostFaceLight) g.ghostFaceLight.intensity = 0;
+            if (g.ghostGlow) g.ghostGlow.intensity = 0;
+          }
+          return true;
+        }
+        return false;
+      }
+    },
+
+    // 3. Violent mortuary drawer / locker slam
+    drawerSlam: {
+      cond: () => !isInsideSafeRoom5B(E.px?.() ?? 0, E.pz?.() ?? 0),
+      start() {
+        const [fx, fz] = fwd();
+        A()?.drawerSlam?.(E.px?.() + fx * 1.5, E.pz?.() + fz * 1.5);
+        A()?.whisperRaspy?.(pick(['watching', 'inthere', 'wrongroom']), E.px?.(), E.pz?.());
+        E.shake?.(1.4, 0.38);
+        flash('#220202', 0.35, 110);
+      },
+      upd(t) { return t > 0.75; }
+    },
+
+    // 4. Substation power trip & sudden darkness
+    powerSurge: {
+      cond: () => scareTime > 20 && !isInsideSafeRoom5B(E.px?.() ?? 0, E.pz?.() ?? 0),
+      start() {
+        A()?.staticBurst?.(E.px?.(), E.pz?.());
+        A()?.heavyEntityStep?.(E.px?.() + 1.2, E.pz?.() - 1.2, 0.85);
+        flash('#000000', 0.75, 240);
+        E.shake?.(0.9, 0.4);
+      },
+      upd(t) { return t > 0.9; }
+    },
+
+    // 5. Crying woman sudden gasping shriek in ear
+    weepingGasp: {
+      cond: () => scareTime > 25,
+      start() {
+        A()?.womanScream?.(E.px?.(), E.pz?.(), 0.78);
+        A()?.scurrySteps?.(E.px?.(), E.pz?.());
+        E.shake?.(0.55, 0.28);
+      },
+      upd(t) { return t > 1.0; }
+    },
+
+    // 6. Monitor static burst with distant thud
     monitorBurst: {
       cond: () => true,
       start() {
         A()?.staticBurst?.(0, -2.2);
-        schedule(() => A()?.drawerSlam?.(-2.5, 0), 350);
-        flash('#004400', 0.25, 100);
+        schedule(() => A()?.drawerSlam?.(-2.5, 0), 300);
+        flash('#003300', 0.22, 100);
       },
       upd(t) { return t > 0.8; }
     },
 
-    // Relay click cascade from east wall (spatial audio only)
+    // 7. Relay click cascade from east wall
     relayCascade: {
       cond: () => true,
       start() {
-        const times = [0, 180, 320, 450, 560, 650];
+        const times = [0, 150, 280, 400, 520];
         times.forEach(ms => schedule(() => A()?.relayClick?.(2.5, rnd(-1.5, 1.5)), ms));
       },
-      upd(t) { return t > 1.2; }
+      upd(t) { return t > 1.0; }
     },
 
-    // Phantom face disabled in favor of grounded 3D ghost.glb sightings (non-childish suspense)
-    phantomFace: {
-      cond: () => false,
-      start() {},
-      upd() { return true; }
-    },
-
-    // Intercom crackle (ambient audio cue)
-    intercomActivate: {
-      cond: () => scareTime > 30,
-      start() {
-        A()?.intercomCrackle?.();
-      },
-      upd(t) { return t > 2.5; }
-    },
-
-    // Static voice whisper (spatial audio cue)
+    // 8. Static voice whisper
     whisperFromWall: {
-      cond: () => scareTime > 45,
+      cond: () => scareTime > 30,
       start() {
         const [fx, fz] = fwd();
         const bx = E.px() - fx * 2.5;
         const bz = E.pz() - fz * 2.5;
         A()?.whisperRaspy?.(pick(['wrongroom', 'watching', 'inthere']), bx, bz);
       },
-      upd(t) { return t > 1.5; }
+      upd(t) { return t > 1.4; }
     },
 
-    // Doorway / corner peek during active manifestation window
+    // 9. Doorway / corner peek during active manifestation window
     corridorApparition: {
       cond: () => cyclePhase === 'MANIFESTING' && Boolean(E._ghost) && !isInsideSafeRoom5B(E.px?.() ?? 0, E.pz?.() ?? 0) && huntTimer <= 0 && !peekState && !retreatState && !jumpscareState,
       start() {
@@ -475,25 +558,47 @@ export function createControlScares(E, handlers) {
     if (jumpscareState && ghost) {
       jumpscareState.elapsed += dt;
       const p = Math.min(1, jumpscareState.elapsed / jumpscareState.duration);
-      const slideDist = 0.95 - 0.45 * Math.min(1, p * 1.85);
-      const cand = clampOutsideSafeRoom(
-        jumpscareState.cx + jumpscareState.ux * slideDist,
-        jumpscareState.cz + jumpscareState.uz * slideDist
-      );
+      // Cinematic framing distance: slides smoothly from 1.35m down to 1.08m
+      // Camera near plane is 0.05m; ghost head is ~0.35m forward from root,
+      // so face is ~0.73m from camera lens — 100% visible, centered, and NEVER clips inside the mesh!
+      const slideDist = 1.35 - 0.25 * Math.min(1, p * 1.6);
+      const candX = jumpscareState.cx + jumpscareState.ux * slideDist;
+      const candZ = jumpscareState.cz + jumpscareState.uz * slideDist;
+
       ghost.root.visible = true;
       ghost.scareOverride = true;
       ghost.isHunting = false;
       ghost.isJumpscaring = true;
       ghost.behavior = 'JUMPSCARE';
-      ghost.root.position.set(cand.x, 0.02, cand.z);
-      ghost.root.rotation.y = Math.atan2(jumpscareState.cx - cand.x, jumpscareState.cz - cand.z);
-      if (ghost.ghostGlow) ghost.ghostGlow.intensity = 6.2 + Math.sin(p * 32) * 0.7;
-      E.setCameraOverride?.(true, jumpscareState.yaw, 0.08);
+      ghost.root.position.set(candX, 0.02, candZ);
+      // Face squarely back into the camera
+      ghost.root.rotation.y = Math.atan2(-jumpscareState.ux, -jumpscareState.uz);
+
+      // Horror face keylight dynamically illuminates decayed skin, teeth, and glowing eye sockets
+      if (ghost.ghostFaceLight) {
+        ghost.ghostFaceLight.intensity = 18.0 + Math.sin(p * 26) * 3.5;
+      }
+      if (ghost.ghostGlow) {
+        ghost.ghostGlow.intensity = 7.5 + Math.sin(p * 32) * 1.2;
+      }
+      // Dynamic chattering jaw snap
+      if (ghost.bones?.Jaw) {
+        ghost.bones.Jaw.rotation.x = 0.35 + Math.sin(p * 28) * 0.14;
+      }
+
+      // Eye-level pitch: -0.02 looks directly into ghost eyes (head at y = 1.62m, cam at 1.60m)
+      E.setCameraOverride?.(true, jumpscareState.yaw, -0.02);
       E.setTargetFov?.(50);
 
       if (jumpscareState.elapsed >= jumpscareState.duration) {
         const finished = jumpscareState;
         jumpscareState = null;
+        ghost.mats?.forEach((m) => {
+          m.emissive = new THREE.Color(0x160404);
+          m.emissiveIntensity = 0.28;
+        });
+        if (ghost.ghostFaceLight) ghost.ghostFaceLight.intensity = 0;
+        if (ghost.bones?.Jaw) ghost.bones.Jaw.rotation.x = 0;
         banishGhostToDormant(DORMANT_COOLDOWN_SEC);
         E.setCameraOverride?.(false);
         E.setTargetFov?.(72);
@@ -593,11 +698,11 @@ export function createControlScares(E, handlers) {
       huntCooldown = 18;
       const [fx, fz] = fwd();
       startHuntSequence(
-        cx - fx * 6.2,
-        Math.max(2.4, Math.min(18.0, cz - fz * 6.2)),
+        Math.max(-13.0, Math.min(2.0, cx + fx * 5.2)),
+        Math.max(2.4, Math.min(18.0, cz + fz * 5.2)),
         Math.max(6.0, Math.min(cycleTimer, 13.0)),
         'noiseHunt',
-        'Sprint echoes drew Specimen S-011 — weave through open wings or head to 5B!',
+        'Sprint echoes drew Specimen S-011 into the corridor ahead — head for Control Room 5B!',
         0.95
       );
     }
@@ -623,11 +728,13 @@ export function createControlScares(E, handlers) {
       A()?.setChaseTension?.(tension);
 
       if (huntStareTimer > 0) {
-        // Dramatic behind-you reveal beat so player can turn around and sprint away
+        // Dramatic reveal beat in corridor so player sees entity before it charges
         ghostVelX = 0;
         ghostVelZ = 0;
         ghost.setAnim?.('DoorPeek', 1.1, 0.12);
-        if (ghost.ghostGlow) ghost.ghostGlow.intensity = 2.0;
+        if (ghost.ghostFaceLight) ghost.ghostFaceLight.intensity = 14.0;
+        if (ghost.ghostGlow) ghost.ghostGlow.intensity = 4.0;
+        ghost.root.rotation.y = Math.atan2(dx, dz);
       } else if (dist > 1.32) {
         ghost.setAnim?.('SprintLunge', 1.05, 0.14);
         const targetSpeed = playerInSafeRoom ? 1.05 : 1.42;
@@ -671,27 +778,36 @@ export function createControlScares(E, handlers) {
           E.flashlight.intensity = 9.0;
         }
         const inv = 1 / Math.max(0.001, dist);
-        const fvec = fwd();
-        const ux = dist > 0.05 ? (gx - cx) * inv : fvec[0];
-        const uz = dist > 0.05 ? (gz - cz) * inv : fvec[1];
-        const yaw = Math.atan2(-ux, -uz);
+        const [fx, fz] = fwd();
+        // Immediately stage jumpscare right in player's forward view so face is front and center!
+        const ux = fx;
+        const uz = fz;
+        const yaw = E.yaw?.() ?? Math.atan2(-ux, -uz);
         jumpscareState = { elapsed: 0, duration: 1.35, ux, uz, yaw, cx, cz, gx, gz };
-        const initPos = clampOutsideSafeRoom(cx + ux * 0.95, cz + uz * 0.95);
+        const initX = cx + ux * 1.35;
+        const initZ = cz + uz * 1.35;
         ghost.root.visible = true;
         ghost.scareOverride = true;
         ghost.isHunting = false;
         ghost.isJumpscaring = true;
         ghost.behavior = 'JUMPSCARE';
-        ghost.root.position.set(initPos.x, 0.02, initPos.z);
-        ghost.root.rotation.y = Math.atan2(cx - initPos.x, cz - initPos.z);
-        ghost.setAnim?.('JumpscareSnap', 1.35, 0.06);
-        if (ghost.ghostGlow) ghost.ghostGlow.intensity = 6.8;
-        E.setCameraOverride?.(true, yaw, 0.08);
+        ghost.root.position.set(initX, 0.02, initZ);
+        ghost.root.rotation.y = Math.atan2(-ux, -uz);
+        ghost.setAnim?.('JumpscareSnap', 1.35, 0.04);
+        if (ghost.ghostGlow) ghost.ghostGlow.intensity = 7.5;
+        if (ghost.ghostFaceLight) ghost.ghostFaceLight.intensity = 18.0;
+        ghost.mats?.forEach((m) => {
+          m.emissive = new THREE.Color(0x4a0e0e);
+          m.emissiveIntensity = 0.95;
+        });
+        E.setCameraOverride?.(true, yaw, -0.02);
         E.setTargetFov?.(50);
         E.shake?.(1.35, 1.35);
         A()?.jumpscareSting?.();
+        A()?.womanScream?.(initX, initZ, 1.0);
         A()?.setChaseTension?.(1.0);
-        flash('#4a0303', 0.96, 520);
+        // Crisp non-blinding rim flash (38% opacity, 110ms) so 3D animated face is instantly visible!
+        flash('#ff1111', 0.38, 110);
         handlers.onJumpscareStart?.({ x: cx, z: cz, gx, gz });
         return;
       }
@@ -976,12 +1092,12 @@ export function createControlScares(E, handlers) {
       activeScare.elapsed += dt;
       if (activeScare.def.upd(activeScare.elapsed)) {
         activeScare = null;
-        nextScareAt = scareTime + rnd(50, 90);
+        nextScareAt = scareTime + rnd(15, 26);
       }
       return;
     }
 
-    // Schedule next scare
+    // Schedule next scare (Atmospheric scares & mini-jumpscares happen every 15..26s)
     if (scareTime >= nextScareAt) {
       const eligible = scareKeys.filter(k => scareDefinitions[k].cond());
       if (eligible.length > 0) {
@@ -990,7 +1106,7 @@ export function createControlScares(E, handlers) {
         def.start();
         activeScare = { def, elapsed: 0 };
       } else {
-        nextScareAt = scareTime + rnd(10, 20);
+        nextScareAt = scareTime + rnd(8, 14);
       }
     }
   };
