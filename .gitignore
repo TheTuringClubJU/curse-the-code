@@ -20,14 +20,14 @@ frontend/dist/
 schema.completed.sql
 
 ctc/
-.neon
 
-# Raw unoptimized 3D asset packs (optimized runtime GLBs live in frontend/public/assets/models/)
+scratch/
+.neon
 Room-5 Glb models/
 horror-game-floor-generator-free/
 HorrorPackFBX/
-
 .DS_Store
 /*.mp3
 .agents/
 /MarkdownFile*.md
+*.dmg

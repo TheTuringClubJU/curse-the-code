@@ -8,9 +8,11 @@ import ClueModal from './components/ClueModal.jsx';
 import PhotoPuzzleModal from './components/PhotoPuzzleModal.jsx';
 import CaseFilesModal from './components/CaseFilesModal.jsx';
 import RoomCompleteModal from './components/RoomCompleteModal.jsx';
+import Round1DossierModal from './components/Round1DossierModal.jsx';
+import HintModal from './components/HintModal.jsx';
 import './game.css';
 
-export default function Room1Bedroom({ team, onLogout }) {
+export default function Room1Bedroom({ team, onLogout, onTransitionToRoom2 }) {
   const mountRef = useRef(null);
   const engineRef = useRef(null);
   const audioRef = useRef(null);
@@ -26,6 +28,8 @@ export default function Room1Bedroom({ team, onLogout }) {
   const [activeClue, setActiveClue] = useState(null);
   const [isPhotoPuzzleOpen, setIsPhotoPuzzleOpen] = useState(false);
   const [isCaseFilesOpen, setIsCaseFilesOpen] = useState(false);
+  const [isDossierOpen, setIsDossierOpen] = useState(false);
+  const [isHintOpen, setIsHintOpen] = useState(false);
   const [isRoomCompleteModalOpen, setIsRoomCompleteModalOpen] = useState(false);
   const [activeHoverPrompt, setActiveHoverPrompt] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -112,6 +116,30 @@ export default function Room1Bedroom({ team, onLogout }) {
         });
         return;
       }
+
+      // R Key - Toggle Field Dossier & Round 1 Rules
+      if (e.key === 'r' || e.key === 'R' || e.code === 'KeyR') {
+        e.preventDefault();
+        setIsDossierOpen((prev) => {
+          const next = !prev;
+          if (next) engineRef.current?.unlock();
+          else engineRef.current?.lock();
+          return next;
+        });
+        return;
+      }
+
+      // H Key - Toggle Hints & Investigation Guidance
+      if (e.key === 'h' || e.key === 'H' || e.code === 'KeyH') {
+        e.preventDefault();
+        setIsHintOpen((prev) => {
+          const next = !prev;
+          if (next) engineRef.current?.unlock();
+          else engineRef.current?.lock();
+          return next;
+        });
+        return;
+      }
     };
 
     window.addEventListener('keydown', handleGlobalKey, true);
@@ -144,8 +172,7 @@ export default function Room1Bedroom({ team, onLogout }) {
                 setActiveHoverPrompt('Inspect Locked Bedroom Door');
               }
             } else {
-              const configLabel = bedroomConfig.interact?.[targetId]?.label;
-              setActiveHoverPrompt(configLabel || `Inspect ${targetId.replace(/_/g, ' ')}`);
+              setActiveHoverPrompt(`Inspect ${targetId.replace('_', ' ')}`);
             }
           } else {
             setActiveHoverPrompt(null);
@@ -188,7 +215,9 @@ export default function Room1Bedroom({ team, onLogout }) {
     }
     if (engineRef.current) {
       engineRef.current.setPaused(false);
-      engineRef.current.lock();
+      setTimeout(() => {
+        engineRef.current?.lock();
+      }, 50);
     }
   };
 
@@ -197,67 +226,15 @@ export default function Room1Bedroom({ team, onLogout }) {
     console.info("[ROOM1 HANDLE_INTERACT RUNNING FOR]", objectId);
     const currentData = roomDataRef.current;
 
-    // ── Compound RE4 Sub-Section Interactions (Room 1) ──
-    if (objectId === 'entry_door') {
-      audioRef.current?.slam?.(-5.5, 0);
-      showNotification('The heavy timber front door is bolted from the outside. Freezing rain rattles against the wood.');
-      return;
-    }
-
-    if (objectId === 'coat_rack') {
-      audioRef.current?.step?.(0.5);
-      showNotification('The trenchcoat is dripping with freezing rainwater. A small brass key clinks against a buckle.');
-      return;
-    }
-
-    if (objectId === 'hallway_sconce') {
-      audioRef.current?.stinger?.(0.4);
-      showNotification('The oil wall sconce sputters with a low hiss. A cold draft blows through the floorboards.');
-      return;
-    }
-
-    if (objectId === 'wardrobe_secret') {
-      audioRef.current?.slam?.(-3.8, -1.5);
-      showNotification('You push the false wardrobe backboard. The wood gives way, revealing a hidden ritual chamber!');
-      if (engineRef.current?.ref?.wardrobeSecret) {
-        engineRef.current.ref.wardrobeSecret.position.x -= 0.6;
-      }
-      return;
-    }
-
-    if (objectId === 'ritual_pentagram') {
-      audioRef.current?.whisper?.('behind', -3.8, -1.5);
-      showNotification('Dark dried blood sigils etched into the stone floor. The air turns icy cold around it.');
-      return;
-    }
-
-    if (objectId === 'suspended_cage') {
-      audioRef.current?.stinger?.(0.6);
-      showNotification('An iron birdcage hanging from the ceiling. A fragment of an occult crest glows inside.');
-      return;
-    }
-
-    if (objectId === 'ritual_lockbox') {
-      audioRef.current?.step?.(0.6);
-      showNotification('A heavy iron-banded cellar trapdoor and padlock. Faint scratching echoes from the dark below.');
-      return;
-    }
-
-    if (objectId === 'exit_door') {
-      if (currentData?.is_completed) {
-        setIsRoomCompleteModalOpen(true);
-        engineRef.current?.unlock();
-      } else {
-        showNotification('The passage door into Daniel\'s Study is locked with iron deadbolts. Solve all room clues first.');
-      }
-      return;
-    }
-
     // Check if this is the Bedroom Exit Door
     if (objectId === 'room_door' || objectId === 'door') {
       if (currentData?.is_completed) {
-        setIsRoomCompleteModalOpen(true);
-        engineRef.current?.unlock();
+        if (onTransitionToRoom2) {
+          onTransitionToRoom2();
+        } else {
+          setIsRoomCompleteModalOpen(true);
+          engineRef.current?.unlock();
+        }
       } else {
         const solvedCount = currentData?.clues?.filter(c => c.solved)?.length || 0;
         showNotification(
@@ -303,6 +280,12 @@ export default function Room1Bedroom({ team, onLogout }) {
         );
         return;
       }
+      if (matchingClue.is_locked) {
+        showNotification(
+          matchingClue.lock_reason || "This clue is sealed. Complete the preceding clue in sequence first."
+        );
+        return;
+      }
       setActiveClue(matchingClue);
       engineRef.current?.unlock();
     }
@@ -341,9 +324,10 @@ export default function Room1Bedroom({ team, onLogout }) {
         return data;
       } else {
         const errData = await res.json().catch(() => ({}));
+        const errMsg = typeof errData.detail === 'object' ? (errData.detail.message || JSON.stringify(errData.detail)) : (errData.detail || 'Submission failed');
         return {
           correct: false,
-          message: errData.detail || 'Submission failed'
+          message: errMsg
         };
       }
     } catch (err) {
@@ -381,7 +365,7 @@ export default function Room1Bedroom({ team, onLogout }) {
       <div 
         ref={mountRef} 
         onClick={() => {
-          if (isStarted && engineRef.current && !activeClue && !isBasketOpen && !isPhotoPuzzleOpen && !isCaseFilesOpen && !isRoomCompleteModalOpen) {
+          if (isStarted && engineRef.current && !activeClue && !isBasketOpen && !isPhotoPuzzleOpen && !isCaseFilesOpen && !isRoomCompleteModalOpen && !isDossierOpen && !isHintOpen) {
             engineRef.current.lock();
           }
         }}
@@ -395,18 +379,18 @@ export default function Room1Bedroom({ team, onLogout }) {
       {/* Enter Room Splash Modal */}
       {!isStarted && (
         <div className="ov">
-          <h1 style={{ letterSpacing: '0.15em', color: '#d4a040' }}>RESIDENT EVIL 4</h1>
-          <h3 style={{ color: '#e0d4be' }}>Village Cabin — Abandoned Homestead (r100 / r102)</h3>
+          <h1>CURSE THE CODE</h1>
+          <h3>Lena's Bedroom</h3>
           <ul>
-            <li><b>W A S D</b> move (Tactical First-Person)</li>
-            <li><b>Mouse</b> look & aim flashlight</li>
-            <li><b>E</b> examine RE4 props / collect ammo & herbs</li>
-            <li><b>B</b> toggle attache case & items</li>
-            <li><b>C</b> examine officer reports & village files</li>
-            <li><b>P</b> examine crest puzzle fragments</li>
+            <li><b>W A S D</b> move</li>
+            <li><b>Mouse</b> look</li>
+            <li><b>E</b> interact / search</li>
+            <li><b>B</b> toggle evidence basket</li>
+            <li><b>C</b> view case files & clues</li>
+            <li><b>P</b> view photo pieces</li>
             <li><b>Esc</b> release cursor</li>
           </ul>
-          <button onClick={handleStartGame} style={{ background: '#c47a00', color: '#000', fontWeight: 'bold' }}>
+          <button onClick={handleStartGame}>
             CLICK TO ENTER ROOM
           </button>
         </div>
@@ -414,24 +398,15 @@ export default function Room1Bedroom({ team, onLogout }) {
 
       {/* Floating System Notification */}
       {systemNotification && (
-        <div className="absolute top-20 left-1/2 -translate-x-1/2 z-50 bg-[#0e0c08]/95 backdrop-blur-md px-6 py-3 rounded-xl border border-[#d4a040]/70 shadow-2xl text-xs font-mono text-[#f3eedd] max-w-lg text-center animate-fade-in pointer-events-none">
+        <div className="absolute top-20 left-1/2 -translate-x-1/2 z-50 bg-[#160f26]/95 backdrop-blur-md px-6 py-3 rounded-xl border border-[#8f7bff]/60 shadow-2xl text-xs font-mono text-[#e8e0ff] max-w-lg text-center animate-fade-in pointer-events-none">
           {systemNotification}
         </div>
       )}
 
-      {/* Hidden test-compatibility element so legacy QA tests find the test title */}
-      <span className="sr-only" aria-hidden="true" style={{ position: 'absolute', opacity: 0, pointerEvents: 'none', height: 0, overflow: 'hidden' }}>
-        Lena's Bedroom
-      </span>
-
       {/* HUD Layer */}
       {isStarted && (
         <HUD
-          roomTitle={
-            roomData?.title && roomData.title !== "Lena's Bedroom"
-              ? roomData.title
-              : "Village Cabin — Abandoned Homestead (r100 / r102)"
-          }
+          roomTitle={roomData?.title || "Lena's Bedroom"}
           totalFragments={roomData?.total_fragments_in_room || 15}
           collectedCount={roomData?.collected_fragment_ids?.length || 0}
           basketUnlocked={Boolean(roomData?.basket_unlocked)}
@@ -449,6 +424,14 @@ export default function Room1Bedroom({ team, onLogout }) {
           }}
           onOpenPhotoPuzzle={() => {
             setIsPhotoPuzzleOpen(true);
+            engineRef.current?.unlock();
+          }}
+          onOpenRules={() => {
+            setIsDossierOpen(true);
+            engineRef.current?.unlock();
+          }}
+          onOpenHints={() => {
+            setIsHintOpen(true);
             engineRef.current?.unlock();
           }}
           onLogout={onLogout}
@@ -484,6 +467,10 @@ export default function Room1Bedroom({ team, onLogout }) {
           setIsCaseFilesOpen(false);
           if (!roomData?.basket_unlocked) {
             showNotification("Arcane seal unbroken: Gather all 15 room fragments to inspect this clue terminal.");
+            return;
+          }
+          if (clue.is_locked) {
+            showNotification(clue.lock_reason || "This clue is locked. Complete the preceding clue in sequence first.");
             return;
           }
           setActiveClue(clue);
@@ -522,8 +509,29 @@ export default function Room1Bedroom({ team, onLogout }) {
         onProceedToDoor={() => {
           setIsRoomCompleteModalOpen(false);
           engineRef.current?.lock();
-          showNotification("Head to the unlatched door at the front of the room to step into Room 2.");
+          if (onTransitionToRoom2) {
+            onTransitionToRoom2();
+          } else {
+            showNotification("Head to the unlatched door at the front of the room to step into Room 2.");
+          }
         }}
+      />
+
+      <Round1DossierModal
+        isOpen={isDossierOpen}
+        onClose={() => {
+          setIsDossierOpen(false);
+          engineRef.current?.lock();
+        }}
+      />
+      <HintModal
+        isOpen={isHintOpen}
+        onClose={() => {
+          setIsHintOpen(false);
+          engineRef.current?.lock();
+        }}
+        roomId="bedroom"
+        roomTitle="Lena's Bedroom"
       />
     </div>
   );

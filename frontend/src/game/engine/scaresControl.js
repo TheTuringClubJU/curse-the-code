@@ -3,9 +3,13 @@
 // intercom crackle, footstep follower, fragment scare.
 import * as THREE from 'three';
 import * as X from './tex.js';
-import { isInsideSafeRoom5B } from './simulationControl.js';
 
-export { isInsideSafeRoom5B };
+export const SAFE_ROOM_5B_BOUNDS = { minX: -3.45, maxX: 3.45, maxZ: 1.85 };
+export const SAFE_ROOM_RESPAWN = [0.25, 0.1, 0.25];
+
+export function isInsideSafeRoom5B(x, z) {
+  return x >= SAFE_ROOM_5B_BOUNDS.minX && x <= SAFE_ROOM_5B_BOUNDS.maxX && z <= SAFE_ROOM_5B_BOUNDS.maxZ;
+}
 
 const rnd = (a, b) => a + Math.random() * (b - a);
 
@@ -46,11 +50,11 @@ export function createControlScares(E, handlers) {
   };
 
   // ── Timing & Alternating Haunt Cycle Config ──────────────────────────────
-  // 2-minute initial grace -> 18s first track -> 2-minute quiet -> 12s repeating tracks
+  // 2-minute initial grace -> 12s first track -> 2-minute quiet -> 9s repeating tracks
   const INITIAL_GRACE_SEC = Number.isFinite(handlers.initialGraceSec) ? handlers.initialGraceSec : 120;
-  const FIRST_MANIFEST_SEC = Number.isFinite(handlers.firstManifestSec) ? handlers.firstManifestSec : 18;
+  const FIRST_MANIFEST_SEC = Number.isFinite(handlers.firstManifestSec) ? handlers.firstManifestSec : 12;
   const DORMANT_COOLDOWN_SEC = Number.isFinite(handlers.dormantIntervalSec) ? handlers.dormantIntervalSec : 120;
-  const REPEAT_MANIFEST_SEC = Number.isFinite(handlers.repeatManifestSec) ? handlers.repeatManifestSec : 12;
+  const REPEAT_MANIFEST_SEC = Number.isFinite(handlers.repeatManifestSec) ? handlers.repeatManifestSec : 9;
 
   let scareTime = 0;
   let nextScareAt = rnd(12, 22);
@@ -94,9 +98,9 @@ export function createControlScares(E, handlers) {
   let ghostVelX = 0;
   let ghostVelZ = 0;
   let phoneAnswered = false;
-  let phoneRingTimer = 10;
+  let phoneRingTimer = 14;
   let prevFlashFlickered = false;
-  let flashOutageTimer = rnd(28, 54);
+  let flashOutageTimer = rnd(65, 105);
   let flashOutageState = null;
   let peekState = null;
   let retreatState = null;
@@ -237,7 +241,7 @@ export function createControlScares(E, handlers) {
     ghost.setAnim?.('DoorPeek', 0.9, 0.14);
     A()?.peekSting?.();
     A()?.heavyEntityStep?.(clamped.x, clamped.z, 0.48);
-    const escalate = allowEscalate && !isInsideSafeRoom5B(cx, cz) && noiseLevel > 0.35 && Math.random() < 0.45;
+    const escalate = allowEscalate && !isInsideSafeRoom5B(cx, cz) && noiseLevel > 0.62 && Math.random() < 0.28;
     peekState = {
       anchor,
       elapsed: 0,
@@ -670,13 +674,13 @@ export function createControlScares(E, handlers) {
       }
     }
 
-    if (cyclePhase === 'MANIFESTING' && !playerInSafeRoom && noiseLevel >= 0.78 && huntTimer <= 0 && huntCooldown <= 0 && ghost) {
-      huntCooldown = 18;
+    if (cyclePhase === 'MANIFESTING' && !playerInSafeRoom && noiseLevel >= 0.90 && huntTimer <= 0 && huntCooldown <= 0 && ghost) {
+      huntCooldown = 24;
       const [fx, fz] = fwd();
       startHuntSequence(
         Math.max(-13.0, Math.min(2.0, cx + fx * 5.2)),
         Math.max(2.4, Math.min(18.0, cz + fz * 5.2)),
-        Math.max(6.0, Math.min(cycleTimer, 13.0)),
+        Math.max(5.5, Math.min(cycleTimer, 10.0)),
         'noiseHunt',
         'Sprint echoes drew Specimen S-011 into the corridor ahead — head for Control Room 5B!',
         0.95
@@ -711,9 +715,9 @@ export function createControlScares(E, handlers) {
         if (ghost.ghostFaceLight) ghost.ghostFaceLight.intensity = 14.0;
         if (ghost.ghostGlow) ghost.ghostGlow.intensity = 4.0;
         ghost.root.rotation.y = Math.atan2(dx, dz);
-      } else if (dist > 1.32) {
+      } else if (dist > 1.05) {
         ghost.setAnim?.('SprintLunge', 1.05, 0.14);
-        const targetSpeed = playerInSafeRoom ? 1.05 : 1.42;
+        const targetSpeed = playerInSafeRoom ? 0.85 : 1.15;
         const inv = 1 / Math.max(0.001, dist);
         const dirX = dx * inv;
         const dirZ = dz * inv;
@@ -925,7 +929,7 @@ export function createControlScares(E, handlers) {
     if (!flashOutageState && E.flashlight) {
       flashOutageTimer -= dt;
       if (flashOutageTimer <= 0 && scareTime > 18 && userFlashOn) {
-        triggerFlashOutage(rnd(5.0, 7.0));
+        triggerFlashOutage(rnd(2.2, 3.2));
       }
     }
 
@@ -953,7 +957,7 @@ export function createControlScares(E, handlers) {
       } else {
         flashOutageState = null;
         E._flashOutageActive = false;
-        flashOutageTimer = rnd(42, 74);
+        flashOutageTimer = rnd(85, 130);
         prevFlashFlickered = false;
         A()?.relayClick?.(cx, cz);
         E.flashlight.intensity = flashBase;

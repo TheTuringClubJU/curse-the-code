@@ -6,14 +6,14 @@ import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment
 import * as X from './tex.js'
 import {TX,bgeo,mat,wm} from './kit.js'
 import {buildBedroom} from './scene.js'
+import {buildStudy} from './studyScene.js'
 import {createScares} from './scares.js'
 import {buildRecordsScene} from './sceneRecords.js'
 import {createRecordsScares} from './scaresRecords.js'
 import {buildControlScene} from './sceneControl.js'
 import {createControlScares} from './scaresControl.js'
-import {buildCabinScene} from './sceneCabin.js'
-import {createCabinScares} from './scaresCabin.js'
 import {setupControls} from './controls.js'
+import {buildBasement} from './basementScene.js'
 export {posterCanvas} from './tex.js'
 
 export function createEngine(el,room,h){
@@ -24,7 +24,7 @@ export function createEngine(el,room,h){
  const isLowSpecControl=room.id==='control'&&(hwCores<=4||devMem<=4)
  const R=new THREE.WebGLRenderer({antialias:room.id==='control'?!isLowSpecControl:true,stencil:false,powerPreference:'high-performance'});R.setPixelRatio(Math.min(devicePixelRatio,1.0));R.setSize(el.clientWidth,el.clientHeight);R.shadowMap.enabled=true;R.shadowMap.type=THREE.BasicShadowMap;R.shadowMap.autoUpdate=false;R.shadowMap.needsUpdate=true;
  R.toneMapping=THREE.ACESFilmicToneMapping;R.toneMappingExposure=1.6;el.appendChild(R.domElement)
- const S=new THREE.Scene();S.background=new THREE.Color(T.bg);S.fog=new THREE.FogExp2(T.bg, room.id === 'control' ? 0.035 : 0.045)
+ const S=new THREE.Scene();S.background=new THREE.Color(T.bg);S.fog=new THREE.FogExp2(T.bg,room.id==='control'?0.035:.045)
  const cam=new THREE.PerspectiveCamera(72,el.clientWidth/el.clientHeight,.05,80);cam.rotation.order='YXZ';S.add(cam)
  const solids=[],pick=[],byId={},visualById={},rigL=[],rigG=[],anims=[],sc={v:1},ref={}
  let pmremGen=null,pmremRT=null,gltfLoader=null,fbxLoader=null,halt=false;
@@ -101,7 +101,6 @@ export function createEngine(el,room,h){
   }),
   visualInteract:(target,id)=>{
    const list=Array.isArray(target)?target:[target];
-   // Scope cloned highlight materials per (id, baseMat) so shared atlas textures never highlight multiple props together
    const hlById = E._hlMatById || (E._hlMatById = new Map());
    let idCache = hlById.get(id);
    if (!idCache) {
@@ -128,9 +127,8 @@ export function createEngine(el,room,h){
     });
    });
   },
-  interact(obj,id){obj.traverse(o=>{if(o.isMesh){o.userData.id=id;delete o.userData.np;if(o.material){o.material=Array.isArray(o.material)?o.material.map(m=>m.clone()):o.material.clone()}}})},
+  interact(obj,id){obj.traverse(o=>{if(o.isMesh){o.userData.id=id;delete o.userData.np;if(room.id==='control'&&o.material){o.material=Array.isArray(o.material)?o.material.map(m=>m.clone()):o.material.clone()}}})},
   add(obj,o={}){obj.traverse(m=>{if(!m.isMesh)return;if(!m.userData.ns&&!o.noShadow){m.castShadow=true}m.receiveShadow=true;if(!m.userData.np){pick.push(m);if(m.userData.id)(byId[m.userData.id]??=[]).push(m)}});S.add(obj);return obj}}
-
  let lamp=null,LB=9,scares=null;
 
  if(room.id === 'records'){
@@ -149,7 +147,6 @@ export function createEngine(el,room,h){
    buildRecordsScene(E);
    scares = createRecordsScares(E, h);
  } else if (room.id === 'control') {
-   // Tactical First-Person Horror Flashlight (piercing high-contrast beam against very dim rooms)
    const flashL = new THREE.SpotLight(0xf3f7fa, 18.0, 32, Math.PI / 4.2, 0.55, 1.32);
    flashL.position.set(0.22, -0.16, 0.08);
    flashL.target.position.set(0, 0, -6);
@@ -161,7 +158,6 @@ export function createEngine(el,room,h){
    E._userFlashlightOn = true;
    E._flashOutageActive = false;
 
-   // Load real compressed tactical torch GLB into first-person view
    const flashGroup = new THREE.Group();
    flashGroup.position.set(0.24, -0.21, -0.32);
    flashGroup.rotation.set(0.05, -0.07, 0.02);
@@ -221,63 +217,15 @@ export function createEngine(el,room,h){
      console.warn('[ROOM5] Flashlight GLB load failed:', err);
    });
 
-   // Native 1.0 DPR & shadowMap disabled for Control Room gives instant mouse response while keeping spooky readable lighting
    R.shadowMap.enabled = false;
-   R.setPixelRatio(1);
-   R.toneMappingExposure = 1.24;
-   S.fog = new THREE.FogExp2(0x040606, 0.044);
-   const ambHemi = new THREE.HemisphereLight(0x4a5e52, 0x181c19, 0.68);
+   R.setPixelRatio(Math.min(devicePixelRatio || 1, 0.85));
+   R.toneMappingExposure = 1.28;
+   S.fog = new THREE.FogExp2(0x050808, 0.034);
+   const ambHemi = new THREE.HemisphereLight(0x5c7264, 0x1c221e, 0.86);
    S.add(ambHemi);
 
    buildControlScene(E, h);
    scares = createControlScares(E, h);
- } else if (room.id === 'bedroom') {
-   // Tactical First-Person Horror Flashlight (Leon's RE4 Village Cabin Flashlight)
-   const flashL = new THREE.SpotLight(0xfff4d6, 5.2, 22, Math.PI / 5.2, 0.42, 1.6);
-   flashL.position.set(0.20, -0.16, 0.12);
-   flashL.target.position.set(0, 0, -6);
-   cam.add(flashL);
-   cam.add(flashL.target);
-   E.flashlight = flashL;
-
-   // Physical 3D vintage flashlight model held in player's first-person hand
-   const flashGroup = new THREE.Group();
-   const bodyMat = new THREE.MeshStandardMaterial({ color: 0x221e1a, metalness: 0.85, roughness: 0.4 });
-   const gripMat = new THREE.MeshStandardMaterial({ color: 0x14100c, metalness: 0.7, roughness: 0.8 });
-   const bezelMat = new THREE.MeshStandardMaterial({ color: 0x483d32, metalness: 0.9, roughness: 0.3 });
-   const lensMat = new THREE.MeshStandardMaterial({ color: 0xffe8b0, emissive: new THREE.Color(0xffe8b0), emissiveIntensity: 0.9, roughness: 0.1 });
-
-   const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.025, 0.22, 16), bodyMat);
-   barrel.rotation.x = Math.PI / 2;
-   flashGroup.add(barrel);
-
-   for (let g = 0; g < 4; g++) {
-     const grip = new THREE.Mesh(new THREE.CylinderGeometry(0.026, 0.026, 0.018, 16), gripMat);
-     grip.rotation.x = Math.PI / 2;
-     grip.position.z = -0.04 + g * 0.028;
-     flashGroup.add(grip);
-   }
-
-   const headBezel = new THREE.Mesh(new THREE.CylinderGeometry(0.034, 0.025, 0.055, 16), bezelMat);
-   headBezel.rotation.x = Math.PI / 2;
-   headBezel.position.z = -0.11;
-   flashGroup.add(headBezel);
-
-   const lens = new THREE.Mesh(new THREE.CircleGeometry(0.03, 16), lensMat);
-   lens.position.z = -0.138;
-   flashGroup.add(lens);
-
-   flashGroup.position.set(0.24, -0.22, -0.36);
-   flashGroup.rotation.set(0.06, -0.10, 0.04);
-   cam.add(flashGroup);
-   E.flashlightModel = flashGroup;
-
-   // Cold moonlight & abandoned Spanish cabin ambient fill
-   const ambHemi = new THREE.HemisphereLight(0x283848, 0x080605, 0.8);
-   S.add(ambHemi);
-
-   buildCabinScene(E);
-   scares = createCabinScares(E, h);
  } else {
    // ---- shell: textured walls, floor, ceiling, trim ----
    const wp=X.tex(X.wallpaper()),wmat=new THREE.MeshStandardMaterial({map:wp,bumpMap:wp,bumpScale:.5,roughness:.92,color:0xffffff})
@@ -296,35 +244,54 @@ export function createEngine(el,room,h){
    const hemi=new THREE.HemisphereLight(0x6a72d8,0x2a1a4a,1.5);S.add(hemi)
    const moonL=new THREE.DirectionalLight(T.moon,2.2);moonL.position.set(-9,5,win?win.z:0);moonL.target.position.set(2,0,win?win.z:0);S.add(moonL.target);moonL.castShadow=true;moonL.shadow.mapSize.set(512,512);moonL.shadow.autoUpdate=false;moonL.shadow.needsUpdate=true;moonL.shadow.bias=-.0004;moonL.shadow.normalBias=.03;Object.assign(moonL.shadow.camera,{left:-8,right:8,top:8,bottom:-8,far:30});S.add(moonL);E.bakeShadows=()=>{moonL.shadow.needsUpdate=true;}
    lamp=new THREE.PointLight(T.lamp,room.lamp?9:0,10,2);if(room.lamp)lamp.position.set(...room.lamp.pos);lamp.castShadow=false;lamp.shadow.mapSize.set(256,256);lamp.shadow.bias=-.002;S.add(lamp);
-   if(room.haunted)buildBedroom(E);else{
+   if(room.id==='study'||room.builder==='study')buildStudy(E);else if(room.id==='basement')buildBasement(E);else if(room.haunted)buildBedroom(E);else{
     S.add(new THREE.PointLight(T.accent,3,10,2));(room.boxes||[]).forEach(b=>{const o=new THREE.Mesh(new THREE.BoxGeometry(...b.s),new THREE.MeshStandardMaterial({color:b.c,roughness:.9}));o.position.set(...b.p);S.add(o);if(b.solid){const[x,y,z]=b.p,[w,hh,d]=b.s;solids.push({x0:x-w/2,x1:x+w/2,z0:z-d/2,z1:z+d/2})}})}
    scares=room.haunted?createScares(E,h):null
  }
-
  if(debug)console.info('[ctc] scene built in',Math.round(performance.now()-tb0),'ms')
 
  // ---- SINGLE SOURCE OF TRUTH CONTROLS INITIALIZATION ----
  const ray=new THREE.Raycaster(),v0=new THREE.Vector2();
  const hl = (id, on) => {
-   const hlColor = room.id === 'records' ? 0xb37418 : (room.id === 'control' ? 0x3b3019 : (room.id === 'bedroom' ? 0xd4a040 : 0x4a3c9a));
-   const targets = [...(byId[id] || []), ...(visualById[id] || [])];
-   targets.forEach(m => {
-     const mats = Array.isArray(m.material) ? m.material : [m.material];
+   if (room.id === 'control') {
+     const targets = [...(byId[id] || []), ...(visualById[id] || [])];
+     targets.forEach(m => {
+       const mats = Array.isArray(m.material) ? m.material : [m.material];
+       mats.forEach(q => {
+         if (q && q.emissive && typeof q.emissive.setHex === 'function') {
+           if (on) {
+             if (q.userData._origEmissive === undefined) {
+               q.userData._origEmissive = q.emissive.getHex();
+               q.userData._origEmissiveInt = q.emissiveIntensity ?? 1;
+             }
+             q.emissive.setHex(0x3b3019);
+             q.emissiveIntensity = Math.max(q.userData._origEmissiveInt || 0.08, 0.16);
+           } else if (q.userData._origEmissive !== undefined) {
+             q.emissive.setHex(q.userData._origEmissive);
+             q.emissiveIntensity = q.userData._origEmissiveInt;
+           } else {
+             q.emissive.setHex(0);
+           }
+         }
+       });
+     });
+     return;
+   }
+   byId[id]?.forEach(m => {
+     if (!m.userData.__highlightOriginalMaterials) {
+       const original = Array.isArray(m.material) ? m.material.slice() : m.material;
+       m.userData.__highlightOriginalMaterials = original;
+       m.userData.__highlightMaterials = Array.isArray(original)
+         ? original.map(q => q?.clone?.() || q)
+         : original?.clone?.() || original;
+       m.material = m.userData.__highlightMaterials;
+     }
+     const mats = Array.isArray(m.userData.__highlightMaterials)
+       ? m.userData.__highlightMaterials
+       : [m.userData.__highlightMaterials];
      mats.forEach(q => {
        if (q && q.emissive && typeof q.emissive.setHex === 'function') {
-         if (on) {
-           if (q.userData._origEmissive === undefined) {
-             q.userData._origEmissive = q.emissive.getHex();
-             q.userData._origEmissiveInt = q.emissiveIntensity ?? 1;
-           }
-           q.emissive.setHex(hlColor);
-           if (room.id === 'control') q.emissiveIntensity = Math.max(q.userData._origEmissiveInt || 0.08, 0.16);
-         } else if (q.userData._origEmissive !== undefined) {
-           q.emissive.setHex(q.userData._origEmissive);
-           q.emissiveIntensity = q.userData._origEmissiveInt;
-         } else {
-           q.emissive.setHex(0);
-         }
+         q.emissive.setHex(on ? (room.id === 'basement' ? 0xff3030 : (room.id === 'records' ? 0xb37418 : 0x4a3c9a)) : 0);
        }
      });
    });
@@ -342,7 +309,8 @@ export function createEngine(el,room,h){
    getAudio: () => h.audio,
    getSolids: () => solids,
    roomSize: [W, H, D],
-   spawn: room.spawn
+   spawn: room.spawn,
+   controlMode: room.id === 'control'
  });
 
  Object.assign(E,{
@@ -354,11 +322,22 @@ export function createEngine(el,room,h){
    get paused() { return false; }
  });
 
+ const disposedTextures=new Set();
+ const disposeMaterial=(material)=>{
+  if(!material)return;
+  Object.values(material).forEach(value=>{
+   if(value?.isTexture&&!disposedTextures.has(value)){disposedTextures.add(value);value.dispose();}
+  });
+  material.dispose?.();
+ }
  const rs=()=>{R.setSize(el.clientWidth,el.clientHeight);cam.aspect=el.clientWidth/el.clientHeight;cam.updateProjectionMatrix()}
  window.addEventListener('resize',rs)
 
  const fr=new THREE.Frustum(),pm=new THREE.Matrix4(),hp=new THREE.Vector3(),lp=new THREE.Vector3()
  let last=performance.now(),raf,frameCount=0;const t0=last
+ const FPS_LIMIT = 60;
+ const FRAME_INTERVAL = 1000 / FPS_LIMIT;
+ let lastRenderTime = performance.now();
  let targetFov=72;
  const defaultEco = isLowSpecControl;
  let qualityMode = defaultEco ? 'eco' : 'high';
@@ -369,7 +348,7 @@ export function createEngine(el,room,h){
  const applyQualityMode = (mode) => {
    qualityMode = mode === 'eco' ? 'eco' : 'high';
    E._qualityMode = qualityMode;
-   R.setPixelRatio(qualityMode === 'eco' ? Math.min(devicePixelRatio || 1, 0.72) : Math.min(devicePixelRatio || 1, 1.0));
+   R.setPixelRatio(qualityMode === 'eco' ? Math.min(devicePixelRatio || 1, 0.65) : Math.min(devicePixelRatio || 1, 0.85));
    if (E._dustPoints) E._dustPoints.visible = qualityMode !== 'eco';
    E._onQualityModeChange?.(qualityMode);
    h.onQualityChange?.(qualityMode);
@@ -379,28 +358,39 @@ export function createEngine(el,room,h){
  E.setTargetFov = (fov) => { targetFov = Math.max(42, Math.min(88, Number(fov) || 72)); };
  let slowFrames = 0;
  let autoSwitchedEco = false;
+ let lastPausedRender = 0;
 
  const loop = now => {
    if (halt) return;
    raf = requestAnimationFrame(loop);
-   const elapsed = now - last;
-   last = now;
-   const dt = Math.min(0.05, Math.max(0.001, elapsed / 1000));
-   frameCount++;
-   const t = (now - t0) / 1000;
-
-   // Automatic potato-PC safeguard in Room 5: drop to Eco if sustained < 30fps
-   if (room.id === 'control' && !autoSwitchedEco && qualityMode === 'high' && t > 3.5) {
-     if (elapsed > 33 && elapsed < 150) {
-       slowFrames++;
-       if (slowFrames >= 45) {
-         autoSwitchedEco = true;
-         applyQualityMode('eco');
+   let dt;
+   if (room.id === 'control') {
+     if (E._paused && now - lastPausedRender < 80) return;
+     if (E._paused) lastPausedRender = now;
+     const elapsed = now - last;
+     last = now;
+     dt = Math.min(0.05, Math.max(0.001, elapsed / 1000));
+     frameCount++;
+     const t = (now - t0) / 1000;
+     if (!E._paused && !autoSwitchedEco && qualityMode === 'high' && t > 3.5) {
+       if (elapsed > 33 && elapsed < 150) {
+         slowFrames++;
+         if (slowFrames >= 45) {
+           autoSwitchedEco = true;
+           applyQualityMode('eco');
+         }
+       } else if (elapsed < 25) {
+         slowFrames = Math.max(0, slowFrames - 1);
        }
-     } else if (elapsed < 25) {
-       slowFrames = Math.max(0, slowFrames - 1);
      }
+   } else {
+     const elapsed = now - lastRenderTime;
+     if (elapsed < FRAME_INTERVAL) return;
+     lastRenderTime = now - (elapsed % FRAME_INTERVAL);
+     dt = Math.min(0.05, elapsed / 1000);
+     frameCount++;
    }
+   const t = (now - t0) / 1000;
 
    // 1. Single-source Controls Update (WASD & Mouse Look)
    const ctrl = controls.update(dt);
@@ -411,12 +401,14 @@ export function createEngine(el,room,h){
    const walk = ctrl.walk;
    const mv = ctrl.isMoving ? 1 : 0;
 
-   // 2. Aim Raycast check: every 2 frames (~30Hz) on small proxy set, scoped reach in dense bunker
-   if (frameCount % 2 === 0) {
-     const ndc = controls.getPointerNDC ? controls.getPointerNDC() : { x: 0, y: 0 };
-     v0.set(ndc.x, ndc.y);
-     ray.setFromCamera(v0, cam);
-     ray.far = room.id === 'control' ? 3.5 : 5.5;
+   // 2. Aim Raycast check (skip when paused/modal open in control room)
+   if (frameCount % 2 === 0 && !(room.id === 'control' && E._paused)) {
+     if (room.id === 'control' && controls.getPointerNDC) {
+       const ndc = controls.getPointerNDC();
+       v0.set(ndc.x, ndc.y);
+     }
+     ray.setFromCamera(v0,cam);
+     ray.far = room.id === 'control' ? 4.2 : 5.5;
      const hits = ray.intersectObjects(pick, false);
      const hitMesh = hits.find(it => it.object?.userData?.id);
      const id = hitMesh?.object?.userData?.id || null;
@@ -433,19 +425,20 @@ export function createEngine(el,room,h){
      }
    }
 
-   scares?.tick(dt,t);
+   if (!(room.id === 'control' && E._paused)) {
+     scares?.tick(dt,t);
+   }
    h.audio?.listen?.(px,pz,yaw);
 
    let sx=0,sy=0;
    if(shakeT>0&&!reduce){shakeT-=dt;const k=shakeA*Math.max(0,shakeT)*3;sx=(Math.random()-.5)*k*.05;sy=(Math.random()-.5)*k*.05}
    cam.position.set(px+sx, 1.6 + (mv && !reduce ? Math.sin(walk)*.022 : 0) + Math.sin(t*.9)*.004 + sy, pz);
    cam.rotation.set(pitch, yaw, 0);
-   if (Math.abs(cam.fov - targetFov) > 0.08) {
+   if (room.id === 'control' && Math.abs(cam.fov - targetFov) > 0.08) {
      cam.fov += (targetFov - cam.fov) * Math.min(1, dt * 15);
      cam.updateProjectionMatrix();
    }
-
-   if(E.flashlightModel && !reduce){
+   if (room.id === 'control' && E.flashlightModel && !reduce) {
      const swayAmt = mv ? 0.012 : 0.002;
      const spd = mv ? 8 : 1.5;
      E.flashlightModel.position.y = -0.22 + Math.sin(t * spd) * swayAmt;
@@ -469,7 +462,10 @@ export function createEngine(el,room,h){
  raf=requestAnimationFrame(loop)
 
  const api={
-  setPaused(p){ if (room.id === 'control') controls.setPaused?.(Boolean(p)); },
+  setPaused(p){
+    E._paused = Boolean(p);
+    if (room.id === 'control') controls.setPaused?.(Boolean(p));
+  },
   setSensitivity(s){ controls.setSensitivity?.(s); },
   lock(){ controls.requestLock(); },
   unlock(){ controls.unlock(); },
@@ -488,21 +484,27 @@ export function createEngine(el,room,h){
   openDoor(){ 
     if(ref.bulkheadDoor) ref.bulkheadDoor.isOpen = true; 
     if(ref.roomDoor) ref.roomDoor.isOpen = true; 
+    if(ref.studyExitDoor) ref.studyExitDoor.isOpen = true;
   },
   closeDoor(){ 
     if(ref.bulkheadDoor) ref.bulkheadDoor.isOpen = false; 
     if(ref.roomDoor) ref.roomDoor.isOpen = false; 
+    if(ref.studyExitDoor) ref.studyExitDoor.isOpen = false;
   },
-  isDoorOpen(){ return !!(ref.bulkheadDoor?.isOpen || ref.roomDoor?.isOpen); },
+  isDoorOpen(){ return !!(ref.bulkheadDoor?.isOpen || ref.roomDoor?.isOpen || ref.studyExitDoor?.isOpen); },
   setFlashlight(on){
-    E._userFlashlightOn = Boolean(on);
-    if (E._flashOutageActive) {
-      if (E.flashlight) E.flashlight.intensity = 0;
-      if (E._flashLensMat) E._flashLensMat.emissiveIntensity = 0;
+    if (room.id === 'control') {
+      E._userFlashlightOn = Boolean(on);
+      if (E._flashOutageActive) {
+        if (E.flashlight) E.flashlight.intensity = 0;
+        if (E._flashLensMat) E._flashLensMat.emissiveIntensity = 0;
+        return;
+      }
+      if(E.flashlight) E.flashlight.intensity = on ? (E._flashBaseIntensity || 9.0) : 0;
+      if(E._flashLensMat) E._flashLensMat.emissiveIntensity = on ? 1.8 : 0;
       return;
     }
-    if(E.flashlight) E.flashlight.intensity = on ? (E._flashBaseIntensity || 9.0) : 0;
-    if(E._flashLensMat) E._flashLensMat.emissiveIntensity = on ? 1.8 : 0;
+    if(E.flashlight) E.flashlight.intensity = on ? 4.2 : 0;
   },
   isFlashlightOn(){ return !!(E.flashlight && E.flashlight.intensity > 0); },
   halt(){ halt=true; cancelAnimationFrame(raf); },
@@ -510,14 +512,14 @@ export function createEngine(el,room,h){
   step(n,ms=50){ api._skip=true; for(let i=0;i<n;i++){ last=performance.now()-ms; loop(performance.now()); } api._skip=false; last=performance.now()-16; loop(performance.now()); },
   triggerScare:n=>scares?.trigger(n),
   scares,
+  setCountdown(text){ ref.wallMonitor?.setText?.(text); },
   _controlBuilt: room.id === 'control',
   toggleControlDoor: () => E.toggleControlDoor?.(),
   toggleWingDoor: (id) => E.toggleWingDoor?.(id),
   toggleBreakerLight: () => E.toggleBreakerLight?.(),
   rattleDoor: (id) => E.rattleDoor?.(id),
   setFragmentCleared: (id) => E.setFragmentCleared?.(id),
-  spawnDroppedEvidence: (rec) => E.spawnDroppedEvidence?.(rec),
-  clearDroppedEvidence: (id) => E.clearDroppedEvidence?.(id),
+  setFragmentGuidance: (nextId, pendingIds, clearedIds) => E.setFragmentGuidance?.(nextId, pendingIds, clearedIds),
   setQualityMode: (m) => E.setQualityMode?.(m),
   getQualityMode: () => E._qualityMode || 'high',
   get dev() { return E._dev || null; },
@@ -528,17 +530,25 @@ export function createEngine(el,room,h){
     scares?.dispose?.();
     controls.dispose();
     window.removeEventListener('resize',rs);
-    disposeObjectResources(S);
-    E._hlMatById = null;
-    gltfLoader = null;
-    fbxLoader = null;
-    rigL.length = 0;
-    rigG.length = 0;
-    anims.length = 0;
-    pick.length = 0;
-    solids.length = 0;
-    pmremRT?.dispose?.();
-    pmremGen?.dispose?.();
+    if (room.id === 'control') {
+      disposeObjectResources(S);
+      E._hlMatById = null;
+      gltfLoader = null;
+      fbxLoader = null;
+      rigL.length = 0;
+      rigG.length = 0;
+      anims.length = 0;
+      pick.length = 0;
+      solids.length = 0;
+      pmremRT?.dispose?.();
+      pmremGen?.dispose?.();
+    } else {
+      S.traverse(o=>{
+        o.geometry?.dispose();
+        if (Array.isArray(o.material)) o.material.forEach(disposeMaterial);
+        else disposeMaterial(o.material);
+      });
+    }
     R.dispose();
     R.domElement.remove();
   }

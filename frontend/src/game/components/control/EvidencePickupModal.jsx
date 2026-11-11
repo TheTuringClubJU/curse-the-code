@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { FileText, Lock, Unlock } from 'lucide-react';
-import { ROOM5_EVIDENCE_RICH_META, enrichRoom5EvidenceItem } from '../../engine/simulationControl';
+import { FileText, Lock, ShieldCheck } from 'lucide-react';
 import {
   copyDocumentText,
   createDocumentPreviewSvg,
@@ -12,7 +11,6 @@ import {
 export default function EvidencePickupModal({
   modalData,
   onClose,
-  onUnlockPreview,
 }) {
   const [copied, setCopied] = useState(false);
   const [downloaded, setDownloaded] = useState(false);
@@ -36,16 +34,16 @@ export default function EvidencePickupModal({
 
   if (!modalData) return null;
 
-  // Mode 1: Pinned Green Engineering Sheet + Ruled Index Card on Wooden Desk (Image 5 exact inspo!)
   if (modalData.type === 'evidence') {
-    const ev = enrichRoom5EvidenceItem(modalData.evidence || {});
+    const ev = modalData.evidence || {};
     const disp = ev.display || {};
-    const rich = ROOM5_EVIDENCE_RICH_META[ev.id] || null;
-    const fallbackSvg = createDocumentPreviewSvg(ev, rich);
-    const imgSrc = disp.image_file || fallbackSvg;
-    const isDecoy = Boolean(ev.is_decoy || (ev.id && ev.id.startsWith('XC')));
-    const reportLines = rich?.reportLines || ev.reportLines || [];
-    const highlightNote = rich?.highlight || ev.highlight || ev.secret?.note;
+    const totalCount = modalData.totalCount ?? 10;
+    const isWrapped = Boolean(ev.is_wrapped);
+    const fallbackSvg = isWrapped ? '/parcel_wrapped.png' : createDocumentPreviewSvg(ev, null);
+    const imgSrc = isWrapped ? '/parcel_wrapped.png' : (disp.image_file || fallbackSvg);
+    const isDecoy = !isWrapped && Boolean(ev.is_decoy || (ev.id && ev.id.startsWith('XC')));
+    const reportLines = Array.isArray(ev.reportLines) ? ev.reportLines : [];
+    const highlightNote = ev.highlight || ev.secret?.note || '';
 
     return (
       <div
@@ -56,209 +54,273 @@ export default function EvidencePickupModal({
           className="relative w-full max-w-4xl flex flex-col items-center gap-6 py-4"
           onMouseDown={(e) => e.stopPropagation()}
         >
-          {/* Main Desk Spread: Taped Left Envelope/Photo + Center-Right Green Grid Document + Pinned Index Card */}
-          <div className="relative w-full grid grid-cols-1 md:grid-cols-12 gap-5 items-start">
-            {/* Left: Taped Manila Sleeve & Polaroid Scan (Images 3 & 5) */}
-            <div className="md:col-span-4 relative manila-dossier rounded-sm p-3.5 -rotate-1">
-              <div className="masking-tape absolute -top-2.5 left-1/2 -translate-x-1/2 w-20 h-5 rotate-1" />
-              <div className="flex items-center justify-between text-[10px] font-re-typewriter text-[#4b3822] mb-2">
-                <span>REF // {disp.corner_mark || ev.id}</span>
-                <span className="re-stamp-badge">{isDecoy ? 'DISCARD' : 'EVIDENCE'}</span>
-              </div>
-              <div className="bg-[#f4f1ea] p-2 shadow-inner border border-black/10 flex items-center justify-center min-h-[175px]">
-                {imgSrc ? (
+          {isWrapped ? (
+            /* Clear, tactile Tamper-Sealed Evidence Acquisition Spread */
+            <div className="relative w-full max-w-2xl grid grid-cols-1 sm:grid-cols-12 gap-5 items-stretch">
+              <div className="sm:col-span-5 relative manila-dossier rounded-sm p-4 -rotate-1 flex flex-col justify-between">
+                <div className="masking-tape absolute -top-2.5 left-1/2 -translate-x-1/2 w-20 h-5 rotate-1" />
+                <div className="flex items-center justify-between text-[10px] font-re-typewriter text-[#4b3822] mb-2">
+                  <span>SPECIMEN #{modalData.collectedCount}</span>
+                  <span className="re-stamp-badge">LOGGED</span>
+                </div>
+                <div className="bg-[#161311] p-4 border border-black/25 flex items-center justify-center min-h-[155px]">
                   <img
-                    src={imgSrc}
-                    alt={disp.title || ev.id}
-                    className="max-h-44 max-w-full object-contain"
-                    onError={(e) => {
-                      e.currentTarget.onerror = null;
-                      e.currentTarget.src = fallbackSvg;
-                    }}
+                    src="/parcel_wrapped.png"
+                    alt="Sealed Evidence Fragment"
+                    className="max-h-28 max-w-full object-contain drop-shadow-[0_4px_12px_rgba(0,0,0,0.85)]"
                   />
-                ) : (
-                  <FileText className="w-10 h-10 text-[#6e5e44]" />
+                </div>
+                <div className="mt-2.5 font-re-typewriter text-[11px] font-bold text-[#3a2a18] flex justify-between">
+                  <span>Basket: {modalData.collectedCount} / {totalCount}</span>
+                  <span>SEAL ACTIVE</span>
+                </div>
+              </div>
+
+              <div className="sm:col-span-7 relative re-dossier-paper p-6 rounded-sm rotate-[0.4deg] flex flex-col justify-between">
+                <div className="masking-tape absolute -top-3 left-1/2 -translate-x-1/2 w-24 h-5 -rotate-1" />
+                <div>
+                  <div className="flex items-center gap-2 font-re-typewriter text-[10px] tracking-[0.18em] uppercase text-[#166534] font-bold mb-1">
+                    <ShieldCheck className="w-4 h-4" />
+                    <span>EVIDENCE RECOVERED // PLACED IN BASKET [B]</span>
+                  </div>
+                  <h3 className="font-re-typewriter text-xl font-bold text-[#142018] mb-2 leading-snug">
+                    Tamper-Sealed Evidence #{modalData.collectedCount}
+                  </h3>
+                  {modalData.sourceName && (
+                    <div className="font-re-typewriter text-[11px] text-[#5c4832] mb-2">
+                      Recovered from: <strong>{modalData.sourceName}</strong>
+                    </div>
+                  )}
+                  <p className="font-re-typewriter text-xs text-[#241b13] leading-relaxed border-l-2 border-[#7c1d1d]/60 pl-3 my-3">
+                    Stored safely inside your Evidence Basket [B] ({modalData.collectedCount} of {totalCount} collected).
+                    Recover all {totalCount} fragments across the bunker wings to break the wax seal and decode the Clue Terminals.
+                  </p>
+                </div>
+
+                {modalData.remainingHere > 0 && (
+                  <div className="ruled-index-card px-3.5 py-2 rounded-sm font-re-typewriter text-[11px] font-bold text-[#7c1d1d]">
+                    Note: Another hidden compartment inside this fixture remains unsearched.
+                  </div>
                 )}
               </div>
-              <div className="mt-2.5 font-re-typewriter text-[11px] text-[#3a2a18] flex justify-between">
-                <span>{modalData.collectedCount}/8 Logged</span>
-                <span>{(rich?.location || ev.location) ? (rich?.location || ev.location).split('·')[0].trim() : 'Sector 5'}</span>
-              </div>
-              {modalData.remainingHere > 0 && (
-                <div className="mt-1.5 font-re-typewriter text-[10px] text-[#7c1d1d]">
-                  * Another slip remains tucked inside.
+            </div>
+          ) : (
+            /* Unsealed Evidence Inspection Spread */
+            <div className="relative w-full grid grid-cols-1 md:grid-cols-12 gap-5 items-start">
+              <div className="md:col-span-4 relative manila-dossier rounded-sm p-3.5 -rotate-1">
+                <div className="masking-tape absolute -top-2.5 left-1/2 -translate-x-1/2 w-20 h-5 rotate-1" />
+                <div className="flex items-center justify-between text-[10px] font-re-typewriter text-[#4b3822] mb-2">
+                  <span>REF // {disp.corner_mark || ev.id}</span>
+                  <span className="re-stamp-badge">{isDecoy ? 'DISCARD' : 'EVIDENCE'}</span>
                 </div>
+                <div className="bg-[#f4f1ea] p-2 shadow-inner border border-black/10 flex items-center justify-center min-h-[175px]">
+                  {imgSrc ? (
+                    <img
+                      src={imgSrc}
+                      alt={disp.title || ev.id}
+                      className="max-h-44 max-w-full object-contain"
+                      onError={(e) => {
+                        e.currentTarget.onerror = null;
+                        e.currentTarget.src = fallbackSvg;
+                      }}
+                    />
+                  ) : (
+                    <FileText className="w-10 h-10 text-[#6e5e44]" />
+                  )}
+                </div>
+                <div className="mt-2.5 font-re-typewriter text-[11px] text-[#3a2a18] flex justify-between">
+                  <span>{modalData.collectedCount}/{totalCount} Logged</span>
+                  <span>{ev.location ? ev.location.split('·')[0].trim() : 'Room 5'}</span>
+                </div>
+                {modalData.remainingHere > 0 && (
+                  <div className="mt-2 px-2.5 py-1.5 rounded bg-[#7c1d1d]/15 border border-[#7c1d1d]/50 font-re-typewriter text-[10.5px] font-bold text-[#7c1d1d]">
+                    * Another compartment remains inside this fixture.
+                  </div>
+                )}
+              </div>
+
+              <div className="md:col-span-8 relative green-grid-sheet p-6 sm:p-7 rounded-sm rotate-[0.4deg]">
+                <div className="masking-tape absolute -top-3 left-1/2 -translate-x-1/2 w-24 h-6 -rotate-1" />
+                <div className="masking-tape hidden sm:block absolute top-14 -right-4 w-12 h-5 rotate-90" />
+
+                <div className="font-re-typewriter text-[11px] tracking-widest uppercase text-[#2d4f38] mb-1">
+                  {ev.classification || 'RECOVERED FRAGMENT'} // {ev.id}
+                </div>
+                <h3 className="font-re-typewriter text-xl sm:text-2xl font-bold text-[#142018] mb-3 leading-snug">
+                  {disp.title || modalData.title}
+                </h3>
+
+                {Array.isArray(disp.lines) && disp.lines.length > 0 && (
+                  <div className="border-l-2 border-[#23452e]/60 pl-3 mb-3 space-y-1 font-re-typewriter text-xs text-[#101c14]">
+                    {disp.lines.map((line, i) => (
+                      <div key={i} className={i === 0 ? 'font-bold' : ''}>{line}</div>
+                    ))}
+                  </div>
+                )}
+
+                {reportLines.length > 0 && (
+                  <div className="space-y-2 font-re-typewriter text-xs leading-relaxed text-[#18291e] pr-2">
+                    {reportLines.map((p, idx) => (
+                      <p key={idx} className="m-0">{p}</p>
+                    ))}
+                  </div>
+                )}
+
+                {highlightNote && (
+                  <div className="mt-5 md:ml-auto md:max-w-md ruled-index-card px-5 pt-6 pb-4 rounded-sm rotate-[1.4deg]">
+                    <div className="push-pin absolute top-2 left-1/2 -translate-x-1/2" />
+                    <div className="font-re-typewriter text-xs leading-relaxed text-[#241b13] font-bold">
+                      {highlightNote}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Desk actions */}
+          <div className="flex flex-wrap items-center justify-between gap-2.5 w-full max-w-2xl">
+            <div className="flex flex-wrap items-center gap-2">
+              {!isWrapped && (
+                <>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      const raw = formatDocumentText(ev, null);
+                      await copyDocumentText(raw);
+                      setCopied(true);
+                      setTimeout(() => setCopied(false), 1800);
+                    }}
+                    className="re-btn"
+                  >
+                    <span className="re-btn-circle">{copied ? '✓' : '⎘'}</span>
+                    <span>{copied ? 'Copied' : 'Copy Content'}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const raw = formatDocumentText(ev, null);
+                      downloadDocumentFile(sanitizeExportFilename(ev.id, disp.title || modalData.title), raw);
+                      setDownloaded(true);
+                      setTimeout(() => setDownloaded(false), 1800);
+                    }}
+                    className="re-btn"
+                  >
+                    <span className="re-btn-circle">{downloaded ? '✓' : '⬇'}</span>
+                    <span>{downloaded ? 'Downloaded' : 'Download File'}</span>
+                  </button>
+                </>
               )}
             </div>
+            <button type="button" onClick={onClose} className="re-btn">
+              <span className="re-btn-circle">ESC</span>
+              <span>Continue</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
-            {/* Right: Masking-Taped Green Graph Sheet (e7dfa4a4.png inspo!) */}
-            <div className="md:col-span-8 relative green-grid-sheet p-6 sm:p-7 rounded-sm rotate-[0.4deg]">
-              {/* Realistic masking tape tabs at top & sides */}
-              <div className="masking-tape absolute -top-3 left-1/2 -translate-x-1/2 w-24 h-6 -rotate-1" />
-              <div className="masking-tape hidden sm:block absolute top-14 -right-4 w-12 h-5 rotate-90" />
-
-              <div className="font-re-typewriter text-[11px] tracking-widest uppercase text-[#2d4f38] mb-1">
-                {rich?.classification || ev.classification || 'FIELD ARCHIVE'} // {ev.id}
+  // Mode 2: Non-Spoiler Terminal Lockout OR Out-of-Sequence Prop Feedback
+  if (modalData.type === 'locked_terminal' || modalData.type === 'sequence_locked') {
+    const totalRequired = modalData.totalCount ?? 10;
+    const isSeqLock = modalData.type === 'sequence_locked';
+    const lockedSummary = {
+      id: modalData.terminalName || modalData.propName || 'TERMINAL_LEADS',
+      title: isSeqLock
+        ? `COMPARTMENT SEALED — ${modalData.propName || 'FIXTURE'}`
+        : `TERMINAL ACCESS LOCKED — ${modalData.terminalName}`,
+      classification: 'INVESTIGATION STATUS // ROOM 5',
+      lines: [
+        isSeqLock
+          ? `${modalData.propName || 'This compartment'} is locked out of sequence (${modalData.collectedCount}/${totalRequired} recovered).`
+          : `${modalData.terminalName} requires all ${totalRequired} fragments in this room (${modalData.collectedCount}/${totalRequired} recovered).`,
+        'Explore the bunker wings thoroughly (Bay 5B, Anteroom 5A, Annex 5C, Observation 5D, Cryo 5E, Relay Vault 5F) to recover every fragment in sequence.',
+      ],
+    };
+    return (
+      <div
+        className="desk-surface"
+        onMouseDown={(e) => e.target === e.currentTarget && onClose()}
+      >
+        <div
+          className="relative w-full max-w-lg flex flex-col gap-4 py-2"
+          onMouseDown={(e) => e.stopPropagation()}
+        >
+          <div className="re-dossier-paper p-5 sm:p-6 rounded-sm relative">
+            <div className="masking-tape absolute -top-2.5 left-1/2 -translate-x-1/2 w-24 h-5" />
+            <div className="flex items-center justify-between border-b border-black/20 pb-2.5 mb-3">
+              <div className="flex items-center gap-2">
+                <Lock className="w-4 h-4 text-[#7c1d1d]" />
+                <span className="font-re-display text-xs sm:text-sm font-bold tracking-widest text-[#1c150f] uppercase">
+                  {isSeqLock ? 'Compartment Sealed' : 'Terminal Restricted'}
+                </span>
               </div>
-              <h3 className="font-re-typewriter text-xl sm:text-2xl font-bold text-[#142018] mb-3 leading-snug">
-                {disp.title || modalData.title}
-              </h3>
+              <span className="re-stamp-badge">
+                {modalData.collectedCount}/{totalRequired} COLLECTED
+              </span>
+            </div>
 
-              {Array.isArray(disp.lines) && disp.lines.length > 0 && (
-                <div className="border-l-2 border-[#23452e]/60 pl-3 mb-3 space-y-1 font-re-typewriter text-xs text-[#101c14]">
-                  {disp.lines.map((line, i) => (
-                    <div key={i} className={i === 0 ? 'font-bold' : ''}>{line}</div>
-                  ))}
-                </div>
-              )}
+            <div className="space-y-3 text-xs font-re-typewriter text-[#241b13]">
+              <p className="leading-relaxed m-0">
+                {isSeqLock ? (
+                  <>
+                    <strong>{modalData.propName || 'This fixture'}</strong> refuses to unlatch yet — another compartment earlier in the investigation sequence must be recovered first ({modalData.collectedCount}/{totalRequired} recovered).
+                  </>
+                ) : (
+                  <>
+                    {modalData.terminalName} requires all {totalRequired} fragments in this room ({modalData.collectedCount}/{totalRequired} recovered).
+                  </>
+                )}
+              </p>
 
-              {reportLines.length > 0 && (
-                <div className="space-y-2 font-re-typewriter text-xs leading-relaxed text-[#18291e] pr-2">
-                  {reportLines.map((p, idx) => (
-                    <p key={idx} className="m-0">{p}</p>
-                  ))}
+              <div className="ruled-index-card px-4 pt-5 pb-3.5 rounded-sm space-y-1.5 text-[11px] relative">
+                <div className="push-pin absolute top-2 left-1/2 -translate-x-1/2" />
+                <div className="font-bold text-[#7c1d1d]">Active Search Locations:</div>
+                <div className="leading-relaxed text-[#241b13]">
+                  Inspect racks, tape equipment, seating, pinboards, electrical cabinets, and floor conduits across the connected Sector 5 rooms (`5B`, `5A`, `5C`, `5D`, `5E`, `5F`). Remember: some fixtures conceal multiple pieces.
                 </div>
-              )}
-
-              {/* Overlapping Push-Pinned Cream Ruled Index Card for Key Clue Lead (Image 5!) */}
-              {highlightNote && (
-                <div className="mt-5 md:ml-auto md:max-w-md ruled-index-card px-5 pt-6 pb-4 rounded-sm rotate-[1.4deg]">
-                  <div className="push-pin absolute top-2 left-1/2 -translate-x-1/2" />
-                  <div className="font-re-typewriter text-xs leading-relaxed text-[#241b13] font-bold">
-                    {highlightNote}
-                  </div>
-                </div>
-              )}
+              </div>
             </div>
           </div>
 
-          {/* RE2R desk actions: AI Copy / Download pills + Close */}
-          <div className="flex flex-wrap items-center justify-between gap-2.5 w-full">
-            <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap gap-2 justify-between items-center">
+            <div className="flex flex-wrap gap-2">
               <button
                 type="button"
                 onClick={async () => {
-                  const raw = formatDocumentText(ev, rich);
-                  await copyDocumentText(raw);
+                  await copyDocumentText(formatDocumentText(lockedSummary));
                   setCopied(true);
                   setTimeout(() => setCopied(false), 1800);
                 }}
                 className="re-btn"
               >
                 <span className="re-btn-circle">{copied ? '✓' : '⎘'}</span>
-                <span>{copied ? 'Copied' : 'Copy Content'}</span>
+                <span>{copied ? 'Copied' : 'Copy Leads'}</span>
               </button>
               <button
                 type="button"
                 onClick={() => {
-                  const raw = formatDocumentText(ev, rich);
-                  downloadDocumentFile(sanitizeExportFilename(ev.id, disp.title || modalData.title), raw);
+                  downloadDocumentFile('delta_investigation_leads.txt', formatDocumentText(lockedSummary));
                   setDownloaded(true);
                   setTimeout(() => setDownloaded(false), 1800);
                 }}
                 className="re-btn"
               >
                 <span className="re-btn-circle">{downloaded ? '✓' : '⬇'}</span>
-                <span>{downloaded ? 'Downloaded' : 'Download File'}</span>
+                <span>{downloaded ? 'Downloaded' : 'Download Leads'}</span>
               </button>
             </div>
-            <button type="button" onClick={onClose} className="re-btn">
-              <span className="re-btn-circle">ESC</span>
-              <span>Put Down</span>
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Mode 2: Multi-Room Progression Lockout Popup
-  if (modalData.type === 'locked_terminal') {
-    const lockedSummary = {
-      id: modalData.terminalName || 'TERMINAL_LEADS',
-      title: `TERMINAL ACCESS LOCKED — ${modalData.terminalName}`,
-      classification: 'INVESTIGATION LEADS // SECTOR 5',
-      lines: [
-        `${modalData.terminalName} requires all 8 evidence records across the bunker (${modalData.collectedCount}/8 recovered).`,
-        'Control Bay (5B): Chair, Wall Clipboard, Fuse Box, Relay Shelf',
-        'Locker Annex (5C): Akai Reel-to-Reel Tape Deck',
-        'Observation Wing (5D): Exposed Loop 7-C Floor Conduit outside Chamber 3',
-        'Relay Vault (5F): Auxiliary Generator Steel Relay Rack',
-      ],
-    };
-    return (
-      <div
-        className="modal-overlay"
-        onMouseDown={(e) => e.target === e.currentTarget && onClose()}
-      >
-        <div
-          className="modal-panel"
-          style={{ width: '94vw', maxWidth: 500, display: 'flex', flexDirection: 'column', gap: 14 }}
-        >
-          <div className="flex items-center justify-between border-b border-white/10 pb-3">
-            <div className="flex items-center gap-2">
-              <Lock className="w-4 h-4 text-[#d4c8ae]" />
-              <span className="font-re-display text-xs font-bold tracking-widest text-[#eceae4] uppercase">
-                Terminal Restricted
-              </span>
-            </div>
-            <button type="button" onClick={onClose} className="re-btn" aria-label="Close">
-              <span className="re-btn-circle">ESC</span>
-              <span>Close</span>
-            </button>
-          </div>
-
-          <div className="space-y-3.5 text-xs font-re-typewriter">
-            <p className="text-[#d4cfc4] leading-relaxed m-0">
-              {modalData.terminalName} requires all 8 evidence records across the bunker ({modalData.collectedCount}/8 recovered).
-            </p>
-            <div className="ruled-index-card p-3.5 space-y-1.5 text-[11px]">
-              <div className="font-bold text-[#7c1d1d] mb-1">Active Investigation Leads:</div>
-              <div>Control Bay (5B): Chair, Wall Clipboard, Fuse Box, Relay Shelf</div>
-              <div>Locker Annex (5C): Akai Reel-to-Reel Tape Deck</div>
-              <div>Observation Wing (5D): Exposed Loop 7-C Floor Conduit outside Chamber 3</div>
-              <div>Relay Vault (5F): Auxiliary Generator Steel Relay Rack</div>
-            </div>
-
-            <div className="flex flex-wrap gap-2 pt-1 justify-between items-center">
-              <div className="flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={async () => {
-                    await copyDocumentText(formatDocumentText(lockedSummary));
-                    setCopied(true);
-                    setTimeout(() => setCopied(false), 1800);
-                  }}
-                  className="re-btn"
-                >
-                  <span className="re-btn-circle">{copied ? '✓' : '⎘'}</span>
-                  <span>{copied ? 'Copied' : 'Copy Leads'}</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    downloadDocumentFile('delta_investigation_leads.txt', formatDocumentText(lockedSummary));
-                    setDownloaded(true);
-                    setTimeout(() => setDownloaded(false), 1800);
-                  }}
-                  className="re-btn"
-                >
-                  <span className="re-btn-circle">{downloaded ? '✓' : '⬇'}</span>
-                  <span>{downloaded ? 'Downloaded' : 'Download Leads'}</span>
-                </button>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {onUnlockPreview && (
-                  <button type="button" onClick={onUnlockPreview} className="re-btn">
-                    <span className="re-btn-circle"><Unlock className="w-3 h-3" /></span>
-                    <span>Unlock Consoles (Preview)</span>
-                  </button>
-                )}
-                <button type="button" onClick={onClose} className="re-btn">
-                  <span className="re-btn-circle">E</span>
-                  <span>Continue Search</span>
-                </button>
-              </div>
+            <div className="flex flex-wrap gap-2">
+              <button type="button" onClick={onClose} className="re-btn">
+                <span className="re-btn-circle">E</span>
+                <span>Continue Search</span>
+              </button>
+              <button type="button" onClick={onClose} className="re-btn" aria-label="Close">
+                <span className="re-btn-circle">ESC</span>
+                <span>Close</span>
+              </button>
             </div>
           </div>
         </div>
@@ -266,8 +328,8 @@ export default function EvidencePickupModal({
     );
   }
 
-  // Mode 3: Interactive World Case File / Field Inspection (Unified Full Forensic Sheet)
-  const doc = enrichRoom5EvidenceItem({ ...modalData, kind: modalData.kind || 'world_doc' });
+  // Mode 3: Interactive World Record / Ambient Prop Inspection
+  const doc = modalData || {};
   const docDisp = doc.display || {};
   const docLines = docDisp.lines?.length ? docDisp.lines : (doc.body ? [doc.body] : []);
   const docReportLines = Array.isArray(doc.reportLines) ? doc.reportLines : [];
@@ -298,7 +360,9 @@ export default function EvidencePickupModal({
                 {docDisp.title || doc.title || 'CASE RECORD'}
               </h3>
             </div>
-            <span className="re-stamp-badge shrink-0">FILED IN [B]</span>
+            <span className="re-stamp-badge shrink-0">
+              {doc.kind === 'ambient_note' ? 'AMBIENT PROP' : 'FILED IN [B]'}
+            </span>
           </div>
 
           {docLines.length > 0 && (
@@ -360,7 +424,7 @@ export default function EvidencePickupModal({
           </div>
           <button type="button" onClick={onClose} className="re-btn">
             <span className="re-btn-circle">ESC</span>
-            <span>Put Down</span>
+            <span>Close</span>
           </button>
         </div>
       </div>

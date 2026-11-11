@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Volume2, VolumeX, LogOut, ShieldCheck, Flame, Compass, Moon } from 'lucide-react';
+import { Volume2, VolumeX, LogOut, ShieldCheck, Flame, Compass, Moon, BookOpen, Book } from 'lucide-react';
 import CandleAnimation from './CandleAnimation';
 import DustParticles from '../userlogin/DustParticles';
 import HauntedNightScenery from './HauntedNightScenery';
 import { ambientSound } from './ambientAudio';
+import Round1DossierModal from '../game/components/Round1DossierModal';
+import Round1StoryBookModal from './Round1StoryBookModal';
 
 export default function Lobby({ team, onLogout }) {
   const [lobbyState, setLobbyState] = useState({
@@ -15,6 +17,25 @@ export default function Lobby({ team, onLogout }) {
   });
   const [audioMuted, setAudioMuted] = useState(true);
   const [pulseSeconds, setPulseSeconds] = useState(0);
+  const [isDossierOpen, setIsDossierOpen] = useState(false);
+  const [isStoryBookOpen, setIsStoryBookOpen] = useState(false);
+
+  useEffect(() => {
+    const handleKey = (e) => {
+      const tag = (e.target?.tagName || '').toUpperCase();
+      if (['INPUT', 'TEXTAREA'].includes(tag)) return;
+      if (e.key === 'r' || e.key === 'R' || e.code === 'KeyR') {
+        e.preventDefault();
+        setIsDossierOpen((prev) => !prev);
+      }
+      if (lobbyState.current_round === 1 && (e.key === 's' || e.key === 'S' || e.code === 'KeyS')) {
+        e.preventDefault();
+        setIsStoryBookOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, []);
 
   // Poll lobby state every 4 seconds
   useEffect(() => {
@@ -122,6 +143,30 @@ export default function Lobby({ team, onLogout }) {
 
         {/* Audio and Sign Out Controls */}
         <div className="flex items-center gap-2.5">
+          {!isRound2 && (
+            <button
+              onClick={() => setIsStoryBookOpen(true)}
+              className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded border border-[#852834]/80 text-[#fecdd3] bg-[#220c13]/85 hover:bg-[#38121d] transition shadow-[0_0_12px_rgba(180,40,60,0.3)]"
+              title="Open Hollow House Story Chronicle (Press S)"
+            >
+              <Book className="w-3.5 h-3.5 text-[#fb7185]" />
+              <span className="hidden sm:inline">Story Chronicle</span>
+              <kbd className="px-1 py-0.2 text-[9px] bg-black/60 rounded border border-[#fb7185]/40 text-[#fecdd3]">
+                S
+              </kbd>
+            </button>
+          )}
+          <button
+            onClick={() => setIsDossierOpen(true)}
+            className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded border border-[#c47a00]/70 text-[#ffd68a] bg-[#241708]/80 hover:bg-[#38230b] transition shadow-[0_0_10px_rgba(196,122,0,0.25)]"
+            title="Open Field Dossier & Round 1 Rules (Press R)"
+          >
+            <BookOpen className="w-3.5 h-3.5 text-[#ff9d54]" />
+            <span className="hidden sm:inline">Rules Dossier</span>
+            <kbd className="px-1 py-0.2 text-[9px] bg-black/60 rounded border border-[#ff9d54]/40 text-[#ffd3a8]">
+              R
+            </kbd>
+          </button>
           <button
             onClick={toggleAudio}
             className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded border transition-all ${
@@ -215,6 +260,20 @@ export default function Lobby({ team, onLogout }) {
       <footer className="z-20 text-center text-xs font-mono text-[#574972] py-3">
         <span>CURSE THE CODE &bull; THE TURING CLUB &bull; 2026</span>
       </footer>
+
+      {/* Ancient Rules Dossier Parchment Modal */}
+      <Round1DossierModal
+        isOpen={isDossierOpen}
+        onClose={() => setIsDossierOpen(false)}
+      />
+
+      {/* Haunted Story Book Modal (Round 1 Lore only) */}
+      {!isRound2 && (
+        <Round1StoryBookModal
+          isOpen={isStoryBookOpen}
+          onClose={() => setIsStoryBookOpen(false)}
+        />
+      )}
     </div>
   );
 }

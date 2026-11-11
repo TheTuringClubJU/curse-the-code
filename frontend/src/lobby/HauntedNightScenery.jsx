@@ -118,33 +118,32 @@ export default function HauntedNightScenery({ round = 1 }) {
       {/* 3. HTML5 Canvas Rendering Realistic Organic Trees with Natural Fractal Density */}
       <canvas ref={canvasRef} className="absolute inset-0 w-full h-full z-10 pointer-events-none" />
 
-      {/* 4. Left Vintage Iron Kerosene Lantern at Tree Base */}
-      <div className="absolute bottom-5 left-4 sm:left-14 w-16 sm:w-20 h-28 sm:h-36 filter drop-shadow-[0_0_25px_rgba(212,160,64,0.7)] z-20">
-        <svg viewBox="0 0 60 100" className="w-full h-full">
-          {/* Iron Hood & Handle */}
-          <path d="M 20 18 Q 30 6 40 18" stroke="#3d2c1d" strokeWidth="3" fill="none" />
-          <rect x="18" y="18" width="24" height="8" rx="2" fill="#221810" stroke="#554028" strokeWidth="1.5" />
-          {/* Glass Chamber with Kerosene Flame */}
-          <rect x="15" y="26" width="30" height="42" rx="4" fill="rgba(255, 180, 80, 0.15)" stroke="#3d2c1d" strokeWidth="2" />
-          <ellipse cx="30" cy="52" rx="6" ry="12" fill="#ffd77a" className="animate-pulse" />
-          <ellipse cx="30" cy="54" rx="3" ry="7" fill="#fff" />
-          {/* Iron Base */}
-          <rect x="12" y="68" width="36" height="12" rx="3" fill="#18110b" stroke="#3d2c1d" strokeWidth="2" />
+      {/* 4. Left Carved Halloween Pumpkin at Tree Base */}
+      <div className="absolute bottom-5 left-4 sm:left-14 w-28 sm:w-36 h-24 sm:h-30 filter drop-shadow-[0_0_25px_rgba(255,122,26,0.7)] z-20">
+        <svg viewBox="0 0 100 80" className="w-full h-full">
+          <path d="M50 16 Q54 2 64 3 L60 15 Z" fill="#2d3a1f" />
+          <ellipse cx="50" cy="50" rx="42" ry="27" fill={isRound2 ? "#2d1645" : "#7c2d12"} stroke="#050308" strokeWidth="2" />
+          <ellipse cx="32" cy="50" rx="22" ry="25" fill={isRound2 ? "#240f3b" : "#6c240d"} />
+          <ellipse cx="68" cy="50" rx="22" ry="25" fill={isRound2 ? "#240f3b" : "#6c240d"} />
+          {/* Evil Carved Slits & Grin */}
+          <polygon points="32,42 43,46 30,51" fill={pumpkinEyeGlow} className="animate-flicker" />
+          <polygon points="68,42 57,46 70,51" fill={pumpkinEyeGlow} className="animate-flicker" />
+          <polygon points="50,46 46,51 54,51" fill={pumpkinEyeGlow} />
+          <path d="M 26 58 Q 50 74 74 58 Q 66 66 50 67 Q 34 66 26 58 Z" fill={pumpkinEyeGlow} className="animate-flicker" />
         </svg>
       </div>
 
-      {/* 5. Right Vintage Iron Kerosene Lantern at Tree Base */}
-      <div className="absolute bottom-6 right-4 sm:right-16 w-16 sm:w-20 h-28 sm:h-36 filter drop-shadow-[0_0_25px_rgba(212,160,64,0.7)] z-20">
-        <svg viewBox="0 0 60 100" className="w-full h-full">
-          {/* Iron Hood & Handle */}
-          <path d="M 20 18 Q 30 6 40 18" stroke="#3d2c1d" strokeWidth="3" fill="none" />
-          <rect x="18" y="18" width="24" height="8" rx="2" fill="#221810" stroke="#554028" strokeWidth="1.5" />
-          {/* Glass Chamber with Kerosene Flame */}
-          <rect x="15" y="26" width="30" height="42" rx="4" fill="rgba(255, 180, 80, 0.15)" stroke="#3d2c1d" strokeWidth="2" />
-          <ellipse cx="30" cy="52" rx="6" ry="12" fill="#ffd77a" className="animate-pulse" />
-          <ellipse cx="30" cy="54" rx="3" ry="7" fill="#fff" />
-          {/* Iron Base */}
-          <rect x="12" y="68" width="36" height="12" rx="3" fill="#18110b" stroke="#3d2c1d" strokeWidth="2" />
+      {/* 5. Right Carved Halloween Pumpkin at Tree Base */}
+      <div className="absolute bottom-6 right-4 sm:right-16 w-26 sm:w-32 h-22 sm:h-28 filter drop-shadow-[0_0_25px_rgba(255,122,26,0.7)] z-20">
+        <svg viewBox="0 0 100 80" className="w-full h-full">
+          <path d="M50 16 Q45 3 36 2 L41 15 Z" fill="#2d3a1f" />
+          <ellipse cx="50" cy="50" rx="40" ry="26" fill={isRound2 ? "#2d1645" : "#7c2d12"} stroke="#050308" strokeWidth="2" />
+          <ellipse cx="34" cy="50" rx="20" ry="24" fill={isRound2 ? "#240f3b" : "#6c240d"} />
+          <ellipse cx="66" cy="50" rx="20" ry="24" fill={isRound2 ? "#240f3b" : "#6c240d"} />
+          {/* Evil Carved Slits & Grin */}
+          <polygon points="34,43 44,47 33,52" fill={pumpkinEyeGlow} className="animate-flicker" />
+          <polygon points="66,43 56,47 67,52" fill={pumpkinEyeGlow} className="animate-flicker" />
+          <path d="M 28 58 Q 50 72 72 58 Q 64 65 50 66 Q 36 65 28 58 Z" fill={pumpkinEyeGlow} className="animate-flicker" />
         </svg>
       </div>
 

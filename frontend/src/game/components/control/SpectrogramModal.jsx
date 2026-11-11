@@ -41,8 +41,23 @@ const TELEMETRY_PROFILES = {
   },
 };
 
-function getActiveTelemetryPacket(vmTab, band, scrubPos) {
-  const profile = TELEMETRY_PROFILES[vmTab] || TELEMETRY_PROFILES['VM-A'];
+function resolveTelemetryProfile(vmTab, filesPayload) {
+  const base = TELEMETRY_PROFILES[vmTab] || TELEMETRY_PROFILES['VM-A'];
+  if (!Array.isArray(filesPayload)) return base;
+  const entry = filesPayload.find((f) => (f?.id || f) === vmTab);
+  if (!entry || typeof entry === 'string') return base;
+  return {
+    label: entry.subtitle || (entry.label && entry.label !== `Voicemail ${vmTab.replace(/^VM-/, '')}` ? `// ${entry.label}` : base.label),
+    peakMin: entry.peak_min ?? base.peakMin,
+    peakMax: entry.peak_max ?? base.peakMax,
+    carrierFreqKHz: entry.carrier_khz || base.carrierFreqKHz,
+    frames: Array.isArray(entry.frames) && entry.frames.length > 0 ? entry.frames : base.frames,
+    midDecoy: entry.mid_decoy || base.midDecoy,
+  };
+}
+
+function getActiveTelemetryPacket(vmTab, band, scrubPos, filesPayload) {
+  const profile = resolveTelemetryProfile(vmTab, filesPayload);
   if (band === 'HIGH' && scrubPos >= profile.peakMin && scrubPos <= profile.peakMax) {
     return { active: true, carrierFreqKHz: profile.carrierFreqKHz, frames: profile.frames, bandType: 'ULTRASONIC' };
   }
@@ -179,7 +194,14 @@ function drawWaveformStrip(canvas, vmTab, band, scrubPos) {
 // ─── Component ────────────────────────────────────────────────────────────────
 const BANDS = ['LOW', 'MID', 'HIGH'];
 
-export default function SpectrogramModal({ isOpen, onClose, onSubmit, onResetLockout, clueState }) {
+export default function SpectrogramModal({ isOpen, onClose, onSubmit, clueState }) {
+  const availableTabs = React.useMemo(() => {
+    const raw = clueState?.payload?.files;
+    if (Array.isArray(raw) && raw.length > 0) {
+      return raw.map((f) => f.id || f).filter(Boolean);
+    }
+    return ['VM-A', 'VM-B'];
+  }, [clueState?.payload?.files]);
   const [vmTab, setVmTab] = useState('VM-A');
   const [band, setBand] = useState('MID');
   const [scrubPos, setScrubPos] = useState(0); // 0–100
@@ -250,23 +272,33 @@ export default function SpectrogramModal({ isOpen, onClose, onSubmit, onResetLoc
   }, []);
 
   // ── Submit ─────────────────────────────────────────────────────────────────
-  const handleSubmit = useCallback(() => {
+  const handleSubmit = useCallback(async () => {
     const val = inputValue.trim();
-    if (!val) return;
-    onSubmit(val);
+    if (!val || submitted) return;
     setSubmitted(true);
-  }, [inputValue, onSubmit]);
+    try {
+      const res = await onSubmit(val);
+      if (res && !res.correct && !res.solved) {
+        setErrorMsg(res.message || 'Incorrect spectrogram code. Check the waveform telemetry.');
+      }
+    } catch {
+      setErrorMsg('Acoustic verification failed.');
+    } finally {
+      setSubmitted(false);
+    }
+  }, [inputValue, onSubmit, submitted]);
 
   const handleKeyDown = useCallback((e) => {
     if (e.key === 'Enter') handleSubmit();
   }, [handleSubmit]);
 
   const isSolved = clueState?.solved;
-  const isExhausted = clueState?.exhausted;
-  const attemptsLeft = clueState?.attempts_remaining ?? 3;
+  const attemptsMax = clueState?.attempts_max ?? 3;
+  const attemptsLeft = clueState?.attempts_remaining ?? Math.max(0, attemptsMax - (clueState?.attempts ?? 0));
+  const isExhausted = Boolean(clueState?.exhausted || (!isSolved && attemptsLeft <= 0));
 
-  const profile = TELEMETRY_PROFILES[vmTab] || TELEMETRY_PROFILES['VM-A'];
-  const activePacket = getActiveTelemetryPacket(vmTab, band, scrubPos);
+  const profile = resolveTelemetryProfile(vmTab, clueState?.payload?.files);
+  const activePacket = getActiveTelemetryPacket(vmTab, band, scrubPos, clueState?.payload?.files);
   const isCarrierPeak = activePacket.active;
 
   const buildTelemetryDump = useCallback(() => {
@@ -356,13 +388,13 @@ export default function SpectrogramModal({ isOpen, onClose, onSubmit, onResetLoc
           </div>
           <button type="button" className="re-btn" onClick={onClose} aria-label="Close">
             <span className="re-btn-circle">ESC</span>
-            <span>Put Down</span>
+            <span>Close</span>
           </button>
         </div>
 
-        {/* ── Channel Tabs (Gothic Rounded Capsule Pills) ── */}
+        {/* ── Channel Tabs (Rounded Capsule Pills) ── */}
         <div className="flex items-center gap-2 pt-3 pb-4">
-          {['VM-A', 'VM-B'].map(tab => (
+          {availableTabs.map(tab => (
             <button
               key={tab}
               type="button"
@@ -558,24 +590,8 @@ export default function SpectrogramModal({ isOpen, onClose, onSubmit, onResetLoc
             </div>
           )}
           {isExhausted && !isSolved && (
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="font-mono text-xs tracking-widest text-[#ef7b7b] font-bold">
-                ✗ MAXIMUM ATTEMPTS EXCEEDED — ACCESS REVOKED
-              </div>
-              {onResetLockout && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setErrorMsg('');
-                    setInputValue('');
-                    onResetLockout();
-                  }}
-                  className="re-btn"
-                >
-                  <span className="re-btn-circle">↻</span>
-                  <span>Reboot Terminal</span>
-                </button>
-              )}
+            <div className="font-mono text-xs tracking-widest text-[#ef7b7b] font-bold">
+              ✗ MAXIMUM ATTEMPTS EXCEEDED — ACCESS REVOKED
             </div>
           )}
           {!isSolved && !isExhausted && (
@@ -586,7 +602,7 @@ export default function SpectrogramModal({ isOpen, onClose, onSubmit, onResetLoc
               </div>
               <div className="flex items-center gap-3">
                 <span className="font-mono text-xs text-[#eceae4] whitespace-nowrap">
-                  ENTER FOUR-DIGIT CODE:
+                  {clueState?.stages?.[0]?.prompt || 'ENTER FOUR-DIGIT CODE:'}
                 </span>
                 <input
                   type="text"

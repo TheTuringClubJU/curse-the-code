@@ -5,13 +5,15 @@ import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 import Room5Control from '../game/Room5Control.jsx';
 import HUDControl from '../game/components/control/HUDControl.jsx';
 import EvidencePickupModal from '../game/components/control/EvidencePickupModal.jsx';
-import BasketModal from '../game/components/BasketModal.jsx';
+import ControlBasketModal from '../game/components/control/ControlBasketModal.jsx';
+import ControlDossierModal from '../game/components/control/ControlDossierModal.jsx';
+import Fork2Modal from '../game/components/control/Fork2Modal.jsx';
 import CCTVMonitorModal from '../game/components/control/CCTVMonitorModal.jsx';
 import SpectrogramModal from '../game/components/control/SpectrogramModal.jsx';
 import PersonnelIndexModal from '../game/components/control/PersonnelIndexModal.jsx';
 import TransmissionArchiveModal from '../game/components/control/TransmissionArchiveModal.jsx';
-import { createSimulationRoom5, ROOM5_EVIDENCE_RICH_META, ROOM5_WORLD_DOCUMENTS, isInsideSafeRoom5B, SAFE_ROOM_RESPAWN } from '../game/engine/simulationControl.js';
-import { formatDocumentText, createDocumentPreviewSvg } from '../game/engine/evidenceExport.js';
+import { isInsideSafeRoom5B, SAFE_ROOM_RESPAWN } from '../game/engine/scaresControl.js';
+import { formatDocumentText, formatEvidenceBundleText, createDocumentPreviewSvg } from '../game/engine/evidenceExport.js';
 
 // ─── Mocks & Harness ─────────────────────────────────────────────────────────
 
@@ -112,6 +114,8 @@ vi.mock('../game/engine/sceneControl.js', () => ({
 
 vi.mock('../game/engine/scaresControl.js', () => ({
   createControlScares: vi.fn(() => mockScares),
+  isInsideSafeRoom5B: vi.fn((x, z) => x >= -3.45 && x <= 3.45 && z <= 1.85),
+  SAFE_ROOM_RESPAWN: [0.25, 0.1, 0.25],
 }));
 
 // Setup clipboard and URL mocks
@@ -126,29 +130,81 @@ if (!global.URL.createObjectURL) {
   global.URL.revokeObjectURL = vi.fn();
 }
 
+const SAMPLE_PERSONNEL_ROWS = [
+  ['Corvin, M.', 'Night Shift Lead', 'Control Bay 5B', '23:41', 'BDG-9001'],
+  ['Vance, R.', 'Signal Technician', 'Relay Wing 5C', '22:15', 'BDG-9002'],
+  ['Sato, K.', 'Acoustic Analyst', 'Chamber 3', '21:50', 'BDG-9003'],
+];
+
+const SAMPLE_MESSAGES = [
+  { id: 'TX-1', received: '02-20 23:10', headers: { From: 'RELAY', 'X-Auth': 'QkRHLTkwMDI=' }, body: 'Calibration sweep.' },
+  { id: 'TX-2', received: '02-21 09:15', headers: { From: 'RELAY', 'X-Auth': 'QkRHLTkwMDM=' }, body: 'Shift handover.' },
+  { id: 'TX-3', received: '02-21 23:41', headers: { From: 'CONTROL', 'X-Auth': 'QkRHLTkwMDE=' }, body: 'VM-A verified under suffix 9001.' },
+  { id: 'TX-4', received: '02-22 02:30', headers: { From: 'RELAY', 'X-Auth': 'QkRHLTkwMDQ=' }, body: 'VM-B decoy mirror.' },
+  { id: 'TX-5', received: '02-23 14:08', headers: { From: 'RELAY', 'X-Auth': 'QkRHLTkwMDU=' }, body: 'Carrier static.' },
+  { id: 'TX-6', received: '02-24 06:00', headers: { From: 'CONTROL', 'X-Auth': 'QkRHLTkwMDA=' }, body: 'Loop check.' },
+];
+
+const SAMPLE_SPECTROGRAM_FILES = [
+  { id: 'VM-A', label: 'PRIMARY ARCHIVE (VM-A)', peaks_hz: [8140] },
+  { id: 'VM-B', label: 'SECONDARY ARCHIVE (VM-B)', peaks_hz: [2200] },
+];
+
 function makeUnlockedState(overrides = {}) {
   return {
     ok: true,
     room_id: 'control',
     title: 'The Surveillance Morgue',
-    total_fragments_in_room: 8,
-    collected_fragment_ids: ['EC01', 'EC02', 'EC03', 'EC04', 'EC05', 'EC06', 'EC07', 'EC08'],
+    total_fragments_in_room: 10,
+    collected_fragment_ids: ['EC01', 'EC02', 'EC03', 'EC04', 'EC05', 'EC06', 'EC07', 'EC08', 'XC01', 'XC02'],
     basket_unlocked: true,
     is_completed: false,
     evidence: [
-      { id: 'EC01', display: { title: 'Signal Intercept', lines: ['23:41 carrier burst logged.'] } },
+      { id: 'EC01', display: { title: 'Personnel Record Header', lines: ['Shift lead verified under BDG suffix.'] } },
       { id: 'EC02', display: { title: 'Requisition Archive', lines: ['Countersigned by M. Corvin.'] } },
       { id: 'EC03', display: { title: 'CRT Anomaly', lines: ['Continuous playback on Loop 7-C.'] } },
       { id: 'EC04', display: { title: 'Operator Log', lines: ['Monitor 6 figure visible.'] } },
       { id: 'EC05', display: { title: 'Teletype Intercept', lines: ['7.455 MHz carrier burst.'] } },
       { id: 'EC06', display: { title: 'Schematic 7-C', lines: ['Auxiliary feeder to Chamber 3.'] } },
-      { id: 'EC07', display: { title: 'Night Shift Order', lines: ['Do not acknowledge Delta bursts.'] } },
+      { id: 'EC07', display: { title: 'Night Shift Order', lines: ['Acknowledge authenticated carrier bursts.'] } },
       { id: 'EC08', display: { title: 'Fuse Override Slip', lines: ['Fuses 4, 7, 9 held live.'] } },
+      { id: 'XC01', display: { title: 'Corrupted Tape Note', lines: ['Decoy splice.' ] } },
+      { id: 'XC02', display: { title: 'Blank Shift Card', lines: ['No carrier detected.'] } },
     ],
     clues: [
-      { id: 'R2-01', object_id: 'staff_terminal', title: 'Personnel Index', solved: false, exhausted: false, attempts_remaining: 3 },
-      { id: 'R2-05', object_id: 'radio_console',  title: 'Transmission Archive', solved: false, exhausted: false, attempts_remaining: 3 },
-      { id: 'R2-06', object_id: 'sound_console',  title: 'Spectrogram Analyser', solved: false, exhausted: false, attempts_remaining: 3 },
+      {
+        id: 'R2-01',
+        object_id: 'staff_terminal',
+        title: 'Personnel Index',
+        solved: false,
+        exhausted: false,
+        attempts: 0,
+        attempts_max: 3,
+        attempts_remaining: 3,
+        payload: { rows: SAMPLE_PERSONNEL_ROWS },
+      },
+      {
+        id: 'R2-05',
+        object_id: 'radio_console',
+        title: 'Transmission Archive',
+        solved: false,
+        exhausted: false,
+        attempts: 0,
+        attempts_max: 3,
+        attempts_remaining: 3,
+        payload: { messages: SAMPLE_MESSAGES },
+      },
+      {
+        id: 'R2-06',
+        object_id: 'sound_console',
+        title: 'Spectrogram Analyser',
+        solved: false,
+        exhausted: false,
+        attempts: 0,
+        attempts_max: 3,
+        attempts_remaining: 3,
+        payload: { files: SAMPLE_SPECTROGRAM_FILES },
+      },
     ],
     ...overrides,
   };
@@ -174,8 +230,8 @@ describe('Room 5 (The Surveillance Morgue) E2E 4-Tier Opaque-Box Suite', () => {
       render(
         <HUDControl
           roomTitle="The Surveillance Morgue"
-          totalFragments={8}
-          collectedCount={8}
+          totalFragments={10}
+          collectedCount={10}
           basketUnlocked={true}
           isRoomCompleted={false}
           cluesSolved={1}
@@ -189,7 +245,7 @@ describe('Room 5 (The Surveillance Morgue) E2E 4-Tier Opaque-Box Suite', () => {
       expect(titleElem).toBeInTheDocument();
       const hintElem = screen.getByText(/Terminals unlocked/i);
       expect(hintElem).toBeInTheDocument();
-      const objectiveElem = screen.getByText(/Solve the 3 Consoles/i);
+      const objectiveElem = screen.getByText(/Solve the 3 Clue Terminals/i);
       expect(objectiveElem).toBeInTheDocument();
 
       // Top-left block must retain padding and border indicator
@@ -210,13 +266,14 @@ describe('Room 5 (The Surveillance Morgue) E2E 4-Tier Opaque-Box Suite', () => {
           },
         },
         collectedCount: 1,
+        totalCount: 10,
         remainingHere: 0,
       };
 
       render(<EvidencePickupModal modalData={modalData} onClose={vi.fn()} />);
       expect(screen.getByText(/Signal Intercept TXL-83-114/i)).toBeInTheDocument();
       expect(screen.getByText('EVIDENCE')).toBeInTheDocument();
-      expect(screen.getByText('1/8 Logged')).toBeInTheDocument();
+      expect(screen.getByText('1/10 Logged')).toBeInTheDocument();
     });
 
     it('T1-03: Evidence export text utility formats all raw document fields', () => {
@@ -257,9 +314,7 @@ describe('Room 5 (The Surveillance Morgue) E2E 4-Tier Opaque-Box Suite', () => {
     });
 
     it('T1-04: Control Room 5B safe zone boundary returns true inside and false outside', () => {
-      const isInsideSafeRoom5B = (x, z) => x >= -3.45 && x <= 3.45 && z <= 1.85;
-
-      // Inside safe room
+      // Uses real isInsideSafeRoom5B helper exported from scaresControl.js
       expect(isInsideSafeRoom5B(0.25, 0.25)).toBe(true);
       expect(isInsideSafeRoom5B(-0.2, -1.35)).toBe(true);
       expect(isInsideSafeRoom5B(0.0, 0.0)).toBe(true);
@@ -329,7 +384,7 @@ describe('Room 5 (The Surveillance Morgue) E2E 4-Tier Opaque-Box Suite', () => {
           isOpen={true}
           onClose={vi.fn()}
           onSubmit={onSubmit}
-          clueState={{ id: 'R2-01', attempts_remaining: 3 }}
+          clueState={{ id: 'R2-01', attempts: 0, attempts_max: 3, attempts_remaining: 3, payload: { rows: SAMPLE_PERSONNEL_ROWS } }}
         />
       );
 
@@ -353,7 +408,7 @@ describe('Room 5 (The Surveillance Morgue) E2E 4-Tier Opaque-Box Suite', () => {
           isOpen={true}
           onClose={vi.fn()}
           onSubmit={onSubmit}
-          clueState={{ id: 'R2-05', attempts_remaining: 3 }}
+          clueState={{ id: 'R2-05', attempts: 0, attempts_max: 3, attempts_remaining: 3, payload: { messages: SAMPLE_MESSAGES } }}
         />
       );
 
@@ -379,7 +434,7 @@ describe('Room 5 (The Surveillance Morgue) E2E 4-Tier Opaque-Box Suite', () => {
           isOpen={true}
           onClose={vi.fn()}
           onSubmit={onSubmit}
-          clueState={{ id: 'R2-06', attempts_remaining: 3 }}
+          clueState={{ id: 'R2-06', attempts: 0, attempts_max: 3, attempts_remaining: 3, payload: { files: SAMPLE_SPECTROGRAM_FILES } }}
         />
       );
 
@@ -394,83 +449,66 @@ describe('Room 5 (The Surveillance Morgue) E2E 4-Tier Opaque-Box Suite', () => {
   // TIER 2: Boundary Value Analysis (BVA) & Corner Cases
   // ═══════════════════════════════════════════════════════════════════════════
   describe('Tier 2: Boundary Value Analysis (BVA) & Corner Cases', () => {
-    it('BVA-01: Empty inventory death drops 0 items and respawns safely in 5B', () => {
-      const playerInventory = [];
-      const onPlayerDeath = (inventory, deathX, deathZ) => {
-        let droppedItem = null;
-        if (inventory.length > 0) {
-          droppedItem = { item: inventory[inventory.length - 1], x: deathX, z: deathZ };
-        }
-        return {
-          spawn: [-0.2, 0.1, -1.35],
-          droppedItem,
-          remainingInventory: inventory.slice(0, -1),
-        };
-      };
+    it('BVA-01: Caught event respawns player inside Safe Bay 5B and retains 0-fragment DB state without dropping items', async () => {
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => makeUnlockedState({ collected_fragment_ids: [], basket_unlocked: false }),
+      });
+      render(<Room5Control team={mockTeam} onLogout={mockLogout} />);
+      await waitFor(() => expect(activeEngineInstance).toBeTruthy());
 
-      const result = onPlayerDeath(playerInventory, -8.0, 7.5);
-      expect(result.droppedItem).toBeNull();
-      expect(result.spawn).toEqual([-0.2, 0.1, -1.35]);
-      expect(result.remainingInventory.length).toBe(0);
-    });
-
-    it('BVA-02: Single item inventory death drops exactly 1 item and empties inventory', () => {
-      const playerInventory = ['EC01'];
-      const onPlayerDeath = (inventory, deathX, deathZ) => ({
-        spawn: [-0.2, 0.1, -1.35],
-        droppedItem: { item: inventory[inventory.length - 1], x: deathX, z: deathZ },
-        remainingInventory: inventory.slice(0, -1),
+      act(() => {
+        activeEngineInstance.callbacks.onPlayerCaught({ x: -8.0, z: 7.5 });
       });
 
-      const result = onPlayerDeath(playerInventory, -5.5, 9.0);
-      expect(result.droppedItem).toEqual({ item: 'EC01', x: -5.5, z: 9.0 });
-      expect(result.remainingInventory).toEqual([]);
+      expect(activeEngineInstance.setView).toHaveBeenCalledWith(SAFE_ROOM_RESPAWN[0], SAFE_ROOM_RESPAWN[1], SAFE_ROOM_RESPAWN[2], 0);
+      expect(isInsideSafeRoom5B(SAFE_ROOM_RESPAWN[0], SAFE_ROOM_RESPAWN[2])).toBe(true);
+      expect(screen.getByText(/all recovered fragments remain safe in your Evidence Basket/i)).toBeInTheDocument();
     });
 
-    it('BVA-03: Full inventory death drops most recent item leaving 7 fragments', () => {
-      const playerInventory = ['EC01', 'EC02', 'EC03', 'EC04', 'EC05', 'EC06', 'EC07', 'EC08'];
-      const onPlayerDeath = (inventory, deathX, deathZ) => ({
-        spawn: [-0.2, 0.1, -1.35],
-        droppedItem: { item: inventory[inventory.length - 1], x: deathX, z: deathZ },
-        remainingInventory: inventory.slice(0, -1),
+    it('BVA-02: Caught event retains 1 collected fragment in Evidence Basket without scattering on floor', async () => {
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => makeUnlockedState({ collected_fragment_ids: ['EC01'], basket_unlocked: false }),
+      });
+      render(<Room5Control team={mockTeam} onLogout={mockLogout} />);
+      await waitFor(() => expect(activeEngineInstance).toBeTruthy());
+
+      fireEvent.click(screen.getByText(/ENTER THE SURVEILLANCE MORGUE/i));
+      act(() => {
+        activeEngineInstance.callbacks.onPlayerCaught({ x: -5.5, z: 9.0 });
       });
 
-      const result = onPlayerDeath(playerInventory, -10.0, 12.0);
-      expect(result.droppedItem.item).toBe('EC08');
-      expect(result.remainingInventory.length).toBe(7);
-      expect(result.remainingInventory).not.toContain('EC08');
+      expect(screen.getByText('1/10')).toBeInTheDocument();
+      expect(activeEngineInstance.spawnDroppedEvidence).not.toHaveBeenCalled();
     });
 
-    it('BVA-04: Multiple deaths drop items at independent coordinates without collision', () => {
-      const deaths = [
-        { inv: ['EC01', 'EC02'], pos: [-3.0, 6.0] },
-        { inv: ['EC01'],         pos: [-9.0, 11.0] },
-      ];
+    it('BVA-03: Caught event retains full 10-fragment inventory and unlocked basket', async () => {
+      render(<Room5Control team={mockTeam} onLogout={mockLogout} />);
+      await waitFor(() => expect(activeEngineInstance).toBeTruthy());
 
-      const droppedInWorld = [];
-      deaths.forEach(d => {
-        const item = d.inv[d.inv.length - 1];
-        droppedInWorld.push({ id: `dropped_${item}`, item, x: d.pos[0], z: d.pos[1] });
+      fireEvent.click(screen.getByText(/ENTER THE SURVEILLANCE MORGUE/i));
+      act(() => {
+        activeEngineInstance.callbacks.onPlayerCaught({ x: -10.0, z: 12.0 });
       });
 
-      expect(droppedInWorld.length).toBe(2);
-      expect(droppedInWorld[0].x).toBe(-3.0);
-      expect(droppedInWorld[1].x).toBe(-9.0);
-      expect(droppedInWorld[0].item).toBe('EC02');
-      expect(droppedInWorld[1].item).toBe('EC01');
+      expect(screen.getByText('10/10')).toBeInTheDocument();
+      expect(activeEngineInstance.shake).toHaveBeenCalled();
+    });
+
+    it('BVA-04: Safe room respawn coordinates always fall strictly within Control Bay 5B bounds', () => {
+      expect(Array.isArray(SAFE_ROOM_RESPAWN)).toBe(true);
+      expect(SAFE_ROOM_RESPAWN.length).toBeGreaterThanOrEqual(3);
+      expect(isInsideSafeRoom5B(SAFE_ROOM_RESPAWN[0], SAFE_ROOM_RESPAWN[2])).toBe(true);
     });
 
     it('BVA-05: Precise safe room Z-boundary coordinates (Z = 1.84, 1.85, 1.86)', () => {
-      const isInsideSafeRoom5B = (x, z) => x >= -3.45 && x <= 3.45 && z <= 1.85;
-
       expect(isInsideSafeRoom5B(0.0, 1.84)).toBe(true);
       expect(isInsideSafeRoom5B(0.0, 1.85)).toBe(true);
       expect(isInsideSafeRoom5B(0.0, 1.86)).toBe(false);
     });
 
     it('BVA-06: Precise safe room X-boundary coordinates (X = -3.45, -3.46, +3.45, +3.46)', () => {
-      const isInsideSafeRoom5B = (x, z) => x >= -3.45 && x <= 3.45 && z <= 1.85;
-
       expect(isInsideSafeRoom5B(-3.45, 0.0)).toBe(true);
       expect(isInsideSafeRoom5B(-3.46, 0.0)).toBe(false);
       expect(isInsideSafeRoom5B(3.45, 0.0)).toBe(true);
@@ -493,48 +531,62 @@ describe('Room 5 (The Surveillance Morgue) E2E 4-Tier Opaque-Box Suite', () => {
       }).not.toThrow();
     });
 
-    it('BVA-08: Clue submission normalization handles whitespace and lowercasing', () => {
-      const sim = createSimulationRoom5();
-      const res1 = sim.submitClue('R2-01', '  bdg-9001  ');
-      expect(res1.correct).toBe(true);
-      expect(res1.solved).toBe(true);
+    it('BVA-08: PersonnelIndexModal & TransmissionArchiveModal normalize whitespace and casing before submitting', () => {
+      const onBadgeSubmit = vi.fn();
+      const { unmount } = render(
+        <PersonnelIndexModal
+          isOpen={true}
+          onClose={vi.fn()}
+          onSubmit={onBadgeSubmit}
+          clueState={{ id: 'R2-01', attempts: 0, attempts_max: 3, attempts_remaining: 3, payload: { rows: SAMPLE_PERSONNEL_ROWS } }}
+        />
+      );
+      fireEvent.change(screen.getByPlaceholderText(/BDG-XXXX/i), { target: { value: '  bdg-9001  ' } });
+      fireEvent.click(screen.getByText('QUERY'));
+      expect(onBadgeSubmit).toHaveBeenCalledWith('BDG-9001');
+      unmount();
 
-      const res2 = sim.submitClue('R2-05', ' vm-a ');
-      expect(res2.correct).toBe(true);
-
-      const res3 = sim.submitClue('R2-06', '  8140  ');
-      expect(res3.correct).toBe(true);
+      const onTxSubmit = vi.fn();
+      render(
+        <TransmissionArchiveModal
+          isOpen={true}
+          onClose={vi.fn()}
+          onSubmit={onTxSubmit}
+          clueState={{ id: 'R2-05', attempts: 0, attempts_max: 3, attempts_remaining: 3, payload: { messages: SAMPLE_MESSAGES } }}
+        />
+      );
+      fireEvent.click(screen.getByText('Jump to End'));
+      fireEvent.change(screen.getByPlaceholderText(/_|\bCODE\b/i), { target: { value: ' vm-a ' } });
+      fireEvent.click(screen.getByText('SUBMIT'));
+      expect(onTxSubmit).toHaveBeenCalledWith('VM-A');
     });
 
-    it('BVA-09: Clue attempt exhaustion triggers lockout at exactly 3 failures', () => {
-      const sim = createSimulationRoom5();
-      const try1 = sim.submitClue('R2-01', 'FAIL1');
-      expect(try1.correct).toBe(false);
-      expect(try1.attempts_remaining).toBe(2);
-      expect(try1.exhausted).toBe(false);
-
-      const try2 = sim.submitClue('R2-01', 'FAIL2');
-      expect(try2.correct).toBe(false);
-      expect(try2.attempts_remaining).toBe(1);
-      expect(try2.exhausted).toBe(false);
-
-      const try3 = sim.submitClue('R2-01', 'FAIL3');
-      expect(try3.correct).toBe(false);
-      expect(try3.attempts_remaining).toBe(0);
-      expect(try3.exhausted).toBe(true);
+    it('BVA-09: Exhausted clue enforces permanent terminal lockout with zero client reset button', () => {
+      render(
+        <PersonnelIndexModal
+          isOpen={true}
+          onClose={vi.fn()}
+          onSubmit={vi.fn()}
+          clueState={{ id: 'R2-01', attempts: 3, attempts_max: 3, attempts_remaining: 0, exhausted: true, payload: { rows: SAMPLE_PERSONNEL_ROWS } }}
+        />
+      );
+      expect(screen.getByText(/SECURITY LOCKOUT \(0 ATTEMPTS REMAINING\)/i)).toBeInTheDocument();
+      expect(screen.queryByText(/reboot|reset/i)).toBeNull();
+      expect(screen.queryByPlaceholderText(/BDG-XXXX/i)).toBeNull();
     });
 
-    it('BVA-10: Locked terminal popup shows remaining fragment count and lead notes', () => {
+    it('BVA-10: Locked terminal popup shows 10-fragment requirement and spec search locations', () => {
       const modalData = {
         type: 'locked_terminal',
         terminalName: 'Staff Terminal (R2-01)',
         collectedCount: 3,
+        totalCount: 10,
       };
 
       render(<EvidencePickupModal modalData={modalData} onClose={vi.fn()} />);
       expect(screen.getByText(/Terminal Restricted/i)).toBeInTheDocument();
-      expect(screen.getByText(/requires all 8 evidence records.*3\/8 recovered/i)).toBeInTheDocument();
-      expect(screen.getByText(/Active Investigation Leads/i)).toBeInTheDocument();
+      expect(screen.getByText(/requires all 10 fragments.*3\/10 recovered/i)).toBeInTheDocument();
+      expect(screen.getByText(/Active Search Locations:/i)).toBeInTheDocument();
     });
   });
 
@@ -542,20 +594,23 @@ describe('Room 5 (The Surveillance Morgue) E2E 4-Tier Opaque-Box Suite', () => {
   // TIER 3: Pairwise Combinatorial Testing
   // ═══════════════════════════════════════════════════════════════════════════
   describe('Tier 3: Pairwise Combinatorial Testing', () => {
-    it('PAIR-01: Ghost death event while inspecting document modal resets state cleanly', async () => {
+    it('PAIR-01: Searching a prop displays fragment modal and Escape closes cleanly', async () => {
+      global.fetch = vi.fn()
+        .mockResolvedValueOnce({ ok: true, json: async () => makeUnlockedState({ collected_fragment_ids: [], basket_unlocked: false }) })
+        .mockResolvedValueOnce({ ok: true, json: async () => ({ found: true, fragment_id: 'EC01', total_collected: 1, total_in_room: 10, message: 'Fragment EC01 recovered.' }) })
+        .mockResolvedValueOnce({ ok: true, json: async () => makeUnlockedState({ collected_fragment_ids: ['EC01'], basket_unlocked: false }) });
+
       render(<Room5Control team={mockTeam} onLogout={mockLogout} />);
       await waitFor(() => expect(activeEngineInstance).toBeTruthy());
       fireEvent.click(screen.getByText(/ENTER THE SURVEILLANCE MORGUE/i));
 
-      // Open a document popup by inspecting a world doc
       await act(async () => {
-        await activeEngineInstance.callbacks.onInteract('containment_protocol');
+        await activeEngineInstance.callbacks.onInteract('relay_rack');
       });
-      expect(screen.getByText(/EMERGENCY PROTOCOL/i)).toBeInTheDocument();
+      expect(screen.getByText(/Personnel Record Header/i)).toBeInTheDocument();
 
-      // Close modal cleanly via Escape key
       fireEvent.keyDown(window, { key: 'Escape', code: 'Escape' });
-      expect(screen.queryByText(/EMERGENCY PROTOCOL/i)).toBeNull();
+      expect(screen.queryByText(/Personnel Record Header/i)).toBeNull();
     });
 
     it('PAIR-02: Opening CCTV allows selecting Control Bay CAM-02 feed, masks spoilers, and supports IR Trace + Copy Log', async () => {
@@ -584,43 +639,27 @@ describe('Room 5 (The Surveillance Morgue) E2E 4-Tier Opaque-Box Suite', () => {
       expect(navigator.clipboard.writeText).toHaveBeenCalled();
     });
 
-    it('PAIR-03: Chamber 3 door requires Brass Key; prompts when missing and unlatches when held', async () => {
+    it('PAIR-03: Wing doors toggle directly and notify scares director without client key items', async () => {
       render(<Room5Control team={mockTeam} onLogout={mockLogout} />);
       await waitFor(() => expect(activeEngineInstance).toBeTruthy());
       fireEvent.click(screen.getByText(/ENTER THE SURVEILLANCE MORGUE/i));
 
-      // 1. Without key: rattles door
-      await act(async () => {
-        await activeEngineInstance.callbacks.onInteract('chamber3_door');
-      });
-      expect(activeEngineInstance.rattleDoor).toHaveBeenCalledWith('chamber3_door');
-
-      // 2. Pick up key
-      await act(async () => {
-        await activeEngineInstance.callbacks.onInteract('containment_key');
-      });
-      expect(activeEngineInstance.pickupContainmentKey).toHaveBeenCalled();
-
-      // Close key inspection modal
-      fireEvent.keyDown(window, { key: 'Escape', code: 'Escape' });
-
-      // 3. With key: toggles door open
       await act(async () => {
         await activeEngineInstance.callbacks.onInteract('chamber3_door');
       });
       expect(activeEngineInstance.toggleWingDoor).toHaveBeenCalledWith('chamber3_door');
+      expect(mockScares.triggerDoorSighting).toHaveBeenCalledWith('chamber3_door', { respectGrace: true });
     });
 
-    it('PAIR-04: Breaker light toggle operates independently from flashlight and ghost state', async () => {
+    it('PAIR-04: Control Bay bulkhead door operates independently from flashlight state', async () => {
       render(<Room5Control team={mockTeam} onLogout={mockLogout} />);
       await waitFor(() => expect(activeEngineInstance).toBeTruthy());
       fireEvent.click(screen.getByText(/ENTER THE SURVEILLANCE MORGUE/i));
 
-      // Toggle breaker
       await act(async () => {
-        await activeEngineInstance.callbacks.onInteract('wall_breaker');
+        await activeEngineInstance.callbacks.onInteract('control_door');
       });
-      expect(activeEngineInstance.toggleBreakerLight).toHaveBeenCalled();
+      expect(activeEngineInstance.toggleControlDoor).toHaveBeenCalled();
 
       // Toggle flashlight with F key
       fireEvent.keyDown(window, { key: 'f', code: 'KeyF' });
@@ -629,25 +668,33 @@ describe('Room 5 (The Surveillance Morgue) E2E 4-Tier Opaque-Box Suite', () => {
       expect(activeEngineInstance.setFlashlight).toHaveBeenCalledWith(true);
     });
 
-    it('PAIR-05: Evidence Basket modal opens and displays all recovered records', () => {
+    it('PAIR-05: ControlBasketModal opens, displays fragments, and supports Contrast/Brightness inspection', () => {
       const mockEvidence = [
-        { id: 'EC01', display: { title: 'Signal Intercept' } },
-        { id: 'EC02', display: { title: 'Requisition Form' } },
+        { id: 'EC01', display: { title: 'Signal Intercept', lines: ['Carrier burst'] } },
+        { id: 'EC02', display: { title: 'Requisition Form', lines: ['Shift roster'] } },
       ];
 
       render(
-        <BasketModal
+        <ControlBasketModal
           isOpen={true}
           onClose={vi.fn()}
           evidence={mockEvidence}
+          collectedIds={['EC01', 'EC02']}
           basketUnlocked={true}
-          roomTheme={{ phosphorText: '#4dff78', phosphor: '#1a3d1f' }}
+          totalInRoom={10}
         />
       );
 
-      expect(screen.getByText(/Evidence Board/i)).toBeInTheDocument();
+      expect(screen.getByText(/EVIDENCE BASKET • RECOVERED FRAGMENTS/i)).toBeInTheDocument();
+      expect(screen.getByText(/2 \/ 10 COLLECTED/i)).toBeInTheDocument();
       expect(screen.getByText('Signal Intercept')).toBeInTheDocument();
       expect(screen.getByText('Requisition Form')).toBeInTheDocument();
+      expect(screen.getByText('Close Basket')).toBeInTheDocument();
+
+      fireEvent.click(screen.getByText('Signal Intercept'));
+      expect(screen.getByText('Contrast')).toBeInTheDocument();
+      expect(screen.getByText('Brightness')).toBeInTheDocument();
+      expect(screen.getByText('INVERT FILTER')).toBeInTheDocument();
     });
   });
 
@@ -655,95 +702,122 @@ describe('Room 5 (The Surveillance Morgue) E2E 4-Tier Opaque-Box Suite', () => {
   // TIER 4: Real-World Workload Testing (Escaperoom Progression)
   // ═══════════════════════════════════════════════════════════════════════════
   describe('Tier 4: Real-World Workload Testing (Escaperoom Progression)', () => {
-    it('T4-01: Full escaperoom progression: 8-fragment sweep to 3-console solve to vault release', async () => {
-      const sim = createSimulationRoom5();
+    it('T4-01: Live backend 10-fragment search unlocks terminals -> 3-console solve -> Fork 2 Valve B dispatches vault navigation', async () => {
+      let state = makeUnlockedState({
+        collected_fragment_ids: ['EC01','EC02','EC03','EC04','EC05','EC06','EC07','EC08','XC01'],
+        basket_unlocked: false,
+      });
 
-      // 1. Initial State
-      expect(sim.getState().collected_fragment_ids.length).toBe(0);
-      expect(sim.getState().basket_unlocked).toBe(false);
+      global.fetch = vi.fn(async (url, opts = {}) => {
+        if (url === '/api/game/room/control') {
+          return { ok: true, json: async () => state };
+        }
+        if (url === '/api/game/room/control/search') {
+          state = makeUnlockedState();
+          return {
+            ok: true,
+            json: async () => ({
+              found: true,
+              fragment_id: 'XC02',
+              total_collected: 10,
+              total_in_room: 10,
+              message: 'Recovered final decoy/fragment XC02',
+            }),
+          };
+        }
+        if (url === '/api/game/clue/R2-01/submit') {
+          state = {
+            ...state,
+            clues: state.clues.map((c) => (c.id === 'R2-01' ? { ...c, solved: true } : c)),
+          };
+          return { ok: true, json: async () => ({ correct: true, room_completed: false }) };
+        }
+        if (url === '/api/game/clue/R2-05/submit') {
+          state = {
+            ...state,
+            clues: state.clues.map((c) => (c.id === 'R2-05' ? { ...c, solved: true } : c)),
+          };
+          return { ok: true, json: async () => ({ correct: true, room_completed: false }) };
+        }
+        if (url === '/api/game/clue/R2-06/submit') {
+          state = {
+            ...state,
+            is_completed: true,
+            clues: state.clues.map((c) => (c.id === 'R2-06' ? { ...c, solved: true } : c)),
+          };
+          return { ok: true, json: async () => ({ correct: true, room_completed: true }) };
+        }
+        return { ok: true, json: async () => ({}) };
+      });
 
-      // 2. Fragment Sweep across all props
-      const sweepSequence = [
-        'relay_rack',     // EC01
-        'relay_rack',     // EC02
-        'tape_deck_cart', // EC03
-        'tape_deck_cart', // EC04
-        'operator_chair', // EC05
-        'cable_trench',   // EC06
-        'wall_clipboard', // EC07
-        'fuse_box',       // EC08
-      ];
+      render(<Room5Control team={mockTeam} onLogout={mockLogout} />);
+      await waitFor(() => expect(activeEngineInstance).toBeTruthy());
+      fireEvent.click(screen.getByText(/ENTER THE SURVEILLANCE MORGUE/i));
 
-      for (const prop of sweepSequence) {
-        const res = sim.searchProp(prop);
-        expect(res.found).toBe(true);
-      }
+      // Collect 10th fragment
+      await act(async () => {
+        await activeEngineInstance.callbacks.onInteract('fuse_box');
+      });
+      expect(screen.getByText('10/10 Logged')).toBeInTheDocument();
+      fireEvent.keyDown(window, { key: 'Escape', code: 'Escape' });
 
-      const sAfterSweep = sim.getState();
-      expect(sAfterSweep.collected_fragment_ids.length).toBe(8);
-      expect(sAfterSweep.basket_unlocked).toBe(true);
+      // Solve R2-01
+      await act(async () => { await activeEngineInstance.callbacks.onInteract('staff_terminal'); });
+      fireEvent.change(screen.getByPlaceholderText(/BDG-XXXX/i), { target: { value: 'BDG-9001' } });
+      await act(async () => { fireEvent.click(screen.getByText('QUERY')); });
+      fireEvent.keyDown(window, { key: 'Escape', code: 'Escape' });
 
-      // 3. Submit R2-01 (Personnel Index)
-      const res1 = sim.submitClue('R2-01', 'BDG-9001');
-      expect(res1.correct).toBe(true);
-      expect(res1.solved).toBe(true);
-      expect(res1.room_completed).toBe(false);
+      // Solve R2-05
+      await act(async () => { await activeEngineInstance.callbacks.onInteract('radio_console'); });
+      fireEvent.click(screen.getByText('Jump to End'));
+      fireEvent.change(screen.getByPlaceholderText(/_|\bCODE\b/i), { target: { value: 'VM-A' } });
+      await act(async () => { fireEvent.click(screen.getByText('SUBMIT')); });
+      fireEvent.keyDown(window, { key: 'Escape', code: 'Escape' });
 
-      // 4. Submit R2-05 (Radio Console)
-      const res2 = sim.submitClue('R2-05', 'VM-A');
-      expect(res2.correct).toBe(true);
-      expect(res2.solved).toBe(true);
-      expect(res2.room_completed).toBe(false);
+      // Solve R2-06 -> room_completed: true
+      await act(async () => { await activeEngineInstance.callbacks.onInteract('sound_console'); });
+      const soundInput = screen.getByRole('textbox');
+      fireEvent.change(soundInput, { target: { value: '8140' } });
+      await act(async () => { fireEvent.keyDown(soundInput, { key: 'Enter' }); });
 
-      // 5. Submit R2-06 (Sound Console)
-      const res3 = sim.submitClue('R2-06', '8140');
-      expect(res3.correct).toBe(true);
-      expect(res3.solved).toBe(true);
-      expect(res3.room_completed).toBe(true);
-
-      // 6. Final State: Vault Door Unlocks
-      const finalState = sim.getState();
-      expect(finalState.is_completed).toBe(true);
+      await waitFor(() => {
+        expect(screen.getByTestId('control-room-complete-modal')).toBeInTheDocument();
+        expect(activeEngineInstance.openDoor).toHaveBeenCalled();
+      });
     });
 
-    it('T4-02: Lockout recovery: terminal reboot restores attempts without losing progress', () => {
-      const sim = createSimulationRoom5();
+    it('T4-02: Permanent clue exhaustion lock rejects further submissions with zero client attempt reset', () => {
+      const onSubmit = vi.fn();
+      render(
+        <TransmissionArchiveModal
+          isOpen={true}
+          onClose={vi.fn()}
+          onSubmit={onSubmit}
+          clueState={{
+            id: 'R2-05',
+            attempts: 3,
+            attempts_max: 3,
+            attempts_remaining: 0,
+            exhausted: true,
+            payload: { messages: SAMPLE_MESSAGES },
+          }}
+        />
+      );
 
-      // Solve R2-01 first
-      sim.submitClue('R2-01', 'BDG-9001');
-
-      // Fail R2-05 3 times
-      sim.submitClue('R2-05', 'BAD1');
-      sim.submitClue('R2-05', 'BAD2');
-      const fail3 = sim.submitClue('R2-05', 'BAD3');
-      expect(fail3.exhausted).toBe(true);
-      expect(fail3.attempts_remaining).toBe(0);
-
-      // Reboot R2-05 while preserving R2-01 solved status
-      sim.resetClue('R2-05', ['R2-01'], ['EC01', 'EC02'], true);
-      const rebootedState = sim.getState();
-
-      const r1 = rebootedState.clues.find(c => c.id === 'R2-01');
-      const r5 = rebootedState.clues.find(c => c.id === 'R2-05');
-
-      expect(r1.solved).toBe(true);
-      expect(r5.attempts_remaining).toBe(3);
-      expect(r5.exhausted).toBe(false);
-
-      // Now solve R2-05 with correct answer
-      const solve5 = sim.submitClue('R2-05', 'VM-A');
-      expect(solve5.correct).toBe(true);
-      expect(solve5.solved).toBe(true);
+      fireEvent.click(screen.getByText('Jump to End'));
+      expect(screen.getByText(/MAXIMUM ATTEMPTS EXCEEDED — ACCESS REVOKED/i)).toBeInTheDocument();
+      expect(screen.queryByText(/Terminal rebooted/i)).toBeNull();
+      expect(screen.queryByRole('button', { name: /reset|reboot/i })).toBeNull();
     });
 
-    it('T4-03: Vault door interaction handles completion: opens exit when completed, blocks when incomplete', async () => {
+    it('T4-03: Vault door interaction handles completion: opens Fork 2 when completed, rattles when incomplete', async () => {
       // 1. Test Incomplete State
       global.fetch = vi.fn().mockResolvedValue({
         ok: true,
         json: async () => makeUnlockedState({ is_completed: false }),
       });
 
-      render(<Room5Control team={mockTeam} onLogout={mockLogout} />);
+      const { unmount } = render(<Room5Control team={mockTeam} onLogout={mockLogout} />);
       await waitFor(() => expect(activeEngineInstance).toBeTruthy());
       fireEvent.click(screen.getByText(/ENTER THE SURVEILLANCE MORGUE/i));
 
@@ -752,60 +826,51 @@ describe('Room 5 (The Surveillance Morgue) E2E 4-Tier Opaque-Box Suite', () => {
       });
       expect(activeEngineInstance.rattleDoor).toHaveBeenCalledWith('vault_door');
       expect(mockAudioInstance.bad).toHaveBeenCalled();
+      unmount();
 
-      // 2. Test Completed State
-      global.fetch = vi.fn().mockResolvedValue({
-        ok: true,
-        json: async () => makeUnlockedState({ is_completed: true }),
-      });
+      // 2. Test Completed State -> opens Fork2Modal
+      global.fetch = vi.fn()
+        .mockResolvedValueOnce({ ok: true, json: async () => makeUnlockedState({ is_completed: true }) })
+        .mockResolvedValueOnce({ ok: true, json: async () => ({ barred_choices: [], resolved: false }) });
 
+      render(<Room5Control team={mockTeam} onLogout={mockLogout} />);
+      await waitFor(() => expect(activeEngineInstance).toBeTruthy());
       await act(async () => {
-        // Trigger refetch
-        window.dispatchEvent(new Event('focus'));
+        await activeEngineInstance.callbacks.onInteract('vault_door');
       });
+      expect(screen.getByText(/FORK 2 • CORE AIRLOCK PURGE MANIFOLD/i)).toBeInTheDocument();
     });
 
-    it('T4-04: AI export workflow: formats evidence item and writes to clipboard and file download', async () => {
-      const copyToClipboard = async (text) => {
-        await navigator.clipboard.writeText(text);
-        return true;
+    it('T4-04: Evidence export workflow formats dynamic fragment objects and copies/downloads cleanly', async () => {
+      const sampleItem = {
+        id: 'EC01',
+        display: {
+          title: 'Personnel Header',
+          lines: ['Carrier burst logged 23:41 UTC', 'Decode X-Auth Base64 header.'],
+          corner_mark: 'SIGNAL INTERCEPT // EC01',
+        },
       };
 
-      const downloadFile = (filename, content) => {
-        const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        return { url, download: a.download };
-      };
+      const exportContent = formatDocumentText(sampleItem);
+      const bundleContent = formatEvidenceBundleText([sampleItem], {});
+      expect(exportContent).toContain('Personnel Header');
+      expect(bundleContent).toContain('Carrier burst logged 23:41 UTC');
 
-      const ev = ROOM5_EVIDENCE_RICH_META.EC01;
-      const exportContent = [
-        `CLASSIFICATION: ${ev.classification}`,
-        `LOCATION: ${ev.location}`,
-        ...ev.reportLines,
-        `LEAD: ${ev.highlight}`,
-      ].join('\n');
-
-      // Test clipboard copy
-      const copySuccess = await copyToClipboard(exportContent);
-      expect(copySuccess).toBe(true);
+      await navigator.clipboard.writeText(exportContent);
       expect(navigator.clipboard.writeText).toHaveBeenCalledWith(exportContent);
 
-      // Test file download
-      const dl = downloadFile('EC01_signal_intercept.txt', exportContent);
-      expect(dl.download).toBe('EC01_signal_intercept.txt');
+      const blob = new Blob([exportContent], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      expect(url).toBeTruthy();
       expect(URL.createObjectURL).toHaveBeenCalled();
     });
   });
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // TIER 5: New Room 5 Features (AI Export, Universal Board, Death-Drop, Safe Room)
+  // TIER 5: Standalone Control Basket, Dossier, Fork 2, Sanctuary & AI Director
   // ═══════════════════════════════════════════════════════════════════════════
-  describe('Tier 5: Universal Evidence Board, AI Export, Death-Drop & Sanctuary', () => {
-    it('T5-01: EvidencePickupModal & BasketModal support Copy Content, Download File, and Core/World Filters', async () => {
-      const onClosePickup = vi.fn();
+  describe('Tier 5: Control Basket, Dossier, Fork 2, Sanctuary & Ghost Director', () => {
+    it('T5-01: EvidencePickupModal & ControlBasketModal support Copy, Download, and dynamic fragment counts', async () => {
       const sampleModalData = {
         mode: 'evidence',
         id: 'EC01',
@@ -817,7 +882,7 @@ describe('Room 5 (The Surveillance Morgue) E2E 4-Tier Opaque-Box Suite', () => {
       };
 
       const { unmount } = render(
-        <EvidencePickupModal modalData={sampleModalData} onClose={onClosePickup} />
+        <EvidencePickupModal modalData={sampleModalData} onClose={vi.fn()} />
       );
 
       await act(async () => {
@@ -831,50 +896,27 @@ describe('Room 5 (The Surveillance Morgue) E2E 4-Tier Opaque-Box Suite', () => {
       expect(URL.createObjectURL).toHaveBeenCalled();
       unmount();
 
-      // Now test BasketModal with 1 core slip + 1 opened world doc
-      const basketItems = [
-        {
-          id: 'EC01',
-          collected: true,
-          kind: 'evidence',
-          display: { title: 'SIGNAL INTERCEPT · 7.455 MHz', lines: ['Carrier burst logged 23:41 UTC'] },
-        },
-        {
-          id: 'DOC-containment_protocol',
-          docId: 'containment_protocol',
-          kind: 'world_doc',
-          collected: true,
-          classification: 'WORLD RECORD · DOC',
-          location: 'Room 5B Bulletin Board',
-          reportLines: [ROOM5_WORLD_DOCUMENTS.containment_protocol.scene_text],
-          display: {
-            title: ROOM5_WORLD_DOCUMENTS.containment_protocol.title,
-            lines: [ROOM5_WORLD_DOCUMENTS.containment_protocol.scene_text],
-          },
-        },
-      ];
-
       render(
-        <BasketModal
+        <ControlBasketModal
           isOpen={true}
           onClose={vi.fn()}
-          evidence={basketItems}
-          collectedIds={['EC01', 'DOC-containment_protocol']}
+          evidence={[
+            {
+              id: 'EC01',
+              display: { title: 'SIGNAL INTERCEPT · 7.455 MHz', lines: ['Carrier burst logged 23:41 UTC'] },
+            },
+          ]}
+          collectedIds={['EC01']}
           basketUnlocked={false}
-          totalInRoom={8}
+          totalInRoom={10}
         />
       );
 
-      expect(screen.getByText(/All Records/i)).toBeInTheDocument();
-      expect(screen.getByText(/Core Slips \(1\)/i)).toBeInTheDocument();
-      expect(screen.getByText(/World Logs \(1\)/i)).toBeInTheDocument();
-      expect(screen.getByText(/Recovered 1\/8/i)).toBeInTheDocument();
-
-      fireEvent.click(screen.getByText(/World Logs \(1\)/i));
-      expect(screen.getByText(/EMERGENCY PROTOCOL/i)).toBeInTheDocument();
+      expect(screen.getByText(/1 \/ 10 COLLECTED/i)).toBeInTheDocument();
+      expect(screen.getByText('Close Basket')).toBeInTheDocument();
 
       await act(async () => {
-        fireEvent.click(screen.getByText(/Copy All Files/i));
+        fireEvent.click(screen.getByText(/Copy All Evidence/i));
       });
       expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
         expect.stringContaining('SIGNAL INTERCEPT')
@@ -884,130 +926,125 @@ describe('Room 5 (The Surveillance Morgue) E2E 4-Tier Opaque-Box Suite', () => {
       expect(formattedText).toContain('7.455 MHz');
     });
 
-    it('T5-02: Room5Control auto-records inspected world documents into [B] Evidence Board without inflating EC count', async () => {
-      global.fetch = vi.fn().mockResolvedValue({
+    it('T5-02: ControlDossierModal fetches /api/game/round/2/dossier and displays dynamic reveals', async () => {
+      global.fetch = vi.fn().mockResolvedValueOnce({
         ok: true,
-        json: async () => makeUnlockedState({ collected_fragment_ids: [], basket_unlocked: false }),
+        json: async () => ({
+          records: [{ room: 'control', clue_id: 'R2-01', reveal: { shift: 'Night Watch', badge: 'BDG-9001' } }],
+        }),
       });
 
+      render(
+        <ControlDossierModal
+          isOpen={true}
+          onClose={vi.fn()}
+          clues={makeUnlockedState().clues}
+          basketUnlocked={true}
+          totalFragments={10}
+          collectedCount={10}
+          onOpenClue={vi.fn()}
+        />
+      );
+
+      await waitFor(() => {
+        expect(global.fetch).toHaveBeenCalledWith(
+          '/api/game/round/2/dossier',
+          expect.objectContaining({ credentials: 'include' })
+        );
+      });
+      expect(screen.getByText(/CASE DOSSIER \/\/ THE SURVEILLANCE MORGUE/i)).toBeInTheDocument();
+      fireEvent.click(screen.getByText(/Copy Dossier/i));
+      expect(navigator.clipboard.writeText).toHaveBeenCalled();
+    });
+
+    it('T5-03: Fork2Modal Valve A triggers +60s penalty breach and Valve B triggers onProceedToRoom6', async () => {
+      vi.useFakeTimers();
+      const onProceedToRoom6 = vi.fn();
+      global.fetch = vi.fn()
+        .mockResolvedValueOnce({ ok: true, json: async () => ({ barred_choices: [], resolved: false }) })
+        .mockResolvedValueOnce({ ok: true, json: async () => ({ is_trap: true, message: 'Auxiliary feed valve failure. +60s time penalty applied.' }) })
+        .mockResolvedValueOnce({ ok: true, json: async () => ({ is_trap: false, is_correct: true }) });
+
+      render(
+        <Fork2Modal
+          isOpen={true}
+          onClose={vi.fn()}
+          audio={mockAudioInstance}
+          onProceedToRoom6={onProceedToRoom6}
+        />
+      );
+
+      // Flush initial useEffect status call
+      await act(async () => { await Promise.resolve(); });
+
+      // Engage Valve A (Trap)
+      await act(async () => {
+        fireEvent.click(screen.getByText('ENGAGE VALVE A'));
+      });
+      expect(screen.getByTestId('fork2-trap-overlay')).toBeInTheDocument();
+      expect(screen.getByText(/\+60s PENALTY APPLIED/i)).toBeInTheDocument();
+
+      // Advance past 2800ms trap overlay -> Valve A barred
+      await act(async () => {
+        vi.advanceTimersByTime(2900);
+      });
+      expect(screen.queryByTestId('fork2-trap-overlay')).toBeNull();
+
+      // Engage Valve B (Correct -> Proceed to Room 6)
+      await act(async () => {
+        fireEvent.click(screen.getByText(/ENGAGE VALVE B/i));
+      });
+      await act(async () => {
+        vi.advanceTimersByTime(1500);
+      });
+      expect(onProceedToRoom6).toHaveBeenCalled();
+      vi.useRealTimers();
+    });
+
+    it('T5-04: One-way entry door blocks return to Room 4 and actual scaresControl maps safe zones accurately', async () => {
       render(<Room5Control team={mockTeam} onLogout={mockLogout} />);
       await waitFor(() => expect(activeEngineInstance).toBeTruthy());
       fireEvent.click(screen.getByText(/ENTER THE SURVEILLANCE MORGUE/i));
 
       await act(async () => {
-        await activeEngineInstance.callbacks.onInteract('containment_protocol');
+        await activeEngineInstance.callbacks.onInteract('room_door');
       });
-      expect(screen.getByText(/EMERGENCY PROTOCOL/i)).toBeInTheDocument();
+      expect(activeEngineInstance.rattleDoor).toHaveBeenCalledWith('entry_door');
+      expect(screen.getByText(/There is no going back/i)).toBeInTheDocument();
 
-      fireEvent.keyDown(window, { key: 'Escape', code: 'Escape' });
-      fireEvent.click(screen.getByTitle('Open Evidence Basket (Press B)'));
+      const previewSvg = createDocumentPreviewSvg({ id: 'EC01', title: 'SIGNAL INTERCEPT' });
+      expect(previewSvg.startsWith('data:image/svg+xml')).toBe(true);
 
-      expect(screen.getByText(/World Logs \(1\)/i)).toBeInTheDocument();
-      expect(screen.getByText(/Core Slips \(8\)/i)).toBeInTheDocument();
-      expect(screen.getByText(/Recovered 0\/8 · 1 Field Logs/i)).toBeInTheDocument();
-    });
-
-    it('T5-03: Simulation death-drop & recovery + actual scaresControl safe-zone tracking work coherently', async () => {
-      const sim = createSimulationRoom5();
-      const f1 = sim.searchProp('relay_rack');
-      const f2 = sim.searchProp('relay_rack');
-      expect(f1.found && f2.found).toBe(true);
-      expect(sim.getState().collected_fragment_ids.length).toBe(2);
-
-      // Death drops 1 collected EC item at outer corridor coordinate
-      const dropRes = sim.handlePlayerDeath(-6.2, 11.4);
-      expect(dropRes.droppedItem?.fragmentId).toMatch(/^EC0[12]$/);
-      expect(sim.getState().collected_fragment_ids.length).toBe(1);
-      expect(sim.getState().dropped_items.length).toBe(1);
-
-      // Respawn point is safely inside Control Room 5B
-      expect(isInsideSafeRoom5B(SAFE_ROOM_RESPAWN[0], SAFE_ROOM_RESPAWN[2])).toBe(true);
-
-      // Recovering dropped satchel restores it to 2/8
-      const recRes = sim.recoverDroppedItem(dropRes.droppedItem.id);
-      expect(recRes.found).toBe(true);
-      expect(sim.getState().collected_fragment_ids.length).toBe(2);
-      expect(sim.getState().dropped_items.length).toBe(0);
-
-      // Actual zone mapping helper from scaresControl matches Control Bay 5B vs outer wings
       const scaresActual = await vi.importActual('../game/engine/scaresControl.js');
       expect(scaresActual.getZoneForPosition(0, -1).camId).toBe('CAM-02');
       expect(scaresActual.getZoneForPosition(-9.5, 11).camId).toBe('CAM-04');
       expect(scaresActual.getZoneForPosition(-13.5, 16.5).camId).toBe('CAM-06');
     });
 
-    it('T5-04: Environmental props (wooden_crates), CCTV bank, and Case Dossier register in [B] with full SVG sheet previews & non-empty notes', async () => {
-      global.fetch = vi.fn().mockResolvedValue({
-        ok: true,
-        json: async () => makeUnlockedState({ collected_fragment_ids: [], basket_unlocked: false }),
-      });
-
-      const downloadEvents = [];
-      const onDl = (e) => downloadEvents.push(e.detail);
-      window.addEventListener('ctc:file-downloaded', onDl);
-
-      render(<Room5Control team={mockTeam} onLogout={mockLogout} />);
-      await waitFor(() => expect(activeEngineInstance).toBeTruthy());
-      fireEvent.click(screen.getByText(/ENTER THE SURVEILLANCE MORGUE/i));
-
-      // 1. Inspect wooden_crates -> shows full dossier lines & pinned lead (never empty)
-      await act(async () => {
-        await activeEngineInstance.callbacks.onInteract('wooden_crates');
-      });
-      expect(screen.getByText(/SUPPLY CRATES \(1983\) \/\/ PROJECT HOLLOW/i)).toBeInTheDocument();
-      expect(screen.getByText(/Freight manifest points to Locker Wing 5C/i)).toBeInTheDocument();
-      fireEvent.keyDown(window, { key: 'Escape', code: 'Escape' });
-
-      // 2. Open monitor_bank & Case Dossier -> both register into [B]
-      await act(async () => {
-        await activeEngineInstance.callbacks.onInteract('monitor_bank');
-      });
-      fireEvent.keyDown(window, { key: 'Escape', code: 'Escape' });
-
-      fireEvent.click(screen.getByTitle('View Case Dossier (Press C)'));
-      expect(screen.getByText(/Download Dossier/i)).toBeInTheDocument();
-      fireEvent.click(screen.getByText(/Download Dossier/i));
-      expect(downloadEvents.some((d) => d.filename === 'delta_sector5_dossier.txt' && d.bytes > 50)).toBe(true);
-      fireEvent.keyDown(window, { key: 'Escape', code: 'Escape' });
-
-      // 3. Open Evidence Board -> verify all 3 world logs appear with SVG previews (never /parcel_wrapped.png) and full content
-      fireEvent.click(screen.getByTitle('Open Evidence Basket (Press B)'));
-      expect(screen.getByText(/World Logs \(3\)/i)).toBeInTheDocument();
-
-      const previewSvg = createDocumentPreviewSvg({ id: 'ENV-CRATES', kind: 'world_doc', title: 'SUPPLY CRATES' });
-      expect(previewSvg.startsWith('data:image/svg+xml')).toBe(true);
-
-      fireEvent.click(screen.getByText(/SUPPLY CRATES \(1983\) \/\/ PROJECT HOLLOW/i));
-      expect(screen.getByText(/QUARTERMASTER INVENTORY \/\/ SECTOR 5/i)).toBeInTheDocument();
-      fireEvent.click(screen.getByText(/View Raw Text/i));
-      expect(screen.getByText(/FIELD DOSSIER REPORT:/i)).toBeInTheDocument();
-
-      window.removeEventListener('ctc:file-downloaded', onDl);
-    });
-
-    it('T5-05: Wrapped Room 5 backend fragments unwrap into full readable, downloadable records in BasketModal', () => {
+    it('T5-05: ControlBasketModal renders backend evidence records without "Sealed parcel" masking', () => {
       render(
-        <BasketModal
+        <ControlBasketModal
           isOpen={true}
           onClose={vi.fn()}
           evidence={[
-            { id: 'EC01', is_wrapped: true, display: { title: 'Wrapped Fragment #1' } },
+            { id: 'EC01', display: { title: 'Transmission Log Fragment', lines: ['TRANSMISSION LOG — CHANNEL 7'] } },
           ]}
           collectedIds={['EC01']}
           basketUnlocked={false}
-          totalInRoom={8}
+          totalInRoom={10}
         />
       );
 
-      // Should NOT say "Sealed parcel" or hide Download/Copy in Room 5
       expect(screen.queryByText(/Sealed parcel/i)).toBeNull();
       expect(screen.getByText(/Transmission Log Fragment/i)).toBeInTheDocument();
-      expect(screen.getByText(/TRANSMISSION LOG — CHANNEL 7/i)).toBeInTheDocument();
+      expect(screen.getByText('Download All')).toBeInTheDocument();
+      expect(screen.getByText('Copy All Evidence')).toBeInTheDocument();
+      fireEvent.click(screen.getByText(/Transmission Log Fragment/i));
       expect(screen.getByText('Download')).toBeInTheDocument();
       expect(screen.getByText('Copy')).toBeInTheDocument();
     });
 
-    it('T5-06: HUD renders GFX HIGH/ECO toggle, responds to auto-Eco callback, and mounts jumpscare vignette prior to catch banner', async () => {
+    it('T5-06: HUD renders GFX HIGH/ECO toggle, responds to auto-Eco, and jumpscare catch respawns into 5B without "YOU DIED"', async () => {
       global.fetch = vi.fn().mockResolvedValue({
         ok: true,
         json: async () => makeUnlockedState({ collected_fragment_ids: [], basket_unlocked: false }),
@@ -1033,7 +1070,7 @@ describe('Room 5 (The Surveillance Morgue) E2E 4-Tier Opaque-Box Suite', () => {
       });
       expect(screen.getByRole('button', { name: /GFX:\s*ECO/i })).toBeInTheDocument();
 
-      // Jumpscare lunge shows crimson vignette (z-[68]) and clears when catch banner renders
+      // Jumpscare lunge shows crimson vignette (z-[68]) and catch respawns inside Safe Room 5B cleanly
       act(() => {
         activeEngineInstance.callbacks.onJumpscareStart({ x: -4.2, z: 9.0, gx: -4.4, gz: 9.5 });
       });
@@ -1043,9 +1080,8 @@ describe('Room 5 (The Surveillance Morgue) E2E 4-Tier Opaque-Box Suite', () => {
         activeEngineInstance.callbacks.onPlayerCaught({ x: -4.2, z: 9.0, gx: -4.4, gz: 9.5 });
       });
       expect(screen.queryByTestId('jumpscare-vignette')).toBeNull();
-      expect(screen.getByTestId('death-respawn-overlay')).toBeInTheDocument();
-      expect(screen.getByText('YOU DIED')).toBeInTheDocument();
-      expect(screen.getByText(/SPECIMEN S-011 CAUGHT YOU/i)).toBeInTheDocument();
+      expect(screen.queryByText('YOU DIED')).toBeNull();
+      expect(screen.getByText(/Specimen S-011 drove you back into Safe Room 5B/i)).toBeInTheDocument();
 
       // Verify minimal HUD timer capsule displays countdown + sector cam code concisely
       render(
@@ -1207,6 +1243,7 @@ describe('Room 5 (The Surveillance Morgue) E2E 4-Tier Opaque-Box Suite', () => {
         onTargetChange: vi.fn(),
         onInteract: onCtrlInteract,
         getAudio: () => ({}),
+        controlMode: true,
       });
       // E key and Right Mouse Button (button === 2) identically open doors/artifacts; Left Click (button === 0) locks aim instead
       ctrl.setTarget('observation_door');

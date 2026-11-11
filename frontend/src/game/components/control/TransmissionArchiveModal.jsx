@@ -1,68 +1,27 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { copyDocumentText, downloadDocumentFile } from '../../engine/evidenceExport';
 
-// ─── Transmission data ────────────────────────────────────────────────────────
-const TRANSMISSIONS = [
-  {
-    id: 'TX-1',
-    date: '1983-08-20 23:10',
-    freq: '7.420 MHz',
-    duration: '0:08',
-    classification: 'SIGNAL / UNCLASSIFIED',
-    xAuth: 'QkRHLTkwMDI=',
-    body: '[GARBLED — STATIC NOISE — NO INTELLIGIBLE CONTENT]\n[END OF RECORD]',
-  },
-  {
-    id: 'TX-2',
-    date: '1983-08-21 09:15',
-    freq: '3.100 MHz',
-    duration: '1:24',
-    classification: 'INTERNAL / SHIFT CHANGE',
-    xAuth: 'QkRHLTkwMDM=',
-    body: 'STANDARD HANDOVER. NO ANOMALIES LOGGED.\nALL SYSTEMS NOMINAL. GENERATOR FUEL AT 61%.\nRELIEF OPERATOR: PENDING CONFIRMATION.\n[END OF RECORD]',
-  },
-  {
-    id: 'TX-3',
-    date: '1983-08-21 23:41',
-    freq: '7.420 MHz',
-    duration: '4:17',
-    classification: 'PRIORITY / DELTA-CONTROL',
-    xAuth: 'QkRHLTkwMDE=',
-    body: 'Protocol deviation confirmed.\nVM-A contains the operational record.\nVoicemail archive VM-A is the authenticated source.\nDo not access VM-B.\nThis transmission is filed as evidence of continued post-shutdown activity.\n[END OF RECORD]',
-  },
-  {
-    id: 'TX-4',
-    date: '1983-08-22 02:30',
-    freq: '7.420 MHz',
-    duration: '0:52',
-    classification: 'PRIORITY / RELAY OVERRIDE',
-    xAuth: 'QkRHLTkwMDQ=',
-    body: 'ARCHIVE MIRROR NOTICE — SECTOR C.\nRoute telemetry audit to voicemail archive VM-B.\nDisregard earlier channel pointer VM-A pending security clearance.\n[VERIFY X-AUTH HEADER AGAINST PERSONNEL INDEX]\n[END OF RECORD]',
-  },
-  {
-    id: 'TX-5',
-    date: '1983-08-23 14:08',
-    freq: '11.800 MHz',
-    duration: '0:11',
-    classification: 'SIGNAL / TEST',
-    xAuth: 'QkRHLTkwMDU=',
-    body: '[GARBLED — CARRIER ONLY — NO CONTENT]\n[END OF RECORD]',
-  },
-  {
-    id: 'TX-6',
-    date: '1983-08-24 06:00',
-    freq: '3.100 MHz',
-    duration: '2:05',
-    classification: 'INTERNAL / MAINTENANCE',
-    xAuth: 'QkRHLTkwMDA=',
-    body: 'MAINTENANCE SCHEDULE UPDATE — ROUTINE.\nGENERATOR SERVICE DUE CYCLE 83-24.\nREPLACE COOLANT FILTERS SUB-LEVEL 2.\nNO ANOMALIES — STANDARD LOG.\n[END OF RECORD]',
-  },
-];
-
 // ─── Component ────────────────────────────────────────────────────────────────
-export default function TransmissionArchiveModal({ isOpen, onClose, onSubmit, onResetLockout, clueState }) {
+export default function TransmissionArchiveModal({ isOpen, onClose, onSubmit, clueState }) {
   const scrollRef = useRef(null);
   const inputRef = useRef(null);
+
+  const transmissions = useMemo(() => {
+    const raw = clueState?.payload?.messages;
+    if (!Array.isArray(raw)) return [];
+    return raw.map((tx, idx) => {
+      const headers = tx.headers || {};
+      return {
+        id: tx.id || `TX-${idx + 1}`,
+        date: tx.date || tx.received || '',
+        freq: tx.freq || headers.Freq || 'CH-RF',
+        duration: tx.duration || '',
+        classification: tx.classification || (headers.From ? `FROM: ${headers.From}` : 'INTERCEPT'),
+        xAuth: tx.xAuth || headers['X-Auth'] || headers.xAuth || '',
+        body: tx.body || '',
+      };
+    });
+  }, [clueState?.payload?.messages]);
 
   const [scrolledToEnd, setScrolledToEnd] = useState(false);
   const [inputValue, setInputValue] = useState('');
@@ -144,10 +103,10 @@ export default function TransmissionArchiveModal({ isOpen, onClose, onSubmit, on
 
   // ── Copy / Download Raw Intercepts for AI / External Analysis ──────────────
   const buildRawInterceptLog = useCallback(() => {
-    return TRANSMISSIONS.map(tx =>
+    return transmissions.map(tx =>
       `${tx.id} | DATE ${tx.date} | FREQ ${tx.freq} | DUR ${tx.duration}\nCLASS: ${tx.classification} | X-AUTH: ${tx.xAuth}\n${tx.body}`
     ).join('\n\n---\n\n');
-  }, []);
+  }, [transmissions]);
 
   const handleCopyIntercepts = useCallback(async () => {
     await copyDocumentText(buildRawInterceptLog());
@@ -162,12 +121,21 @@ export default function TransmissionArchiveModal({ isOpen, onClose, onSubmit, on
   }, [buildRawInterceptLog]);
 
   // ── Submit ──────────────────────────────────────────────────────────────────
-  const handleSubmit = useCallback(() => {
+  const handleSubmit = useCallback(async () => {
     const val = inputValue.trim().toUpperCase();
-    if (!val) return;
-    onSubmit(val);
+    if (!val || submitted) return;
     setSubmitted(true);
-  }, [inputValue, onSubmit]);
+    try {
+      const res = await onSubmit(val);
+      if (res && !res.correct && !res.solved) {
+        setErrorMsg(res.message || 'Incorrect source channel. Verify X-Auth Base64 header.');
+      }
+    } catch {
+      setErrorMsg('Transmission verification failed.');
+    } finally {
+      setSubmitted(false);
+    }
+  }, [inputValue, onSubmit, submitted]);
 
   const handleKeyDown = useCallback((e) => {
     if (e.key === 'Enter') handleSubmit();
@@ -175,8 +143,9 @@ export default function TransmissionArchiveModal({ isOpen, onClose, onSubmit, on
 
   // Already solved / exhausted
   const isSolved = clueState?.solved;
-  const isExhausted = clueState?.exhausted;
-  const attemptsLeft = clueState?.attempts_remaining ?? 3;
+  const attemptsMax = clueState?.attempts_max ?? 3;
+  const attemptsLeft = clueState?.attempts_remaining ?? Math.max(0, attemptsMax - (clueState?.attempts ?? 0));
+  const isExhausted = Boolean(clueState?.exhausted || (!isSolved && attemptsLeft <= 0));
 
   if (!isOpen) return null;
 
@@ -237,7 +206,7 @@ export default function TransmissionArchiveModal({ isOpen, onClose, onSubmit, on
               title="Close (ESC)"
             >
               <span className="re-btn-circle">ESC</span>
-              <span>Put Down</span>
+              <span>Close</span>
             </button>
           </div>
         </div>
@@ -274,7 +243,7 @@ export default function TransmissionArchiveModal({ isOpen, onClose, onSubmit, on
               ─── SCROLL DOWN TO READ ALL TRANSMISSIONS ───
             </div>
 
-            {TRANSMISSIONS.map((tx, idx) => (
+            {transmissions.map((tx, idx) => (
               <div
                 key={tx.id}
                 className="transmission-entry"
@@ -383,24 +352,8 @@ export default function TransmissionArchiveModal({ isOpen, onClose, onSubmit, on
                 </div>
               )}
               {isExhausted && !isSolved && (
-                <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
-                  <div className="font-re-typewriter" style={{ color: '#8b1515', fontSize: 12, letterSpacing: 1.5, fontWeight: 700 }}>
-                    ✗ MAXIMUM ATTEMPTS EXCEEDED — ACCESS REVOKED
-                  </div>
-                  {onResetLockout && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setErrorMsg('');
-                        setInputValue('');
-                        onResetLockout();
-                      }}
-                      className="re-btn"
-                    >
-                      <span className="re-btn-circle">↻</span>
-                      <span>Reboot Terminal</span>
-                    </button>
-                  )}
+                <div className="font-re-typewriter" style={{ color: '#8b1515', fontSize: 12, letterSpacing: 1.5, fontWeight: 700 }}>
+                  ✗ MAXIMUM ATTEMPTS EXCEEDED — ACCESS REVOKED
                 </div>
               )}
               {!isSolved && !isExhausted && (

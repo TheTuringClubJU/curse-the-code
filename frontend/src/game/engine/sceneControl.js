@@ -291,9 +291,9 @@ export function buildControlScene(E, handlers = {}) {
     solid(-5.75, -5.48, -2.15, 5.55); // Far west wall
     solid(-5.65, -3.40, -2.20, -1.86);// SW entry door wall
     solid(-3.58, -3.22, -2.00, 1.92); // Corridor partition wall
-    // NW partition (IS4_P1_Antesala_Pared_4) split around south_wing_door (X = -4.45..-3.45, Z = 5.50)
-    solid(-5.65, -4.45, 5.38, 5.62);
-    solid(-3.45, -1.48, 5.38, 5.62);
+    // NW partition (IS4_P1_Antesala_Pared_4) split around south_wing_door (X = -4.49..-3.41, Z = 5.50)
+    solid(-5.65, -4.49, 5.38, 5.62);
+    solid(-3.41, -1.48, 5.38, 5.62);
 
     // Mid-north partition (Pared_3) split widely around annex_door (Z = 8.84..9.96)
     solid(-1.74, -1.46, 5.38, 8.84);  // South section of Pared_3
@@ -318,18 +318,18 @@ export function buildControlScene(E, handlers = {}) {
     solid(-0.25, 1.58, 9.90, 10.70);  // North green bench
 
     // Expanded Wing Rooms 5C, 5D, Chamber 3 (Z: 5.50..13.30) + North Wings 5E & 5F (Z: 13.30..19.54)
-    solid(-14.25, -4.45, 5.38, 5.64);  // South perimeter west of south_wing_door
-    solid(-3.45, -1.55, 5.38, 5.64);   // South perimeter east of south_wing_door
+    solid(-14.25, -4.49, 5.38, 5.64);  // South perimeter west of south_wing_door
+    solid(-3.41, -1.55, 5.38, 5.64);   // South perimeter east of south_wing_door
     solid(-1.74, -1.48, 10.75, 19.65);  // East wall extension (5C + 5E)
     solid(-14.25, -13.95, 5.45, 19.65); // Far West outer wall (Chamber 3 + 5F)
     solid(-14.25, -1.55, 19.40, 19.68); // Far North perimeter wall (5E + 5F)
 
-    // North divider wall along Z = 13.30 split around chamber3_north_door (-12.25..-11.25), generator_door (-10.69..-9.69), & cryo_door (-6.01..-5.01)
-    solid(-14.25, -12.25, 13.16, 13.44);
-    solid(-11.25, -10.69, 13.16, 13.44);
-    solid(-9.69, -7.85, 13.16, 13.44);
-    solid(-7.85, -6.01, 13.16, 13.44);
-    solid(-5.01, -1.55, 13.16, 13.44);
+    // North divider wall along Z = 13.30 split around chamber3_north_door (-12.29..-11.21), generator_door (-10.73..-9.65), & cryo_door (-6.05..-4.97)
+    solid(-14.25, -12.29, 13.16, 13.44);
+    solid(-11.21, -10.73, 13.16, 13.44);
+    solid(-9.65, -7.85, 13.16, 13.44);
+    solid(-7.85, -6.05, 13.16, 13.44);
+    solid(-4.97, -1.55, 13.16, 13.44);
 
     // Partition between 5E Cryo Suite & 5F Generator Bay along X = -7.85 (morgue_vault_door doorway at Z = 16.62..17.78)
     solid(-8.02, -7.68, 13.30, 16.62);
@@ -345,16 +345,16 @@ export function buildControlScene(E, handlers = {}) {
 
     // Enlarged Room 5C, 5D, Chamber 3, 5E & 5F Furnishing Colliders
     solid(-7.55, -5.05, 5.62, 6.24);    // South locker bank (5C SW corner, clearing south_wing_door)
-    solid(-5.25, -2.55, 12.18, 13.10);  // CabinetShort + Radio Console + Akai deck (5C North)
-    solid(-7.15, -5.80, 12.20, 13.10);  // Tall locker cabinet NW (5C)
-    solid(-10.15, -8.35, 12.18, 13.10); // Observation north Sound Console desk (5D)
+    solid(-4.78, -1.82, 12.18, 13.10);  // CabinetShort + Radio Console + Akai deck (5C North, clears cryo_door)
+    solid(-7.68, -6.38, 12.20, 13.10);  // Tall locker cabinet NW (5C, flush to west partition)
+    solid(-9.58, -7.96, 12.18, 13.10);  // Observation north Sound Console desk (5D East, clears generator_door)
     solid(-9.60, -8.80, 5.75, 6.45);    // Observation corridor crate (5D South)
     solid(-10.85, -9.65, 8.85, 10.35); // Observation 5D Table_1.fbx (relocated west wall alcove)
     solid(-13.75, -12.40, 12.15, 13.10);// Chamber 3 specimen table north wall (cleared west of chamber3_north_door)
     solid(-13.85, -13.05, 5.85, 6.65);  // Chamber 3 south locker
     solid(-13.95, -12.65, 9.40, 11.45); // Chamber 3 morgue exam bed against west wall
-    solid(-3.75, -2.15, 16.40, 18.65);  // Room 5E Cryo Autopsy Gurney
-    solid(-4.65, -3.25, 17.20, 18.60);  // Room 5E Autopsy Table
+    solid(-3.08, -1.88, 16.35, 18.45);  // Room 5E Cryo Autopsy Gurney (along east wall)
+    solid(-4.48, -3.42, 17.32, 18.38);  // Room 5E Autopsy Table (compact tabletop footprint)
     solid(-7.35, -5.95, 18.40, 19.35);  // Room 5E Cold Storage Locker
     solid(-13.45, -11.05, 17.85, 19.25);// Room 5F Relay Rack & Generator Bank
   };
@@ -365,12 +365,12 @@ export function buildControlScene(E, handlers = {}) {
   let controlDoorSolid = solid(0.46, 1.58, 1.66, 1.96);
   const wingDoorSpecs = {
     annex_door: [-1.74, -1.46, 8.84, 9.96],
-    south_wing_door: [-4.45, -3.45, 5.38, 5.64],
+    south_wing_door: [-4.49, -3.41, 5.38, 5.64],
     observation_door: [-8.02, -7.68, 7.26, 8.42],
     chamber3_door: [-11.14, -10.80, 7.26, 8.42],
-    chamber3_north_door: [-12.25, -11.25, 13.16, 13.44],
-    cryo_door: [-6.01, -5.01, 13.16, 13.44],
-    generator_door: [-10.69, -9.69, 13.16, 13.44],
+    chamber3_north_door: [-12.29, -11.21, 13.16, 13.44],
+    cryo_door: [-6.05, -4.97, 13.16, 13.44],
+    generator_door: [-10.73, -9.65, 13.16, 13.44],
     morgue_vault_door: [-8.02, -7.68, 16.62, 17.78],
   };
   const wingDoorSolids = {
@@ -385,8 +385,8 @@ export function buildControlScene(E, handlers = {}) {
   };
 
   // ── 2. Dim Moody Hospital Orange-Red Lighting Rig (Flashlight Essential) ─
-  // Very subtle terracotta-charcoal fill (~10-15% shadow floor) so corners stay dark and [F] flashlight matters
-  const hospitalHemi = new THREE.HemisphereLight(0x522116, 0x100806, 0.22);
+  // Subtle terracotta-charcoal fill (~20% shadow floor) so doorways stay visible while [F] flashlight matters
+  const hospitalHemi = new THREE.HemisphereLight(0x633022, 0x18100d, 0.42);
   S.add(hospitalHemi);
 
   // Dim warm amber-tungsten fixture covering Safe Control Bay 5B
@@ -434,31 +434,32 @@ export function buildControlScene(E, handlers = {}) {
   const applyTextureProfile = (tex, mode) => {
     if (!tex) return;
     tex.anisotropy = 1;
+    const maxDim = mode === 'eco' ? 512 : 1024;
     if (mode === 'eco') {
       tex.minFilter = THREE.LinearMipmapNearestFilter;
-      const img = tex.image;
-      if (img && !tex.userData?._ecoDownscaled && typeof document !== 'undefined') {
-        const w = img.width || 0;
-        const h = img.height || 0;
-        if (w > 512 || h > 512) {
-          const maxDim = 512;
-          const scale = maxDim / Math.max(w, h);
-          const cw = Math.max(128, Math.round(w * scale));
-          const ch = Math.max(128, Math.round(h * scale));
-          try {
-            const cv = document.createElement('canvas');
-            cv.width = cw;
-            cv.height = ch;
-            const ctx = cv.getContext('2d');
-            if (ctx) {
-              ctx.drawImage(img, 0, 0, cw, ch);
-              tex.image = cv;
-              tex.userData = { ...(tex.userData || {}), _ecoDownscaled: true };
-              tex.needsUpdate = true;
-            }
-          } catch {
-            // Headless / non-canvas runtime safely keeps source image
+    }
+    const img = tex.image;
+    const scaleTag = mode === 'eco' ? 512 : 1024;
+    if (img && (tex.userData?._scaledDim || 9999) > scaleTag && typeof document !== 'undefined') {
+      const w = img.width || 0;
+      const h = img.height || 0;
+      if (w > maxDim || h > maxDim) {
+        const scale = maxDim / Math.max(w, h);
+        const cw = Math.max(128, Math.round(w * scale));
+        const ch = Math.max(128, Math.round(h * scale));
+        try {
+          const cv = document.createElement('canvas');
+          cv.width = cw;
+          cv.height = ch;
+          const ctx = cv.getContext('2d');
+          if (ctx) {
+            ctx.drawImage(img, 0, 0, cw, ch);
+            tex.image = cv;
+            tex.userData = { ...(tex.userData || {}), _ecoDownscaled: mode === 'eco', _scaledDim: scaleTag };
+            tex.needsUpdate = true;
           }
+        } catch {
+          // Headless / non-canvas runtime safely keeps source image
         }
       }
     }
@@ -598,30 +599,30 @@ export function buildControlScene(E, handlers = {}) {
 
   const hotspotSpecs = [
     // Clue Consoles distributed across Control Room (5B), Locker/Radio Wing (5C), & Observation Lab (5D)
-    { id: 'staff_terminal', pos: [-2.68, 1.05, 0.98],  size: [0.95, 0.85, 0.95], kind: 'clue' },
-    { id: 'radio_console',  pos: [-4.40, 1.25, 12.60], size: [0.95, 0.85, 0.80], kind: 'clue' },
-    { id: 'sound_console',  pos: [-9.25, 1.25, 12.60], size: [0.95, 0.85, 0.80], kind: 'clue' },
-    { id: 'monitor_bank',   pos: [2.90, 1.38, 0.35],   size: [0.75, 1.10, 1.35], kind: 'decor' },
+    { id: 'staff_terminal', pos: [-2.72, 1.08, 0.98],  size: [0.64, 0.62, 0.60], kind: 'clue' },
+    { id: 'radio_console',  pos: [-4.22, 1.25, 12.60], size: [0.76, 0.72, 0.72], kind: 'clue' },
+    { id: 'sound_console',  pos: [-8.78, 1.25, 12.60], size: [0.88, 0.80, 0.78], kind: 'clue' },
+    { id: 'monitor_bank',   pos: [2.90, 1.38, 0.35],   size: [0.68, 0.95, 1.10], kind: 'decor' },
 
     // 6 Search Props distributed across ALL rooms (5B, 5C, 5D, 5E, 5F)
     { id: 'relay_rack',     pos: [-12.25, 1.10, 18.45], size: [2.10, 2.20, 0.95], kind: 'fragment' },
-    { id: 'tape_deck_cart', pos: [-3.15, 1.25, 12.60],  size: [0.95, 0.85, 0.80], kind: 'fragment' },
-    { id: 'operator_chair', pos: [-2.79, 0.55, 0.27],   size: [0.80, 1.00, 0.80], kind: 'fragment' },
-    { id: 'cable_trench',   pos: [-10.42, 0.28, 10.80], size: [0.85, 0.65, 0.95], kind: 'fragment' },
-    { id: 'wall_clipboard', pos: [-2.33, 1.30, 1.66],   size: [0.85, 0.65, 0.28], kind: 'fragment' },
-    { id: 'fuse_box',       pos: [3.08, 2.05, -0.48],   size: [0.45, 0.80, 0.85], kind: 'fragment' },
+    { id: 'tape_deck_cart', pos: [-2.58, 1.25, 12.60],  size: [1.05, 0.95, 0.90], kind: 'fragment' },
+    { id: 'operator_chair', pos: [-2.79, 0.62, 0.16],   size: [0.88, 1.20, 0.88], kind: 'fragment' },
+    { id: 'cable_trench',   pos: [-10.42, 0.65, 10.80], size: [1.05, 1.25, 1.10], kind: 'fragment' },
+    { id: 'wall_clipboard', pos: [-2.05, 1.38, 1.48],   size: [0.88, 0.92, 0.68], kind: 'fragment' },
+    { id: 'fuse_box',       pos: [3.02, 1.85, -0.58],   size: [0.75, 1.15, 0.95], kind: 'fragment' },
 
     // Environmental Props & Interactive Lore across 5B, 5C, 5D, Chamber 3, 5E & 5F
-    { id: 'annex_incident_file',  pos: [-3.85, 1.18, 12.50], size: [0.55, 0.35, 0.55], kind: 'fragment' },
-    { id: 'guard_watch_ledger',   pos: [-2.85, 0.75, 6.45],  size: [0.75, 1.05, 0.75], kind: 'fragment' },
-    { id: 'containment_protocol', pos: [-10.25, 0.92, 9.40], size: [0.60, 0.35, 0.50], kind: 'fragment' },
-    { id: 'chamber3_autopsy',     pos: [-13.10, 1.22, 12.55],size: [0.95, 0.75, 0.75], kind: 'fragment' },
-    { id: 'containment_key',      pos: [-3.95, 1.05, 17.85], size: [0.65, 0.65, 0.65], kind: 'fragment' },
-    { id: 'autopsy_gurney',       pos: [-2.95, 0.65, 17.45], size: [1.45, 1.05, 2.15], kind: 'decor' },
+    { id: 'annex_incident_file',  pos: [-3.42, 1.18, 12.50], size: [0.55, 0.35, 0.55], kind: 'decor' },
+    { id: 'guard_watch_ledger',   pos: [-2.85, 0.75, 6.45],  size: [0.75, 1.05, 0.75], kind: 'decor' },
+    { id: 'containment_protocol', pos: [-10.25, 0.92, 9.40], size: [0.60, 0.35, 0.50], kind: 'decor' },
+    { id: 'chamber3_autopsy',     pos: [-13.10, 1.22, 12.55],size: [0.95, 0.75, 0.75], kind: 'decor' },
+    { id: 'containment_key',      pos: [-3.95, 1.05, 17.85], size: [0.65, 0.65, 0.65], kind: 'decor' },
+    { id: 'autopsy_gurney',       pos: [-2.48, 0.65, 17.35], size: [1.45, 1.05, 2.15], kind: 'decor' },
     { id: 'scalpel_prop',         pos: [-13.62, 0.85, 8.75], size: [0.65, 0.75, 0.65], kind: 'decor' },
     { id: 'annex_locker',         pos: [-5.75, 1.10, 5.92],  size: [1.35, 2.05, 0.65], kind: 'decor' },
     { id: 'aux_generator',        pos: [-9.25, 1.10, 18.45], size: [1.55, 2.05, 0.95], kind: 'decor' },
-    { id: 'ringing_phone',        pos: [2.62, 1.02, 0.96],   size: [0.75, 0.70, 0.80], kind: 'decor' },
+    { id: 'ringing_phone',        pos: [2.62, 1.02, 0.98],   size: [0.48, 0.48, 0.50], kind: 'decor' },
 
     { id: 'dead_intercom',   pos: [0.17, 1.35, 1.65],   size: [0.45, 0.65, 0.35], kind: 'decor' },
     { id: 'wall_breaker',    pos: [0.18, 1.15, 1.96],   size: [0.40, 0.45, 0.25], kind: 'decor' },
@@ -669,13 +670,9 @@ export function buildControlScene(E, handlers = {}) {
     });
   });
 
-  E.setFragmentCleared = (id) => {
-    const mk = fragmentMarkers[id];
-    if (mk) {
-      mk.cleared = true;
-      if (mk.ring) mk.ring.visible = false;
-    }
-  };
+  // Marker handles kept as clean no-ops (props remain purely atmospheric without glowing game-y beacons)
+  E.setFragmentCleared = () => {};
+  E.setFragmentGuidance = () => {};
 
   // Secondary monitor_bank proxy for retro_tvs cluster on South Wall of Control Bay
   const retroTvProxy = new THREE.Mesh(new THREE.BoxGeometry(1.30, 0.90, 1.05), proxyMat);
@@ -1091,8 +1088,8 @@ export function buildControlScene(E, handlers = {}) {
       // Illuminated transom bars across all outer-wing connecting doorways (amber = unlocked, red = Brass-Key locked)
       addDoorwayTransom(wingGroup, colX(1), 5.50, 0, false);                // south_wing_door
       addDoorwayTransom(wingGroup, -7.85, 7.84, Math.PI / 2, false);         // observation_door
-      addDoorwayTransom(wingGroup, -10.97, 7.84, Math.PI / 2, true);         // chamber3_door
-      addDoorwayTransom(wingGroup, colX(6), 13.30, 0, true);                 // chamber3_north_door
+      addDoorwayTransom(wingGroup, -10.97, 7.84, Math.PI / 2, false);        // chamber3_door
+      addDoorwayTransom(wingGroup, colX(6), 13.30, 0, false);                // chamber3_north_door
       addDoorwayTransom(wingGroup, colX(2), 13.30, 0, false);                // cryo_door
       addDoorwayTransom(wingGroup, colX(5), 13.30, 0, false);                // generator_door
       addDoorwayTransom(wingGroup, -7.85, rowZ(7), Math.PI / 2, false);      // morgue_vault_door
@@ -1150,9 +1147,9 @@ export function buildControlScene(E, handlers = {}) {
         }
       });
 
-      const northCabShort = cloneKitPiece(kit, 'CabinetShort', { position: [-4.40, 0, 12.60], rotY: Math.PI });
+      const northCabShort = cloneKitPiece(kit, 'CabinetShort', { position: [-3.98, 0, 12.60], rotY: Math.PI });
       if (northCabShort) wingGroup.add(northCabShort);
-      const radioCabShort = cloneKitPiece(kit, 'CabinetShort', { position: [-3.15, 0, 12.60], rotY: Math.PI });
+      const radioCabShort = cloneKitPiece(kit, 'CabinetShort', { position: [-2.62, 0, 12.60], rotY: Math.PI });
       if (radioCabShort) wingGroup.add(radioCabShort);
 
       // Shared industrial PBR materials & procedural CRT/dial faces
@@ -1260,16 +1257,16 @@ export function buildControlScene(E, handlers = {}) {
       const rAntMast = new THREE.Mesh(new THREE.CylinderGeometry(0.005, 0.01, 0.44, 8), chromeMat);
       rAntMast.position.set(0.31, 0.62, 0.14);
       radioUnit.add(rBody, rHood, rDialBezel, rDialFace, rSpeakerPlate, rAntBase, rAntMast);
-      radioUnit.position.set(-4.40, 1.078, 12.60);
+      radioUnit.position.set(-4.22, 1.078, 12.60);
       markNoMerge(radioUnit);
       wingGroup.add(radioUnit);
       visualInteract(radioUnit, 'radio_console');
 
-      const nwTallCab = cloneKitPiece(kit, 'Cabinet002', { position: [-6.45, 0, 12.68], rotY: 0 });
+      const nwTallCab = cloneKitPiece(kit, 'Cabinet002', { position: [-7.04, 0, 12.68], rotY: 0 });
       if (nwTallCab) wingGroup.add(nwTallCab);
 
       const c1 = cloneKitPiece(kit, 'Wood_Box008', { position: [-2.15, 0, 6.20], rotY: 0.28 });
-      const c2 = cloneKitPiece(kit, 'CarboardBox', { position: [-2.20, 0, 12.55], rotY: -0.45 });
+      const c2 = cloneKitPiece(kit, 'CarboardBox', { position: [-2.18, 0, 11.45], rotY: -0.45 });
       if (c1) wingGroup.add(c1);
       if (c2) wingGroup.add(c2);
 
@@ -1290,7 +1287,7 @@ export function buildControlScene(E, handlers = {}) {
       };
 
       // File 17-B flush on Room 5C CabinetShort (maxY = 1.078)
-      makeDossierProp('annex_incident_file', [-3.85, 1.09, 12.48], -0.25);
+      makeDossierProp('annex_incident_file', [-3.38, 1.09, 12.48], -0.25);
 
       // Guard Watch Ledger flush atop South Locker crate (Wood_Box008 maxY = 0.387)
       const gCrate = cloneKitPiece(kit, 'Wood_Box008', { position: [-2.85, 0, 6.45], rotY: 0.15 });
@@ -1303,7 +1300,7 @@ export function buildControlScene(E, handlers = {}) {
       makeMorgueWorktable(-10.25, 9.40, Math.PI / 2);
       makeDossierProp('containment_protocol', [-10.25, 0.792, 9.40], -0.18);
 
-      const obsCabShort = cloneKitPiece(kit, 'CabinetShort', { position: [-9.25, 0, 12.60], rotY: Math.PI });
+      const obsCabShort = cloneKitPiece(kit, 'CabinetShort', { position: [-8.78, 0, 12.60], rotY: Math.PI });
       if (obsCabShort) wingGroup.add(obsCabShort);
 
       // Multi-Part Acoustic Oscilloscope & Spectrum Desk (`sound_console` R2-06)
@@ -1338,12 +1335,12 @@ export function buildControlScene(E, handlers = {}) {
       sCable.rotation.z = Math.PI / 2;
       sCable.position.set(0.42, 0.022, -0.14);
       soundUnit.add(sBody, sTopVent, sCRTBezel, sCRTGlass, sControlPlate, sCable);
-      soundUnit.position.set(-9.25, 1.078, 12.60);
+      soundUnit.position.set(-8.78, 1.078, 12.60);
       markNoMerge(soundUnit);
       wingGroup.add(soundUnit);
       visualInteract(soundUnit, 'sound_console');
 
-      const hallBox = cloneKitPiece(kit, 'CarboardBox', { position: [-8.35, 0, 12.55], rotY: 0.22 });
+      const hallBox = cloneKitPiece(kit, 'CarboardBox', { position: [-8.28, 0, 11.45], rotY: 0.22 });
       if (hallBox) wingGroup.add(hallBox);
 
       const wallFrame = cloneKitPiece(kit, 'Frame', { position: [-9.20, 1.65, 5.74], rotX: Math.PI / 2 });
@@ -1555,7 +1552,7 @@ export function buildControlScene(E, handlers = {}) {
         mountFBX('NightStand_1.fbx', woodTex, 0.65, [-13.65, 0, 8.75], 0);                        // Chamber 3 Side Table
         mountFBX('Knife.fbx', knifeTex, 0.34, [-13.62, 0.66, 8.75], 0.65, 'scalpel_prop');        // Interactive Surgical Scalpel
         mountFBX('DressHolder_1.fbx', woodTex, 1.75, [-7.25, 0, 6.25], -0.2);                     // Annex 5C Coat/Hazmat Stand
-        mountFBX('bed_1.fbx', bedTex, 2.05, [-2.95, 0, 17.45], 0, 'autopsy_gurney');              // Room 5E Cryo Autopsy Gurney
+        mountFBX('bed_1.fbx', bedTex, 2.05, [-2.48, 0, 17.35], 0, 'autopsy_gurney');              // Room 5E Cryo Autopsy Gurney
       }
     })
     .catch((err) => {
@@ -1634,7 +1631,7 @@ export function buildControlScene(E, handlers = {}) {
       });
       const akaiGroup = normalizeProp(gltf.scene, {
         scale: 1.0,
-        position: [-3.15, 1.09, 12.60],
+        position: [-2.58, 1.09, 12.60],
         rotationY: Math.PI,
         fixTransparency: true,
       });
@@ -1645,7 +1642,7 @@ export function buildControlScene(E, handlers = {}) {
         id: 'glb:akai_reel_to_reel',
         label: 'GLB — Akai Reel-to-Reel (Room 5C tape_deck_cart)',
         object3D: akaiGroup,
-        basePos: [-3.15, 1.09, 12.60],
+        basePos: [-2.58, 1.09, 12.60],
         baseRotY: Math.PI,
         baseScale: 1.0,
       });
@@ -1968,14 +1965,6 @@ export function buildControlScene(E, handlers = {}) {
     // Subtle CRT static flicker (shared material updated at most once per frame in High mode)
     if (!isEcoMode && sharedScreenMat.static && Math.random() < 0.08) {
       sharedScreenMat.static.emissiveIntensity = 0.55 + Math.random() * 0.5;
-    }
-
-    // Pulse diegetic fragment markers (zero per-frame array allocation)
-    for (let i = 0; i < fragmentMarkerList.length; i++) {
-      const mk = fragmentMarkerList[i];
-      if (!mk.cleared) {
-        mk.mat.opacity = mk.baseOpacity * (0.7 + 0.3 * Math.sin(elapsedTime * 2.8 + i));
-      }
     }
 
     // Drift dust motes gently when visible

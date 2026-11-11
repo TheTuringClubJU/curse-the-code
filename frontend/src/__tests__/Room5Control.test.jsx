@@ -7,8 +7,9 @@ import HUDControl from '../game/components/control/HUDControl.jsx';
 import PersonnelIndexModal from '../game/components/control/PersonnelIndexModal.jsx';
 import TransmissionArchiveModal from '../game/components/control/TransmissionArchiveModal.jsx';
 import SpectrogramModal from '../game/components/control/SpectrogramModal.jsx';
-import BasketModal from '../game/components/BasketModal.jsx';
-import CaseDossierModal from '../game/components/records/CaseDossierModal.jsx';
+import ControlBasketModal from '../game/components/control/ControlBasketModal.jsx';
+import ControlDossierModal from '../game/components/control/ControlDossierModal.jsx';
+import Fork2Modal from '../game/components/control/Fork2Modal.jsx';
 
 // ─── Mocks ─────────────────────────────────────────────────────────────────────
 
@@ -64,6 +65,8 @@ vi.mock('../game/engine/sceneControl.js', () => ({
 
 vi.mock('../game/engine/scaresControl.js', () => ({
   createControlScares: vi.fn(() => mockScares),
+  isInsideSafeRoom5B: vi.fn((x, z) => x >= -3.45 && x <= 3.45 && z <= 1.85),
+  SAFE_ROOM_RESPAWN: [0.25, 0.1, 0.25],
 }));
 
 // Mock canvas for SpectrogramModal
@@ -110,10 +113,21 @@ function makeRoomState(overrides = {}) {
   };
 }
 
+const mockMessagesPayload = {
+  messages: [
+    { id: 'TX-1', received: '2001-02-20 23:10', headers: { From: 'CIPHER', 'X-Auth': 'QkRHLTkwMDI=' }, body: 'Trust VM-B.' },
+    { id: 'TX-2', received: '2001-02-21 09:15', headers: { From: 'CIPHER', 'X-Auth': 'QkRHLTkwMDM=' }, body: 'Handover log.' },
+    { id: 'TX-3', received: '2001-02-21 23:41', headers: { From: 'CIPHER', 'X-Auth': 'QkRHLTkwMDE=' }, body: 'VM-A is the authenticated source.' },
+    { id: 'TX-4', received: '2001-02-22 02:30', headers: { From: 'CIPHER', 'X-Auth': 'QkRHLTkwMDQ=' }, body: 'Use VM-B mirror.' },
+    { id: 'TX-5', received: '2001-02-23 14:08', headers: { From: 'CIPHER', 'X-Auth': 'QkRHLTkwMDU=' }, body: 'Static.' },
+    { id: 'TX-6', received: '2001-02-24 06:00', headers: { From: 'CIPHER', 'X-Auth': 'QkRHLTkwMDA=' }, body: 'Routine.' },
+  ],
+};
+
 function makeUnlockedState() {
   return makeRoomState({
     basket_unlocked: true,
-    collected_fragment_ids: ['EC01','EC02','EC03','EC04','EC05','EC06','EC07','EC08'],
+    collected_fragment_ids: ['EC01','EC02','EC03','EC04','EC05','EC06','EC07','EC08','XC01','XC02'],
   });
 }
 
@@ -168,9 +182,9 @@ describe('Room 5 (The Surveillance Morgue) Frontend Test Suite', () => {
     expect(screen.getByText(/ENTER THE SURVEILLANCE MORGUE/i)).toBeInTheDocument();
   });
 
-  it('QA-R5-FE-07: splash shows Room 5 title', async () => {
+  it('QA-R5-FE-07: splash shows R2 Room 2 title', async () => {
     render(<Room5Control team={mockTeam} onLogout={mockLogout} />);
-    expect(screen.getByText(/ROOM 5/i)).toBeInTheDocument();
+    expect(screen.getByText(/R2 · ROOM 2/i)).toBeInTheDocument();
   });
 
   it('QA-R5-FE-08: HUD not shown before start button clicked', async () => {
@@ -433,7 +447,7 @@ describe('Room 5 (The Surveillance Morgue) Frontend Test Suite', () => {
       <PersonnelIndexModal isOpen={true} onClose={vi.fn()} onSubmit={vi.fn()}
         clueState={{ id: 'R2-01', solved: true, attempts_remaining: 0 }} />
     );
-    expect(screen.getByText(/IDENTITY CONFIRMED|RECORD LOCKED/i)).toBeInTheDocument();
+    expect(screen.getByText(/CREDENTIAL VERIFIED|RECORD LOCKED/i)).toBeInTheDocument();
   });
 
   it('QA-R5-FE-35: staff_terminal triggers team name injection scare', async () => {
@@ -454,21 +468,20 @@ describe('Room 5 (The Surveillance Morgue) Frontend Test Suite', () => {
     expect(screen.getByText(/TRANSMISSION LOG/i)).toBeInTheDocument();
   });
 
-  it('QA-R5-FE-37: TransmissionArchiveModal shows 6 transmissions', () => {
+  it('QA-R5-FE-37: TransmissionArchiveModal shows 6 transmissions from API payload', () => {
     render(
       <TransmissionArchiveModal isOpen={true} onClose={vi.fn()} onSubmit={vi.fn()}
-        clueState={{ id: 'R2-05', attempts_remaining: 3 }} />
+        clueState={{ id: 'R2-05', attempts_remaining: 3, payload: mockMessagesPayload }} />
     );
     expect(screen.getByText('TX-1')).toBeInTheDocument();
     expect(screen.getByText('TX-6')).toBeInTheDocument();
   });
 
-  it('QA-R5-FE-38: TransmissionArchiveModal TX-3 is marked as authentic', () => {
+  it('QA-R5-FE-38: TransmissionArchiveModal renders dynamic transmission body', () => {
     render(
       <TransmissionArchiveModal isOpen={true} onClose={vi.fn()} onSubmit={vi.fn()}
-        clueState={{ id: 'R2-05', attempts_remaining: 3 }} />
+        clueState={{ id: 'R2-05', attempts_remaining: 3, payload: mockMessagesPayload }} />
     );
-    // TX-3 body mentions VM-A
     expect(screen.getByText(/VM-A is the authenticated source/i)).toBeInTheDocument();
   });
 
@@ -576,23 +589,41 @@ describe('Room 5 (The Surveillance Morgue) Frontend Test Suite', () => {
     render(<Room5Control team={mockTeam} onLogout={mockLogout} />);
     await waitFor(() => expect(activeEngineInstance).toBeTruthy());
     await act(async () => { await activeEngineInstance.callbacks.onInteract('staff_terminal'); });
-    // Directly call clue submit via PersonnelIndexModal onSubmit
+
+    const answerInput = screen.getByPlaceholderText(/BDG-XXXX/i);
+    fireEvent.change(answerInput, { target: { value: 'BDG-9001' } });
+    await act(async () => {
+      fireEvent.click(screen.getByText('QUERY'));
+    });
+
+    await waitFor(() => {
+      expect(mockAudioInstance.good).toHaveBeenCalled();
+    });
   });
 
   it('QA-R5-FE-49: wrong clue answer calls engine.shake()', async () => {
     global.fetch = vi.fn()
       .mockResolvedValueOnce({ ok: true, json: async () => makeUnlockedState() })
-      .mockResolvedValueOnce({ ok: true, json: async () => ({ correct: false }) })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ correct: false, attempts_remaining: 2 }) })
       .mockResolvedValueOnce({ ok: true, json: async () => makeUnlockedState() });
 
     render(<Room5Control team={mockTeam} onLogout={mockLogout} />);
     await waitFor(() => expect(activeEngineInstance).toBeTruthy());
-    // Trigger an interaction that leads to a wrong submit
-    // Verify shake is wired up by checking the engine mock
-    expect(activeEngineInstance.shake).toBeDefined();
+    await act(async () => { await activeEngineInstance.callbacks.onInteract('staff_terminal'); });
+
+    const answerInput = screen.getByPlaceholderText(/BDG-XXXX/i);
+    fireEvent.change(answerInput, { target: { value: 'BDG-0000' } });
+    await act(async () => {
+      fireEvent.click(screen.getByText('QUERY'));
+    });
+
+    await waitFor(() => {
+      expect(activeEngineInstance.shake).toHaveBeenCalled();
+      expect(mockAudioInstance.bad).toHaveBeenCalled();
+    });
   });
 
-  it('QA-R5-FE-50: RoomCompleteModal shown when room_completed returned', async () => {
+  it('QA-R5-FE-50: ControlRoomCompleteModal shown and openDoor called when room_completed returned', async () => {
     global.fetch = vi.fn()
       .mockResolvedValueOnce({ ok: true, json: async () => makeUnlockedState() })
       .mockResolvedValueOnce({ ok: true, json: async () => ({ correct: true, room_completed: true }) })
@@ -600,9 +631,320 @@ describe('Room 5 (The Surveillance Morgue) Frontend Test Suite', () => {
 
     render(<Room5Control team={mockTeam} onLogout={mockLogout} />);
     await waitFor(() => expect(activeEngineInstance).toBeTruthy());
-    // After room complete, openDoor should be called
-    // The RoomCompleteModal itself is rendered but hidden until triggered
-    expect(activeEngineInstance.openDoor).toBeDefined();
+    await act(async () => { await activeEngineInstance.callbacks.onInteract('staff_terminal'); });
+
+    const answerInput = screen.getByPlaceholderText(/BDG-XXXX/i);
+    fireEvent.change(answerInput, { target: { value: 'BDG-9001' } });
+    await act(async () => {
+      fireEvent.click(screen.getByText('QUERY'));
+    });
+
+    await waitFor(() => {
+      expect(activeEngineInstance.openDoor).toHaveBeenCalled();
+      expect(screen.getByTestId('control-room-complete-modal')).toBeInTheDocument();
+      expect(screen.getByText(/R2 · ROOM 2 CLEARED/i)).toBeInTheDocument();
+    });
+  });
+
+  it('QA-R5-FE-51: ControlBasketModal renders 10-fragment progress, Close Basket, and optical sliders', () => {
+    const sampleEv = [
+      {
+        id: 'EC01',
+        display: { title: 'Personnel Header', lines: ['Badge suffix verified'] },
+      },
+    ];
+    render(
+      <ControlBasketModal
+        isOpen={true}
+        onClose={vi.fn()}
+        evidence={sampleEv}
+        collectedIds={['EC01']}
+        basketUnlocked={false}
+        totalInRoom={10}
+      />
+    );
+    expect(screen.getByText(/1 \/ 10 COLLECTED/i)).toBeInTheDocument();
+    expect(screen.getByText('Close Basket')).toBeInTheDocument();
+    fireEvent.click(screen.getByText(/Personnel Header/i));
+    expect(screen.getByText('Contrast')).toBeInTheDocument();
+    expect(screen.getByText('Brightness')).toBeInTheDocument();
+  });
+
+  it('QA-R5-FE-52: ControlDossierModal fetches /api/game/round/2/dossier and displays Room 5 clues', async () => {
+    global.fetch = vi.fn().mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        records: [{ room: 'control', clue_id: 'R2-01', reveal: { note: 'Shift log verified' } }],
+      }),
+    });
+    render(
+      <ControlDossierModal
+        isOpen={true}
+        onClose={vi.fn()}
+        clues={makeUnlockedState().clues}
+        basketUnlocked={true}
+        totalFragments={10}
+        collectedCount={10}
+        onOpenClue={vi.fn()}
+      />
+    );
+    await waitFor(() => {
+      expect(global.fetch).toHaveBeenCalledWith(
+        '/api/game/round/2/dossier',
+        expect.objectContaining({ credentials: 'include' })
+      );
+    });
+    expect(screen.getByText(/CASE DOSSIER \/\/ THE SURVEILLANCE MORGUE/i)).toBeInTheDocument();
+  });
+
+  it('QA-R5-FE-53: Fork2Modal Valve A triggers trap +60s overlay and Valve B invokes onProceedToRoom6', async () => {
+    const onProceedToRoom6 = vi.fn();
+    global.fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ barred_choices: [], resolved: false }) })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ is_trap: true, message: 'Aerosol breach +60s.' }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ is_trap: false, is_correct: true }),
+      });
+
+    render(
+      <Fork2Modal
+        isOpen={true}
+        onClose={vi.fn()}
+        audio={mockAudioInstance}
+        onProceedToRoom6={onProceedToRoom6}
+      />
+    );
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('ENGAGE VALVE A'));
+    });
+    expect(screen.getByTestId('fork2-trap-overlay')).toBeInTheDocument();
+    expect(screen.getByText(/\+60s PENALTY APPLIED/i)).toBeInTheDocument();
+  });
+
+  it('QA-R5-FE-54: interacting with vault_door when room is completed opens Fork2Modal', async () => {
+    global.fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ ...makeUnlockedState(), is_completed: true }) })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ barred_choices: [], resolved: false }) });
+
+    render(<Room5Control team={mockTeam} onLogout={mockLogout} />);
+    await waitFor(() => expect(activeEngineInstance).toBeTruthy());
+    await act(async () => {
+      await activeEngineInstance.callbacks.onInteract('vault_door');
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText(/FORK 2 • CORE AIRLOCK PURGE MANIFOLD/i)).toBeInTheDocument();
+    });
+  });
+
+  it('QA-R5-FE-55: Polished sealed basket & dossier UI hide location/decoy spoilers until unsealed', async () => {
+    const { container, unmount } = render(
+      <ControlBasketModal
+        isOpen={true}
+        onClose={vi.fn()}
+        evidence={[
+          { id: 'EC01', is_wrapped: true, display: { title: 'Wrapped Fragment #1' } },
+          { id: 'XC01', is_wrapped: true, is_decoy: true, display: { title: 'Wrapped Fragment #None' } },
+        ]}
+        collectedIds={['EC01', 'XC01']}
+        basketUnlocked={false}
+        totalInRoom={10}
+      />
+    );
+    expect(container.querySelector('.corkboard-surface')).toBeInTheDocument();
+    expect(screen.getByText(/EVIDENCE BASKET • RECOVERED FRAGMENTS/i)).toBeInTheDocument();
+    expect(screen.getByText('Sealed Evidence #1')).toBeInTheDocument();
+    expect(screen.getByText('Sealed Evidence #2')).toBeInTheDocument();
+    expect(screen.queryByText(/Relay Rack/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Decoy/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/#None/i)).not.toBeInTheDocument();
+    unmount();
+
+    global.fetch = vi.fn().mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ records: [] }),
+    });
+    const dossierRender = render(
+      <ControlDossierModal
+        isOpen={true}
+        onClose={vi.fn()}
+        clues={makeUnlockedState().clues}
+        basketUnlocked={true}
+        totalFragments={10}
+        collectedCount={10}
+        onOpenClue={vi.fn()}
+      />
+    );
+    expect(dossierRender.container.querySelector('.desk-surface')).toBeInTheDocument();
+    expect(dossierRender.container.querySelectorAll('.manila-dossier').length).toBe(3);
+    expect(screen.getByText(/R2-01 → R2-05 → R2-06/i)).toBeInTheDocument();
+    await waitFor(() => expect(global.fetch).toHaveBeenCalled());
+  });
+
+  it('QA-R5-FE-56: Real sceneControl doorways (incl. cryo_door & generator_door) toggle solids cleanly and stay >= 0.48m passable', async () => {
+    const actualSceneMod = await vi.importActual('../game/engine/sceneControl.js');
+    const THREE = await import('three');
+    const solids = [];
+    const mockEngine = {
+      S: new THREE.Scene(),
+      add: vi.fn(),
+      solid: (x0, x1, z0, z1) => {
+        const b = { x0, x1, z0, z1 };
+        solids.push(b);
+        return b;
+      },
+      removeSolid: (b) => {
+        const idx = solids.indexOf(b);
+        if (idx !== -1) solids.splice(idx, 1);
+      },
+      interact: vi.fn(),
+      visualInteract: vi.fn(),
+      anim: vi.fn(),
+      ref: {},
+      loadGLB: vi.fn(() => new Promise(() => {})),
+    };
+
+    actualSceneMod.buildControlScene(mockEngine);
+
+    // Initially all 8 wing doors + control door add colliders; opening them must clear corridors
+    mockEngine.toggleControlDoor();
+    const doorways = [
+      { id: 'control_door', axis: 'Z', fixed: [0.5, 1.6], walk: [1.0, 2.6], toggle: () => {} },
+      { id: 'annex_door', axis: 'X', fixed: [8.8, 10.0], walk: [-2.4, -0.8] },
+      { id: 'south_wing_door', axis: 'Z', fixed: [-4.5, -3.4], walk: [4.6, 6.4] },
+      { id: 'observation_door', axis: 'X', fixed: [7.2, 8.5], walk: [-8.7, -7.0] },
+      { id: 'chamber3_door', axis: 'X', fixed: [7.2, 8.5], walk: [-11.8, -10.1] },
+      { id: 'chamber3_north_door', axis: 'Z', fixed: [-12.3, -11.2], walk: [12.0, 14.3] },
+      { id: 'cryo_door', axis: 'Z', fixed: [-6.1, -4.9], walk: [12.0, 14.3] },
+      { id: 'generator_door', axis: 'Z', fixed: [-10.8, -9.6], walk: [12.0, 14.3] },
+      { id: 'morgue_vault_door', axis: 'X', fixed: [16.6, 17.8], walk: [-8.7, -7.0] },
+    ];
+
+    const RM = 0.2828;
+    const isBlocked = (x, z) =>
+      solids.some((s) => {
+        const cx = Math.max(s.x0, Math.min(x, s.x1));
+        const cz = Math.max(s.z0, Math.min(z, s.z1));
+        return (x - cx) ** 2 + (z - cz) ** 2 < RM * RM;
+      });
+
+    for (const dw of doorways) {
+      if (!dw.toggle) {
+        expect(mockEngine.toggleWingDoor(dw.id)).toBe(true);
+      }
+      const clearPositions = [];
+      for (let p = dw.fixed[0]; p <= dw.fixed[1] + 0.001; p += 0.02) {
+        let ok = true;
+        for (let w = dw.walk[0]; w <= dw.walk[1]; w += 0.08) {
+          const x = dw.axis === 'Z' ? p : w;
+          const z = dw.axis === 'Z' ? w : p;
+          if (isBlocked(x, z)) {
+            ok = false;
+            break;
+          }
+        }
+        if (ok) clearPositions.push(p);
+      }
+      const clearWidth = clearPositions.length
+        ? clearPositions[clearPositions.length - 1] - clearPositions[0]
+        : 0;
+      expect(clearWidth).toBeGreaterThanOrEqual(0.48);
+    }
+  });
+
+  it('QA-R5-FE-57: Out-of-order search shows non-spoiler Compartment Sealed, wrapped pickup shows clear confirmation, ambient props open notes, and HUD minimap tracks room', async () => {
+    global.fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => makeRoomState({ collected_fragment_ids: ['EC01'] }) })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ found: false, locked: true, message: 'Locked for now.' }) })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          found: true,
+          fragment_id: 'EC02',
+          total_collected: 2,
+          total_in_room: 10,
+          message: 'You discovered a wrapped fragment inside the relay rack!',
+        }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => makeRoomState({
+          collected_fragment_ids: ['EC01', 'EC02'],
+          evidence: [
+            { id: 'EC01', is_wrapped: true, display: { title: 'Wrapped Fragment #1' } },
+            { id: 'EC02', is_wrapped: true, display: { title: 'Wrapped Fragment #2' } },
+          ],
+        }),
+      });
+
+    render(<Room5Control team={mockTeam} onLogout={mockLogout} />);
+    await waitFor(() => expect(activeEngineInstance).toBeTruthy());
+
+    // Attempting out-of-order prop shows Compartment Sealed without leaking sequence route
+    await act(async () => {
+      await activeEngineInstance.callbacks.onInteract('tape_deck_cart');
+    });
+    expect(screen.getByText(/Compartment Sealed/i)).toBeInTheDocument();
+    expect(screen.queryByText(/NEXT SEARCH STOP/i)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByText('Continue Search'));
+
+    // Collecting a wrapped fragment opens unmistakable Evidence Recovered confirmation
+    await act(async () => {
+      await activeEngineInstance.callbacks.onInteract('relay_rack');
+    });
+    expect(screen.getByText(/EVIDENCE RECOVERED \/\/ PLACED IN BASKET \[B\]/i)).toBeInTheDocument();
+    expect(screen.getByText(/Tamper-Sealed Evidence #2/i)).toBeInTheDocument();
+    expect(screen.getByText('Relay Rack')).toBeInTheDocument();
+    fireEvent.click(screen.getByText('Continue'));
+
+    // Ambient prop opens readable inspection writing without firing a backend /search request
+    const callsBeforeAmbient = global.fetch.mock.calls.length;
+    await act(async () => {
+      await activeEngineInstance.callbacks.onInteract('autopsy_gurney');
+    });
+    expect(global.fetch.mock.calls.length).toBe(callsBeforeAmbient);
+    expect(screen.getByText(/Stainless Cryo Examination Gurney/i)).toBeInTheDocument();
+    expect(screen.getByText(/AMBIENT PROP/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByText('Close'));
+
+    // CCTV Monitor opens tactical floorplan blueprint without sequence spoilers
+    await act(async () => {
+      await activeEngineInstance.callbacks.onInteract('monitor_bank');
+    });
+    expect(screen.getByText(/TACTICAL FLOORPLAN/i)).toBeInTheDocument();
+    expect(screen.queryByText(/START HERE \(SEQ #1-#2\)/i)).not.toBeInTheDocument();
+  });
+
+  it('QA-R5-FE-58: Bottom-left architectural minimap highlights active sector dynamically (5B -> 5F)', () => {
+    const { rerender } = render(
+      <HUDControl
+        roomTitle="The Surveillance Morgue"
+        totalFragments={10}
+        collectedCount={2}
+        basketUnlocked={false}
+        playerPos={{ x: 0.25, z: 0.25, yaw: 0 }}
+      />
+    );
+    const minimap = screen.getByTestId('hud-room-minimap');
+    expect(minimap).toBeInTheDocument();
+    expect(screen.getByText('CONTROL BAY (SAFE)')).toBeInTheDocument();
+
+    rerender(
+      <HUDControl
+        roomTitle="The Surveillance Morgue"
+        totalFragments={10}
+        collectedCount={2}
+        basketUnlocked={false}
+        playerPos={{ x: -12.0, z: 16.0, yaw: 1.5 }}
+      />
+    );
+    expect(screen.getByText('RELAY VAULT')).toBeInTheDocument();
+    expect(screen.getAllByText('5F').length).toBeGreaterThanOrEqual(1);
   });
 });
 
