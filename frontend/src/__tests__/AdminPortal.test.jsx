@@ -271,7 +271,7 @@ describe('Admin Portal Frontend Tests', () => {
         fireEvent.click(leaderboardBtn);
       });
 
-      expect(screen.getByText(/curse the code • live leaderboard/i)).toBeDefined();
+      expect(screen.getByRole("heading", { name: /curse the code.*live leaderboard/i })).toBeDefined();
       expect(screen.getByRole('button', { name: /back to control/i })).toBeDefined();
 
       // Switch back
