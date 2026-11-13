@@ -13,6 +13,7 @@ import {createRecordsScares} from './scaresRecords.js'
 import {buildControlScene} from './sceneControl.js'
 import {createControlScares} from './scaresControl.js'
 import {setupControls} from './controls.js'
+import {attachTorch,updateTorchSway,setTorch,bindTorchKey} from './torch.js'
 import {buildBasement} from './basementScene.js'
 export {posterCanvas} from './tex.js'
 
@@ -132,13 +133,8 @@ export function createEngine(el,room,h){
  let lamp=null,LB=9,scares=null;
 
  if(room.id === 'records'){
-   // Tactical Heavy-duty Player Flashlight
-   const flashL = new THREE.SpotLight(0xfff0d8, 4.2, 16, Math.PI / 5.5, 0.45, 1.6);
-   flashL.position.set(0.18, -0.15, 0.1);
-   flashL.target.position.set(0, 0, -5);
-   cam.add(flashL);
-   cam.add(flashL.target);
-   E.flashlight = flashL;
+   // Shared player torch (identical in every room: see torch.js)
+   attachTorch(E, cam);
 
    // Ambient sub-station fill light
    const ambHemi = new THREE.HemisphereLight(0x2a363a, 0x080a0c, 1.2);
@@ -147,75 +143,7 @@ export function createEngine(el,room,h){
    buildRecordsScene(E);
    scares = createRecordsScares(E, h);
  } else if (room.id === 'control') {
-   const flashL = new THREE.SpotLight(0xf3f7fa, 18.0, 32, Math.PI / 4.2, 0.55, 1.32);
-   flashL.position.set(0.22, -0.16, 0.08);
-   flashL.target.position.set(0, 0, -6);
-   flashL.castShadow = false;
-   cam.add(flashL);
-   cam.add(flashL.target);
-   E.flashlight = flashL;
-   E._flashBaseIntensity = 18.0;
-   E._userFlashlightOn = true;
-   E._flashOutageActive = false;
-
-   const flashGroup = new THREE.Group();
-   flashGroup.position.set(0.24, -0.21, -0.32);
-   flashGroup.rotation.set(0.05, -0.07, 0.02);
-   cam.add(flashGroup);
-   E.flashlightModel = flashGroup;
-
-   E.loadGLB('/assets/models/room5/flashlight.glb').then((gltf) => {
-     const torch = gltf.scene;
-     let tailNode = null;
-     let lensNode = null;
-     torch.traverse((o) => {
-       if (!o.isMesh) return;
-       o.userData.np = 1;
-       o.castShadow = false;
-       o.receiveShadow = false;
-       if (o.material?.name === 'lace') {
-         o.visible = false;
-         return;
-       }
-       if (o.name === 'defaultMaterial_7') tailNode = o;
-       if (o.material?.name === 'glass' || o.name === 'defaultMaterial_11') {
-         lensNode = o;
-         o.material = o.material.clone();
-         o.material.emissive = new THREE.Color(0xdcf0ff);
-         o.material.emissiveIntensity = 1.6;
-         E._flashLensMat = o.material;
-       }
-     });
-
-     torch.updateMatrixWorld(true);
-     if (tailNode && lensNode) {
-       const tailC = new THREE.Vector3();
-       const lensC = new THREE.Vector3();
-       new THREE.Box3().setFromObject(tailNode).getCenter(tailC);
-       new THREE.Box3().setFromObject(lensNode).getCenter(lensC);
-       const dir = lensC.sub(tailC).normalize();
-       torch.quaternion.setFromUnitVectors(dir, new THREE.Vector3(0, 0, -1));
-     }
-
-     torch.updateMatrixWorld(true);
-     const bodyBox = new THREE.Box3();
-     torch.traverse((o) => {
-       if (o.isMesh && o.visible) bodyBox.expandByObject(o);
-     });
-     const sz = new THREE.Vector3();
-     const ctr = new THREE.Vector3();
-     bodyBox.getSize(sz);
-     bodyBox.getCenter(ctr);
-
-     const norm = new THREE.Group();
-     torch.position.set(-ctr.x, -ctr.y, -ctr.z);
-     norm.add(torch);
-     const scale = 0.24 / Math.max(sz.z, 0.001);
-     norm.scale.setScalar(scale);
-     flashGroup.add(norm);
-   }).catch((err) => {
-     console.warn('[ROOM5] Flashlight GLB load failed:', err);
-   });
+   attachTorch(E, cam);
 
    R.shadowMap.enabled = false;
    R.setPixelRatio(Math.min(devicePixelRatio || 1, 0.85));
@@ -227,6 +155,8 @@ export function createEngine(el,room,h){
    buildControlScene(E, h);
    scares = createControlScares(E, h);
  } else {
+   attachTorch(E, cam);
+   E._torchUnbind = bindTorchKey(E);
    // ---- shell: textured walls, floor, ceiling, trim ----
    const wp=X.tex(X.wallpaper()),wmat=new THREE.MeshStandardMaterial({map:wp,bumpMap:wp,bumpScale:.5,roughness:.92,color:0xffffff})
    const fl=X.floorPlanks(),fmat=new THREE.MeshStandardMaterial({map:X.tex(fl.map),bumpMap:X.tex(fl.bump,{srgb:false}),bumpScale:1.2,roughness:.62,metalness:.04})
@@ -438,12 +368,7 @@ export function createEngine(el,room,h){
      cam.fov += (targetFov - cam.fov) * Math.min(1, dt * 15);
      cam.updateProjectionMatrix();
    }
-   if (room.id === 'control' && E.flashlightModel && !reduce) {
-     const swayAmt = mv ? 0.012 : 0.002;
-     const spd = mv ? 8 : 1.5;
-     E.flashlightModel.position.y = -0.22 + Math.sin(t * spd) * swayAmt;
-     E.flashlightModel.position.x = 0.24 + Math.cos(t * (spd * 0.5)) * (swayAmt * 0.8);
-   }
+   updateTorchSway(E, t, mv, reduce);
 
    // lamp flicker
    if(lamp){
@@ -492,20 +417,7 @@ export function createEngine(el,room,h){
     if(ref.studyExitDoor) ref.studyExitDoor.isOpen = false;
   },
   isDoorOpen(){ return !!(ref.bulkheadDoor?.isOpen || ref.roomDoor?.isOpen || ref.studyExitDoor?.isOpen); },
-  setFlashlight(on){
-    if (room.id === 'control') {
-      E._userFlashlightOn = Boolean(on);
-      if (E._flashOutageActive) {
-        if (E.flashlight) E.flashlight.intensity = 0;
-        if (E._flashLensMat) E._flashLensMat.emissiveIntensity = 0;
-        return;
-      }
-      if(E.flashlight) E.flashlight.intensity = on ? (E._flashBaseIntensity || 9.0) : 0;
-      if(E._flashLensMat) E._flashLensMat.emissiveIntensity = on ? 1.8 : 0;
-      return;
-    }
-    if(E.flashlight) E.flashlight.intensity = on ? 4.2 : 0;
-  },
+  setFlashlight(on){ setTorch(E, on); },
   isFlashlightOn(){ return !!(E.flashlight && E.flashlight.intensity > 0); },
   halt(){ halt=true; cancelAnimationFrame(raf); },
   frame(){ last=performance.now()-16; loop(performance.now()); },
@@ -530,6 +442,7 @@ export function createEngine(el,room,h){
     scares?.dispose?.();
     controls.dispose();
     window.removeEventListener('resize',rs);
+    E._torchUnbind?.();
     if (room.id === 'control') {
       disposeObjectResources(S);
       E._hlMatById = null;
