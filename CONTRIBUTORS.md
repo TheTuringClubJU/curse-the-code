@@ -23,3 +23,5 @@ This list is maintained by hand alongside the GitHub [contributors graph](https:
 Add new contributors below this line, following the format above.
 One bullet per contribution/PR, most recent contribution added to the bottom of their list.
 -->
+- Krishnapriya N ([@krishnapriya-op](https://github.com/krishnapriya-op))
+  - Implemented frontend for basement room 3 ([#10](https://github.com/TheTuringClubJU/curse-the-code/pull/10))
