@@ -15,6 +15,17 @@
 | **Room 5: The Surveillance Morgue** | CRT Bunker / Quarantine Plastic | **Swapnil** | **Hari Priya** | `R2-01`, `R2-05`, `R2-06` (3 clues) | 10 pieces (`EC01`–`EC08`, `XC01`, `XC02`) | **Assigned** |
 | **Room 6: The Anointing Vault** | Occult Containment Tomb / Flesh Core | **Swapnil** | **Hari Priya** | `R2-08`, `R2-09`, `R2-10` (3 clues) | Master Case Dossier Convergence | **Assigned** |
 
+### Active Visual Upgrade & Developer Assignments (Round 1 & Round 2)
+
+| Room | Assigned Developer | Branch | Current Focus |
+| :--- | :--- | :--- | :--- |
+| **Room 1: Lena's Bedroom** | **Subham** | `visual/room1-bedroom` | 3D Visual Upgrade & Props Integration |
+| **Room 2: Daniel's Study** | **Shahan** | `visual/room2-study` | 3D Visual Upgrade & Hacker Sanctuary Props |
+| **Room 3: The Basement** | **Krishnapriya** | `visual/room3-basement` | 3D Visual Upgrade & Containment Bunker |
+| **Room 4: The Rotting Archive** | **Ishan** | `visual/room4-records` | 3D Visual Upgrade & Archive Shelves |
+| **Room 5: The Surveillance Morgue** | **Swapnil** | `feat/room-5-frontend` | Completed (PR #25 in Review) |
+| **Room 6: The Anointing Vault** | **Swapnil** | `feat/room-6-vault` | Build & Clue Modals |
+
 ### Round 1 Master Test Target
 - **Total Tests for Round 1:** Exactly **300 Automated Tests**
   - **Room 1 (Bedroom):** 100 Tests (1 E2E Full Walkthrough + 99 Unit/Integration Tests)
@@ -77,6 +88,95 @@ Every developer working on Room 2 (Subham & Shahan) and Room 3 (Krishnapriya & V
 3. **Exit Door Mechanics:**
    - The exit door remains deadbolted until all room clues are marked `solved = TRUE`.
    - When the final clue of a room is solved, the submission response returns `room_completed: true`, triggering the 3D door swing animation (`engine.openDoor()`).
+
+### 1.3 Room 1 Visual Upgrade & Props Roadmap (Assigned: Subham · Branch: `visual/room1-bedroom`)
+
+**Owner:** Subham · **Branch:** `visual/room1-bedroom` · **Round:** 1 (Room 1 of 3)
+
+#### Files You Own (Do NOT touch anything else)
+- `frontend/src/game/engine/scene.js`
+- `frontend/src/game/engine/decor.js`
+- `frontend/src/game/rooms/bedroom.js`
+- `frontend/public/assets/models/bedroom/` (compressed `.glb` only)
+- `frontend/public/assets/audio/bedroom/` (`.mp3` / `.ogg` only)
+- *(Coordinate with the lead before touching `frontend/src/game/engine/scares.js` or `audio.js`, since Rooms 1–3 share them.)*
+
+**Never touch:** `Room1Bedroom.jsx`, `engine.js`, `torch.js`, `controls.js`, `App.jsx`, `content*.json`, `tests/`, `frontend/src/__tests__/`.
+
+#### Room Spec & Continuity
+- **Previous room:** Round 1 Intro / Lobby (`at_start`)
+- **Next room:** Room 2 — Daniel's Study (`study`) via `room_door` (`onTransitionToRoom2` — backend unlocks when all 4 clues `R1-01..R1-04` are resolved).
+- **Theme / Palette:** Victorian gothic / Halloween, moonlit purple (`bg: #140d26`, `wall: #4a3f73`, `accent: #8f7bff`, `lamp: #ffcf8a`, `moon: #9db8ff`).
+- **Dimensions / Spawn (`rooms/bedroom.js`):** `size: [8, 3, 6]`, `spawn: [0.8, 1.8, 0]`.
+- **Player Torch:** Already built-in across all rooms via `engine/torch.js` (`flashlight.glb`, `[F]` toggle). Do **not** add another torch.
+- **Seam cue:** Keep the exit door (`room_door`) looking like an interior house door leading toward Daniel's study (e.g., subtle green CRT under-door glow when unlocked).
+
+#### Exact Object IDs & `hiding.spot` Checklist (from `content.test.json` + `scene.js`)
+Every interactive prop must remain a **real visible 3D mesh** tagged with `E.interact(obj, '<exact_id>')` and placed within walking raycast reach (~5.5 m). Props holding fragments must visually support their `hiding.spot` description.
+
+##### Clue Entry Props (`clue_entry`)
+- [ ] `diary` (`R1-01`, Open diary)
+- [ ] `notebook` (`R1-02`, School notebook)
+- [ ] `poster` (`R1-03`, Wall poster)
+- [ ] `portrait` (`R1-04`, Portrait + decoy `XB02` *"behind the canvas"*)
+
+##### Fragment Hiding Props (`hiding`) — 15 fragments (13 real + 2 decoys)
+- [ ] `trunk` (`EB01`: *"folded in the lid lining"*)
+- [ ] `nightstand` (`EB02`: *"the drawer, under the tissues"*)
+- [ ] `candle` (`EB03`: *"under the candle holder"*)
+- [ ] `desk` (`EB04`: *"under the clutter on the desk"*)
+- [ ] `bed` (`EB05`: *"under the mattress edge"*)
+- [ ] `wardrobe` (`EB06`: *"a coat pocket"*)
+- [ ] `musicbox` (`EB07`: *"inside the musicbox compartment"*) — **Note:** `scene.js` & `EB07` use `musicbox` (no underscore), keep `'musicbox'` in `E.interact`!
+- [ ] `pillow` (`EB08`: *"tucked beneath the pillow"*)
+- [ ] `clock` (`EB09`: *"behind the clock face"*)
+- [ ] `bookshelf` (`EB10`: *"inside a hollowed book on the shelf"*)
+- [ ] `mirror` (`EB11`: *"behind the frame"*)
+- [ ] `chair` (`EB12`: *"the cushion seam"*)
+- [ ] `doll` (`EK01`: *"inside the doll"*)
+- [ ] `photo_frame` (`XB01` DECOY: *"behind the photograph"*) — must look just as legit as real props
+- [ ] `lamp` (Table lamp)
+- [ ] `window` (Window)
+
+##### Door & Decor (`decor`)
+- [ ] `room_door` (Exit door to Study — must visibly swing open via `engine.openDoor()`)
+- [ ] Non-interactive/decor visuals (`rug`, `pumpkins`, `wall_frames`, `beams_webs`, `bats_spider`) — keep `userData.np = 1` on shell/non-interactive filler so they never steal `[E]`.
+
+#### Phase-by-Phase Tasks
+##### Phase 1 — Research & Baseline
+- [ ] Play Room 5 (`?room=5`) to benchmark quality, then play Room 1 end-to-end as baseline.
+- [ ] Run `cd frontend && npm test` and confirm all tests pass before editing.
+- [ ] Create Pinterest mood board (8–12 Victorian gothic haunted bedroom images) and get lead approval.
+
+##### Phase 2 — Sourcing & Compression
+- [ ] Shortlist & pick a dark Victorian bedroom shell GLB (fits `[8, 3, 6]`) from Sketchfab/itch.io/Poly Pizza.
+- [ ] Source/select GLBs for hero props above (or mark "keep procedural" if no GLB fits `hiding.spot`).
+- [ ] Source Room 1 audio (`amb_bedroom`, `music_box_faint`, `clock_tick`, footsteps, ≥3 one-shots, stinger).
+- [ ] Compress **every** GLB with Meshopt + WebP:
+  - Shell ≤ 2 MB (≤ 80k tris, ≤ 1024 tex)
+  - Hero ≤ 1 MB (≤ 15k tris), Filler ≤ 400 KB (≤ 3k tris)
+  - Total `public/assets/models/bedroom/` ≤ 8 MB
+- [ ] Keep track of model and audio sources (author, licence, file sizes).
+
+##### Phase 3 — Safe GLB Integration
+- [ ] Load shell GLB asynchronously in `scene.js` with `userData.np = 1`, keeping procedural walls/floor as `.catch()` fallback.
+- [ ] Calibrate `E.solid(x0, x1, z0, z1)` wall and furniture collisions; verify spawn `[0.8, 1.8, 0]` is clear.
+- [ ] Replace/upgrade props with `E.loadGLB` + `E.interact(grp, id)` + `E.add(grp)`, keeping procedural fallback in `.catch()`.
+- [ ] Grade materials toward moonlit purple/aged Victorian wood (no bright glossy plastic).
+
+##### Phase 4 — Horror & Audio Pass
+- [ ] Room dark enough that unlit corners rely on the built-in `[F]` torch (`engine/torch.js`), plus moon/candle/lamp contrast.
+- [ ] Ambient + footsteps + ≥3 positional one-shots wired cleanly; mute works and audio stops on room exit.
+- [ ] ≥3 situation-based scares (never in first 30 s, never during modals/typing, never blocking clues).
+- [ ] At least 1 "wrongness" prop (e.g. doll head tracking / crooked portrait) and 1 peripheral silhouette moment.
+
+##### Phase 5 — Verification & PR
+- [ ] `cd frontend && npm test` passes (zero tests modified)
+- [ ] `cd frontend && npm run build` passes
+- [ ] Full manual walkthrough: enter from lobby → collect all 15 fragments → solve/resolve `R1-01..R1-04` → `room_door` opens → refresh restores state → transitions to Study
+- [ ] Performance test at 6× CPU throttle (Chrome DevTools): ≥ 30 FPS throttled / ≥ 60 FPS normal; `< 250` draw calls
+- [ ] `git diff --stat origin/main` touches **only** your owned files + `public/assets/*/bedroom/`
+- [ ] Open PR on `visual/room1-bedroom` with screenshots + 30 s gameplay clip
 
 ---
 
@@ -167,6 +267,88 @@ Backend implementation and local PostgreSQL verification: see
 [`docs/ROOM2_HANDOFF.md`](docs/ROOM2_HANDOFF.md) and
 [`docs/TEST_RESULTS.md`](docs/TEST_RESULTS.md). Frontend and browser E2E remain pending.
 
+### 2.7 Room 2 Visual Upgrade & Props Roadmap (Assigned: Shahan · Branch: `visual/room2-study`)
+
+**Owner:** Shahan · **Branch:** `visual/room2-study` · **Round:** 1 (Room 2 of 3)
+
+#### Files You Own (Do NOT touch anything else)
+- `frontend/src/game/engine/studyScene.js`
+- `frontend/src/game/rooms/study.js`
+- `frontend/public/assets/models/study/` (compressed `.glb` only)
+- `frontend/public/assets/audio/study/` (`.mp3` / `.ogg` only)
+
+**Never touch:** `Room2Study.jsx`, `engine.js`, `torch.js`, `controls.js`, `App.jsx`, `content*.json`, `tests/`, `frontend/src/__tests__/`.
+
+#### Room Spec & Continuity
+- **Previous room:** Room 1 — Lena's Bedroom (`bedroom`). Back door `study_door_back` returns to Bedroom.
+- **Next room:** Room 3 — The Basement (`basement`) via `study_door_exit` (`onTransitionToRoom3` — backend unlocks when all 4 clues `R1-05..R1-08` are resolved).
+- **Theme / Palette:** Green phosphor CRT hacker sanctuary (`bg: #04120b`, `wall: #0b2418`, `accent: #3dff8b`, `glow: #7dffb0`, `lamp: #9dffc4`).
+- **Dimensions / Spawn (`rooms/study.js`):** `size: [7.0, 3.2, 6.4]`, `spawn: [0.0, 1.6, 0]`.
+- **Player Torch:** Built-in across all rooms via `engine/torch.js` (`flashlight.glb`, `[F]` toggle). Do **not** add another torch.
+- **Seam cues:** Carry subtle Victorian/purple traces from Room 1 into the 1980s mahogany-and-CRT study; make `study_door_exit` a heavy steel bulkhead door leading to Basement.
+
+#### Exact Object IDs & `hiding.spot` Checklist (from `content.test.json` + `studyScene.js`)
+Every interactive prop must remain a **real visible 3D mesh** tagged with `E.interact(obj, '<exact_id>')`. Note: Study uses strict fragment ordering and several props hold 2 fragments.
+
+##### Clue Entry Props (`clue_entry`)
+- [ ] `tablet_drawer` (`R1-05`, Locked desk drawer — under desk edge)
+- [ ] `crt_monitor` (`R1-06`, Old CRT monitor — center desk)
+- [ ] `terminal_pc` (`R1-07`, Terminal PC — beige 80s tower on desk)
+- [ ] `line_printer` (`R1-08`, Dot-matrix printer — side table with fan-fold paper)
+
+##### Fragment Hiding Props (`hiding`) — 16 fragments (14 real + 2 decoys)
+- [ ] `bookshelf` (`ES01`: *"inside a hollowed book"* & `EK03`: *"behind a row of books"*)
+- [ ] `corkboard` (`ES02`: *"pinned under a flyer"* & `ES09`: *"the back of the board"*)
+- [ ] `desk_blotter` (`ES03`: *"under the green blotter"*)
+- [ ] `filing_cabinet` (`ES04`: *"top drawer, behind the folders"* & `ES10`: *"bottom drawer, false bottom"*)
+- [ ] `sticky_wall` (`ES05`: *"behind the yellow notes"*)
+- [ ] `armchair` (`ES06`: *"between cushion and frame"*)
+- [ ] `reel_recorder` (`ES07`: *"taped under the reel"* & `EK02`: *"the recorder's case"*)
+- [ ] `cable_bundle` (`ES08`: *"a tag tied to the cables"*)
+- [ ] `floor_lamp` (`ES11`: *"rolled in the lampshade"*)
+- [ ] `wastebin` (`ES12`: *"crumpled at the bottom"*)
+- [ ] `window` (`XS01` DECOY: *"the sill"*) — must look just as legit as real props
+- [ ] `radiator` (`XS02` DECOY: *"behind the pipes"*) — must look just as legit as real props
+
+##### Doors & Decor (`decor`)
+- [ ] `study_door_exit` (Heavy steel exit door to Basement — visibly opens via `engine.openDoor()` / `ref.studyExitDoor`)
+- [ ] `desk` (Heavy mahogany executive desk — keep `E.solid` unblocking WASD movement), `coat_stand`, `rug`, `beams_webs` (`userData.np = 1` on filler).
+
+#### Phase-by-Phase Tasks
+##### Phase 1 — Research & Baseline
+- [ ] Play Room 5 (`?room=5`) to benchmark quality; play Room 1 → Room 2 end-to-end as baseline.
+- [ ] Run `cd frontend && npm test` and confirm all tests pass before editing.
+- [ ] Create Pinterest mood board (8–12 images: 1980s dark hacker study, mahogany desk, green CRT glow) and get lead approval.
+
+##### Phase 2 — Sourcing & Compression
+- [ ] Source a moody 1980s study/office shell GLB (fits `[7.0, 3.2, 6.4]`) or upgrade wall/floor/beam architecture cleanly.
+- [ ] Source 1980s-accurate GLBs for hero props (`crt_monitor`, `terminal_pc`, `line_printer`, `reel_recorder`, `filing_cabinet`, `armchair`, `desk`, etc.).
+- [ ] Source Room 2 audio (`amb_study`, `crt_hum`, `whisper_far`, footsteps, ≥3 one-shots, stinger).
+- [ ] Compress **every** GLB with Meshopt + WebP:
+  - Shell ≤ 2 MB (≤ 80k tris, ≤ 1024 tex)
+  - Hero ≤ 1 MB (≤ 15k tris), Filler ≤ 400 KB (≤ 3k tris)
+  - Total `public/assets/models/study/` ≤ 8 MB
+- [ ] Keep track of model and audio sources (author, licence, file sizes).
+
+##### Phase 3 — Safe GLB Integration
+- [ ] Load GLBs asynchronously in `studyScene.js`, keeping existing procedural geometry as `.catch()` fallback.
+- [ ] Preserve `E.interact(grp, id)` on every prop and verify `E.solid` collisions never block the player around `desk`.
+- [ ] Keep CRT canvas screen texture / emissive green phosphor look aligned with Room 2's theme.
+
+##### Phase 4 — Horror & Audio Pass
+- [ ] Darken ambient fill so built-in `[F]` torch (`engine/torch.js`) + green CRT monitor + brass floor lamp drive visibility.
+- [ ] Ambient + 60 Hz CRT hum + footsteps + ≥3 positional one-shots; mute works and audio stops on exit.
+- [ ] ≥3 situation-based scares (never in first 30 s, never during modals/typing, never blocking clues).
+- [ ] Add subtle "wrongness" details (chair slightly turned, sticky-note wall shadows, peripheral silhouette).
+
+##### Phase 5 — Verification & PR
+- [ ] `cd frontend && npm test` passes (zero tests modified)
+- [ ] `cd frontend && npm run build` passes
+- [ ] Full manual walkthrough: enter from Room 1 → collect all 16 fragments in chain → solve/resolve `R1-05..R1-08` → `study_door_exit` opens → refresh restores state → transitions to Basement
+- [ ] Performance test at 6× CPU throttle: ≥ 30 FPS throttled / ≥ 60 FPS normal; `< 250` draw calls
+- [ ] `git diff --stat origin/main` touches **only** your owned files + `public/assets/*/study/`
+- [ ] Open PR on `visual/room2-study` with screenshots + 30 s gameplay clip
+
 ---
 
 ## 3. Room 3: The Basement (The Containment Cellar)
@@ -239,6 +421,83 @@ Backend implementation and local PostgreSQL verification: see
   - Stage 3: Validate `['BETA', '2468']` and record official Round 1 completion timestamp in `team_rooms`.
 - [x] **BE-R3-06** Enforce atomic database transactions to prevent race conditions during final terminal submission.
 - [x] **BE-R3-07** Issue Round 1 completion status (qualification managed strictly via Admin Portal).
+
+### 3.7 Room 3 Visual Upgrade & Props Roadmap (Assigned: Krishnapriya · Branch: `visual/room3-basement`)
+
+**Owner:** Krishnapriya · **Branch:** `visual/room3-basement` · **Round:** 1 (Room 3 of 3 — Finale)
+
+#### Files You Own (Do NOT touch anything else)
+- `frontend/src/game/engine/basementScene.js`
+- `frontend/src/game/rooms/basement.js`
+- `frontend/public/assets/models/basement/` (compressed `.glb` only)
+- `frontend/public/assets/audio/basement/` (`.mp3` / `.ogg` only)
+
+**Never touch:** `Room3Basement.jsx`, `engine.js`, `torch.js`, `controls.js`, `App.jsx`, `content*.json`, `tests/`, `frontend/src/__tests__/`.
+
+#### Room Spec & Continuity
+- **Previous room:** Room 2 — Daniel's Study (`study`, descending through heavy steel door).
+- **Next:** Round 1 Completion → Lobby / Bridge to Round 2 (`onProceedToLobby` / `Round1VictoryModal` once `R1-FIN` resolves).
+- **Theme / Palette:** Industrial containment bunker, concrete slabs, red emergency strobe (`bg: #14161a`, `wall: #34343a`, `floor: #25272b`, `accent: #ff4d4d`, `lamp: #ff2a2a`).
+- **Dimensions / Spawn (`rooms/basement.js`):** `size: [8, 3.2, 7]`, `spawn: [0.8, 1.8, 2.6]`.
+- **Player Torch:** Built-in across all rooms via `engine/torch.js` (`flashlight.glb`, `[F]` toggle). Do **not** add another torch.
+- **Seam cue:** `floor_seal` (2m circular steel vault hatch in center floor) visually foreshadows Round 2 ("What Was Sealed Below"). Make it heavy, industrial, and ominous.
+
+#### Exact Object IDs & `hiding.spot` Checklist (from `content.test.json` + `basementScene.js`)
+Every interactive prop must remain a **real visible 3D mesh** tagged with `E.interact(obj, '<exact_id>')` and reachable with `[E]`.
+
+##### Clue Entry Props (`clue_entry`)
+- [ ] `intercom` (`R1-09`, Wall intercom on concrete wall)
+- [ ] `rack_door` (`R1-10`, Server rack door with yellow note taped inside)
+- [ ] `containment_console` (`R1-FIN`, Massive triple-screen steel console — 3-stage Round 1 finale)
+
+##### Fragment Hiding Props (`hiding`) — 5 fragments (3 real + 2 decoys)
+- [ ] `server_rack` (`EK04`: *"the printer tray"* & `XK02` DECOY: *"a drive bay"*) — 42U rack with tray/bays
+- [ ] `maintenance_terminal` (`EK05`: *"the terminal's audio player"*) — wall-mounted CRT terminal
+- [ ] `toolbox` (`EK06`: *"under the tool tray"*) — heavy red steel mechanics toolbox
+- [ ] `floor_seal` (`XK01` DECOY: *"under the grating"*) — 2m circular floor seal / vault hatch
+
+##### Door & Decor (`decor`)
+- [ ] `room_door` (Entry/exit door — keep `ref.roomDoor` / `engine.openDoor()` working)
+- [ ] `wall_monitor` (Countdown monitor — keep `ref.wallMonitor?.setText?.(...)` working if wired; never fake a timer)
+- [ ] `pipes` (Overhead steam pipes + subtle steam/drip feel)
+- [ ] `barrels` (Cargo crates / sealed drums)
+- [ ] `fuse_box` (Industrial electrical breaker box)
+
+#### Phase-by-Phase Tasks
+##### Phase 1 — Research & Baseline
+- [ ] Play Room 5 (`?room=5`) to benchmark quality; play Room 2 → Room 3 as baseline.
+- [ ] Run `cd frontend && npm test` and confirm all tests pass before editing.
+- [ ] Create Pinterest mood board (8–12 images: 1980s concrete bunker, server room, red emergency lighting, sealed floor hatch) and get lead approval.
+
+##### Phase 2 — Sourcing & Compression
+- [ ] Source a damp concrete bunker/server-room shell GLB (fits `[8, 3.2, 7]`) or modular industrial walls/pillars.
+- [ ] Source 1980s analog/industrial GLBs (`server_rack`, `containment_console`, `maintenance_terminal`, `toolbox`, `intercom`, `barrels`, `fuse_box`, `floor_seal`, `pipes`).
+- [ ] Source Room 3 audio (`amb_basement`, `server_hum`, `pipe_drip`, concrete footsteps, ≥3 one-shots, stinger).
+- [ ] Compress **every** GLB with Meshopt + WebP:
+  - Shell ≤ 2 MB (≤ 80k tris, ≤ 1024 tex)
+  - Hero ≤ 1 MB (≤ 15k tris), Filler ≤ 400 KB (≤ 3k tris)
+  - Total `public/assets/models/basement/` ≤ 8 MB
+- [ ] Keep track of model and audio sources (author, licence, file sizes).
+
+##### Phase 3 — Safe GLB Integration
+- [ ] Load GLBs asynchronously in `basementScene.js`, keeping existing procedural objects as `.catch()` fallback.
+- [ ] Calibrate `E.solid` boxes around racks, barrels, console, and walls; verify spawn `[0.8, 1.8, 2.6]` is clear.
+- [ ] Ensure `rack_door` and `server_rack` are both distinct and cleanly targetable with `[E]`.
+- [ ] Grade materials to dark damp concrete, rusted steel, and grime.
+
+##### Phase 4 — Horror & Audio Pass
+- [ ] Keep room dark with red emergency accent (`#ff2a2a`) so built-in `[F]` torch (`engine/torch.js`) slices through concrete & steam.
+- [ ] Ambient + server fan hum + pipe drips + footsteps + ≥3 positional one-shots; mute works and audio stops on exit.
+- [ ] ≥3 situation-based scares (never in first 30 s, never during modals or final 3-stage terminal input).
+- [ ] Add subtle wrongness/dread around `floor_seal` (distant thudding/scratches from below hatch).
+
+##### Phase 5 — Verification & PR
+- [ ] `cd frontend && npm test` passes (zero tests modified)
+- [ ] `cd frontend && npm run build` passes
+- [ ] Full manual walkthrough: enter from Study → collect all 5 fragments → solve `R1-09`, `R1-10`, and 3-stage `R1-FIN` → Round 1 victory flow works → refresh preserves state
+- [ ] Performance test at 6× CPU throttle: ≥ 30 FPS throttled / ≥ 60 FPS normal; `< 250` draw calls
+- [ ] `git diff --stat origin/main` touches **only** your owned files + `public/assets/*/basement/`
+- [ ] Open PR on `visual/room3-basement` with screenshots + 30 s gameplay clip
 
 ---
 
@@ -676,21 +935,101 @@ Each room has a dedicated suite of **100 tests**:
 - [x] **BE-R4-09** Route `POST /api/game/round/2/fork/fork1/choose`: Wing A trap penalty (+60s) with permanent lockout vs Wing B correct route progression.
 - [x] **BE-R4-10** Support multi-team competition isolation and real-time leaderboard ranking with penalty accumulation.
 
+#### Room 4 Visual Upgrade & Props Roadmap (Assigned: Ishan · Branch: `visual/room4-records`)
+
+**Owner:** Ishan · **Branch:** `visual/room4-records` · **Round:** 2 (Room 4 of 6)
+
+##### Files You Own (Do NOT touch anything else)
+- `frontend/src/game/engine/sceneRecords.js`
+- `frontend/src/game/engine/scaresRecords.js`
+- `frontend/src/game/engine/audioRecords.js`
+- `frontend/src/game/engine/texRecords.js`
+- `frontend/src/game/rooms/records.js`
+- `frontend/public/assets/models/records/` (compressed `.glb` only)
+- `frontend/public/assets/audio/records/` (`.mp3` / `.ogg` only)
+
+**Never touch:** `Room4Records.jsx` (battery drain/recharge logic lives here!), `Fork1Modal.jsx`, `engine.js`, `torch.js`, `controls.js`, `App.jsx`, `content*.json`, `tests/`, `frontend/src/__tests__/`.
+
+##### Room Spec & Continuity
+- **Previous:** Round 2 Start (`at_start`, after Round 1 bridge).
+- **Next:** **Fork 1** (Auxiliary Wing A vs. Primary Wing B rotary selector) → Room 5 (`control`). `bulkhead_door` (`R2-07`) is sealed and chained, unsealing when solved/resolved. **Do NOT break Fork 1 or `bulkhead_door`.**
+- **Theme / Palette:** Flooded sub-basement archive, low ceiling with dripping corroded pipes, buckled concrete with standing black water, bowing metal shelves, dying/buzzing fluorescent tubes (`accent: #c47a00`, `emergency: #ba1a1a`, `water: #061014`). No blue, no clean white.
+- **Dimensions / Spawn (`rooms/records.js`):** `size: [10, 3.2, 8]`, `spawn: [0, 2.6, 0]`.
+- **Player Torch:** Built-in via `engine/torch.js` (`flashlight.glb`, intensity `18.0`, `[F]` toggle). `Room4Records.jsx` already hooks battery drain + `flashlight_item`/`battery_pack` recharge. Do not touch battery logic or add a second torch.
+
+##### Exact Object IDs & `hiding.spot` Checklist (from `content.test.json` + `sceneRecords.js`)
+Every interactive prop must remain a **real visible 3D mesh** tagged with `E.interact(obj, '<exact_id>')`.
+
+###### Clue Entry Props (`clue_entry`)
+- [ ] `report_folder` (`R2-02`, Yellowed incident folder on desk)
+- [ ] `microfilm_reader` (`R2-03`, Optical microfilm reader with brass dial look)
+- [ ] `timeline_board` (`R2-04`, Whiteboard / corkboard of event cards)
+- [ ] `bulkhead_door` (`R2-07`, Heavy sealed & chained north bulkhead door — opens via `ref.bulkheadDoor` / `engine.openDoor()`)
+
+###### Fragment Hiding Props (`interactive_fragment`) — 12 fragments (`ER01`–`ER10` + decoys `XR01`, `XR02`)
+- [ ] `filing_cabinet_a` (`ER01`: *"bottom drawer, under collapsed papers"* & `ER02`: *"inside back wall of second drawer"*)
+- [ ] `filing_cabinet_b` (`ER03`: *"behind hanging folder dividers, top drawer"* & `ER04`: *"inside hanging folder"*)
+- [ ] `archive_shelves` (`ER05`: *"waterlogged box on third shelf"* & `ER06`: *"manila envelope taped to back of bottom shelf"* & `XR02` DECOY: *"loose on top shelf"*)
+- [ ] `clerk_desk` (`ER07`: *"under the desk mat, right-hand side"* & `ER10`: *"inside locked top drawer"*)
+- [ ] `card_catalog` (`ER08`: *"inside drawer labelled S, behind last index card"*)
+- [ ] `waste_basket` (`XR01` DECOY: *"crumpled in the waste basket"*)
+- [ ] `vent_grate` (`ER09`: *"taped to inside face of vent cover"*)
+
+###### Doors, Pickups & Decor (`decor`)
+- [ ] `room_door` (Entry archival hatch — keep `ref.roomDoor` / `Room4Records.jsx` handler working)
+- [ ] Keep Fork 1 rotary selector + arches + `flashlight_item` / `battery_pack` interactions intact!
+- [ ] `filing_cabinets`, `ceiling_light`, pipes, water puddles, fallen archive boxes (non-interactive filler = `userData.np = 1`, no readable dates/names/clue text!).
+
+##### Phase-by-Phase Tasks
+###### Phase 1 — Research & Baseline
+- [ ] Play Room 5 (`?room=5`) to benchmark quality; play Room 4 (`?room=4` or Round 2 start) as baseline.
+- [ ] Run `cd frontend && npm test` and confirm all Room 4 tests pass before editing.
+- [ ] Create Pinterest mood board (8–12 images: flooded concrete archive, rusted filing stacks, flickering tubes, 1980s microfilm/office decay) and get lead approval.
+
+###### Phase 2 — Sourcing & Compression
+- [ ] Source a flooded/decaying sub-basement or archive room shell GLB (fits `[10, 3.2, 8]`, low ceiling) + heavy bulkhead/corridor arches.
+- [ ] Source 1970s–1980s archive GLBs (`filing_cabinet_a/b`, `archive_shelves`, `clerk_desk`, `card_catalog`, `microfilm_reader`, `waste_basket`, `vent_grate`, `bulkhead_door`).
+- [ ] Source/refine Room 4 audio (`amb_records`, `fluorescent_buzz`, `paper_shuffle`, wet concrete footsteps, pipe drips, ≥3 one-shots, stinger).
+- [ ] Compress **every** GLB with Meshopt + WebP:
+  - Shell ≤ 2 MB (≤ 80k tris, ≤ 1024 tex)
+  - Hero ≤ 1 MB (≤ 15k tris), Filler ≤ 400 KB (≤ 3k tris)
+  - Total `public/assets/models/records/` ≤ 8 MB
+- [ ] Keep track of model and audio sources (author, licence, file sizes).
+
+###### Phase 3 — Safe GLB Integration
+- [ ] Load GLBs asynchronously in `sceneRecords.js`, keeping existing procedural geometry as `.catch()` fallback.
+- [ ] Preserve `E.interact(grp, id)` on every prop and ensure `E.solid` collisions match shelf aisles and Fork 1 corridor.
+- [ ] Grade all materials to palette (rust, mold, dark wet concrete, amber filament — no blue/clean white).
+- [ ] Keep standing water puddles & drip particles performant (low draw calls, merged shelf rows).
+
+###### Phase 4 — Horror & Audio Pass
+- [ ] Dark sub-basement lit only by flickering/dying tubes + built-in `[F]` torch (`engine/torch.js`).
+- [ ] Extend `scaresRecords.js` with ≥3 situation-based scares (never blocking modals/Fork 1/typing; keep Fork 1 trap sequence intact).
+- [ ] Ensure `audioRecords.js` stops cleanly when transitioning through Fork 1 into Room 5.
+
+###### Phase 5 — Verification & PR
+- [ ] `cd frontend && npm test` passes (zero tests modified)
+- [ ] `cd frontend && npm run build` passes
+- [ ] Full manual walkthrough: collect all 12 fragments → solve/resolve `R2-02..R2-04` + `R2-07` → `bulkhead_door` unseals → test Fork 1 → enters Room 5 cleanly → refresh preserves state
+- [ ] Performance test at 6× CPU throttle: ≥ 30 FPS throttled / ≥ 60 FPS normal; `< 250` draw calls
+- [ ] `git diff --stat origin/main` touches **only** your owned files + `public/assets/*/records/`
+- [ ] Open PR on `visual/room4-records` with screenshots + 30 s gameplay clip
+
 ---
 
 ### 5.2 Room 5: The Surveillance Morgue (`control`)
 
-#### Detailed Tasks for Frontend (Room 5)
-- [ ] **FE-R5-01** Create `frontend/src/game/rooms/control.js` with 3D diamond-plate steel floor, 9-CRT merged monitor wall with animated phosphor static, scanline post-processing, and procedural quarantine sheeting with sine-wave draft displacement.
-- [ ] **FE-R5-02** Create `frontend/src/game/Room5Control.jsx` integrating engine, fragment detection, and terminal hooks.
-- [ ] **FE-R5-03** Build `PersonnelIndexModal.jsx` for `R2-01`: `#000000` CRT aesthetic with `#4dff78` phosphor text, bitmap font, 60-row scrollable roster, physical toggle filters (`DEPT`, `STATUS`), and interactive command prompt.
-- [ ] **FE-R5-04** Build `TransmissionArchiveModal.jsx` for `R2-05`: physical scrollable teletype paper tape, 6 transmission blocks, scroll-to-end detection gate revealing input prompt.
-- [ ] **FE-R5-05** Build `SpectrogramModal.jsx` for `R2-06`: circular oscilloscope CRT, dual VM tabs, click-drag time scrubber, 3-band filter toggles, waveform pattern disruption rendering 4 hidden digits.
-- [ ] **FE-R5-06** Implement 6 interactive fragment props (`relay_rack`, `tape_deck_cart`, `operator_chair`, `cable_trench`, `wall_clipboard`, `fuse_box`) with amber emissive hover highlight.
-- [ ] **FE-R5-07** Implement Monitor Bank special interaction: clicking CCTV triggers JS-05 (past 4-minute playback showing impossible stalker entity).
-- [ ] **FE-R5-08** Implement Dead Intercom special trigger: situation-based random activation playing frantic interrupted distress call.
-- [ ] **FE-R5-09** Implement Fork 2 Core Airlock valve selector with high-voltage failure trap sequence.
-- [ ] **FE-R5-10** Implement situation-triggered horror events for Room 5: JS-03 (Corner entity 10-minute slow crawl and lunge), JS-07 (Personnel roster injected with real player team name as active subject), and progressive room fog desaturation.
+#### Detailed Tasks for Frontend (Room 5 - Lead: Swapnil)
+- [x] **FE-R5-01** Create `frontend/src/game/rooms/control.js` with 3D diamond-plate steel floor, 9-CRT merged monitor wall with animated phosphor static, scanline post-processing, and procedural quarantine sheeting with sine-wave draft displacement.
+- [x] **FE-R5-02** Create `frontend/src/game/Room5Control.jsx` integrating engine, fragment detection, and terminal hooks.
+- [x] **FE-R5-03** Build `PersonnelIndexModal.jsx` for `R2-01`: `#000000` CRT aesthetic with `#4dff78` phosphor text, bitmap font, 60-row scrollable roster, physical toggle filters (`DEPT`, `STATUS`), and interactive command prompt.
+- [x] **FE-R5-04** Build `TransmissionArchiveModal.jsx` for `R2-05`: physical scrollable teletype paper tape, 6 transmission blocks, scroll-to-end detection gate revealing input prompt.
+- [x] **FE-R5-05** Build `SpectrogramModal.jsx` for `R2-06`: circular oscilloscope CRT, dual VM tabs, click-drag time scrubber, 3-band filter toggles, waveform pattern disruption rendering 4 hidden digits.
+- [x] **FE-R5-06** Implement 6 interactive fragment props (`relay_rack`, `tape_deck_cart`, `operator_chair`, `cable_trench`, `wall_clipboard`, `fuse_box`) with amber emissive hover highlight.
+- [x] **FE-R5-07** Implement Monitor Bank special interaction: clicking CCTV triggers JS-05 (past 4-minute playback showing impossible stalker entity).
+- [x] **FE-R5-08** Implement Dead Intercom special trigger: situation-based random activation playing frantic interrupted distress call.
+- [x] **FE-R5-09** Implement Fork 2 Core Airlock valve selector with high-voltage failure trap sequence.
+- [x] **FE-R5-10** Implement situation-triggered horror events for Room 5: JS-03 (Corner entity 10-minute slow crawl and lunge), JS-07 (Personnel roster injected with real player team name as active subject), and progressive room fog desaturation.
 
 #### Detailed Tasks for Backend (Room 5)
 - [ ] **BE-R5-01** Create `GET /api/game/room/control/state`.
@@ -719,6 +1058,49 @@ Each room has a dedicated suite of **100 tests**:
 - [ ] **BE-R6-02** Route `POST /api/game/clue/R2-08/submit`: tampered steps verification, returning clean steps array in reveal payload.
 - [ ] **BE-R6-03** Route `POST /api/game/clue/R2-09/submit`: 4-digit circuit authorization code verification.
 - [ ] **BE-R6-04** Route `POST /api/game/clue/R2-10/submit`: atomic compound verification of all 3 fields (Clean Steps + Auth Code + Operator Badge). On success: set `qualified_at`, set `completed_at`, update leaderboard rank, and return `round_complete: true`.
+
+#### Room 6 Grand Finale Roadmap (Assigned: Swapnil · Branch: `feat/room-6-vault`)
+
+**Owner:** Swapnil (Lead) · **Branch:** `feat/room-6-vault` · **Round:** 2 (Room 6 of 6 — Grand Finale)
+
+##### Files to Create / Wire (Lead-Owned)
+- `frontend/src/game/Room6Vault.jsx`
+- `frontend/src/game/rooms/vault.js`
+- `frontend/src/game/engine/sceneVault.js`
+- `frontend/src/game/engine/scaresVault.js`
+- `frontend/src/game/engine/audioVault.js`
+- `frontend/public/assets/models/vault/` (compressed `.glb` only)
+- `frontend/public/assets/audio/vault/` (`.mp3` / `.ogg` only)
+- Wire `'vault'` branch in `frontend/src/game/engine/engine.js` and `ctc:navigate-room` → `'vault'` in `frontend/src/App.jsx`.
+- Add Room 6 frontend/E2E tests in `frontend/src/__tests__/` (100-test standard).
+
+##### Room Spec & Continuity
+- **Previous room:** Room 5 — The Surveillance Morgue (`control`) via **Fork 2** (Core Airlock: Auxiliary Feed A vs. Primary Containment B).
+- **Next:** Round 2 Victory / Final Ending sequence (`R2-10` Central Console convergence).
+- **Theme / Palette:** Occult subterranean containment dome — poured concrete with exposed rebar, rusted ceiling chains, central suspended spherical iron cage containing a pulsing crimson biological organism, amber console indicators.
+- **Torch Rule:** Battery dies **on entry** (`api.setFlashlight(false)` + disable `[F]` toggle in `Room6Vault.jsx`). Lighting comes solely from 1.4s crimson pulse of organism + amber console indicator LEDs.
+- **No basket / no fragments:** `evidence: []`, `basket.opens_when: "not_used"`. Teams arrive carrying all evidence via `[C]` Case Dossier (`GET /api/game/round/2/dossier`).
+
+##### Exact Object IDs (from `content.test.json`)
+Every interactive prop must be a real visible 3D mesh tagged with `E.interact(obj, '<exact_id>')`.
+- [ ] `core_glass` (`decor` — special horror trigger: bulletproof cracked glass panel on the suspended iron cage with inner handprints & scratches)
+- [ ] `countdown_timer` (`decor` — mechanical split-flap board on east wall synced strictly to `GET /api/game/time`, sharp clack-snap per second)
+- [ ] `manual_terminal` (`clue_entry`, `R2-08` — heavy cast-iron workstation on west wall facing the cage)
+- [ ] `failsafe_panel` (`clue_entry`, `R2-09` — copper & brass switchboard with 8 large knife-switch levers on north wall)
+- [ ] `central_console` (`clue_entry`, `R2-10` — monolithic control altar directly facing the cage; requires all 3 Round 2 outputs)
+
+##### Build Checklist
+###### Assets & Optimization
+- [ ] Source/build & compress Meshopt+WebP GLBs for: concrete dome shell, spherical iron cage + chains, pulsing flesh core, split-flap board, cast-iron terminal, 8-lever knife-switch panel, central altar console.
+- [ ] All GLBs within budgets (`≤ 1.5 MB` single / `≤ 8 MB` room total, `< 250` draw calls, Eco-mode compatible).
+- [ ] Source audio (`amb_vault`, `core_pulse`, `steel_creak`, split-flap `clack-snap`, stingers).
+- [ ] Keep track of model and audio sources (author, licence, file sizes).
+
+###### Integration, UI & Horror
+- [ ] Implement `Room6Vault.jsx` + `R2-08`, `R2-09`, `R2-10` clue modals + `[C]` `ControlDossierModal` / `CaseDossierModal` integration.
+- [ ] Disable torch on threshold (`setFlashlight(false)`); drive 1.4s crimson bioluminescence pulse.
+- [ ] Implement situation-based horror events (`core_glass` inspection scare, split-flap countdown tension, final containment victory/ending sequence).
+- [ ] Ensure `npm test`, `npm run build`, and Room 6 automated test suite pass; test full Round 2 flow (`records` → Fork 1 → `control` → Fork 2 → `vault`).
 
 ---
 
