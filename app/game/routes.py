@@ -1078,9 +1078,9 @@ def choose_fork_path(fork_id: str, payload: Dict[str, Any], request: Request):
 
 
 @router.get("/hint/status")
-def get_hint_status(request: Request):
+def get_hint_status(request: Request, room_id: Optional[str] = None):
     team = verify_team_auth(request)
-    return hint_service.get_hint_status(team["id"])
+    return hint_service.get_hint_status(team["id"], room_id=room_id)
 
 
 @router.post("/hint")

@@ -241,3 +241,50 @@ def test_clue_hint_point_deduction_15_points_and_finale_30_points():
             assert get_clue_hint_point_deduction(cur, TEAM_ID, "R1-FIN") == 30.0
             conn.commit()
 
+
+def test_control_room_hint_phases_and_round2_penalty(auth_headers):
+    """Verify Room 5 (control) supports Phase 1 fragment hints and Phase 2 R2 clue hints in Round 2."""
+    with get_db_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("DELETE FROM team_hints WHERE team_id = %s", (TEAM_ID,))
+            cur.execute("DELETE FROM team_fragments WHERE team_id = %s AND room_id = 'control'", (TEAM_ID,))
+            cur.execute("DELETE FROM team_rooms WHERE team_id = %s AND room_id = 'control'", (TEAM_ID,))
+            cur.execute("DELETE FROM team_clues WHERE team_id = %s AND round = 2", (TEAM_ID,))
+            cur.execute("UPDATE team_rounds SET penalty_seconds = 0 WHERE team_id = %s AND round = 2", (TEAM_ID,))
+            conn.commit()
+
+    # Phase 1: EC01 fragment hint (+10s in Round 2)
+    res_p1 = client.post("/api/game/hint", json={"room_id": "control"}, headers=auth_headers)
+    assert res_p1.status_code == 200
+    d1 = res_p1.json()
+    assert d1["hint_category"] == "fragment"
+    assert d1["target_id"] == "EC01"
+    assert d1["room_id"] == "control"
+    assert d1["penalty_applied"] == 10
+
+    status_res = client.get("/api/game/hint/status?room_id=control", headers=auth_headers)
+    assert status_res.status_code == 200
+    assert status_res.json()["hints_used"] == 1
+    assert status_res.json()["total_penalty_seconds"] == 10
+
+    # Unlock control basket -> Phase 2 clue hint for R2-01 (+30s)
+    with get_db_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """INSERT INTO team_rooms (team_id, room_id, is_basket_unlocked)
+                   VALUES (%s, 'control', TRUE)
+                   ON CONFLICT (team_id, room_id) DO UPDATE SET is_basket_unlocked = TRUE""",
+                (TEAM_ID,),
+            )
+            conn.commit()
+
+    res_p2 = client.post("/api/game/hint", json={"room_id": "control"}, headers=auth_headers)
+    assert res_p2.status_code == 200
+    d2 = res_p2.json()
+    assert d2["hint_category"] == "clue"
+    assert d2["target_id"] == "R2-01"
+    assert d2["penalty_applied"] == 30
+    assert "Unix Epoch" in d2["hint_details"]["puzzle_type"]
+    assert d2["total_penalty_seconds"] == 40
+
+

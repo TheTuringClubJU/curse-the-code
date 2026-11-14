@@ -139,11 +139,19 @@ def get_db_connection():
     p = get_pool()
     if p:
         try:
-            raw = p.getconn()
-            # If the borrowed connection was unexpectedly closed by Neon/PgBouncer, discard and retry
-            if raw.closed != 0:
-                p.putconn(raw, close=True)
+            for _ in range(3):
                 raw = p.getconn()
+                if raw.closed != 0:
+                    p.putconn(raw, close=True)
+                    continue
+                try:
+                    with raw.cursor() as cur:
+                        cur.execute("SELECT 1")
+                    raw.rollback()
+                    return PooledConnectionProxy(raw, p)
+                except Exception:
+                    p.putconn(raw, close=True)
+            raw = p.getconn()
             return PooledConnectionProxy(raw, p)
         except Exception as e:
             logger.warning(f"Connection pool getconn failed, falling back to direct connect: {e}")

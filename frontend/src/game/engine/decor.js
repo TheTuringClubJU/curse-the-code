@@ -2,7 +2,171 @@
 import {THREE,X,TX,RoundedBoxGeometry,BufferGeometryUtils,mat,wm,lathe,bgeo,tube} from './kit.js'
 import {mk,grp,buildDoll,pumpkinMesh} from './scene.js'
 const spr=(map,sc,op=1,blend=true)=>{const s=new THREE.Sprite(new THREE.SpriteMaterial({map,transparent:true,opacity:op,depthWrite:false,fog:false,blending:blend?THREE.AdditiveBlending:THREE.NormalBlending}));s.scale.set(sc,sc,1);s.userData.np=1;s.userData.ns=1;return s}
-const decal=(map,w,h,x,y,z,ry,o={})=>{const m=new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshStandardMaterial({map,transparent:true,depthWrite:false,roughness:.9,polygonOffset:true,polygonOffsetFactor:-2,opacity:o.o??1}));m.position.set(x,y,z);m.rotation.set(0,ry,o.rz||0);m.userData.np=1;m.userData.ns=1;return m}
+const decal=(map,w,h,x,y,z,ry,o={})=>{const m=new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshStandardMaterial({map,transparent:true,depthWrite:false,roughness:o.r??.88,metalness:o.m??0,emissive:o.e??0x000000,emissiveMap:o.em??null,emissiveIntensity:o.ei??0,polygonOffset:true,polygonOffsetFactor:o.pf??-2,opacity:o.o??1}));m.position.set(x,y,z);m.rotation.set(o.rx||0,ry,o.rz||0);m.userData.np=1;m.userData.ns=1;return m}
+
+// Central Gothic Ritual Altar & Glowing Octagram/Pentagram Circle (imitating reference image)
+export function buildGothicRitualAltar(E,{x=0,z=0,y=.009,radius=1.55,seed=1,addPointLight=true}={}){
+ const S=E.S,add=E.add||(o=>S.add(o)),anim=E.anim||(()=>{}),R=X.rng(seed*31+7)
+ const g=grp(x,y,z)
+ const raTex=TX.ritualAltar(seed)
+ // Main glowing ritual circle & star on the floor
+ const disc=new THREE.Mesh(
+  new THREE.CircleGeometry(radius,64),
+  new THREE.MeshStandardMaterial({
+   map:raTex,emissive:0xffbe78,emissiveMap:raTex,emissiveIntensity:.68,
+   transparent:true,depthWrite:false,roughness:.92,polygonOffset:true,polygonOffsetFactor:-3
+  })
+ )
+ disc.rotation.x=-Math.PI/2;disc.userData.np=1;disc.userData.ns=1;g.add(disc)
+
+ // Inner sacrificial blood pool & secondary blood puddle (like reference image)
+ const bpTex=TX.bloodPool(seed)
+ const pool1=new THREE.Mesh(
+  new THREE.PlaneGeometry(radius*.48,radius*.48),
+  new THREE.MeshStandardMaterial({map:bpTex,transparent:true,depthWrite:false,roughness:.25,metalness:.15,polygonOffset:true,polygonOffsetFactor:-4,opacity:.92})
+ )
+ pool1.rotation.x=-Math.PI/2;pool1.position.set(-radius*.16,.002,-radius*.18);pool1.userData.np=1;pool1.userData.ns=1;g.add(pool1)
+
+ // Central dark sacrificial altar basin / chalice in the middle of the inner circle
+ const ironMat=mat({color:0x140e10,r:.42,m:.75})
+ const bloodLiquidMat=mat({color:0x5a0306,e:0x320103,ei:.6,r:.15,m:.1})
+ const basin=grp(0,0,0)
+ basin.add(
+  mk(new THREE.CylinderGeometry(.15,.11,.11,24),ironMat,0,.055,0),
+  mk(new THREE.TorusGeometry(.15,.014,10,24),ironMat,0,.11,0,Math.PI/2,0,0),
+  mk(new THREE.CylinderGeometry(.138,.138,.01,20),bloodLiquidMat,0,.102,0)
+ )
+ // Ritual dark glass bottle / vial beside the central bowl (matching reference image)
+ const bottleMat=mat({color:0x22080a,r:.2,m:.2})
+ basin.add(
+  mk(new THREE.CylinderGeometry(.032,.036,.11,14),bottleMat,.17,.055,-.05),
+  mk(new THREE.CylinderGeometry(.014,.022,.04,12),bottleMat,.17,.12,-.05),
+  mk(new THREE.CylinderGeometry(.016,.016,.018,10),mat({color:0x8a1216,r:.6}),.17,.142,-.05)
+ )
+ // Sacrificial blood-stained skull at inner ring edge
+ const boneMat=mat({map:TX.bone(),bump:TX.bone(),bs:.3,r:.75,c:0xcabaa0})
+ const sk=grp(-.18,.045,.14,.6)
+ sk.add(
+  mk(new THREE.SphereGeometry(.048,14,12),boneMat,0,.015,0),
+  mk(new THREE.BoxGeometry(.046,.032,.045),boneMat,0,-.018,.022),
+  mk(new THREE.SphereGeometry(.013,8,8),new THREE.MeshBasicMaterial({color:0x090203}),-.017,.018,.038),
+  mk(new THREE.SphereGeometry(.013,8,8),new THREE.MeshBasicMaterial({color:0x090203}),.017,.018,.038)
+ )
+ basin.add(sk)
+ basin.traverse(o=>{o.userData.np=1});g.add(basin)
+
+ // 8 lit pillar candles around the 8 vertices of the star
+ const waxMat=mat({color:0xe2d8c0,r:.52,e:0x2a1808,ei:.38})
+ const candleFlames=[]
+ const N=8,cRad=radius*.885
+ for(let i=0;i<N;i++){
+  const a=i/N*Math.PI*2-Math.PI/2
+  const cx=Math.cos(a)*cRad,cz=Math.sin(a)*cRad,ch=.11+(i%3)*.03+R()*.03
+  const cg=grp(cx,0,cz)
+  cg.add(
+   mk(new THREE.CylinderGeometry(.024,.028,ch,14),waxMat,0,ch/2,0),
+   mk(new THREE.CylinderGeometry(.038,.032,.016,14),waxMat,0,.008,0)
+  )
+  const fl=spr(TX.flame(),.075,1)
+  fl.material.depthWrite=false;fl.position.set(0,ch+.05,0);cg.add(fl)
+  const gl=spr(TX.glow('o'),.48,.65)
+  gl.position.set(0,ch+.04,0);cg.add(gl)
+  cg.traverse(o=>{o.userData.np=1});g.add(cg)
+  candleFlames.push({fl,gl,sd:70+seed*11+i})
+ }
+ add(g)
+
+ // Warm eerie flickering candlelight illuminating the center of the room
+ let altarLight=null
+ if(addPointLight&&S){
+  altarLight=new THREE.PointLight(0xff8e36,2.8,6.2,1.8)
+  altarLight.position.set(x,y+.55,z)
+  S.add(altarLight)
+ }
+ anim(t=>{
+  const ls=E.lightScale?E.lightScale():1
+  candleFlames.forEach(({fl,gl,sd})=>{
+   const q=(E.flick?E.flick(sd,.42)(t):(.85+.15*Math.sin(t*7+sd)))*ls
+   fl.scale.set(.055*(.88+.24*q),.125*(.85+.32*q),1)
+   gl.material.opacity=.52*q
+  })
+  if(altarLight){
+   const fq=E.flick?E.flick(seed*19+3,.32)(t):(.88+.12*Math.sin(t*5.3))
+   altarLight.intensity=2.8*fq*ls
+  }
+ })
+ return g
+}
+
+// Aged Gothic Wall Arches, Blood Splatters, Floor Blood Spots & Vicious Claw Marks
+export function buildRoomBloodAndClaws(E,{W=8,H=3,D=6,seed=1,gothicArches=true}={}){
+ const S=E.S;if(!S)return
+ const R=X.rng(seed*53+9),hw=W/2-.014,hd=D/2-.014
+
+ // 1. Gothic Pointed Arch & Stone Decay overlays on the 4 walls
+ if(gothicArches){
+  const ga1=TX.gothicArch(seed),ga2=TX.gothicArch(seed+1)
+  ;[[-W*.26,H*.5,-hd,0],[W*.26,H*.5,-hd,0],[-W*.26,H*.5,hd,Math.PI],[W*.26,H*.5,hd,Math.PI]].forEach(([x,y,z,ry],i)=>{
+   S.add(decal(i%2?ga1:ga2,W*.44,H*.92,x,y,z,ry,{o:.78,pf:-1}))
+  })
+  ;[[ -hw,H*.5,-D*.24,Math.PI/2 ],[ -hw,H*.5,D*.24,Math.PI/2 ],[ hw,H*.5,-D*.24,-Math.PI/2 ],[ hw,H*.5,D*.24,-Math.PI/2 ]].forEach(([x,y,z,ry],i)=>{
+   S.add(decal(i%2?ga2:ga1,D*.44,H*.92,x,y,z,ry,{o:.78,pf:-1}))
+  })
+ }
+
+ // 2. Visceral Blood Splatters & Drips all around the 4 walls
+ const wallPlacements=[
+  // North wall (z = -hd)
+  [-W*.32,1.65,-hd,0,1.25,1.25], [0,2.1,-hd,0,1.4,1.3], [W*.28,1.35,-hd,0,1.15,1.2],
+  // South wall (z = +hd)
+  [-W*.28,1.55,hd,Math.PI,1.3,1.25], [W*.22,1.8,hd,Math.PI,1.2,1.3],
+  // West wall (x = -hw)
+  [-hw,1.6,-D*.28,Math.PI/2,1.25,1.25], [-hw,1.3,D*.22,Math.PI/2,1.35,1.25],
+  // East wall (x = +hw)
+  [hw,1.7,-D*.22,-Math.PI/2,1.3,1.25], [hw,1.25,D*.28,-Math.PI/2,1.2,1.2]
+ ]
+ wallPlacements.forEach(([x,y,z,ry,w,h],i)=>{
+  const btex=TX.bloodWall((seed+i)%4+1)
+  S.add(decal(btex,w,h,x,y,z,ry,{o:.88,rz:(R()-.5)*.25,pf:-3}))
+ })
+
+ // 3. Vicious Demon Claw / Scratch Marks gouged into the walls
+ const clawPlacements=[
+  [-W*.15,1.5,-hd+.002,0,.95,.95,-.18],
+  [W*.34,1.75,-hd+.002,0,.85,.85,.22],
+  [-W*.32,1.45,hd-.002,Math.PI,.9,.9,.15],
+  [W*.14,1.6,hd-.002,Math.PI,1.0,1.0,-.12],
+  [-hw+.002,1.55,0,Math.PI/2,.95,.95,.18],
+  [-hw+.002,1.8,-D*.34,Math.PI/2,.8,.8,-.24],
+  [hw-.002,1.5,-D*.05,-Math.PI/2,.95,.95,-.16],
+  [hw-.002,1.75,D*.32,-Math.PI/2,.85,.85,.2]
+ ]
+ clawPlacements.forEach(([x,y,z,ry,w,h,rz],i)=>{
+  const ctex=TX.clawMarks((seed+i)%4+1)
+  S.add(decal(ctex,w,h,x,y,z,ry,{o:.94,rz,pf:-4}))
+ })
+
+ // 4. Bloody Handprints smeared on walls
+ const hpPlacements=[
+  [-W*.38,1.25,-hd+.003,0,-.12], [W*.38,1.15,hd-.003,Math.PI,.18],
+  [-hw+.003,1.35,D*.36,Math.PI/2,.08], [hw-.003,1.4,-D*.36,-Math.PI/2,-.15]
+ ]
+ hpPlacements.forEach(([x,y,z,ry,rz],i)=>{
+  S.add(decal(TX.handprint((seed+i)%3+1),.32,.48,x,y,z,ry,{o:.88,rz,pf:-4}))
+ })
+
+ // 5. Blood Spots, Puddles & Claw Gouges on the Floor
+ for(let i=0;i<9;i++){
+  const fx=(R()-.5)*(W-1.4),fz=(R()-.5)*(D-1.4),sz=.65+R()*.85
+  const bfloor=decal(TX.bloodPool((seed+i)%4+1),sz,sz,fx,.005+(i*.0003),fz,0,{rx:-Math.PI/2,rz:R()*6.28,o:.85,r:.22,m:.12,pf:-2})
+  S.add(bfloor)
+ }
+ for(let i=0;i<4;i++){
+  const fx=(R()-.5)*(W-1.8),fz=(R()-.5)*(D-1.8),sz=.7+R()*.4
+  const cfloor=decal(TX.clawMarks((seed+i)%4+1),sz,sz,fx,.007,fz,0,{rx:-Math.PI/2,rz:R()*6.28,o:.88,pf:-3})
+  S.add(cfloor)
+ }
+}
 export function buildDecor(E){
  const {S,add,anim,glow,interact,cam,W,H,D,win,ref}=E,R=X.rng(12),gold=mat({map:TX.metal(),m:.7,r:.45,c:0xe0b878}),brass=mat({map:TX.brass(),m:.85,r:.4,c:0xd8b070})
  {const m=mk(new THREE.CircleGeometry(1,64),mat({map:TX.rug(),r:1,bump:TX.rug(),bs:.6}),.35,.006,.75,-Math.PI/2,0,0);m.scale.set(1.55,1.05,1);m.rotation.z=.15;m.userData.np=1;add(m)}

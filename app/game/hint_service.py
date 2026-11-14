@@ -20,6 +20,13 @@ TOTAL_HINT_BUDGET = 15
 FRAGMENT_PENALTY_SECONDS = 10
 CLUE_PENALTY_SECONDS = 30
 
+ROOM_TO_ROUND = {
+    "bedroom": 1,
+    "study": 1,
+    "basement": 1,
+    "control": 2,
+}
+
 ROOM_FRAGMENTS = {
     "bedroom": [
         "EB01", "EB02", "EB03", "EB04", "EB05", "EB06",
@@ -31,13 +38,17 @@ ROOM_FRAGMENTS = {
     ],
     "basement": [
         "EK04", "EK05", "EK06"
+    ],
+    "control": [
+        "EC01", "EC02", "EC03", "EC04", "EC05", "EC06", "EC07", "EC08"
     ]
 }
 
 ROOM_CLUES = {
     "bedroom": ["R1-01", "R1-02", "R1-03", "R1-04"],
     "study": ["R1-05", "R1-06", "R1-07", "R1-08"],
-    "basement": ["R1-09", "R1-10", "R1-FIN"]
+    "basement": ["R1-09", "R1-10", "R1-FIN"],
+    "control": ["R2-01", "R2-05", "R2-06"]
 }
 
 # Detailed hints for Round 1 Clues
@@ -107,6 +118,24 @@ CLUE_HINT_DETAILS = {
         "location_prop": "Central containment terminal console (containment_console).",
         "puzzle_type": "3-Stage Master Override Protocol",
         "guidance": "The door asks for three words you have already been given: one from a girl's page, one from a machine's last words, and one from a guest who should not exist. Match the torn edges of the photograph. Then count what the living cast to uncover the hidden sequence."
+    },
+    "R2-01": {
+        "title": "Personnel Index",
+        "location_prop": "Staff Terminal console in Control Bay 5B (staff_terminal).",
+        "puzzle_type": "Unix Epoch Conversion & Anomaly Filtering",
+        "guidance": "Convert the machine timestamps in your recovered cards from Unix epoch seconds, cross-reference termination dates in the personnel register, and flag any anomalous post-closure login."
+    },
+    "R2-05": {
+        "title": "Transmission Archive",
+        "location_prop": "Radio Console in Control Bay 5B (radio_console).",
+        "puzzle_type": "Base64 Header Authentication & Spoof Detection",
+        "guidance": "Decode the X-Auth headers attached to each intercepted transmission and match them against the verified operator badge uncovered from the Personnel Index."
+    },
+    "R2-06": {
+        "title": "Voicemail Spectrogram",
+        "location_prop": "Sound Console in Control Bay 5B (sound_console).",
+        "puzzle_type": "Audio Frequency Spectrogram Inspection",
+        "guidance": "Inspect the upper-frequency spectrogram of the authentic voicemail file identified in the Radio Console archive to reveal the hidden code."
     }
 }
 
@@ -117,11 +146,12 @@ def get_clue_hint_point_deduction(cur, team_id: int, clue_id: str) -> float:
     - Other clues (R1-01 to R1-10): -15 points deduction (awards 85 pts upon solve)
     - If no clue hint was purchased: 0.0 deduction (awards full 100 pts)
     """
+    round_num = 2 if clue_id.startswith("R2-") else 1
     cur.execute(
         """SELECT 1 FROM team_hints
-           WHERE team_id = %s AND round = 1 AND target_id = %s AND hint_category = 'clue'
+           WHERE team_id = %s AND round = %s AND target_id = %s AND hint_category = 'clue'
            LIMIT 1""",
-        (team_id, clue_id),
+        (team_id, round_num, clue_id),
     )
     if cur.fetchone():
         return 30.0 if clue_id == "R1-FIN" else 15.0
@@ -142,22 +172,23 @@ def _get_fragment_hint_text(content: Dict[str, Any], room_id: str, fragment_id: 
     return f"Search the area around fragment {fragment_id}."
 
 
-def get_hint_status(team_id: int) -> Dict[str, Any]:
+def get_hint_status(team_id: int, room_id: Optional[str] = None) -> Dict[str, Any]:
     """Retrieve full hint usage history, current budget remaining, and total penalty seconds."""
+    round_num = ROOM_TO_ROUND.get(room_id, 1) if room_id else 1
     with get_db_connection() as conn:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute(
                 """SELECT id, room_id, hint_category, target_id, penalty_seconds, hint_text, created_at
                    FROM team_hints
-                   WHERE team_id = %s AND round = 1
+                   WHERE team_id = %s AND round = %s
                    ORDER BY created_at ASC""",
-                (team_id,),
+                (team_id, round_num),
             )
             hints = cur.fetchall()
 
             cur.execute(
-                "SELECT penalty_seconds FROM team_rounds WHERE team_id = %s AND round = 1",
-                (team_id,),
+                "SELECT penalty_seconds FROM team_rounds WHERE team_id = %s AND round = %s",
+                (team_id, round_num),
             )
             round_row = cur.fetchone()
             total_penalty = round_row["penalty_seconds"] if round_row and round_row["penalty_seconds"] else 0
@@ -210,24 +241,26 @@ def request_hint(
             if room_id not in ROOM_FRAGMENTS:
                 raise HTTPException(400, f"Invalid room_id '{room_id}'")
 
+            round_num = ROOM_TO_ROUND.get(room_id, 1)
+
             # 2. Check if the specific target_id requested is ALREADY unlocked
             if target_id:
                 cur.execute(
                     """SELECT id, room_id, hint_category, target_id, penalty_seconds, hint_text, created_at
                        FROM team_hints
-                       WHERE team_id = %s AND round = 1 AND target_id = %s""",
-                    (team_id, target_id),
+                       WHERE team_id = %s AND round = %s AND target_id = %s""",
+                    (team_id, round_num, target_id),
                 )
                 existing = cur.fetchone()
                 if existing:
                     cur.execute(
-                        "SELECT COUNT(*) as count FROM team_hints WHERE team_id = %s AND round = 1",
-                        (team_id,),
+                        "SELECT COUNT(*) as count FROM team_hints WHERE team_id = %s AND round = %s",
+                        (team_id, round_num),
                     )
                     used_cnt = cur.fetchone()["count"]
                     cur.execute(
-                        "SELECT penalty_seconds FROM team_rounds WHERE team_id = %s AND round = 1",
-                        (team_id,),
+                        "SELECT penalty_seconds FROM team_rounds WHERE team_id = %s AND round = %s",
+                        (team_id, round_num),
                     )
                     r_row = cur.fetchone()
                     total_pen = r_row["penalty_seconds"] if r_row and r_row["penalty_seconds"] else 0
@@ -251,8 +284,8 @@ def request_hint(
 
             # 3. Check current budget
             cur.execute(
-                "SELECT COUNT(*) as count FROM team_hints WHERE team_id = %s AND round = 1",
-                (team_id,),
+                "SELECT COUNT(*) as count FROM team_hints WHERE team_id = %s AND round = %s",
+                (team_id, round_num),
             )
             hints_used = cur.fetchone()["count"]
             if hints_used >= TOTAL_HINT_BUDGET:
@@ -290,15 +323,15 @@ def request_hint(
                 # Check if this fragment hint was already purchased
                 cur.execute(
                     """SELECT id, hint_text FROM team_hints
-                       WHERE team_id = %s AND round = 1 AND target_id = %s""",
-                    (team_id, next_fragment_id),
+                       WHERE team_id = %s AND round = %s AND target_id = %s""",
+                    (team_id, round_num, next_fragment_id),
                 )
                 existing_frag = cur.fetchone()
                 if existing_frag:
                     # Return cached free hint
                     cur.execute(
-                        "SELECT penalty_seconds FROM team_rounds WHERE team_id = %s AND round = 1",
-                        (team_id,),
+                        "SELECT penalty_seconds FROM team_rounds WHERE team_id = %s AND round = %s",
+                        (team_id, round_num),
                     )
                     r_row = cur.fetchone()
                     total_pen = r_row["penalty_seconds"] if r_row and r_row["penalty_seconds"] else 0
@@ -324,16 +357,20 @@ def request_hint(
 
                 cur.execute(
                     """INSERT INTO team_hints (team_id, round, room_id, hint_category, target_id, penalty_seconds, hint_text)
-                       VALUES (%s, 1, %s, 'fragment', %s, %s, %s)""",
-                    (team_id, room_id, next_fragment_id, penalty, hint_text),
+                       VALUES (%s, %s, %s, 'fragment', %s, %s, %s)""",
+                    (team_id, round_num, room_id, next_fragment_id, penalty, hint_text),
+                )
+                cur.execute(
+                    "INSERT INTO rounds (round, status) VALUES (%s, 'pending') ON CONFLICT (round) DO NOTHING",
+                    (round_num,),
                 )
                 cur.execute(
                     """INSERT INTO team_rounds (team_id, round, penalty_seconds, updated_at)
-                       VALUES (%s, 1, %s, NOW())
+                       VALUES (%s, %s, %s, NOW())
                        ON CONFLICT (team_id, round)
                        DO UPDATE SET penalty_seconds = team_rounds.penalty_seconds + EXCLUDED.penalty_seconds, updated_at = NOW()
                        RETURNING penalty_seconds""",
-                    (team_id, penalty),
+                    (team_id, round_num, penalty),
                 )
                 new_total_pen = cur.fetchone()["penalty_seconds"]
                 conn.commit()
@@ -358,8 +395,8 @@ def request_hint(
             # PHASE 2: Deciphering Clues (Basket Unlocked)
             # ----------------------------------------------------
             cur.execute(
-                "SELECT clue_id, solved, attempts FROM team_clues WHERE team_id = %s AND round = 1",
-                (team_id,),
+                "SELECT clue_id, solved, attempts FROM team_clues WHERE team_id = %s AND round = %s",
+                (team_id, round_num),
             )
             clues_prog = {r["clue_id"]: r for r in cur.fetchall()}
             expected_clues = ROOM_CLUES[room_id]
@@ -382,15 +419,15 @@ def request_hint(
             # Check if this clue hint was already purchased
             cur.execute(
                 """SELECT id, hint_text FROM team_hints
-                   WHERE team_id = %s AND round = 1 AND target_id = %s""",
-                (team_id, active_clue_id),
+                   WHERE team_id = %s AND round = %s AND target_id = %s""",
+                (team_id, round_num, active_clue_id),
             )
             existing_clue = cur.fetchone()
             if existing_clue:
                 # Return cached free clue hint
                 cur.execute(
-                    "SELECT penalty_seconds FROM team_rounds WHERE team_id = %s AND round = 1",
-                    (team_id,),
+                    "SELECT penalty_seconds FROM team_rounds WHERE team_id = %s AND round = %s",
+                    (team_id, round_num),
                 )
                 r_row = cur.fetchone()
                 total_pen = r_row["penalty_seconds"] if r_row and r_row["penalty_seconds"] else 0
@@ -428,16 +465,20 @@ def request_hint(
 
             cur.execute(
                 """INSERT INTO team_hints (team_id, round, room_id, hint_category, target_id, penalty_seconds, hint_text)
-                   VALUES (%s, 1, %s, 'clue', %s, %s, %s)""",
-                (team_id, room_id, active_clue_id, penalty, rich_hint_text),
+                   VALUES (%s, %s, %s, 'clue', %s, %s, %s)""",
+                (team_id, round_num, room_id, active_clue_id, penalty, rich_hint_text),
+            )
+            cur.execute(
+                "INSERT INTO rounds (round, status) VALUES (%s, 'pending') ON CONFLICT (round) DO NOTHING",
+                (round_num,),
             )
             cur.execute(
                 """INSERT INTO team_rounds (team_id, round, penalty_seconds, updated_at)
-                   VALUES (%s, 1, %s, NOW())
+                   VALUES (%s, %s, %s, NOW())
                    ON CONFLICT (team_id, round)
                    DO UPDATE SET penalty_seconds = team_rounds.penalty_seconds + EXCLUDED.penalty_seconds, updated_at = NOW()
                    RETURNING penalty_seconds""",
-                (team_id, penalty),
+                (team_id, round_num, penalty),
             )
             new_total_pen = cur.fetchone()["penalty_seconds"]
             conn.commit()

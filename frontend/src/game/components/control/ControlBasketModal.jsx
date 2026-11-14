@@ -287,8 +287,8 @@ export default function ControlBasketModal({
               {basketUnlocked
                 ? 'Select any evidence document below to inspect cipher details and cross-reference Clue Terminals [C].'
                 : hasWrappedItems
-                ? 'Explore the bunker rooms and inspect suspicious fixtures with [E].'
-                : 'Read recovered records below as you explore Substation Delta with [E] in any order.'}
+                ? 'Explore the bunker rooms and inspect suspicious fixtures in sequential order with [E].'
+                : 'Read recovered records below as you explore Substation Delta with [E].'}
             </div>
           </div>
           <span

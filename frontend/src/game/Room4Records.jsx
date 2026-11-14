@@ -41,6 +41,7 @@ export default function Room4Records({ team, onLogout }) {
   const [isFlashlightOn, setIsFlashlightOn] = useState(true);
   const [glassCrackLevel, setGlassCrackLevel] = useState(0);
   const [flashOverlay, setFlashOverlay] = useState({ color: '#000', opacity: 0, visible: false });
+  const doorScareCountRef = useRef(0);
 
   // Fetch initial room data from backend
   const fetchRoomState = async () => {
@@ -268,6 +269,18 @@ export default function Room4Records({ team, onLogout }) {
 
     // 1. Check Entrance Door
     if (objectId === 'room_door' || objectId === 'door') {
+      const now = Date.now();
+      const ds = typeof doorScareCountRef.current === 'object' ? doorScareCountRef.current : { count: doorScareCountRef.current || 0, lastAt: 0 };
+      const shouldScare = ds.count > 0 && (now - ds.lastAt) >= 45000 && Math.random() < 0.25;
+      ds.count += 1;
+      if (shouldScare) ds.lastAt = now;
+      doorScareCountRef.current = ds;
+      if (shouldScare) {
+        engineRef.current?.triggerDoorScare?.();
+        audioRef.current?.screamingStinger?.(1.4);
+      } else {
+        audioRef.current?.drawerSlam?.(0, 0);
+      }
       showNotification('The heavy iron entrance hatch sealed behind you. You cannot retreat. Find a way forward.');
       return;
     }
@@ -288,6 +301,18 @@ export default function Room4Records({ team, onLogout }) {
         return;
       }
       if (!currentData?.basket_unlocked) {
+        const now = Date.now();
+        const ds = typeof doorScareCountRef.current === 'object' ? doorScareCountRef.current : { count: doorScareCountRef.current || 0, lastAt: 0 };
+        const shouldScare = ds.count > 0 && (now - ds.lastAt) >= 45000 && Math.random() < 0.25;
+        ds.count += 1;
+        if (shouldScare) ds.lastAt = now;
+        doorScareCountRef.current = ds;
+        if (shouldScare) {
+          engineRef.current?.triggerDoorScare?.();
+          audioRef.current?.screamingStinger?.(1.38);
+        } else {
+          audioRef.current?.drawerSlam?.(0, 0);
+        }
         showNotification('Arcane seal unbroken: Recover all 12 fragments in this room to unseal the archival terminals and power the bulkhead keypad.');
         return;
       }

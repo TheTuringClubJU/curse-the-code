@@ -6,7 +6,7 @@ export default {
   title: "Daniel's Study",
   size: [7.0, 3.2, 6.4],
   spawn: [0.0, 1.6, 0],
-  haunted: false,
+  haunted: true,
   theme: {
     bg: '#04120b',
     wall: '#0b2418',

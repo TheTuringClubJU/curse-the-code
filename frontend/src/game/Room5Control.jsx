@@ -19,6 +19,7 @@ import DevCalibratorOverlay from './components/control/DevCalibratorOverlay.jsx'
 import EvidencePickupModal from './components/control/EvidencePickupModal.jsx';
 import CCTVMonitorModal from './components/control/CCTVMonitorModal.jsx';
 import Fork2Modal from './components/control/Fork2Modal.jsx';
+import HintModal from './components/HintModal.jsx';
 import './game.css';
 import './control.css';
 
@@ -36,9 +37,9 @@ const WING_DOORS = {
 const PROP_GUIDE_SPECS = [
   { id: 'relay_rack',     label: 'Relay Rack',     seqIds: ['EC01', 'EC02'], allIds: ['EC01', 'EC02'] },
   { id: 'tape_deck_cart', label: 'Tape Deck Cart', seqIds: ['EC03', 'EC04'], allIds: ['EC03', 'EC04'] },
-  { id: 'operator_chair', label: 'Operator Chair', seqIds: ['EC05'],         allIds: ['EC05'] },
+  { id: 'operator_chair', label: 'Operator Chair', seqIds: ['EC05'],         allIds: ['EC05', 'XC01'] },
   { id: 'cable_trench',   label: 'Cable Trench',   seqIds: ['EC06'],         allIds: ['EC06'] },
-  { id: 'wall_clipboard', label: 'Wall Clipboard', seqIds: ['EC07'],         allIds: ['EC07'] },
+  { id: 'wall_clipboard', label: 'Wall Clipboard', seqIds: ['EC07'],         allIds: ['EC07', 'XC02'] },
   { id: 'fuse_box',       label: 'Fuse Box',       seqIds: ['EC08'],         allIds: ['EC08'] },
 ];
 
@@ -130,6 +131,7 @@ export default function Room5Control({ team, onLogout }) {
   const [isRoomCompleteModalOpen, setIsRoomCompleteModalOpen] = useState(false);
   const [isFork2Open, setIsFork2Open] = useState(false);
   const [isCCTVOpen, setIsCCTVOpen] = useState(false);
+  const [isHintOpen, setIsHintOpen] = useState(false);
   const [activeClueModal, setActiveClueModal] = useState(null); // 'R2-01' | 'R2-05' | 'R2-06' | null
   const [inspectModalData, setInspectModalData] = useState(null);
   const [propSnapshots, setPropSnapshots] = useState(() => {
@@ -252,6 +254,7 @@ export default function Room5Control({ team, onLogout }) {
 
   const handlePlayerCaughtRef = useRef(handlePlayerCaught);
   handlePlayerCaughtRef.current = handlePlayerCaught;
+  const doorScareCountRef = useRef(0);
 
   useEffect(() => {
     fetchRoomState();
@@ -267,6 +270,8 @@ export default function Room5Control({ team, onLogout }) {
       const engine = createEngine(mountRef.current, controlConfig, {
         audio: audioRef.current,
         teamName: team?.name || '',
+        initialGraceSec: 90,
+        dormantIntervalSec: 90,
 
         onLoadProgress: (pct, label) => {
           setAssetProgress({ pct, label });
@@ -359,6 +364,8 @@ export default function Room5Control({ team, onLogout }) {
         scaresRef.current = createControlScares(engine, {
           audio: audioRef.current,
           teamName: team?.name || '',
+          initialGraceSec: 90,
+          dormantIntervalSec: 90,
           onFlash: (color, opacity, durationMs) => {
             setFlashOverlay({ color, opacity, visible: true });
             setTimeout(
@@ -463,6 +470,7 @@ export default function Room5Control({ team, onLogout }) {
           setIsCaseDossierOpen(false);
           setIsFork2Open(false);
           setIsCCTVOpen(false);
+          setIsHintOpen(false);
           setIsRoomCompleteModalOpen(false);
           setActiveClueModal(null);
           setInspectModalData(null);
@@ -535,6 +543,21 @@ export default function Room5Control({ team, onLogout }) {
         return;
       }
 
+      if (e.key === 'h' || e.key === 'H' || e.code === 'KeyH') {
+        e.preventDefault();
+        setIsHintOpen((prev) => {
+          const next = !prev;
+          if (next) {
+            engineRef.current?.unlock?.();
+          } else {
+            engineRef.current?.setPaused?.(false);
+            engineRef.current?.lock?.();
+          }
+          return next;
+        });
+        return;
+      }
+
       if (e.key === 'm' || e.key === 'M' || e.code === 'KeyM') {
         e.preventDefault();
         setAudioMuted((prev) => {
@@ -559,7 +582,11 @@ export default function Room5Control({ team, onLogout }) {
       if (objectId === 'room_door' || objectId === 'entry_door') {
         engineRef.current?.rattleDoor?.('entry_door');
         audioRef.current?.bad?.();
-        scaresRef.current?.triggerBreachHunt?.(0.35);
+        if (doorScareCountRef.current > 0 && Math.random() < 0.20) {
+          scaresRef.current?.triggerDoorJumpscare?.('entry_door', { respectGrace: true });
+        }
+        doorScareCountRef.current += 1;
+        scaresRef.current?.triggerBreachHunt?.(0.35, { respectGrace: true });
         showNotification(
           'The armoured entry hatch sealed shut behind you. There is no going back. Find a way forward.'
         );
@@ -575,7 +602,11 @@ export default function Room5Control({ team, onLogout }) {
         } else {
           engineRef.current?.rattleDoor?.('vault_door');
           audioRef.current?.bad?.();
-          scaresRef.current?.triggerBreachHunt?.(0.35);
+          if (doorScareCountRef.current > 0 && Math.random() < 0.20) {
+            scaresRef.current?.triggerDoorJumpscare?.('vault_door', { respectGrace: true });
+          }
+          doorScareCountRef.current += 1;
+          scaresRef.current?.triggerBreachHunt?.(0.35, { respectGrace: true });
           showNotification(
             'The vault door is electromagnetically sealed. Solve all three clue terminals first.'
           );
@@ -605,7 +636,14 @@ export default function Room5Control({ team, onLogout }) {
       if (objectId === 'control_door') {
         const opened = engineRef.current?.toggleControlDoor?.();
         audioRef.current?.relayClick?.();
-        if (opened) scaresRef.current?.triggerDoorSighting?.('control_door', { respectGrace: true });
+        if (opened) {
+          scaresRef.current?.triggerDoorSighting?.('control_door', { respectGrace: true });
+          const shouldScare = doorScareCountRef.current > 0 && Math.random() < 0.20;
+          doorScareCountRef.current += 1;
+          if (shouldScare) {
+            scaresRef.current?.triggerDoorJumpscare?.('control_door', { respectGrace: true });
+          }
+        }
         showNotification(
           opened
             ? 'Control Bay bulkhead unlatched — outer corridor accessible.'
@@ -617,7 +655,14 @@ export default function Room5Control({ team, onLogout }) {
       if (WING_DOORS[objectId]) {
         const opened = engineRef.current?.toggleWingDoor?.(objectId);
         audioRef.current?.relayClick?.();
-        if (opened) scaresRef.current?.triggerDoorSighting?.(objectId, { respectGrace: true });
+        if (opened) {
+          scaresRef.current?.triggerDoorSighting?.(objectId, { respectGrace: true });
+          const shouldScare = doorScareCountRef.current > 0 && Math.random() < 0.20;
+          doorScareCountRef.current += 1;
+          if (shouldScare) {
+            scaresRef.current?.triggerDoorJumpscare?.(objectId, { respectGrace: true });
+          }
+        }
         const [openMsg, shutMsg] = WING_DOORS[objectId];
         showNotification(opened ? openMsg : shutMsg);
         return;
@@ -753,8 +798,8 @@ export default function Room5Control({ team, onLogout }) {
             const count =
               result.total_collected ?? refreshed?.collected_fragment_ids?.length ?? 0;
             const totalInRoom =
-              result.total_in_room ?? refreshed?.total_fragments_in_room ?? 8;
-            if ((propInfo && propInfo.isDone) || foundIds.length > 0 || count >= totalInRoom) {
+              result.total_in_room ?? refreshed?.total_fragments_in_room ?? 10;
+            if ((propInfo && propInfo.isDone) || count >= totalInRoom) {
               engineRef.current?.setFragmentCleared?.(objectId);
             }
             setInspectModalData({
@@ -766,7 +811,7 @@ export default function Room5Control({ team, onLogout }) {
               sourceName: propLabel,
               collectedCount: count,
               totalCount: totalInRoom,
-              remainingHere: 0,
+              remainingHere: propInfo?.remaining ?? 0,
             });
             engineRef.current?.unlock?.();
           } else {
@@ -891,6 +936,7 @@ export default function Room5Control({ team, onLogout }) {
     isFork2Open ||
     isRoomCompleteModalOpen ||
     isCCTVOpen ||
+    isHintOpen ||
     Boolean(inspectModalData) ||
     Boolean(activeClueModal);
 
@@ -914,6 +960,11 @@ export default function Room5Control({ team, onLogout }) {
 
   const handleOpenCaseFiles = useCallback(() => {
     setIsCaseDossierOpen(true);
+    engineRef.current?.unlock?.();
+  }, []);
+
+  const handleOpenHints = useCallback(() => {
+    setIsHintOpen(true);
     engineRef.current?.unlock?.();
   }, []);
 
@@ -1185,6 +1236,7 @@ export default function Room5Control({ team, onLogout }) {
           ghostTelemetry={telemetryState.ghostTelemetry}
           onOpenBasket={handleOpenBasket}
           onOpenCaseFiles={handleOpenCaseFiles}
+          onOpenHints={handleOpenHints}
           onLogout={onLogout}
           audioMuted={audioMuted}
           onToggleAudio={handleToggleAudio}
@@ -1326,6 +1378,17 @@ export default function Room5Control({ team, onLogout }) {
           }}
         />
       )}
+
+      {/* Universal Hint Modal (H) */}
+      <HintModal
+        isOpen={isHintOpen}
+        onClose={() => {
+          setIsHintOpen(false);
+          resumeGameplayLock();
+        }}
+        roomId="control"
+        roomTitle={roomData?.title || 'The Surveillance Morgue'}
+      />
 
       {/* Room Complete Modal */}
       {isRoomCompleteModalOpen && (

@@ -4,6 +4,8 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import * as XC from './texControl.js';
+import { TX } from './kit.js';
+import { buildGothicRitualAltar } from './decor.js';
 
 const MODEL_BASE = '/assets/models/room5';
 const ROOM_OFFSET = new THREE.Vector3(6.55, -4.99, -2.40);
@@ -275,6 +277,31 @@ function createInstrumentFaceTexture(kind = 'scope') {
 export function buildControlScene(E, handlers = {}) {
   const { S, add, solid, removeSolid, interact, visualInteract, anim, ref } = E;
   const isDev = typeof location !== 'undefined' && new URLSearchParams(location.search).has('dev');
+
+  // Single centerpiece Ritual Altar & glowing circle strictly in Locker Annex 5C only,
+  // paired with one subtle dried blood mark and one wall claw scratch flush on 5C's solid south-east panel.
+  buildGothicRitualAltar(E, { x: -4.75, z: 9.25, y: 0.014, radius: 1.62, seed: 6 });
+  {
+    const mkFlatDecal = (map, w, h, x, y, z, rx, ry, rz, op = 0.72) => {
+      const m = new THREE.Mesh(
+        new THREE.PlaneGeometry(w, h),
+        new THREE.MeshStandardMaterial({
+          map, transparent: true, depthWrite: false, roughness: 0.55,
+          polygonOffset: true, polygonOffsetFactor: -3, opacity: op,
+        })
+      );
+      m.position.set(x, y, z);
+      m.rotation.set(rx, ry, rz);
+      m.userData.np = 1;
+      m.userData.ns = 1;
+      S.add(m);
+    };
+    // Subtle dark dried blood seepage beside the altar on the 5C floor (never floating)
+    mkFlatDecal(TX.bloodPool(2), 1.15, 1.15, -4.15, 0.012, 8.65, -Math.PI / 2, 0, 0.7, 0.65);
+    // One realistic dark claw scratch + faint dried smear flush on 5C solid concrete panel (z = 5.535 -> z = 5.542, zero doors/props)
+    mkFlatDecal(TX.bloodWall(2), 0.75, 0.85, -2.50, 1.25, 5.540, 0, 0, 0.05, 0.58);
+    mkFlatDecal(TX.clawMarks(1), 0.78, 0.78, -2.45, 1.48, 5.542, 0, 0, -0.08, 0.82);
+  }
 
   // Skip heavy PMREM cubemap IBL in Room 5 to keep WebGL shaders lightweight & frame rate locked at 60 FPS
 
@@ -1094,9 +1121,10 @@ export function buildControlScene(E, handlers = {}) {
       addDoorwayTransom(wingGroup, colX(5), 13.30, 0, false);                // generator_door
       addDoorwayTransom(wingGroup, -7.85, rowZ(7), Math.PI / 2, false);      // morgue_vault_door
 
-      // Helper to build hinged wooden horror_kit Door preserving original wood-grain texture untouched
+      // Helper to build hinged wooden horror_kit Door preserving original wood-grain texture untouched.
+      // rotY: Math.PI places the Door handle (-X in GLB local space) on the free swinging latch edge rather than the hinge jamb.
       const makeEWLeafDoor = (doorId, xPos, centerZ = 7.84) => {
-        const doorLeaf = cloneKitPiece(kit, 'Door', { position: [0.48, 0, 0] });
+        const doorLeaf = cloneKitPiece(kit, 'Door', { position: [0.48, 0, 0], rotY: Math.PI });
         if (!doorLeaf) return null;
         const hingeWrap = new THREE.Group();
         hingeWrap.position.set(xPos, 0, centerZ - 0.48);
@@ -1106,13 +1134,13 @@ export function buildControlScene(E, handlers = {}) {
         wingGroup.add(hingeWrap);
         hingeWrap.isOpen = false;
         hingeWrap.userData.closedAngle = -Math.PI / 2;
-        hingeWrap.userData.openAngle = 0.12;
+        hingeWrap.userData.openAngle = -Math.PI / 2 + Math.PI * 0.52;
         hingeWrap.userData.currentAngle = -Math.PI / 2;
         visualInteract(doorLeaf, doorId);
         return hingeWrap;
       };
       const makeNSLeafDoor = (doorId, centerX, zPos) => {
-        const doorLeaf = cloneKitPiece(kit, 'Door', { position: [0.48, 0, 0] });
+        const doorLeaf = cloneKitPiece(kit, 'Door', { position: [0.48, 0, 0], rotY: Math.PI });
         if (!doorLeaf) return null;
         const hingeWrap = new THREE.Group();
         hingeWrap.position.set(centerX - 0.48, 0, zPos);
@@ -1844,20 +1872,20 @@ export function buildControlScene(E, handlers = {}) {
       const jumpscaring = Boolean(ghostData.isJumpscaring);
 
       if (!ghostData.scareOverride && !jumpscaring && !hunting) {
-        ghostData.setAnim?.('IdleStalk', 0.72 + ghostSpeed * 0.45, 0.25);
+        ghostData.setAnim?.('IdleStalk', 1.38 + ghostSpeed * 0.55, 0.20);
         const [wx, wz] = patrolWaypoints[patrolIdx];
         const dxW = wx - gx;
         const dzW = wz - gz;
         const dW = Math.hypot(dxW, dzW);
-        if (dW < 0.25) {
+        if (dW < 0.28) {
           patrolIdx = (patrolIdx + 1) % patrolWaypoints.length;
         } else {
-          const step = Math.min(dW, dt * 0.62);
+          const step = Math.min(dW, dt * 1.15);
           ghostData.root.position.x += (dxW / dW) * step;
           ghostData.root.position.z += (dzW / dW) * step;
           const targetRot = Math.atan2(dxW, dzW);
           const dRot = Math.atan2(Math.sin(targetRot - ghostData.root.rotation.y), Math.cos(targetRot - ghostData.root.rotation.y));
-          ghostData.root.rotation.y += dRot * Math.min(1, dt * 4.5);
+          ghostData.root.rotation.y += dRot * Math.min(1, dt * 8.0);
         }
       }
 

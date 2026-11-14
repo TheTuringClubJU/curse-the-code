@@ -57,8 +57,9 @@ export function createControlScares(E, handlers) {
   const REPEAT_MANIFEST_SEC = Number.isFinite(handlers.repeatManifestSec) ? handlers.repeatManifestSec : 9;
 
   let scareTime = 0;
-  let nextScareAt = rnd(12, 22);
+  let nextScareAt = rnd(38, 55);
   let activeScare = null;
+  let lastDoorJumpscareAt = -Infinity;
   let hasEntryTriggered = false;
   let hasTeamNameInjected = false;
   let cornerEntityBuilding = false;
@@ -210,9 +211,9 @@ export function createControlScares(E, handlers) {
     huntStareTimer = Math.max(0, stareDelay);
     huntTimer = Math.max(huntTimer, duration);
     ghost.root.position.set(clamped.x, 0.02, clamped.z);
-    if (ghost.walkAction) ghost.walkAction.timeScale = 0.88;
-    ghost.setAnim?.(huntStareTimer > 0 ? 'DoorPeek' : 'SprintLunge', huntStareTimer > 0 ? 1.0 : 1.05, 0.12);
-    if (ghost.ghostGlow) ghost.ghostGlow.intensity = huntStareTimer > 0 ? 1.85 : 1.45;
+    if (ghost.walkAction) ghost.walkAction.timeScale = 1.45;
+    ghost.setAnim?.(huntStareTimer > 0 ? 'DoorPeek' : 'SprintLunge', huntStareTimer > 0 ? 1.15 : 1.65, 0.12);
+    if (ghost.ghostGlow) ghost.ghostGlow.intensity = huntStareTimer > 0 ? 2.2 : 1.85;
     A()?.stinger?.(severity >= 1 ? 'hard' : 'soft');
     A()?.stalkerGrowl?.(clamped.x, clamped.z, Math.min(0.95, 0.72 + severity * 0.15));
     if (severity >= 0.9) {
@@ -733,13 +734,13 @@ export function createControlScares(E, handlers) {
         if (ghost.ghostGlow) ghost.ghostGlow.intensity = 4.5;
         ghost.root.rotation.y = Math.atan2(dx, dz);
       } else if (dist > 1.05) {
-        ghost.setAnim?.('SprintLunge', 1.35, 0.12);
-        const targetSpeed = playerInSafeRoom ? 1.55 : (3.35 + noiseLevel * 0.45);
+        ghost.setAnim?.('SprintLunge', 1.45, 0.12);
+        const targetSpeed = playerInSafeRoom ? 2.0 : (3.65 + noiseLevel * 0.35);
         const inv = 1 / Math.max(0.001, dist);
         const dirX = dx * inv;
         const dirZ = dz * inv;
-        ghostVelX += (dirX * targetSpeed - ghostVelX) * Math.min(1, dt * 6.0);
-        ghostVelZ += (dirZ * targetSpeed - ghostVelZ) * Math.min(1, dt * 6.0);
+        ghostVelX += (dirX * targetSpeed - ghostVelX) * Math.min(1, dt * 7.5);
+        ghostVelZ += (dirZ * targetSpeed - ghostVelZ) * Math.min(1, dt * 7.5);
 
         const candX = gx + ghostVelX * dt;
         const candZ = gz + ghostVelZ * dt;
@@ -815,14 +816,14 @@ export function createControlScares(E, handlers) {
 
       huntStepTimer -= dt;
       if (huntStepTimer <= 0) {
-        huntStepTimer = playerInSafeRoom ? 0.62 : 0.30;
+        huntStepTimer = playerInSafeRoom ? 0.42 : 0.20;
         A()?.heavyEntityStep?.(ghost.root.position.x, ghost.root.position.z, tension);
       }
 
       huntGrowlTimer -= dt;
       if (huntGrowlTimer <= 0) {
-        huntGrowlTimer = rnd(2.2, 3.8);
-        A()?.stalkerGrowl?.(ghost.root.position.x, ghost.root.position.z, Math.max(0.45, tension));
+        huntGrowlTimer = rnd(1.8, 3.1);
+        A()?.stalkerGrowl?.(ghost.root.position.x, ghost.root.position.z, Math.max(0.55, tension));
       }
 
       if (huntTimer <= 0) {
@@ -832,12 +833,12 @@ export function createControlScares(E, handlers) {
           targetX: rt.x,
           targetZ: rt.z,
           elapsed: 0,
-          duration: 1.35,
+          duration: 0.85,
           didStep: false,
         };
         ghost.isHunting = false;
         ghost.behavior = 'RETREAT';
-        ghost.setAnim?.('SprintLunge', 1.25, 0.12);
+        ghost.setAnim?.('SprintLunge', 1.85, 0.10);
         A()?.scurrySteps?.(ghost.root.position.x, ghost.root.position.z);
       }
     } else if (peekState && ghost) {
@@ -1086,7 +1087,7 @@ export function createControlScares(E, handlers) {
       activeScare.elapsed += dt;
       if (activeScare.def.upd(activeScare.elapsed)) {
         activeScare = null;
-        nextScareAt = scareTime + rnd(15, 26);
+        nextScareAt = scareTime + rnd(45, 72);
       }
       return;
     }
@@ -1123,6 +1124,45 @@ export function createControlScares(E, handlers) {
       morgue_vault_door: 'cryo_door',
     };
     startDoorPeek({ anchorId: anchorMap[doorId] || 'observation_door', allowEscalate: false });
+  };
+
+  // Visceral randomized door jumpscare when player opens/interacts with a door
+  const triggerDoorJumpscare = (doorId, { respectGrace = true } = {}) => {
+    if (disposed || jumpscareState) return false;
+    if (respectGrace && (scareTime < INITIAL_GRACE_SEC || cyclePhase === 'DORMANT')) return false;
+    if (scareTime - lastDoorJumpscareAt < 45) return false;
+    lastDoorJumpscareAt = scareTime;
+    const cx = E.px?.() ?? 0;
+    const cz = E.pz?.() ?? 0;
+    const [fx, fz] = fwd();
+    A()?.jumpscareSting?.();
+    A()?.entityScream?.(cx + fx * 1.1, cz + fz * 1.1, 1.0);
+    A()?.womanScream?.(cx + fx * 1.1, cz + fz * 1.1, 0.98);
+    A()?.bulkheadBang?.(cx + fx * 1.1, cz + fz * 1.1);
+    E.shake?.(2.2, 0.82);
+    flash('#c40414', 0.85, 220);
+    handlers.onScare?.('doorJumpscare', 'Specimen S-011 lunged violently from behind the doorway!');
+
+    const g = E._ghost;
+    if (g && huntTimer <= 0) {
+      const clamped = clampOutsideSafeRoom(cx + fx * 1.28, cz + fz * 1.28);
+      g.root.position.set(clamped.x, 0.02, clamped.z);
+      g.root.rotation.y = Math.atan2(cx - clamped.x, cz - clamped.z);
+      g.root.visible = true;
+      g.scareOverride = true;
+      g.setAnim?.('JumpscareSnap', 1.65, 0.04);
+      if (g.ghostFaceLight) g.ghostFaceLight.intensity = 18.0;
+      if (g.ghostGlow) g.ghostGlow.intensity = 5.5;
+      schedule(() => {
+        if (g && huntTimer <= 0 && !jumpscareState) {
+          g.scareOverride = false;
+          if (cyclePhase === 'DORMANT') g.root.visible = false;
+          if (g.ghostFaceLight) g.ghostFaceLight.intensity = 0;
+          if (g.ghostGlow) g.ghostGlow.intensity = 0;
+        }
+      }, 720);
+    }
+    return true;
   };
 
   const triggerFlashOutage = (blackoutSec = rnd(5.0, 7.0)) => {
@@ -1217,6 +1257,6 @@ export function createControlScares(E, handlers) {
 
   const isInGracePeriod = () => scareTime < INITIAL_GRACE_SEC || cyclePhase === 'DORMANT';
 
-  return { update, tick: update, triggerCCTVHorror, triggerTeamNameInjection, maybeFragmentScare, triggerBreachHunt, triggerDoorSighting, startDoorPeek, triggerFlashOutage, markPhoneAnswered, isInGracePeriod, getGhostTelemetry, dispose };
+  return { update, tick: update, triggerCCTVHorror, triggerTeamNameInjection, maybeFragmentScare, triggerBreachHunt, triggerDoorSighting, triggerDoorJumpscare, startDoorPeek, triggerFlashOutage, markPhoneAnswered, isInGracePeriod, getGhostTelemetry, dispose };
 }
 

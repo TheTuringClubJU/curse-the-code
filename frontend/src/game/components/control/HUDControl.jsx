@@ -5,6 +5,7 @@ import {
   VolumeX,
   LogOut,
   FolderOpen,
+  HelpCircle,
   Crosshair,
   MousePointer2,
 } from 'lucide-react';
@@ -64,6 +65,7 @@ const HUDControl = memo(function HUDControl({
   playerPos = null,
   onOpenBasket,
   onOpenCaseFiles,
+  onOpenHints,
   onLogout,
   audioMuted = false,
   onToggleAudio,
@@ -197,6 +199,19 @@ const HUDControl = memo(function HUDControl({
             <span className="hidden sm:inline">Clues</span>
             <span className="font-semibold">{cluesSolved}/{totalClues}</span>
           </button>
+
+          {onOpenHints && (
+            <button
+              type="button"
+              onClick={onOpenHints}
+              title="Need Hint? (Press H)"
+              className="re-btn !py-1 !px-2.5 !pr-4"
+            >
+              <span className="re-btn-circle">H</span>
+              <HelpCircle className="w-3.5 h-3.5 text-[#fbbf24]" />
+              <span className="hidden sm:inline">Hint</span>
+            </button>
+          )}
 
           {onToggleQuality && (
             <button

@@ -423,6 +423,7 @@ export function createEngine(el,room,h){
   frame(){ last=performance.now()-16; loop(performance.now()); },
   step(n,ms=50){ api._skip=true; for(let i=0;i<n;i++){ last=performance.now()-ms; loop(performance.now()); } api._skip=false; last=performance.now()-16; loop(performance.now()); },
   triggerScare:n=>scares?.trigger(n),
+  triggerDoorScare:()=>scares?.triggerDoorScare?.(),
   scares,
   setCountdown(text){ ref.wallMonitor?.setText?.(text); },
   _controlBuilt: room.id === 'control',

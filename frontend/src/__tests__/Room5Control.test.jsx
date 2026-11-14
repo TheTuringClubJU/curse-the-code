@@ -44,6 +44,7 @@ vi.mock('../game/engine/engine.js', () => ({
       lock: vi.fn(),
       unlock: vi.fn(),
       isLocked: vi.fn(() => false),
+      setFragmentCleared: vi.fn(),
       openDoor: vi.fn(),
       shake: vi.fn(),
       dispose: vi.fn(() => { if (canvas.parentNode) canvas.parentNode.removeChild(canvas); }),
@@ -945,6 +946,117 @@ describe('Room 5 (The Surveillance Morgue) Frontend Test Suite', () => {
     );
     expect(screen.getByText('RELAY VAULT')).toBeInTheDocument();
     expect(screen.getAllByText('5F').length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('QA-R5-FE-59: H key and HUD Hint button open HintModal for room control', async () => {
+    global.fetch = vi.fn().mockImplementation((url) => {
+      if (String(url).includes('/api/game/hint/status')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            total_budget: 15,
+            hints_used: 0,
+            hints_remaining: 15,
+            total_penalty_seconds: 0,
+            unlocked_hints: [],
+          }),
+        });
+      }
+      return Promise.resolve({
+        ok: true,
+        json: async () => makeRoomState(),
+      });
+    });
+
+    render(<Room5Control team={mockTeam} onLogout={mockLogout} />);
+    await waitFor(() => expect(activeEngineInstance).toBeTruthy());
+
+    // Enter game so HUDControl renders
+    fireEvent.click(screen.getByText(/ENTER THE SURVEILLANCE MORGUE/i));
+    const hintBtn = await screen.findByTitle(/Need Hint\? \(Press H\)/i);
+    expect(hintBtn).toBeInTheDocument();
+
+    // Open via HUD Hint button
+    fireEvent.click(hintBtn);
+    await waitFor(() =>
+      expect(global.fetch).toHaveBeenCalledWith(
+        '/api/game/hint/status?room_id=control',
+        expect.any(Object)
+      )
+    );
+    expect(await screen.findByText(/HINTS & INVESTIGATION GUIDANCE/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/HINTS & INVESTIGATION GUIDANCE/i).closest('[data-hint-theme]')
+    ).toHaveAttribute('data-hint-theme', 'control');
+
+    // Close with Escape
+    fireEvent.keyDown(window, { key: 'Escape', code: 'Escape' });
+    await waitFor(() =>
+      expect(screen.queryByText(/HINTS & INVESTIGATION GUIDANCE/i)).toBeNull()
+    );
+
+    // Re-open with H keyboard shortcut
+    fireEvent.keyDown(window, { key: 'h', code: 'KeyH' });
+    expect(await screen.findByText(/HINTS & INVESTIGATION GUIDANCE/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/HINTS & INVESTIGATION GUIDANCE/i).closest('[data-hint-theme]')
+    ).toHaveAttribute('data-hint-theme', 'control');
+  });
+
+  it('QA-R5-FE-60: multi-fragment props remain active after 1st pickup and clear only when all items collected', async () => {
+    let searchCalls = 0;
+    global.fetch = vi.fn().mockImplementation((url) => {
+      if (String(url).endsWith('/search')) {
+        searchCalls += 1;
+        if (searchCalls === 1) {
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({
+              found: true,
+              fragment_id: 'EC01',
+              total_collected: 1,
+              total_in_room: 10,
+              message: 'Recovered EC01.',
+            }),
+          });
+        }
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            found: true,
+            fragment_id: 'EC02',
+            total_collected: 2,
+            total_in_room: 10,
+            message: 'Recovered EC02.',
+          }),
+        });
+      }
+      const collected = searchCalls === 0 ? [] : searchCalls === 1 ? ['EC01'] : ['EC01', 'EC02'];
+      return Promise.resolve({
+        ok: true,
+        json: async () =>
+          makeRoomState({
+            collected_fragment_ids: collected,
+            evidence: collected.map((id) => ({ id, is_wrapped: true, display: { title: id } })),
+          }),
+      });
+    });
+
+    render(<Room5Control team={mockTeam} onLogout={mockLogout} />);
+    await waitFor(() => expect(activeEngineInstance).toBeTruthy());
+
+    // First pickup on relay_rack (EC01 only) should NOT mark relay_rack cleared yet
+    await act(async () => {
+      await activeEngineInstance.callbacks.onInteract('relay_rack');
+    });
+    expect(activeEngineInstance.setFragmentCleared).not.toHaveBeenCalledWith('relay_rack');
+    fireEvent.click(screen.getByText('Continue'));
+
+    // Second pickup on relay_rack (EC02) completes relay_rack and marks it cleared
+    await act(async () => {
+      await activeEngineInstance.callbacks.onInteract('relay_rack');
+    });
+    expect(activeEngineInstance.setFragmentCleared).toHaveBeenCalledWith('relay_rack');
   });
 });
 

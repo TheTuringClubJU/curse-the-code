@@ -106,9 +106,9 @@ export function concreteWall() {
   }
   g.putImageData(im, 0, 0);
 
-  // Vertical rebar shadows
-  g.strokeStyle = 'rgba(0,0,0,0.12)';
-  g.lineWidth = 1.5;
+  // Subtle formwork seams & vertical rebar shadows (clean bunker concrete — no arch graffiti or blood)
+  g.strokeStyle = 'rgba(0,0,0,0.22)';
+  g.lineWidth = 1.8;
   for (let i = 0; i < 8; i++) {
     const xp = (i / 8) * S + (Math.random() - 0.5) * 20;
     g.beginPath(); g.moveTo(xp, 0); g.lineTo(xp + (Math.random()-0.5)*6, S); g.stroke();

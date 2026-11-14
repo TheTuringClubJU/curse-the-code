@@ -35,6 +35,8 @@ export default function Room1Bedroom({ team, onLogout, onTransitionToRoom2 }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [systemNotification, setSystemNotification] = useState(null);
   const [audioMuted, setAudioMuted] = useState(false);
+  const [flashOverlay, setFlashOverlay] = useState({ color: '#c40414', opacity: 0, visible: false });
+  const doorScareCountRef = useRef(0);
 
   // Fetch initial room data from backend
   const fetchRoomState = async () => {
@@ -161,7 +163,12 @@ export default function Room1Bedroom({ team, onLogout, onTransitionToRoom2 }) {
     try {
       const engine = createEngine(mountRef.current, bedroomConfig, {
         audio: audioRef.current,
-        onFlash: () => {},
+        onFlash: (color, opacity = 0.78, durationMs = 200) => {
+          setFlashOverlay({ color, opacity, visible: true });
+          setTimeout(() => {
+            setFlashOverlay((prev) => ({ ...prev, visible: false }));
+          }, durationMs || 200);
+        },
         onTarget: (targetId) => {
           activeTargetRef.current = targetId;
           if (targetId) {
@@ -236,6 +243,18 @@ export default function Room1Bedroom({ team, onLogout, onTransitionToRoom2 }) {
           engineRef.current?.unlock();
         }
       } else {
+        const now = Date.now();
+        const ds = typeof doorScareCountRef.current === 'object' ? doorScareCountRef.current : { count: doorScareCountRef.current || 0, lastAt: 0 };
+        const shouldScare = ds.count > 0 && (now - ds.lastAt) >= 45000 && Math.random() < 0.25;
+        ds.count += 1;
+        if (shouldScare) ds.lastAt = now;
+        doorScareCountRef.current = ds;
+        if (shouldScare) {
+          engineRef.current?.triggerDoorScare?.();
+          audioRef.current?.jumpscareSting?.(1.4);
+        } else {
+          audioRef.current?.slam?.(0, 0);
+        }
         const solvedCount = currentData?.clues?.filter(c => c.solved)?.length || 0;
         showNotification(
           `The heavy corridor door is locked with four iron deadbolts. Solve all 4 case files in this room to unlock it (${solvedCount}/4 solved).`
@@ -375,6 +394,12 @@ export default function Room1Bedroom({ team, onLogout, onTransitionToRoom2 }) {
       {/* Atmospheric Overlays */}
       <div className="vig pointer-events-none" />
       <div className="grain pointer-events-none" />
+      {flashOverlay.visible && (
+        <div
+          className="pointer-events-none fixed inset-0 z-40 transition-opacity duration-75"
+          style={{ backgroundColor: flashOverlay.color, opacity: flashOverlay.opacity }}
+        />
+      )}
 
       {/* Enter Room Splash Modal */}
       {!isStarted && (

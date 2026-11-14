@@ -890,48 +890,48 @@ export class GameAudioControl {
     // 1. Massive chest-slam sub impact
     const sub = c.createOscillator();
     sub.type = 'sine';
-    sub.frequency.setValueAtTime(118, now);
-    sub.frequency.exponentialRampToValueAtTime(24, now + 0.72);
+    sub.frequency.setValueAtTime(128, now);
+    sub.frequency.exponentialRampToValueAtTime(20, now + 0.85);
     const subG = c.createGain();
-    subG.gain.setValueAtTime(0.78, now);
-    subG.gain.exponentialRampToValueAtTime(0.001, now + 0.85);
+    subG.gain.setValueAtTime(1.15, now);
+    subG.gain.exponentialRampToValueAtTime(0.001, now + 0.95);
     sub.connect(subG); subG.connect(this.master);
-    sub.start(now); sub.stop(now + 0.88);
+    sub.start(now); sub.stop(now + 0.98);
 
     // 2. Guttural FM vocal-cord overdrive scream cluster
     const growl = c.createOscillator();
     growl.frequency.setValueAtTime(48, now);
     const growlG = c.createGain();
-    growlG.gain.setValueAtTime(88, now);
+    growlG.gain.setValueAtTime(125, now);
     growl.connect(growlG);
     growl.start(now);
-    growl.stop(now + 1.4);
+    growl.stop(now + 1.5);
 
     const shaper = c.createWaveShaper();
-    shaper.curve = this._getDistortionCurve(55);
+    shaper.curve = this._getDistortionCurve(88);
     shaper.oversample = '2x';
     const screamFilter = c.createBiquadFilter();
     screamFilter.type = 'bandpass';
-    screamFilter.frequency.setValueAtTime(1650, now);
-    screamFilter.frequency.exponentialRampToValueAtTime(720, now + 1.32);
-    screamFilter.Q.value = 1.25;
+    screamFilter.frequency.setValueAtTime(1850, now);
+    screamFilter.frequency.exponentialRampToValueAtTime(680, now + 1.42);
+    screamFilter.Q.value = 1.35;
     shaper.connect(screamFilter);
     screamFilter.connect(this.verb);
     screamFilter.connect(this.master);
 
-    [155.56, 293.66, 415.3, 622.25, 932.33, 1244.5].forEach((freq, i) => {
+    [155.56, 293.66, 311.13, 415.3, 622.25, 932.33, 1244.5, 1661.2].forEach((freq, i) => {
       const o = c.createOscillator();
       o.type = i % 2 === 0 ? 'sawtooth' : 'square';
-      o.frequency.setValueAtTime(freq * 0.88, now);
-      o.frequency.linearRampToValueAtTime(freq * 1.18, now + 0.055);
-      o.frequency.exponentialRampToValueAtTime(freq * 0.56, now + 1.32);
+      o.frequency.setValueAtTime(freq * 0.86, now);
+      o.frequency.linearRampToValueAtTime(freq * 1.28, now + 0.055);
+      o.frequency.exponentialRampToValueAtTime(freq * 0.54, now + 1.42);
       growlG.connect(o.frequency);
       const g = c.createGain();
       g.gain.setValueAtTime(0.001, now);
-      g.gain.linearRampToValueAtTime(i < 2 ? 0.24 : 0.16, now + 0.015);
-      g.gain.exponentialRampToValueAtTime(0.001, now + 1.34);
+      g.gain.linearRampToValueAtTime(i < 2 ? 0.34 : 0.24, now + 0.012);
+      g.gain.exponentialRampToValueAtTime(0.001, now + 1.44);
       o.connect(g); g.connect(shaper);
-      o.start(now); o.stop(now + 1.38);
+      o.start(now); o.stop(now + 1.48);
     });
 
     // 3. Tearing predator shriek noise burst + double jaw-snap cracks

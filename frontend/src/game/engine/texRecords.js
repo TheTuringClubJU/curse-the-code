@@ -52,8 +52,8 @@ export function archiveWall() {
   }
   g.putImageData(im, 0, 0);
 
-  // Paint peeling cracks and salt efflorescence
-  g.strokeStyle = 'rgba(180, 200, 190, 0.08)';
+  // Paint peeling cracks
+  g.strokeStyle = 'rgba(180, 200, 190, 0.12)';
   g.lineWidth = 1.5;
   for (let i = 0; i < 6; i++) {
     g.beginPath();
