@@ -6,7 +6,8 @@ import * as X from './tex.js';
 const rnd = (a, b) => a + Math.random() * (b - a);
 
 export function createRecordsScares(E, handlers) {
-  const { cam, sc, ref } = E;
+  const { S, cam, sc, ref } = E;
+  if (!cam.parent && S) S.add(cam);
   const A = () => handlers.audio;
   const flash = (color, opacity, durationMs) => handlers.onFlash?.(color, opacity, durationMs);
   const triggerGlassCrack = () => handlers.onGlassCrack?.();
@@ -14,7 +15,7 @@ export function createRecordsScares(E, handlers) {
   let activeScare = null;
   let scareTime = 0;
   // First jumpscare strikes within 5 to 8 seconds of entering!
-  let nextScareAt = rnd(5, 8);
+  let nextScareAt = rnd(22, 35);
 
   // Stalker entity & Phantom Face state
   const stalker = ref.stalkerEntity;
@@ -23,14 +24,14 @@ export function createRecordsScares(E, handlers) {
   let stalkerActive = false;
 
   // In-your-face Phantom Screaming Face attached to camera for visceral jumpscares
-  const faceTexture = X.tex(X.faceC({ seed: 3, mouth: true }));
+  const faceTexture = X.tex(X.faceC({ eye: '#ff1828', glow: true, seed: 3, mouth: true }));
   const faceMat = new THREE.MeshBasicMaterial({
     map: faceTexture,
     transparent: true,
     fog: false,
     depthWrite: false
   });
-  const phantomFace = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 2.0), faceMat);
+  const phantomFace = new THREE.Mesh(new THREE.PlaneGeometry(1.65, 2.05), faceMat);
   phantomFace.position.set(0, 0, -1.2);
   phantomFace.visible = false;
   phantomFace.userData.np = 1;
@@ -102,19 +103,23 @@ export function createRecordsScares(E, handlers) {
       cond: () => true,
       start() {
         phantomFace.scale.set(0.35, 0.35, 0.35);
-        phantomFace.position.set(0, -0.05, -1.35);
+        phantomFace.position.set(0, -0.05, -1.45);
+        phantomFace.rotation.set(0, 0, 0);
         phantomFace.visible = true;
-        A()?.screamingStinger?.(1.0);
-        E.shake(2.0, 0.7);
-        flash('#b80000', 0.9, 280);
+        A()?.screamingStinger?.(1.38);
+        A()?.drawerSlam?.(E.px(), E.pz());
+        E.shake(2.3, 0.82);
+        flash('#c40008', 0.92, 280);
         triggerGlassCrack();
         handlers.onScare?.('phantomLunge', 'A screaming ghostly apparition lunged directly at your visor!');
       },
       upd(t) {
-        const k = Math.min(1, t / 0.18);
-        phantomFace.position.z = -1.35 + 1.05 * k;
-        phantomFace.scale.set(0.35 + 1.35 * k, 0.35 + 1.35 * k, 1);
-        if (t > 0.45) {
+        const k = Math.min(1, t / 0.14);
+        phantomFace.position.z = -1.45 + 1.12 * k;
+        phantomFace.position.x = Math.sin(t * 82) * 0.04;
+        phantomFace.rotation.z = Math.sin(t * 70) * 0.15;
+        phantomFace.scale.set(0.35 + 1.42 * k, 0.35 + 1.42 * k, 1);
+        if (t > 0.58) {
           phantomFace.visible = false;
           return true;
         }
@@ -223,6 +228,7 @@ export function createRecordsScares(E, handlers) {
 
   return {
     trigger,
+    triggerDoorScare: () => trigger('phantomLunge'),
     dispose() {
       window.removeEventListener('keydown', onKeyScare);
       if (phantomFace.parent) phantomFace.parent.remove(phantomFace);
@@ -250,8 +256,8 @@ export function createRecordsScares(E, handlers) {
         scareTime += dt;
         if (activeScare.upd(scareTime)) {
           activeScare = null;
-          // Subsequent jumpscares trigger every 10 to 18 seconds
-          nextScareAt = totalTime + rnd(10, 18);
+          // Subsequent jumpscares trigger every 38 to 58 seconds
+          nextScareAt = totalTime + rnd(38, 58);
         }
         return;
       }

@@ -20,3 +20,15 @@ frontend/dist/
 schema.completed.sql
 
 ctc/
+
+scratch/
+.neon
+Room-5 Glb models/
+horror-game-floor-generator-free/
+HorrorPackFBX/
+.DS_Store
+/*.mp3
+.agents/
+/MarkdownFile*.md
+*.dmg
+raw_models/

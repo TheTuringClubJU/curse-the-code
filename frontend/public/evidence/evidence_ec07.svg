@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 580 440" width="100%" height="100%">
+    <defs>
+        <radialGradient id="paperV" cx="50%" cy="50%" r="70%"><stop offset="60%" stop-color="#f5f0e8"/><stop offset="100%" stop-color="#d2c8b0"/></radialGradient>
+    </defs>
+    <rect width="580" height="440" fill="url(#paperV)" rx="5"/>
+    <rect width="564" height="424" x="8" y="8" fill="none" stroke="#877556" stroke-width="1.5" opacity="0.4" rx="4"/>
+    <!-- Clipboard top -->
+    <rect x="220" y="4" width="140" height="22" rx="10" fill="#6a5a3a" opacity="0.8"/>
+    <rect x="276" y="1" width="28" height="12" rx="4" fill="#4a3a24"/>
+
+    <!-- Header -->
+    <text x="60" y="58" font-family="Courier, monospace" font-size="13" font-weight="bold" letter-spacing="2" fill="#2b2319">PERSONNEL ACCESS AUDIT — POST-SHUTDOWN</text>
+    <text x="60" y="76" font-family="Courier, monospace" font-size="10" letter-spacing="1" fill="#75644c">SECURITY DIVISION // BADGE ACCESS LOG EXTRACT</text>
+    <line x1="60" y1="90" x2="520" y2="90" stroke="#75644c" stroke-width="1.2" opacity="0.5"/>
+
+    <!-- Table header -->
+    <rect x="60" y="100" width="460" height="22" fill="#2b2319" opacity="0.08"/>
+    <text x="68" y="116" font-family="Courier, monospace" font-size="10" font-weight="bold" fill="#66533c">BADGE ID</text>
+    <text x="180" y="116" font-family="Courier, monospace" font-size="10" font-weight="bold" fill="#66533c">NAME</text>
+    <text x="300" y="116" font-family="Courier, monospace" font-size="10" font-weight="bold" fill="#66533c">LAST ACCESS</text>
+    <text x="420" y="116" font-family="Courier, monospace" font-size="10" font-weight="bold" fill="#66533c">STATUS</text>
+
+    <!-- Table rows -->
+    <text x="68" y="140" font-family="Courier, monospace" font-size="10" fill="#2b2319">BDG-4452</text><text x="180" y="140" font-family="Courier, monospace" font-size="10" fill="#2b2319">STANWICK, R.</text><text x="300" y="140" font-family="Courier, monospace" font-size="10" fill="#2b2319">1983-08-14 18:30</text><text x="420" y="140" font-family="Courier, monospace" font-size="10" fill="#5a8a5a">EVACUATED</text>
+    <text x="68" y="158" font-family="Courier, monospace" font-size="10" fill="#2b2319">BDG-7721</text><text x="180" y="158" font-family="Courier, monospace" font-size="10" fill="#2b2319">HALL, D.</text><text x="300" y="158" font-family="Courier, monospace" font-size="10" fill="#2b2319">1983-08-14 17:12</text><text x="420" y="158" font-family="Courier, monospace" font-size="10" fill="#5a8a5a">EVACUATED</text>
+    <text x="68" y="176" font-family="Courier, monospace" font-size="10" fill="#2b2319">BDG-3310</text><text x="180" y="176" font-family="Courier, monospace" font-size="10" fill="#2b2319">PETROV, N.</text><text x="300" y="176" font-family="Courier, monospace" font-size="10" fill="#2b2319">1983-08-14 19:05</text><text x="420" y="176" font-family="Courier, monospace" font-size="10" fill="#5a8a5a">EVACUATED</text>
+    <!-- Highlighted row -->
+    <rect x="60" y="181" width="460" height="20" fill="#a31818" opacity="0.08"/>
+    <text x="68" y="195" font-family="Courier, monospace" font-size="10" font-weight="bold" fill="#a31818">BDG-9001</text><text x="180" y="195" font-family="Courier, monospace" font-size="10" font-weight="bold" fill="#a31818">CORVIN, M.</text><text x="300" y="195" font-family="Courier, monospace" font-size="10" font-weight="bold" fill="#a31818">1983-08-23 11:38</text><text x="420" y="195" font-family="Courier, monospace" font-size="10" font-weight="bold" fill="#a31818">!! ACTIVE !!</text>
+
+    <text x="60" y="230" font-family="Courier, monospace" font-size="10" fill="#2b2319">BDG-5509</text><text x="180" y="230" font-family="Courier, monospace" font-size="10" fill="#2b2319">WEBER, T.</text><text x="300" y="230" font-family="Courier, monospace" font-size="10" fill="#2b2319">1983-08-14 16:40</text><text x="420" y="230" font-family="Courier, monospace" font-size="10" fill="#5a8a5a">EVACUATED</text>
+
+    <!-- Note -->
+    <text x="60" y="275" font-family="Courier, monospace" font-size="11" fill="#5a4a30" font-style="italic">BDG-9001 accessed secure terminal on 1983-08-23 —</text>
+    <text x="60" y="293" font-family="Courier, monospace" font-size="11" fill="#5a4a30" font-style="italic">9 days after official facility shutdown (1983-08-14).</text>
+    <text x="60" y="311" font-family="Courier, monospace" font-size="11" fill="#5a4a30" font-style="italic">This badge entry is the authenticated post-shutdown access.</text>
+
+    <!-- Footer -->
+    <line x1="60" y1="385" x2="520" y2="385" stroke="#75644c" stroke-width="0.8" opacity="0.4"/>
+    <text x="60" y="405" font-family="Courier, monospace" font-size="10" fill="#75644c">RECORD ID: EC07 — WALL CLIPBOARD DOC B</text>
+    <text x="520" y="405" font-family="Courier, monospace" font-size="9" fill="#998369" text-anchor="end">SUBSTATION DELTA // CTRL-04</text>
+</svg>
+

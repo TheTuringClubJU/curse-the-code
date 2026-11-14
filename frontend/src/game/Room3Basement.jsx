@@ -1,0 +1,237 @@
+import React, { useEffect, useRef, useState } from 'react';
+import { createEngine } from './engine/engine.js';
+import basementConfig from './rooms/basement.js';
+import { GameAudio } from './engine/audio.js';
+import HUD from './components/HUD.jsx';
+import BasketModal from './components/BasketModal.jsx';
+import CaseFilesModal from './components/CaseFilesModal.jsx';
+import PhotoPuzzleModal from './components/PhotoPuzzleModal.jsx';
+import IntercomQrModal from './components/IntercomQrModal.jsx';
+import ServerRackNoteModal from './components/ServerRackNoteModal.jsx';
+import Round1VictoryModal from './components/Round1VictoryModal.jsx';
+import FinalContainmentTerminalModal from './components/FinalContainmentTerminalModal.jsx';
+import Round1DossierModal from './components/Round1DossierModal.jsx';
+import HintModal from './components/HintModal.jsx';
+import './game.css';
+
+export default function Room3Basement({ team, onLogout, onProceedToLobby, previewMode = false }) {
+  const mountRef = useRef(null), engineRef = useRef(null), audioRef = useRef(null);
+  const roomDataRef = useRef(null), activeTargetRef = useRef(null), handleInteractRef = useRef(null);
+  const submittingRef = useRef(false), notificationTimerRef = useRef(null);
+  const [roomData, setRoomData] = useState(null), [loading, setLoading] = useState(true);
+  const [isStarted, setIsStarted] = useState(false), [activeClue, setActiveClue] = useState(null);
+  const [isBasketOpen, setIsBasketOpen] = useState(false), [isCaseFilesOpen, setIsCaseFilesOpen] = useState(false);
+  const [isPhotoPuzzleOpen, setIsPhotoPuzzleOpen] = useState(false), [isCompleteOpen, setIsCompleteOpen] = useState(false);
+  const [isDossierOpen, setIsDossierOpen] = useState(false);
+  const [isHintOpen, setIsHintOpen] = useState(false);
+  const [hoverPrompt, setHoverPrompt] = useState(null), [notification, setNotification] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false), [audioMuted, setAudioMuted] = useState(false);
+  const [flashOverlay, setFlashOverlay] = useState({ color: '#c40414', opacity: 0, visible: false });
+  const doorScareCountRef = useRef(0);
+
+  const previewRoomData = {
+    title: 'The Basement',
+    is_completed: false,
+    basket_unlocked: true,
+    collected_fragment_ids: ['basement-preview-1'],
+    evidence: [],
+    photo_pieces_collected: 4,
+    clues: [
+      { id: 'R1-09', object_id: 'intercom', solved: false, attempts: 0, attempts_max: 3 },
+      { id: 'R1-10', object_id: 'rack_door', solved: false, attempts: 0, attempts_max: 3 },
+      { id: 'R1-FIN', object_id: 'containment_console', solved: false, attempts: 0, attempts_max: 3 },
+    ],
+  };
+
+  const showNotification = (message) => {
+    setNotification(message);
+    if (notificationTimerRef.current) clearTimeout(notificationTimerRef.current);
+    notificationTimerRef.current = setTimeout(()=>setNotification(null), 4500);
+  };
+  const fetchRoomState = async () => {
+    if (previewMode) {
+      setRoomData(previewRoomData);
+      roomDataRef.current = previewRoomData;
+      setLoading(false);
+      return;
+    }
+    try {
+      const res = await fetch('/api/game/room/basement', { credentials:'include', headers:{'x-session-token':localStorage.getItem('ctc_token')||''} });
+      if(res.ok){ const data=await res.json(); setRoomData(data); roomDataRef.current=data; if(data.is_completed) engineRef.current?.openDoor?.(); }
+      else if ([401,403,404,429,500].includes(res.status)) return;
+    } catch(e){ console.error('Failed to load basement:', e); } finally { setLoading(false); }
+  };
+
+  const handleInteract = async (objectId) => {
+    const data=roomDataRef.current;
+    if (previewMode) {
+      if (objectId === 'room_door') {
+        showNotification('Preview mode: the Room 3 exit is not connected.');
+        return;
+      }
+      const clue = data?.clues?.find(c => c.object_id === objectId);
+      if (clue) {
+        setActiveClue(clue);
+        engineRef.current?.unlock();
+      } else {
+        showNotification(`Preview: inspected ${objectId.replaceAll('_', ' ')}`);
+      }
+      return;
+    }
+    if(objectId==='room_door'){
+      if(data?.is_completed){ setIsCompleteOpen(true); engineRef.current?.unlock(); }
+      else {
+        const now = Date.now();
+        const ds = typeof doorScareCountRef.current === 'object' ? doorScareCountRef.current : { count: doorScareCountRef.current || 0, lastAt: 0 };
+        const shouldScare = ds.count > 0 && (now - ds.lastAt) >= 45000 && Math.random() < 0.25;
+        ds.count += 1;
+        if (shouldScare) ds.lastAt = now;
+        doorScareCountRef.current = ds;
+        if (shouldScare) {
+          engineRef.current?.triggerDoorScare?.();
+          audioRef.current?.jumpscareSting?.(1.4);
+        } else {
+          audioRef.current?.slam?.(3, 2.95);
+        }
+        showNotification('The subterranean vault remains sealed. Disengage the containment terminal to unlock the exit.');
+      }
+      return;
+    }
+    try {
+      const res=await fetch('/api/game/room/basement/search',{method:'POST',credentials:'include',headers:{'Content-Type':'application/json','x-session-token':localStorage.getItem('ctc_token')||''},body:JSON.stringify({object_id:objectId})});
+      if(res.ok){ const result=await res.json(); if(result.message) showNotification(result.message); if(result.found){await fetchRoomState(); return;} }
+      if ([401,403,404,429,500].includes(res.status)) { showNotification(res.status === 429 ? 'Search is temporarily rate limited.' : 'Search request could not be completed.'); }
+    } catch(e){ console.error('Search failed:',e); }
+    const clue=data?.clues?.find(c=>c.object_id===objectId);
+    if(clue){
+      if(clue.is_locked){showNotification(clue.lock_reason || 'This clue is sealed. Previous clue must be solved first.');return;}
+      if(clue.id==='R1-FIN'){ const required=['R1-09','R1-10']; const ready=required.every(id=>data.clues.find(c=>c.id===id)?.solved); if(!ready){showNotification('Final terminal locked. Solve the prerequisite room clues first.');return;} }
+      if(!data?.basket_unlocked && clue.id!=='R1-FIN'){showNotification('The evidence lock is sealed. Recover all 5 basement fragments first.');return;}
+      if(!clue.solved && (clue.attempts || 0) >= (clue.attempts_max || 3)){ showNotification('Maximum attempts exhausted for this clue.'); return; }
+      setActiveClue(clue); engineRef.current?.unlock();
+    }
+  };
+  handleInteractRef.current=handleInteract;
+
+  useEffect(()=>{fetchRoomState();},[]);
+  useEffect(() => () => {
+    if (notificationTimerRef.current) clearTimeout(notificationTimerRef.current);
+  }, []);
+  useEffect(()=>{
+    const key=(e)=>{ const tag=(e.target?.tagName||'').toUpperCase(); if(['INPUT','TEXTAREA'].includes(tag)||e.target?.isContentEditable)return;
+      if(e.key.toLowerCase()==='b'){e.preventDefault();setIsBasketOpen(v=>{const next=!v;if(next)engineRef.current?.unlock();else engineRef.current?.lock();return next;});}
+      if(e.key.toLowerCase()==='c'){e.preventDefault();setIsCaseFilesOpen(v=>{const next=!v;if(next)engineRef.current?.unlock();else engineRef.current?.lock();return next;});}
+      if(e.key.toLowerCase()==='p'){e.preventDefault();setIsPhotoPuzzleOpen(v=>{const next=!v;if(next)engineRef.current?.unlock();else engineRef.current?.lock();return next;});}
+      if(e.key.toLowerCase()==='r'){e.preventDefault();setIsDossierOpen(v=>{const next=!v;if(next)engineRef.current?.unlock();else engineRef.current?.lock();return next;});}
+      if(e.key.toLowerCase()==='h'){e.preventDefault();setIsHintOpen(v=>{const next=!v;if(next)engineRef.current?.unlock();else engineRef.current?.lock();return next;});}
+    };
+    window.addEventListener('keydown',key,true); return()=>window.removeEventListener('keydown',key,true);
+  },[]);
+
+  useEffect(()=>{
+    if(!mountRef.current||engineRef.current)return;
+    audioRef.current=new GameAudio();
+    try{ engineRef.current=createEngine(mountRef.current,basementConfig,{audio:audioRef.current,onFlash:(color,opacity=0.78,durationMs=200)=>{setFlashOverlay({color,opacity,visible:true});setTimeout(()=>setFlashOverlay(prev=>({...prev,visible:false})),durationMs||200);},onTarget:(id)=>{activeTargetRef.current=id;setHoverPrompt(id?`Inspect ${id.replaceAll('_',' ')}`:null);},onInteract:(id)=>handleInteractRef.current?.(id),onLock:()=>{}}); }
+    catch(e){console.error('Basement initialization failed:',e);} return()=>{engineRef.current?.dispose?.();engineRef.current=null;audioRef.current?.dispose?.();};
+  },[]);
+
+  const handleStart=()=>{setIsStarted(true);audioRef.current?.start(basementConfig.audio);engineRef.current?.setPaused(false);engineRef.current?.lock();};
+  const handleClueSubmit=async(clueId,answer)=>{
+    if (previewMode) {
+      return { correct: false, message: `Preview mode: "${answer}" is not submitted to the server.` };
+    }
+    if(submittingRef.current)return {correct:false,message:'Submission already pending'};
+    submittingRef.current=true;setIsSubmitting(true);
+    const controller=new AbortController();
+    const timeout=setTimeout(()=>controller.abort(),10000);
+    try{
+      const res=await fetch(`/api/game/clue/${clueId}/submit`,{method:'POST',credentials:'include',headers:{'Content-Type':'application/json','x-session-token':localStorage.getItem('ctc_token')||''},body:JSON.stringify({answer}),signal:controller.signal});
+      const data=await res.json().catch(()=>({detail:'Invalid server response'}));
+      if(res.ok){
+        await fetchRoomState();
+        if(data.room_completed){
+          engineRef.current?.openDoor?.();
+          engineRef.current?.shake?.(1.5, 0.8);
+          audioRef.current?.slam?.(3, 2.95);
+          setIsCompleteOpen(true);
+        }
+        return data;
+      }
+      if(res.status===429)return {correct:false,message:'Submission is temporarily rate limited.'};
+      if(res.status===401)return {correct:false,message:'Your session is no longer authorized.'};
+      if(res.status===403){const msg=typeof data.detail==='object'?(data.detail.message||JSON.stringify(data.detail)):(data.detail||'Access forbidden.');return {correct:false,message:msg};}
+      if(res.status===404)return {correct:false,message:'This clue is unavailable.'};
+      if(res.status===500)return {correct:false,message:'The server could not process this submission.'};
+      return {correct:false,message:data.detail||'Submission failed'};
+    }catch(e){return {correct:false,message:e?.name==='AbortError'?'Submission timed out.':'Server communication error'};}
+    finally{clearTimeout(timeout);submittingRef.current=false;setIsSubmitting(false);}
+  };
+
+  const clues=roomData?.clues||[], roomClues=clues.filter(c=>c.id!=='R1-FIN');
+  const clueModalProps={isSubmitting,onSubmitAnswer:handleClueSubmit,clue:activeClue,onClose:()=>{setActiveClue(null);engineRef.current?.lock();}};
+
+  // Wall-monitor countdown: sync with the server clock ONCE on mount, then count down
+  // locally (no polling). If the sync fails, retry at most 3 times with backoff and show
+  // --:-- until the server answers, so players never see a made-up time.
+  useEffect(() => {
+    let cancelled = false, retryTimer = null, lastText = null;
+    let deadline = null; // performance.now() value at which the countdown reaches 0
+    const toNum = (v) => (typeof v === 'number' || (typeof v === 'string' && v.trim() !== '')) ? Number(v) : NaN;
+    const parseRemaining = (d) => {
+      const direct = toNum(d?.remaining_seconds ?? d?.remaining);
+      if (Number.isFinite(direct)) return Math.max(0, Math.floor(direct));
+      const end = Date.parse(d?.ends_at), now = Date.parse(d?.server_time ?? d?.now);
+      return Number.isFinite(end) && Number.isFinite(now) ? Math.max(0, Math.floor((end - now) / 1000)) : null;
+    };
+    const render = () => {
+      let text = '--:--';
+      if (deadline !== null) {
+        const left = Math.max(0, Math.ceil((deadline - performance.now()) / 1000));
+        text = `${String(Math.floor(left / 60)).padStart(2, '0')}:${String(left % 60).padStart(2, '0')}`;
+      }
+      if (engineRef.current && text !== lastText) { lastText = text; engineRef.current.setCountdown?.(text); }
+    };
+    const sync = async (attempt = 0) => {
+      if (previewMode) { deadline = performance.now() + 15 * 60 * 1000; render(); return; }
+      try {
+        const res = await fetch('/api/time', { credentials: 'include' });
+        if (cancelled) return;
+        if (res.ok) {
+          const remaining = parseRemaining(await res.json());
+          if (remaining !== null && !cancelled) { deadline = performance.now() + remaining * 1000; render(); return; }
+        }
+      } catch (_) { /* fall through to retry */ }
+      if (!cancelled && attempt < 3) retryTimer = setTimeout(() => sync(attempt + 1), [5000, 15000, 45000][attempt]);
+    };
+    sync();
+    const tickTimer = setInterval(render, 1000); // local only, no network
+    return () => { cancelled = true; clearTimeout(retryTimer); clearInterval(tickTimer); };
+  }, []);
+
+  const isAnyModalOpen = Boolean(
+    isBasketOpen ||
+    isCaseFilesOpen ||
+    isPhotoPuzzleOpen ||
+    activeClue ||
+    isCompleteOpen ||
+    isDossierOpen ||
+    isHintOpen
+  );
+
+  return <div className="relative w-full h-screen overflow-hidden bg-[#14161a] select-none font-mono">
+    <div ref={mountRef} onClick={() => { if (isStarted && engineRef.current && !isAnyModalOpen) engineRef.current.lock(); }} className="absolute inset-0" />
+    {flashOverlay.visible && <div className="pointer-events-none fixed inset-0 z-40 transition-opacity duration-75" style={{ backgroundColor: flashOverlay.color, opacity: flashOverlay.opacity }} />}
+    {!isStarted&&<div className="ov"><h1>CURSE THE CODE</h1><h3>The Basement</h3><ul><li><b>WASD</b> move</li><li><b>Mouse</b> look</li><li><b>E</b> interact/search</li><li><b>B/C/P</b> basket/clues/photo</li></ul><button onClick={handleStart}>CLICK TO ENTER BASEMENT</button></div>}
+    {notification&&<div className="absolute top-20 left-1/2 -translate-x-1/2 z-[80] bg-red-950/95 border border-red-400/40 px-5 py-3 rounded text-xs text-red-100">{notification}</div>}
+    {isStarted&&<HUD roomTitle={roomData?.title||'The Basement'} totalFragments={5} collectedCount={roomData?.collected_fragment_ids?.length||0} basketUnlocked={Boolean(roomData?.basket_unlocked)} isRoomCompleted={Boolean(roomData?.is_completed)} photoCount={roomData?.photo_pieces_collected||0} cluesSolved={roomClues.filter(c=>c.solved).length} totalClues={2} onOpenBasket={()=>{setIsBasketOpen(true);engineRef.current?.unlock();}} onOpenCaseFiles={()=>{setIsCaseFilesOpen(true);engineRef.current?.unlock();}} onOpenPhotoPuzzle={()=>{setIsPhotoPuzzleOpen(true);engineRef.current?.unlock();}} onOpenRules={()=>{setIsDossierOpen(true);engineRef.current?.unlock();}} onOpenHints={()=>{setIsHintOpen(true);engineRef.current?.unlock();}} onLogout={onLogout} audioMuted={audioMuted} onToggleAudio={()=>{const v=!audioMuted;audioRef.current?.setMuted(v);setAudioMuted(v);}} activeHoverPrompt={hoverPrompt}/>} 
+    <BasketModal isOpen={isBasketOpen} onClose={()=>{setIsBasketOpen(false);engineRef.current?.lock();}} evidence={roomData?.evidence||[]} collectedIds={roomData?.collected_fragment_ids||[]} basketUnlocked={Boolean(roomData?.basket_unlocked)} totalInRoom={5} roomTitle="The Basement"/>
+    <CaseFilesModal isOpen={isCaseFilesOpen} onClose={()=>{setIsCaseFilesOpen(false);engineRef.current?.lock();}} clues={clues} basketUnlocked={Boolean(roomData?.basket_unlocked)} onOpenClue={clue=>{setIsCaseFilesOpen(false);if(clue.is_locked){showNotification(clue.lock_reason||'This clue is locked.');return;}if(clue.id==='R1-FIN'&&!clues.filter(c=>c.id==='R1-09'||c.id==='R1-10').every(c=>c.solved)){showNotification('Final terminal locked. Solve the prerequisite room clues first.');return;}setActiveClue(clue);engineRef.current?.unlock();}}/>
+    <PhotoPuzzleModal isOpen={isPhotoPuzzleOpen} onClose={()=>{setIsPhotoPuzzleOpen(false);engineRef.current?.lock();}} photoCount={roomData?.photo_pieces_collected||0} requiredPieces={10}/>
+    <IntercomQrModal isOpen={Boolean(activeClue?.id==='R1-09')} {...clueModalProps}/>
+    <ServerRackNoteModal isOpen={Boolean(activeClue?.id==='R1-10')} {...clueModalProps}/>
+    <FinalContainmentTerminalModal isOpen={Boolean(activeClue?.id==='R1-FIN')} {...clueModalProps} onOpenHints={() => setIsHintOpen(true)} />
+    <Round1VictoryModal isOpen={isCompleteOpen} onClose={()=>setIsCompleteOpen(false)} onProceed={()=>{setIsCompleteOpen(false);onProceedToLobby?.();showNotification('Round 1 complete. The subterranean vault seal is disengaged.');}} />
+    <Round1DossierModal isOpen={isDossierOpen} onClose={()=>{setIsDossierOpen(false);engineRef.current?.lock();}} />
+    <HintModal isOpen={isHintOpen} onClose={()=>{setIsHintOpen(false);engineRef.current?.lock();}} roomId="basement" roomTitle="The Basement" />
+  </div>;
+}

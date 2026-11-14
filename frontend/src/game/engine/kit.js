@@ -23,7 +23,13 @@ export const TX={
  skin:()=>get('skin',()=>X.tex(X.pumpkinSkin())),
  shade:()=>get('sh',()=>X.tex(X.pix(128,128,(u,v,o)=>{const n=X.fbm(u,v,10,6,3,3);o[0]=240*(.7+.3*n);o[1]=210*(.7+.3*n);o[2]=150*(.7+.3*n)}))),
  chalk:()=>get('ch',()=>X.tex(chalkC())),
- clockFace:()=>get('cf',()=>X.tex(clockC()))}
+ clockFace:()=>get('cf',()=>X.tex(clockC())),
+ bloodWall:(i=1)=>get('bw'+i,()=>X.tex(X.bloodSplatterC(i,{drips:true}))),
+ bloodPool:(i=1)=>get('bp'+i,()=>X.tex(X.bloodSplatterC(i+20,{drips:false}))),
+ clawMarks:(i=1)=>get('cm'+i,()=>X.tex(X.clawMarksC(i))),
+ handprint:(i=1)=>get('hp'+i,()=>X.tex(X.handprintC(i))),
+ gothicArch:(i=1)=>get('ga'+i,()=>X.tex(X.gothicArchC(i))),
+ ritualAltar:(i=1)=>get('ra'+i,()=>X.tex(X.ritualAltarFloorC(i)))}
 function chalkC(){const S=512,c=X.cv(S,S),g=c.getContext('2d'),r=X.rng(5);g.strokeStyle='rgba(236,232,244,.85)';g.lineCap='round'
  const ring=(R,w)=>{g.lineWidth=w;g.beginPath();for(let i=0;i<=72;i++){const a=i/72*6.283,q=R+(r()-.5)*2.2;i?g.lineTo(S/2+Math.cos(a)*q,S/2+Math.sin(a)*q):g.moveTo(S/2+Math.cos(a)*q,S/2+Math.sin(a)*q)}g.stroke()}
  ring(240,5);ring(228,3);ring(160,3);g.lineWidth=4;g.beginPath();for(let i=0;i<=5;i++){const a=((i*2)%5)/5*6.283-1.5708;const x=S/2+Math.cos(a)*226,y=S/2+Math.sin(a)*226;i?g.lineTo(x,y):g.moveTo(x,y)}g.stroke()

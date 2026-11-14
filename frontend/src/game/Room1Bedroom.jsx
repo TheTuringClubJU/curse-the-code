@@ -8,9 +8,11 @@ import ClueModal from './components/ClueModal.jsx';
 import PhotoPuzzleModal from './components/PhotoPuzzleModal.jsx';
 import CaseFilesModal from './components/CaseFilesModal.jsx';
 import RoomCompleteModal from './components/RoomCompleteModal.jsx';
+import Round1DossierModal from './components/Round1DossierModal.jsx';
+import HintModal from './components/HintModal.jsx';
 import './game.css';
 
-export default function Room1Bedroom({ team, onLogout }) {
+export default function Room1Bedroom({ team, onLogout, onTransitionToRoom2 }) {
   const mountRef = useRef(null);
   const engineRef = useRef(null);
   const audioRef = useRef(null);
@@ -26,11 +28,15 @@ export default function Room1Bedroom({ team, onLogout }) {
   const [activeClue, setActiveClue] = useState(null);
   const [isPhotoPuzzleOpen, setIsPhotoPuzzleOpen] = useState(false);
   const [isCaseFilesOpen, setIsCaseFilesOpen] = useState(false);
+  const [isDossierOpen, setIsDossierOpen] = useState(false);
+  const [isHintOpen, setIsHintOpen] = useState(false);
   const [isRoomCompleteModalOpen, setIsRoomCompleteModalOpen] = useState(false);
   const [activeHoverPrompt, setActiveHoverPrompt] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [systemNotification, setSystemNotification] = useState(null);
   const [audioMuted, setAudioMuted] = useState(false);
+  const [flashOverlay, setFlashOverlay] = useState({ color: '#c40414', opacity: 0, visible: false });
+  const doorScareCountRef = useRef(0);
 
   // Fetch initial room data from backend
   const fetchRoomState = async () => {
@@ -112,6 +118,30 @@ export default function Room1Bedroom({ team, onLogout }) {
         });
         return;
       }
+
+      // R Key - Toggle Field Dossier & Round 1 Rules
+      if (e.key === 'r' || e.key === 'R' || e.code === 'KeyR') {
+        e.preventDefault();
+        setIsDossierOpen((prev) => {
+          const next = !prev;
+          if (next) engineRef.current?.unlock();
+          else engineRef.current?.lock();
+          return next;
+        });
+        return;
+      }
+
+      // H Key - Toggle Hints & Investigation Guidance
+      if (e.key === 'h' || e.key === 'H' || e.code === 'KeyH') {
+        e.preventDefault();
+        setIsHintOpen((prev) => {
+          const next = !prev;
+          if (next) engineRef.current?.unlock();
+          else engineRef.current?.lock();
+          return next;
+        });
+        return;
+      }
     };
 
     window.addEventListener('keydown', handleGlobalKey, true);
@@ -133,7 +163,12 @@ export default function Room1Bedroom({ team, onLogout }) {
     try {
       const engine = createEngine(mountRef.current, bedroomConfig, {
         audio: audioRef.current,
-        onFlash: () => {},
+        onFlash: (color, opacity = 0.78, durationMs = 200) => {
+          setFlashOverlay({ color, opacity, visible: true });
+          setTimeout(() => {
+            setFlashOverlay((prev) => ({ ...prev, visible: false }));
+          }, durationMs || 200);
+        },
         onTarget: (targetId) => {
           activeTargetRef.current = targetId;
           if (targetId) {
@@ -201,9 +236,25 @@ export default function Room1Bedroom({ team, onLogout }) {
     // Check if this is the Bedroom Exit Door
     if (objectId === 'room_door' || objectId === 'door') {
       if (currentData?.is_completed) {
-        setIsRoomCompleteModalOpen(true);
-        engineRef.current?.unlock();
+        if (onTransitionToRoom2) {
+          onTransitionToRoom2();
+        } else {
+          setIsRoomCompleteModalOpen(true);
+          engineRef.current?.unlock();
+        }
       } else {
+        const now = Date.now();
+        const ds = typeof doorScareCountRef.current === 'object' ? doorScareCountRef.current : { count: doorScareCountRef.current || 0, lastAt: 0 };
+        const shouldScare = ds.count > 0 && (now - ds.lastAt) >= 45000 && Math.random() < 0.25;
+        ds.count += 1;
+        if (shouldScare) ds.lastAt = now;
+        doorScareCountRef.current = ds;
+        if (shouldScare) {
+          engineRef.current?.triggerDoorScare?.();
+          audioRef.current?.jumpscareSting?.(1.4);
+        } else {
+          audioRef.current?.slam?.(0, 0);
+        }
         const solvedCount = currentData?.clues?.filter(c => c.solved)?.length || 0;
         showNotification(
           `The heavy corridor door is locked with four iron deadbolts. Solve all 4 case files in this room to unlock it (${solvedCount}/4 solved).`
@@ -248,6 +299,12 @@ export default function Room1Bedroom({ team, onLogout }) {
         );
         return;
       }
+      if (matchingClue.is_locked) {
+        showNotification(
+          matchingClue.lock_reason || "This clue is sealed. Complete the preceding clue in sequence first."
+        );
+        return;
+      }
       setActiveClue(matchingClue);
       engineRef.current?.unlock();
     }
@@ -286,9 +343,10 @@ export default function Room1Bedroom({ team, onLogout }) {
         return data;
       } else {
         const errData = await res.json().catch(() => ({}));
+        const errMsg = typeof errData.detail === 'object' ? (errData.detail.message || JSON.stringify(errData.detail)) : (errData.detail || 'Submission failed');
         return {
           correct: false,
-          message: errData.detail || 'Submission failed'
+          message: errMsg
         };
       }
     } catch (err) {
@@ -326,7 +384,7 @@ export default function Room1Bedroom({ team, onLogout }) {
       <div 
         ref={mountRef} 
         onClick={() => {
-          if (isStarted && engineRef.current && !activeClue && !isBasketOpen && !isPhotoPuzzleOpen && !isCaseFilesOpen && !isRoomCompleteModalOpen) {
+          if (isStarted && engineRef.current && !activeClue && !isBasketOpen && !isPhotoPuzzleOpen && !isCaseFilesOpen && !isRoomCompleteModalOpen && !isDossierOpen && !isHintOpen) {
             engineRef.current.lock();
           }
         }}
@@ -336,6 +394,12 @@ export default function Room1Bedroom({ team, onLogout }) {
       {/* Atmospheric Overlays */}
       <div className="vig pointer-events-none" />
       <div className="grain pointer-events-none" />
+      {flashOverlay.visible && (
+        <div
+          className="pointer-events-none fixed inset-0 z-40 transition-opacity duration-75"
+          style={{ backgroundColor: flashOverlay.color, opacity: flashOverlay.opacity }}
+        />
+      )}
 
       {/* Enter Room Splash Modal */}
       {!isStarted && (
@@ -387,6 +451,14 @@ export default function Room1Bedroom({ team, onLogout }) {
             setIsPhotoPuzzleOpen(true);
             engineRef.current?.unlock();
           }}
+          onOpenRules={() => {
+            setIsDossierOpen(true);
+            engineRef.current?.unlock();
+          }}
+          onOpenHints={() => {
+            setIsHintOpen(true);
+            engineRef.current?.unlock();
+          }}
           onLogout={onLogout}
           audioMuted={audioMuted}
           onToggleAudio={toggleAudio}
@@ -420,6 +492,10 @@ export default function Room1Bedroom({ team, onLogout }) {
           setIsCaseFilesOpen(false);
           if (!roomData?.basket_unlocked) {
             showNotification("Arcane seal unbroken: Gather all 15 room fragments to inspect this clue terminal.");
+            return;
+          }
+          if (clue.is_locked) {
+            showNotification(clue.lock_reason || "This clue is locked. Complete the preceding clue in sequence first.");
             return;
           }
           setActiveClue(clue);
@@ -458,8 +534,29 @@ export default function Room1Bedroom({ team, onLogout }) {
         onProceedToDoor={() => {
           setIsRoomCompleteModalOpen(false);
           engineRef.current?.lock();
-          showNotification("Head to the unlatched door at the front of the room to step into Room 2.");
+          if (onTransitionToRoom2) {
+            onTransitionToRoom2();
+          } else {
+            showNotification("Head to the unlatched door at the front of the room to step into Room 2.");
+          }
         }}
+      />
+
+      <Round1DossierModal
+        isOpen={isDossierOpen}
+        onClose={() => {
+          setIsDossierOpen(false);
+          engineRef.current?.lock();
+        }}
+      />
+      <HintModal
+        isOpen={isHintOpen}
+        onClose={() => {
+          setIsHintOpen(false);
+          engineRef.current?.lock();
+        }}
+        roomId="bedroom"
+        roomTitle="Lena's Bedroom"
       />
     </div>
   );
