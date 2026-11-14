@@ -11,6 +11,10 @@ from app.config import MAX_SESSIONS_PER_TEAM, DATABASE_URL
 # Fallback in-memory store if DATABASE_URL is not set
 TEAMS_DB: Dict[str, Dict[str, Any]] = {}
 SESSIONS_DB: Dict[str, Dict[str, Any]] = {}
+ROUNDS_DB: Dict[int, Dict[str, Any]] = {
+    1: {"round": 1, "status": "pending", "starts_at": None, "ends_at": None},
+    2: {"round": 2, "status": "pending", "starts_at": None, "ends_at": None}
+}
 LOGIN_ATTEMPTS: List[Dict[str, Any]] = []
 EVENT_LOG: List[Dict[str, Any]] = []
 

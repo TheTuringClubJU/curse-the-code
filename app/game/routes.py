@@ -13,6 +13,13 @@ from app.game import hint_service
 import hmac
 import hashlib
 
+# In-memory store fallback when DATABASE_URL is not set / PostgreSQL is not connected
+MEM_FRAGMENTS = {}  # (team_id, room_id, fragment_id) -> {"is_wrapped": bool, "collected_at": datetime}
+MEM_ROOMS = {}      # (team_id, room_id) -> {"is_basket_unlocked": bool, "is_completed": bool}
+MEM_CLUES = {}      # (team_id, clue_id) -> {"solved": bool, "attempts": int, "score": float, "round": int}
+MEM_SUBMISSIONS = [] # list of submission dicts
+MEM_FORKS = {}      # (team_id, fork_id) -> list of attempts
+
 router = APIRouter(prefix="/api/game", tags=["game"])
 
 def verify_team_auth(request: Request):
@@ -57,43 +64,61 @@ def get_room_state(room_id: str, request: Request):
         study_service.check_room_access(team["id"], target_room)
         
     conn = get_db_connection()
-    try:
-        with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            # Query fragments already collected by this team in this room
-            cur.execute(
-                "SELECT fragment_id, is_wrapped, collected_at FROM team_fragments WHERE team_id = %s AND room_id = %s",
-                (team["id"], room_id)
-            )
-            collected_fragments = [dict(row) for row in cur.fetchall()]
-            
-            # Query room status
-            cur.execute(
-                "SELECT is_basket_unlocked, is_completed FROM team_rooms WHERE team_id = %s AND room_id = %s",
-                (team["id"], room_id)
-            )
-            room_status = cur.fetchone()
-            
-            # Query clue progress in this room
-            cur.execute(
-                """
-                SELECT clue_id, solved, attempts, score
-                FROM team_clues
-                WHERE team_id = %s AND round = %s
-                """,
-                (team["id"], target_room.get("round", 1))
-            )
-            team_clues = {row["clue_id"]: dict(row) for row in cur.fetchall()}
-            
-            # Query total photo pieces earned in this round (Round 1 photo pieces)
-            cur.execute(
-                "SELECT COUNT(DISTINCT clue_id) as photo_count FROM team_clues WHERE team_id = %s AND round = %s AND solved = TRUE",
-                (team["id"], target_room.get("round", 1))
-            )
-            photo_row = cur.fetchone()
-            photo_pieces_count = photo_row["photo_count"] if photo_row else 0
-            
-    finally:
-        conn.close()
+    collected_fragments = []
+    room_status = None
+    team_clues = {}
+    photo_pieces_count = 0
+
+    if conn:
+        try:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                # Query fragments already collected by this team in this room
+                cur.execute(
+                    "SELECT fragment_id, is_wrapped, collected_at FROM team_fragments WHERE team_id = %s AND room_id = %s",
+                    (team["id"], room_id)
+                )
+                collected_fragments = [dict(row) for row in cur.fetchall()]
+                
+                # Query room status
+                cur.execute(
+                    "SELECT is_basket_unlocked, is_completed FROM team_rooms WHERE team_id = %s AND room_id = %s",
+                    (team["id"], room_id)
+                )
+                room_status = cur.fetchone()
+                
+                # Query clue progress in this room
+                cur.execute(
+                    """
+                    SELECT clue_id, solved, attempts, score
+                    FROM team_clues
+                    WHERE team_id = %s AND round = %s
+                    """,
+                    (team["id"], target_room.get("round", 1))
+                )
+                team_clues = {row["clue_id"]: dict(row) for row in cur.fetchall()}
+                
+                # Query total photo pieces earned in this round (Round 1 photo pieces)
+                cur.execute(
+                    "SELECT COUNT(DISTINCT clue_id) as photo_count FROM team_clues WHERE team_id = %s AND round = %s AND solved = TRUE",
+                    (team["id"], target_room.get("round", 1))
+                )
+                photo_row = cur.fetchone()
+                photo_pieces_count = photo_row["photo_count"] if photo_row else 0
+        finally:
+            conn.close()
+    else:
+        # In-memory fallback
+        for (t_id, r_id, f_id), data in MEM_FRAGMENTS.items():
+            if t_id == team["id"] and r_id == room_id:
+                collected_fragments.append({"fragment_id": f_id, "is_wrapped": data.get("is_wrapped", True), "collected_at": data.get("collected_at")})
+        
+        room_status = MEM_ROOMS.get((team["id"], room_id), {"is_basket_unlocked": False, "is_completed": False})
+        
+        for (t_id, c_id), c_data in MEM_CLUES.items():
+            if t_id == team["id"]:
+                team_clues[c_id] = c_data
+                if c_data.get("solved"):
+                    photo_pieces_count += 1
         
     collected_ids = [f["fragment_id"] for f in collected_fragments]
     room_evidence = target_room.get("evidence", [])
@@ -104,30 +129,33 @@ def get_room_state(room_id: str, request: Request):
     # Auto-unlock basket if all room fragments are collected
     if not is_basket_unlocked and total_in_room > 0 and len(collected_ids) >= total_in_room:
         conn = get_db_connection()
-        try:
-            with conn.cursor() as cur:
-                cur.execute(
-                    """
-                    INSERT INTO team_rooms (team_id, room_id, is_basket_unlocked)
-                    VALUES (%s, %s, TRUE)
-                    ON CONFLICT (team_id, room_id)
-                    DO UPDATE SET is_basket_unlocked = TRUE
-                    """,
-                    (team["id"], room_id)
-                )
-                if room_id == "bedroom":
+        if conn:
+            try:
+                with conn.cursor() as cur:
                     cur.execute(
                         """
-                        INSERT INTO team_clues (team_id, round, clue_id, room_id, is_unlocked, unlocked_at)
-                        VALUES (%s, 1, 'R1-01', %s, TRUE, NOW())
-                        ON CONFLICT (team_id, clue_id) DO UPDATE SET is_unlocked = TRUE, unlocked_at = COALESCE(team_clues.unlocked_at, NOW())
+                        INSERT INTO team_rooms (team_id, room_id, is_basket_unlocked)
+                        VALUES (%s, %s, TRUE)
+                        ON CONFLICT (team_id, room_id)
+                        DO UPDATE SET is_basket_unlocked = TRUE
                         """,
                         (team["id"], room_id)
                     )
-                conn.commit()
-            is_basket_unlocked = True
-        finally:
-            conn.close()
+                    if room_id == "bedroom":
+                        cur.execute(
+                            """
+                            INSERT INTO team_clues (team_id, round, clue_id, room_id, is_unlocked, unlocked_at)
+                            VALUES (%s, 1, 'R1-01', %s, TRUE, NOW())
+                            ON CONFLICT (team_id, clue_id) DO UPDATE SET is_unlocked = TRUE, unlocked_at = COALESCE(team_clues.unlocked_at, NOW())
+                            """,
+                            (team["id"], room_id)
+                        )
+                    conn.commit()
+            finally:
+                conn.close()
+        else:
+            MEM_ROOMS[(team["id"], room_id)] = {"is_basket_unlocked": True, "is_completed": is_completed}
+        is_basket_unlocked = True
 
     # Projection of objects with client state
     projected_objects = []
@@ -265,105 +293,147 @@ def search_object(room_id: str, payload: Dict[str, Any], request: Request):
         }
         
     conn = get_db_connection()
-    try:
-        with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            # Check which pieces from this object have already been collected
-            cur.execute(
-                "SELECT fragment_id FROM team_fragments WHERE team_id = %s AND fragment_id = ANY(%s)",
-                (team["id"], [ev["id"] for ev in matching_evs])
-            )
-            collected_matching = {row["fragment_id"] for row in cur.fetchall()}
-            
-            uncollected_evs = [ev for ev in matching_evs if ev["id"] not in collected_matching]
-            if not uncollected_evs:
-                return {
-                    "found": False,
-                    "already_collected": True,
-                    "message": "You have already recovered the hidden fragment from here."
-                }
-                
-            target_ev = uncollected_evs[0]
-                
-            # Verify sequence lock:
-            # Target piece requires all lower seq in this chain to have been collected
-            target_seq = target_ev.get("seq")
-            target_chain = target_ev.get("chain", room_id)
-            
-            if target_seq is not None and target_seq > 1:
+    if conn:
+        try:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                # Check which pieces from this object have already been collected
                 cur.execute(
-                    """
-                    SELECT fragment_id FROM team_fragments
-                    WHERE team_id = %s AND room_id = %s
-                    """,
-                    (team["id"], room_id)
+                    "SELECT fragment_id FROM team_fragments WHERE team_id = %s AND fragment_id = ANY(%s)",
+                    (team["id"], [ev["id"] for ev in matching_evs])
                 )
-                collected_in_room = {row["fragment_id"] for row in cur.fetchall()}
+                collected_matching = {row["fragment_id"] for row in cur.fetchall()}
                 
-                # Check preceding items in same chain
-                preceding = [
-                    ev["id"] for ev in room_evidence
-                    if ev.get("chain", room_id) == target_chain and ev.get("seq") is not None and ev.get("seq") < target_seq
-                ]
-                missing = [pid for pid in preceding if pid not in collected_in_room]
-                if missing:
-                    # Locked out of order prompt (Option 3 discussed)
+                uncollected_evs = [ev for ev in matching_evs if ev["id"] not in collected_matching]
+                if not uncollected_evs:
                     return {
                         "found": False,
-                        "locked": True,
-                        "message": "Locked for now. Follow the investigation trail in order to unlock this."
+                        "already_collected": True,
+                        "message": "You have already recovered the hidden fragment from here."
                     }
                     
-            # Valid pickup! Insert into team_fragments
-            cur.execute(
-                """
-                INSERT INTO team_fragments (team_id, room_id, fragment_id, is_wrapped)
-                VALUES (%s, %s, %s, TRUE)
-                ON CONFLICT (team_id, fragment_id) DO NOTHING
-                """,
-                (team["id"], room_id, target_ev["id"])
-            )
-            conn.commit()
-            
-            # Check total count in room now
-            cur.execute(
-                "SELECT COUNT(*) as cnt FROM team_fragments WHERE team_id = %s AND room_id = %s",
-                (team["id"], room_id)
-            )
-            cnt = cur.fetchone()["cnt"]
-            total_room = len(room_evidence)
-            basket_unlocked = False
-            
-            if cnt >= total_room:
-                cur.execute(
-                    """
-                    INSERT INTO team_rooms (team_id, room_id, is_basket_unlocked)
-                    VALUES (%s, %s, TRUE)
-                    ON CONFLICT (team_id, room_id) DO UPDATE SET is_basket_unlocked = TRUE
-                    """,
-                    (team["id"], room_id)
-                )
-                if room_id == "bedroom":
+                target_ev = uncollected_evs[0]
+                    
+                # Verify sequence lock:
+                # Target piece requires all lower seq in this chain to have been collected
+                target_seq = target_ev.get("seq")
+                target_chain = target_ev.get("chain", room_id)
+                
+                if target_seq is not None and target_seq > 1:
                     cur.execute(
                         """
-                        INSERT INTO team_clues (team_id, round, clue_id, room_id, is_unlocked, unlocked_at)
-                        VALUES (%s, 1, 'R1-01', %s, TRUE, NOW())
-                        ON CONFLICT (team_id, clue_id) DO UPDATE SET is_unlocked = TRUE, unlocked_at = COALESCE(team_clues.unlocked_at, NOW())
+                        SELECT fragment_id FROM team_fragments
+                        WHERE team_id = %s AND room_id = %s
                         """,
                         (team["id"], room_id)
                     )
+                    collected_in_room = {row["fragment_id"] for row in cur.fetchall()}
+                    
+                    # Check preceding items in same chain
+                    preceding = [
+                        ev["id"] for ev in room_evidence
+                        if ev.get("chain", room_id) == target_chain and ev.get("seq") is not None and ev.get("seq") < target_seq
+                    ]
+                    missing = [pid for pid in preceding if pid not in collected_in_room]
+                    if missing:
+                        # Locked out of order prompt (Option 3 discussed)
+                        return {
+                            "found": False,
+                            "locked": True,
+                            "message": "Locked for now. Follow the investigation trail in order to unlock this."
+                        }
+                        
+                # Valid pickup! Insert into team_fragments
+                cur.execute(
+                    """
+                    INSERT INTO team_fragments (team_id, room_id, fragment_id, is_wrapped)
+                    VALUES (%s, %s, %s, TRUE)
+                    ON CONFLICT (team_id, fragment_id) DO NOTHING
+                    """,
+                    (team["id"], room_id, target_ev["id"])
+                )
                 conn.commit()
-                basket_unlocked = True
                 
+                # Check total count in room now
+                cur.execute(
+                    "SELECT COUNT(*) as cnt FROM team_fragments WHERE team_id = %s AND room_id = %s",
+                    (team["id"], room_id)
+                )
+                cnt = cur.fetchone()["cnt"]
+                total_room = len(room_evidence)
+                basket_unlocked = False
+                
+                if cnt >= total_room:
+                    cur.execute(
+                        """
+                        INSERT INTO team_rooms (team_id, room_id, is_basket_unlocked)
+                        VALUES (%s, %s, TRUE)
+                        ON CONFLICT (team_id, room_id) DO UPDATE SET is_basket_unlocked = TRUE
+                        """,
+                        (team["id"], room_id)
+                    )
+                    if room_id == "bedroom":
+                        cur.execute(
+                            """
+                            INSERT INTO team_clues (team_id, round, clue_id, room_id, is_unlocked, unlocked_at)
+                            VALUES (%s, 1, 'R1-01', %s, TRUE, NOW())
+                            ON CONFLICT (team_id, clue_id) DO UPDATE SET is_unlocked = TRUE, unlocked_at = COALESCE(team_clues.unlocked_at, NOW())
+                            """,
+                            (team["id"], room_id)
+                        )
+                    conn.commit()
+                    basket_unlocked = True
+                    
+                return {
+                    "found": True,
+                    "fragment_id": target_ev["id"],
+                    "message": f"You discovered a wrapped fragment inside the {object_id.replace('_', ' ')}! It has been placed in your basket.",
+                    "total_collected": cnt,
+                    "total_in_room": total_room,
+                    "basket_unlocked": basket_unlocked
+                }
+        finally:
+            conn.close()
+    else:
+        # In-memory search_object
+        collected_matching = {f_id for (t_id, r_id, f_id) in MEM_FRAGMENTS.keys() if t_id == team["id"] and f_id in [ev["id"] for ev in matching_evs]}
+        uncollected_evs = [ev for ev in matching_evs if ev["id"] not in collected_matching]
+        if not uncollected_evs:
             return {
-                "found": True,
-                "fragment_id": target_ev["id"],
-                "message": f"You discovered a wrapped fragment inside the {object_id.replace('_', ' ')}! It has been placed in your basket.",
-                "total_collected": cnt,
-                "total_in_room": total_room,
-                "basket_unlocked": basket_unlocked
+                "found": False,
+                "already_collected": True,
+                "message": "You have already recovered the hidden fragment from here."
             }
-    finally:
-        conn.close()
+        target_ev = uncollected_evs[0]
+        target_seq = target_ev.get("seq")
+        target_chain = target_ev.get("chain", room_id)
+        if target_seq is not None and target_seq > 1:
+            collected_in_room = {f_id for (t_id, r_id, f_id) in MEM_FRAGMENTS.keys() if t_id == team["id"] and r_id == room_id}
+            preceding = [
+                ev["id"] for ev in room_evidence
+                if ev.get("chain", room_id) == target_chain and ev.get("seq") is not None and ev.get("seq") < target_seq
+            ]
+            missing = [pid for pid in preceding if pid not in collected_in_room]
+            if missing:
+                return {
+                    "found": False,
+                    "locked": True,
+                    "message": "Locked for now. Follow the investigation trail in order to unlock this."
+                }
+        MEM_FRAGMENTS[(team["id"], room_id, target_ev["id"])] = {"is_wrapped": True, "collected_at": datetime.now(timezone.utc)}
+        cnt = sum(1 for (t_id, r_id, f_id) in MEM_FRAGMENTS.keys() if t_id == team["id"] and r_id == room_id)
+        total_room = len(room_evidence)
+        basket_unlocked = False
+        if cnt >= total_room:
+            MEM_ROOMS[(team["id"], room_id)] = {"is_basket_unlocked": True, "is_completed": False}
+            basket_unlocked = True
+        return {
+            "found": True,
+            "fragment_id": target_ev["id"],
+            "message": f"You discovered a wrapped fragment inside the {object_id.replace('_', ' ')}! It has been placed in your basket.",
+            "total_collected": cnt,
+            "total_in_room": total_room,
+            "basket_unlocked": basket_unlocked
+        }
 
 @router.post("/clue/{clue_id}/submit")
 def submit_clue_answer(clue_id: str, payload: Dict[str, Any], request: Request):
@@ -393,20 +463,28 @@ def submit_clue_answer(clue_id: str, payload: Dict[str, Any], request: Request):
         if idx > 0:
             prev_id = seq[idx - 1]
             conn_pre = get_db_connection()
-            try:
-                with conn_pre.cursor(cursor_factory=RealDictCursor) as cur_pre:
-                    cur_pre.execute(
-                        "SELECT solved FROM team_clues WHERE team_id = %s AND clue_id = %s",
-                        (team["id"], prev_id)
-                    )
-                    prev_row = cur_pre.fetchone()
-                    if not (prev_row and prev_row["solved"]):
-                        raise HTTPException(
-                            status_code=403,
-                            detail={"code": "CLUE_LOCKED", "message": f"Previous clue '{prev_id}' in this sequence must be solved first."}
+            if conn_pre:
+                try:
+                    with conn_pre.cursor(cursor_factory=RealDictCursor) as cur_pre:
+                        cur_pre.execute(
+                            "SELECT solved FROM team_clues WHERE team_id = %s AND clue_id = %s",
+                            (team["id"], prev_id)
                         )
-            finally:
-                conn_pre.close()
+                        prev_row = cur_pre.fetchone()
+                        if not (prev_row and prev_row["solved"]):
+                            raise HTTPException(
+                                status_code=403,
+                                detail={"code": "CLUE_LOCKED", "message": f"Previous clue '{prev_id}' in this sequence must be solved first."}
+                            )
+                finally:
+                    conn_pre.close()
+            else:
+                prev_c = MEM_CLUES.get((team["id"], prev_id), {})
+                if not prev_c.get("solved"):
+                    raise HTTPException(
+                        status_code=403,
+                        detail={"code": "CLUE_LOCKED", "message": f"Previous clue '{prev_id}' in this sequence must be solved first."}
+                    )
 
     attempts_max = target_clue.get("attempts_max", 3)
 
@@ -472,178 +550,215 @@ def submit_clue_answer(clue_id: str, payload: Dict[str, Any], request: Request):
             break
     
     conn = get_db_connection()
-    try:
-        with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            # Query current clue attempt record
-            cur.execute(
-                """
-                SELECT attempts, solved
-                FROM team_clues
-                WHERE team_id = %s AND clue_id = %s
-                """,
-                (team["id"], clue_id)
-            )
-            row = cur.fetchone()
-            
-            if row and row["solved"]:
-                return {
-                    "correct": True,
-                    "already_solved": True,
-                    "message": "Clue already solved!"
-                }
-                
-            curr_attempts = row["attempts"] if row else 0
-            if attempts_max is not None and curr_attempts >= attempts_max:
-                return {
-                    "correct": False,
-                    "exhausted": True,
-                    "message": "Maximum attempts exhausted for this clue."
-                }
-                
-            new_attempts = curr_attempts + 1
-            clue_solved = is_correct
-            
-            # Calculate points if correct (deduct 15 pts if clue hint was used)
-            if clue_solved:
-                deduction = hint_service.get_clue_hint_point_deduction(cur, team["id"], clue_id)
-                pts_awarded = max(0.0, 100.0 - deduction)
-            else:
-                pts_awarded = 0.0
-
-            cur.execute(
-                """
-                INSERT INTO team_clues (team_id, round, clue_id, room_id, solved, attempts, score, solved_at, updated_at)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, CASE WHEN %s THEN NOW() ELSE NULL END, NOW())
-                ON CONFLICT (team_id, clue_id)
-                DO UPDATE SET
-                    solved = EXCLUDED.solved,
-                    attempts = EXCLUDED.attempts,
-                    score = EXCLUDED.score,
-                    solved_at = CASE WHEN EXCLUDED.solved AND team_clues.solved_at IS NULL THEN NOW() ELSE team_clues.solved_at END,
-                    updated_at = NOW()
-                """,
-                (team["id"], target_clue.get("round", 1), clue_id, room_id, clue_solved, new_attempts, pts_awarded, clue_solved)
-            )
-
-            # Record into submissions table
-            cur.execute(
-                """
-                INSERT INTO submissions (team_id, clue_id, submitted_answer, is_correct, points_awarded, created_at)
-                VALUES (%s, %s, %s, %s, %s, NOW())
-                """,
-                (team["id"], clue_id, str(answer)[:255], clue_solved, pts_awarded)
-            )
-
-            # Update team_rounds aggregate score & clues_solved for live leaderboard
-            if clue_solved:
-                round_num = target_clue.get("round", 1)
+    if conn:
+        try:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                # Query current clue attempt record
                 cur.execute(
                     """
-                    INSERT INTO rounds (round, status)
-                    VALUES (%s, 'pending')
-                    ON CONFLICT (round) DO NOTHING;
-
-                    INSERT INTO team_rounds (team_id, round, total_score, clues_solved, last_solved_at, updated_at)
-                    VALUES (%s, %s, %s, 1, NOW(), NOW())
-                    ON CONFLICT (team_id, round)
-                    DO UPDATE SET
-                        total_score = team_rounds.total_score + EXCLUDED.total_score,
-                        clues_solved = team_rounds.clues_solved + 1,
-                        last_solved_at = NOW(),
-                        updated_at = NOW();
+                    SELECT attempts, solved
+                    FROM team_clues
+                    WHERE team_id = %s AND clue_id = %s
                     """,
-                    (round_num, team["id"], round_num, pts_awarded)
+                    (team["id"], clue_id)
+                )
+                row = cur.fetchone()
+                
+                if row and row["solved"]:
+                    return {
+                        "correct": True,
+                        "already_solved": True,
+                        "message": "Clue already solved!"
+                    }
+                    
+                curr_attempts = row["attempts"] if row else 0
+                if attempts_max is not None and curr_attempts >= attempts_max:
+                    return {
+                        "correct": False,
+                        "exhausted": True,
+                        "message": "Maximum attempts exhausted for this clue."
+                    }
+                    
+                new_attempts = curr_attempts + 1
+                clue_solved = is_correct
+                
+                # Calculate points if correct (deduct 15 pts if clue hint was used)
+                if clue_solved:
+                    deduction = hint_service.get_clue_hint_point_deduction(cur, team["id"], clue_id)
+                    pts_awarded = max(0.0, 100.0 - deduction)
+                else:
+                    pts_awarded = 0.0
+
+                cur.execute(
+                    """
+                    INSERT INTO team_clues (team_id, round, clue_id, room_id, solved, attempts, score, solved_at, updated_at)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, CASE WHEN %s THEN NOW() ELSE NULL END, NOW())
+                    ON CONFLICT (team_id, clue_id)
+                    DO UPDATE SET
+                        solved = EXCLUDED.solved,
+                        attempts = EXCLUDED.attempts,
+                        score = EXCLUDED.score,
+                        solved_at = CASE WHEN EXCLUDED.solved AND team_clues.solved_at IS NULL THEN NOW() ELSE team_clues.solved_at END,
+                        updated_at = NOW()
+                    """,
+                    (team["id"], target_clue.get("round", 1), clue_id, room_id, clue_solved, new_attempts, pts_awarded, clue_solved)
                 )
 
-                # Unlock next clue in sequence
-                seq = ["R1-01", "R1-02", "R1-03", "R1-04"]
-                if clue_id in seq:
-                    idx = seq.index(clue_id)
-                    if idx + 1 < len(seq):
-                        next_id = seq[idx + 1]
-                        cur.execute(
-                            """
-                            INSERT INTO team_clues (team_id, round, clue_id, room_id, is_unlocked, unlocked_at)
-                            VALUES (%s, %s, %s, %s, TRUE, NOW())
-                            ON CONFLICT (team_id, clue_id) DO UPDATE SET is_unlocked = TRUE, unlocked_at = COALESCE(team_clues.unlocked_at, NOW())
-                            """,
-                            (team["id"], target_clue.get("round", 1), next_id, room_id)
-                        )
-            else:
-                round_num = target_clue.get("round", 1)
-                if attempts_max is not None and curr_attempts < attempts_max and new_attempts >= attempts_max:
-                    # Burning all attempts gives 0 pts and adds +90s lockout penalty to team_rounds (Round 1 & Round 2)
+                # Record into submissions table
+                cur.execute(
+                    """
+                    INSERT INTO submissions (team_id, clue_id, submitted_answer, is_correct, points_awarded, created_at)
+                    VALUES (%s, %s, %s, %s, %s, NOW())
+                    """,
+                    (team["id"], clue_id, str(answer)[:255], clue_solved, pts_awarded)
+                )
+
+                # Update team_rounds aggregate score & clues_solved for live leaderboard
+                if clue_solved:
+                    round_num = target_clue.get("round", 1)
                     cur.execute(
                         """
                         INSERT INTO rounds (round, status)
                         VALUES (%s, 'pending')
                         ON CONFLICT (round) DO NOTHING;
 
-                        INSERT INTO team_rounds (team_id, round, penalty_seconds, updated_at)
-                        VALUES (%s, %s, 90, NOW())
+                        INSERT INTO team_rounds (team_id, round, total_score, clues_solved, last_solved_at, updated_at)
+                        VALUES (%s, %s, %s, 1, NOW(), NOW())
                         ON CONFLICT (team_id, round)
                         DO UPDATE SET
-                            penalty_seconds = team_rounds.penalty_seconds + 90,
+                            total_score = team_rounds.total_score + EXCLUDED.total_score,
+                            clues_solved = team_rounds.clues_solved + 1,
+                            last_solved_at = NOW(),
                             updated_at = NOW();
                         """,
-                        (round_num, team["id"], round_num)
+                        (round_num, team["id"], round_num, pts_awarded)
                     )
-            
-            # Check if all clues in this room are now resolved (solved or exhausted)
-            cur.execute(
-                """
-                SELECT clue_id, solved, attempts
-                FROM team_clues
-                WHERE team_id = %s AND round = %s
-                """,
-                (team["id"], target_clue.get("round", 1))
-            )
-            solved_clues_map = {r["clue_id"]: r for r in cur.fetchall()}
-            
-            room_clues = [c for c in content.get("clues", []) if c.get("room") == room_id]
-            all_resolved = True
-            for rc in room_clues:
-                rec = solved_clues_map.get(rc["id"])
-                max_att = rc.get("attempts_max", 3)
-                if not rec or (not rec["solved"] and (max_att is None or rec["attempts"] < max_att)):
-                    all_resolved = False
-                    break
-                    
-            if all_resolved:
+
+                    # Unlock next clue in sequence
+                    seq = ["R1-01", "R1-02", "R1-03", "R1-04"]
+                    if clue_id in seq:
+                        idx = seq.index(clue_id)
+                        if idx + 1 < len(seq):
+                            next_id = seq[idx + 1]
+                            cur.execute(
+                                """
+                                INSERT INTO team_clues (team_id, round, clue_id, room_id, is_unlocked, unlocked_at)
+                                VALUES (%s, %s, %s, %s, TRUE, NOW())
+                                ON CONFLICT (team_id, clue_id) DO UPDATE SET is_unlocked = TRUE, unlocked_at = COALESCE(team_clues.unlocked_at, NOW())
+                                """,
+                                (team["id"], target_clue.get("round", 1), next_id, room_id)
+                            )
+                else:
+                    round_num = target_clue.get("round", 1)
+                    if attempts_max is not None and curr_attempts < attempts_max and new_attempts >= attempts_max:
+                        cur.execute(
+                            """
+                            INSERT INTO rounds (round, status)
+                            VALUES (%s, 'pending')
+                            ON CONFLICT (round) DO NOTHING;
+
+                            INSERT INTO team_rounds (team_id, round, penalty_seconds, updated_at)
+                            VALUES (%s, %s, 90, NOW())
+                            ON CONFLICT (team_id, round)
+                            DO UPDATE SET
+                                penalty_seconds = team_rounds.penalty_seconds + 90,
+                                updated_at = NOW();
+                            """,
+                            (round_num, team["id"], round_num)
+                        )
+                
+                # Check if all clues in this room are now resolved (solved or exhausted)
                 cur.execute(
                     """
-                    INSERT INTO team_rooms (team_id, room_id, is_completed, completed_at)
-                    VALUES (%s, %s, TRUE, NOW())
-                    ON CONFLICT (team_id, room_id)
-                    DO UPDATE SET is_completed = TRUE, completed_at = NOW()
+                    SELECT clue_id, solved, attempts
+                    FROM team_clues
+                    WHERE team_id = %s AND round = %s
                     """,
-                    (team["id"], room_id)
+                    (team["id"], target_clue.get("round", 1))
                 )
+                solved_clues_map = {r["clue_id"]: r for r in cur.fetchall()}
                 
-            conn.commit()
-            
+                room_clues = [c for c in content.get("clues", []) if c.get("room") == room_id]
+                all_resolved = True
+                for rc in room_clues:
+                    rec = solved_clues_map.get(rc["id"])
+                    max_att = rc.get("attempts_max", 3)
+                    if not rec or (not rec["solved"] and (max_att is None or rec["attempts"] < max_att)):
+                        all_resolved = False
+                        break
+                        
+                if all_resolved:
+                    cur.execute(
+                        """
+                        INSERT INTO team_rooms (team_id, room_id, is_completed, completed_at)
+                        VALUES (%s, %s, TRUE, NOW())
+                        ON CONFLICT (team_id, room_id)
+                        DO UPDATE SET is_completed = TRUE, completed_at = NOW()
+                        """,
+                        (team["id"], room_id)
+                    )
+                    
+                conn.commit()
+        finally:
+            conn.close()
+    else:
+        # In-memory submit_clue_answer
+        row = MEM_CLUES.get((team["id"], clue_id))
+        if row and row.get("solved"):
             return {
-                "correct": is_correct,
-                "solved": is_correct,
-                "attempts": new_attempts,
-                "attempts_max": attempts_max,
-                "exhausted": not is_correct and (attempts_max is not None and new_attempts >= attempts_max),
-                "room_completed": all_resolved,
-                "reward": target_clue.get("reward") if is_correct else None,
-                "message": (
-                    ("Correct! The hidden date has been decrypted and verified." if (target_clue.get("object_id") == "poster" or clue_id == "R1-03")
-                    else "Correct! The canvas inscription has been recovered." if (target_clue.get("object_id") == "portrait" or clue_id == "R1-04")
-                    else "Correct! Cipher decrypted." if target_clue.get("solution", {}).get("method") == "caesar"
-                    else "Correct! Evidence decrypted.")
-                    if is_correct else
-                    ("Incorrect date. Ensure the scraps are assembled in order and verify the date format MM/DD/YYYY." if (target_clue.get("object_id") == "poster" or clue_id == "R1-03")
-                    else "Incorrect inscription. Check your assembled canvas fragments and exposure settings." if (target_clue.get("object_id") == "portrait" or clue_id == "R1-04")
-                    else "Incorrect submission. Check your Caesar cipher shift." if target_clue.get("solution", {}).get("method") == "caesar"
-                    else "Incorrect submission. Please verify your answer.")
-                )
+                "correct": True,
+                "already_solved": True,
+                "message": "Clue already solved!"
             }
-    finally:
-        conn.close()
+        curr_attempts = row.get("attempts", 0) if row else 0
+        if attempts_max is not None and curr_attempts >= attempts_max:
+            return {
+                "correct": False,
+                "exhausted": True,
+                "message": "Maximum attempts exhausted for this clue."
+            }
+        new_attempts = curr_attempts + 1
+        clue_solved = is_correct
+        pts_awarded = 100.0 if clue_solved else 0.0
+        MEM_CLUES[(team["id"], clue_id)] = {
+            "solved": clue_solved,
+            "attempts": new_attempts,
+            "score": pts_awarded,
+            "round": target_clue.get("round", 1)
+        }
+        room_clues = [c for c in content.get("clues", []) if c.get("room") == room_id]
+        all_resolved = True
+        for rc in room_clues:
+            rec = MEM_CLUES.get((team["id"], rc["id"]))
+            max_att = rc.get("attempts_max", 3)
+            if not rec or (not rec["solved"] and (max_att is None or rec["attempts"] < max_att)):
+                all_resolved = False
+                break
+        if all_resolved:
+            rm = MEM_ROOMS.get((team["id"], room_id), {})
+            rm["is_completed"] = True
+            MEM_ROOMS[(team["id"], room_id)] = rm
+
+    return {
+        "correct": is_correct,
+        "solved": is_correct,
+        "attempts": new_attempts,
+        "attempts_max": attempts_max,
+        "exhausted": not is_correct and (attempts_max is not None and new_attempts >= attempts_max),
+        "room_completed": all_resolved,
+        "reward": target_clue.get("reward") if is_correct else None,
+        "message": (
+            ("Correct! The hidden date has been decrypted and verified." if (target_clue.get("object_id") == "poster" or clue_id == "R1-03")
+            else "Correct! The canvas inscription has been recovered." if (target_clue.get("object_id") == "portrait" or clue_id == "R1-04")
+            else "Correct! Cipher decrypted." if target_clue.get("solution", {}).get("method") == "caesar"
+            else "Correct! Evidence decrypted.")
+            if is_correct else
+            ("Incorrect date. Ensure the scraps are assembled in order and verify the date format MM/DD/YYYY." if (target_clue.get("object_id") == "poster" or clue_id == "R1-03")
+            else "Incorrect inscription. Check your assembled canvas fragments and exposure settings." if (target_clue.get("object_id") == "portrait" or clue_id == "R1-04")
+            else "Incorrect submission. Check your Caesar cipher shift." if target_clue.get("solution", {}).get("method") == "caesar"
+            else "Incorrect submission. Please verify your answer.")
+        )
+    }
 
 @router.get("/clue/{clue_id}")
 def get_clue_details(clue_id: str, request: Request):
@@ -662,22 +777,27 @@ def get_clue_details(clue_id: str, request: Request):
     room_seq = ROOM_CLUE_SEQUENCES.get(room_id, [])
 
     conn = get_db_connection()
-    try:
-        with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            cur.execute(
-                "SELECT is_basket_unlocked FROM team_rooms WHERE team_id = %s AND room_id = %s",
-                (team["id"], room_id)
-            )
-            rm_status = cur.fetchone()
-            is_basket_unlocked = bool(rm_status and rm_status["is_basket_unlocked"])
+    if conn:
+        try:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute(
+                    "SELECT is_basket_unlocked FROM team_rooms WHERE team_id = %s AND room_id = %s",
+                    (team["id"], room_id)
+                )
+                rm_status = cur.fetchone()
+                is_basket_unlocked = bool(rm_status and rm_status["is_basket_unlocked"])
 
-            cur.execute(
-                "SELECT clue_id, solved, attempts, score FROM team_clues WHERE team_id = %s",
-                (team["id"],)
-            )
-            team_clues = {row["clue_id"]: row for row in cur.fetchall()}
-    finally:
-        conn.close()
+                cur.execute(
+                    "SELECT clue_id, solved, attempts, score FROM team_clues WHERE team_id = %s",
+                    (team["id"],)
+                )
+                team_clues = {row["clue_id"]: row for row in cur.fetchall()}
+        finally:
+            conn.close()
+    else:
+        rm_status = MEM_ROOMS.get((team["id"], room_id), {})
+        is_basket_unlocked = bool(rm_status.get("is_basket_unlocked", False))
+        team_clues = {c_id: c_data for (t_id, c_id), c_data in MEM_CLUES.items() if t_id == team["id"]}
 
     if not is_basket_unlocked:
         raise HTTPException(
@@ -786,7 +906,8 @@ def get_fork_status(fork_id: str, request: Request):
                 "total_penalty_seconds": total_penalty
             }
     finally:
-        conn.close()
+        if conn:
+            conn.close()
 
 @router.post("/fork/{fork_id}/choose")
 def choose_fork_path(fork_id: str, payload: Dict[str, Any], request: Request):
@@ -908,7 +1029,8 @@ def choose_fork_path(fork_id: str, payload: Dict[str, Any], request: Request):
                     "message": cfg["trap_message"]
                 }
     finally:
-        conn.close()
+        if conn:
+            conn.close()
 
 
 @router.get("/hint/status")

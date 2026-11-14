@@ -4,7 +4,7 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 from app.config import DATABASE_URL, CONTENT_FILE
 from app.login.routes import get_client_ip
-from app.login.service import LoginService, get_db_connection
+from app.login.service import LoginService, get_db_connection, ROUNDS_DB
 import json
 import os
 
@@ -35,7 +35,10 @@ def get_lobby_state(request: Request):
     team_data = LoginService.get_current_team_by_token(token) if token else None
 
     # Connect to database for round status
-    rounds_info = {1: {"status": "pending"}, 2: {"status": "pending"}}
+    rounds_info = {
+        1: dict(ROUNDS_DB.get(1, {"round": 1, "status": "pending"})),
+        2: dict(ROUNDS_DB.get(2, {"round": 2, "status": "pending"}))
+    }
     team_rounds = []
     
     if DATABASE_URL:

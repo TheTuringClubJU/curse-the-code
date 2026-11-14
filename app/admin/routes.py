@@ -8,7 +8,7 @@ from app.config import DATABASE_URL
 from app.login.routes import get_client_ip
 from app.admin.schemas import AdminLoginRequest, RoundControlRequest, QualifyTeamsRequest
 from app.admin.service import AdminService
-from app.login.service import get_db_connection, TEAMS_DB, SESSIONS_DB, LoginService
+from app.login.service import get_db_connection, TEAMS_DB, SESSIONS_DB, ROUNDS_DB, LoginService
 
 admin_router = APIRouter(prefix="/api/admin", tags=["admin"])
 
@@ -69,8 +69,10 @@ async def get_dashboard_data(admin: Dict[str, Any] = Depends(get_admin_user)):
     2. Active teams vs logged out teams summary
     """
     conn = get_db_connection()
-    rounds = {1: {"status": "pending", "starts_at": None, "ends_at": None}, 
-              2: {"status": "pending", "starts_at": None, "ends_at": None}}
+    rounds = {
+        1: dict(ROUNDS_DB.get(1, {"round": 1, "status": "pending", "starts_at": None, "ends_at": None})),
+        2: dict(ROUNDS_DB.get(2, {"round": 2, "status": "pending", "starts_at": None, "ends_at": None}))
+    }
     teams_list = []
 
     if conn:
@@ -155,6 +157,13 @@ async def control_round(req: RoundControlRequest, admin: Dict[str, Any] = Depend
         new_status = "live"
     else:
         new_status = "ended"
+
+    ROUNDS_DB[target_round] = {
+        "round": target_round,
+        "status": new_status,
+        "starts_at": now.isoformat() if new_status == "live" else None,
+        "ends_at": now.isoformat() if new_status == "ended" else None,
+    }
 
     conn = get_db_connection()
     if conn:
