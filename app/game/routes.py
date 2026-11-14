@@ -96,9 +96,8 @@ def get_room_state(room_id: str, request: Request):
     finally:
         conn.close()
         
+    collected_ids = [f["fragment_id"] for f in collected_fragments]
     room_evidence = target_room.get("evidence", [])
-    valid_ev_ids = {ev["id"] for ev in room_evidence}
-    collected_ids = [f["fragment_id"] for f in collected_fragments if f["fragment_id"] in valid_ev_ids]
     total_in_room = len(room_evidence)
     is_basket_unlocked = bool(room_status and room_status["is_basket_unlocked"])
     is_completed = bool(room_status and room_status["is_completed"])
@@ -197,12 +196,12 @@ def get_room_state(room_id: str, request: Request):
             })
 
     # Evidence details:
-    # For control (Substation Delta), recovered documents unwrap individually on pickup while terminals stay gated until all fragments are found.
-    # Otherwise, return wrapped stubs until the room basket unlocks.
+    # If basket is unlocked, return full text/display lines.
+    # If still wrapped, hide the secret lines and only return ID and title.
     projected_evidence = []
     for ev in room_evidence:
         if ev["id"] in collected_ids:
-            if is_basket_unlocked or room_id == "control":
+            if is_basket_unlocked:
                 projected_evidence.append({
                     "id": ev["id"],
                     "clue_id": ev.get("clue_id"),
@@ -262,9 +261,8 @@ def get_room_basket(room_id: str, request: Request):
     finally:
         conn.close()
 
+    collected_ids = [f["fragment_id"] for f in collected_fragments]
     room_evidence = target_room.get("evidence", [])
-    valid_ev_ids = {ev["id"] for ev in room_evidence}
-    collected_ids = [f["fragment_id"] for f in collected_fragments if f["fragment_id"] in valid_ev_ids]
     total_in_room = len(room_evidence)
     is_basket_unlocked = bool(room_status and room_status["is_basket_unlocked"])
 
@@ -288,7 +286,7 @@ def get_room_basket(room_id: str, request: Request):
     items = []
     for ev in room_evidence:
         if ev["id"] in collected_ids:
-            if is_basket_unlocked or room_id == "control":
+            if is_basket_unlocked:
                 items.append({
                     "id": ev["id"],
                     "clue_id": ev.get("clue_id"),
@@ -371,56 +369,6 @@ def search_object(room_id: str, payload: Dict[str, Any], request: Request):
                 (team["id"], room_id)
             )
             collected_in_room = {row["fragment_id"] for row in cur.fetchall()}
-
-            # Room 5 (control): free-order exploration & single-interact prop sweep (collects all fragments in a prop at once)
-            if room_id == "control":
-                newly_collected_evs = uncollected_evs
-                for ev in newly_collected_evs:
-                    cur.execute(
-                        """
-                        INSERT INTO team_fragments (team_id, room_id, fragment_id, is_wrapped)
-                        VALUES (%s, %s, %s, FALSE)
-                        ON CONFLICT (team_id, fragment_id) DO NOTHING
-                        """,
-                        (team["id"], room_id, ev["id"])
-                    )
-                conn.commit()
-
-                valid_ids = [ev["id"] for ev in room_evidence]
-                cur.execute(
-                    "SELECT COUNT(*) as cnt FROM team_fragments WHERE team_id = %s AND room_id = %s AND fragment_id = ANY(%s)",
-                    (team["id"], room_id, valid_ids)
-                )
-                cnt = cur.fetchone()["cnt"]
-                total_room = len(room_evidence)
-                basket_unlocked = False
-
-                if cnt >= total_room:
-                    cur.execute(
-                        """
-                        INSERT INTO team_rooms (team_id, room_id, is_basket_unlocked)
-                        VALUES (%s, %s, TRUE)
-                        ON CONFLICT (team_id, room_id) DO UPDATE SET is_basket_unlocked = TRUE
-                        """,
-                        (team["id"], room_id)
-                    )
-                    conn.commit()
-                    basket_unlocked = True
-
-                primary_ev = newly_collected_evs[0]
-                return {
-                    "found": True,
-                    "fragment_id": primary_ev["id"],
-                    "newly_collected": [ev["id"] for ev in newly_collected_evs],
-                    "message": (
-                        f"Recovered {len(newly_collected_evs)} evidence records inside {object_id.replace('_', ' ')}!"
-                        if len(newly_collected_evs) > 1
-                        else f"Recovered evidence record inside {object_id.replace('_', ' ')}."
-                    ),
-                    "total_collected": cnt,
-                    "total_in_room": total_room,
-                    "basket_unlocked": basket_unlocked,
-                }
 
             target_ev = None
             is_locked = False
