@@ -61,7 +61,7 @@ export default function RoomCompleteModal({
             }}
             className="w-full py-3 rounded-xl bg-gradient-to-r from-[#8f7bff] to-[#a696ff] hover:from-[#a696ff] hover:to-[#cdbfff] text-black font-black font-mono text-sm tracking-wider uppercase transition shadow-lg shadow-[#8f7bff]/30 flex items-center justify-center gap-2"
           >
-            <span>Proceed to Corridor Door</span>
+            <span>Enter Room 2 (The Study)</span>
             <ArrowRight className="w-4 h-4" />
           </button>
         </div>

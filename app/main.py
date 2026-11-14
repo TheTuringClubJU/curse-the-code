@@ -52,6 +52,22 @@ app.include_router(lobby_router)
 app.include_router(admin_router)
 app.include_router(game_router)
 
+
+from datetime import datetime, timezone
+
+@app.get("/api/time")
+def get_server_time():
+    now = datetime.now(timezone.utc)
+    remaining = 900
+    ends_at = now.timestamp() + remaining
+    return {
+        "remaining_seconds": remaining,
+        "remaining": remaining,
+        "server_time": now.isoformat(),
+        "now": now.isoformat(),
+        "ends_at": datetime.fromtimestamp(ends_at, tz=timezone.utc).isoformat()
+    }
+
 @app.get("/health")
 async def health_check():
     return {

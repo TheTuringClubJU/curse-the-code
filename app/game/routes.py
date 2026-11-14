@@ -1,12 +1,16 @@
+from datetime import datetime, timezone
+from app.game import basement_service
 import psycopg2
 from psycopg2.extras import RealDictCursor
 from fastapi import APIRouter, Request, HTTPException
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 from app.config import DATABASE_URL
 from app.login.service import get_db_connection
 from app.lobby.routes import get_content_data
 from app.login.service import LoginService
 from app.game import vault_service
+from app.game import study_service
+from app.game import hint_service
 import hmac
 import hashlib
 
@@ -36,6 +40,8 @@ def verify_team_auth(request: Request):
 def get_room_state(room_id: str, request: Request):
     team = verify_team_auth(request)
     content = get_content_data()
+    if room_id == "basement":
+        return basement_service.get_room_state(team["id"], content, request)
     
     # Locate room metadata in content
     target_room = None
@@ -46,6 +52,11 @@ def get_room_state(room_id: str, request: Request):
             
     if not target_room:
         raise HTTPException(status_code=404, detail="Room not found")
+
+    if room_id == "study":
+        return study_service.get_room_state(team["id"], content)
+    if "study" in target_room.get("unlock", {}).get("all_clues_resolved", []):
+        study_service.check_room_access(team["id"], target_room)
         
     conn = get_db_connection()
     try:
@@ -106,6 +117,15 @@ def get_room_state(room_id: str, request: Request):
                     """,
                     (team["id"], room_id)
                 )
+                if room_id == "bedroom":
+                    cur.execute(
+                        """
+                        INSERT INTO team_clues (team_id, round, clue_id, room_id, is_unlocked, unlocked_at)
+                        VALUES (%s, 1, 'R1-01', %s, TRUE, NOW())
+                        ON CONFLICT (team_id, clue_id) DO UPDATE SET is_unlocked = TRUE, unlocked_at = COALESCE(team_clues.unlocked_at, NOW())
+                        """,
+                        (team["id"], room_id)
+                    )
                 conn.commit()
             is_basket_unlocked = True
         finally:
@@ -123,14 +143,35 @@ def get_room_state(room_id: str, request: Request):
         }
         projected_objects.append(obj_copy)
 
-    # Clues projection (hide hashes & answers)
+    # Clues projection (hide hashes & answers, apply sequential gating)
+    ROOM_CLUE_SEQUENCES = {
+        "bedroom": ["R1-01", "R1-02", "R1-03", "R1-04"],
+        "study": ["R1-05", "R1-06", "R1-07", "R1-08"],
+        "basement": ["R1-09", "R1-10", "R1-FIN"],
+    }
+    room_seq = ROOM_CLUE_SEQUENCES.get(room_id, [])
+
     projected_clues = []
     for c in content.get("clues", []):
         if c.get("room") == room_id:
             c_info = team_clues.get(c["id"], {"solved": False, "attempts": 0})
-            c_unlock = c.get("unlock", {}).get("requires_resolved", [])
+            # Determine sequential and prerequisite lock status
             is_locked = False
-            if c_unlock:
+            lock_reason = None
+            if not is_basket_unlocked:
+                is_locked = True
+                lock_reason = "Find and recover all room fragments to unlock the evidence basket first."
+            elif c["id"] in room_seq:
+                c_idx = room_seq.index(c["id"])
+                if c_idx > 0:
+                    prev_id = room_seq[c_idx - 1]
+                    prev_solved = team_clues.get(prev_id, {}).get("solved", False)
+                    if not prev_solved:
+                        is_locked = True
+                        lock_reason = f"Previous clue '{prev_id}' in this sequence must be solved first."
+
+            c_unlock = c.get("unlock", {}).get("requires_resolved", [])
+            if not is_locked and c_unlock:
                 for req_id in c_unlock:
                     req_info = team_clues.get(req_id, {})
                     req_clue = next((cl for cl in content.get("clues", []) if cl["id"] == req_id), {})
@@ -138,6 +179,7 @@ def get_room_state(room_id: str, request: Request):
                     req_resolved = bool(req_info.get("solved") or (req_max is not None and req_info.get("attempts", 0) >= req_max))
                     if not req_resolved:
                         is_locked = True
+                        lock_reason = f"Prerequisite clues ({', '.join(c_unlock)}) must be resolved first."
                         break
 
             projected_clues.append({
@@ -148,6 +190,8 @@ def get_room_state(room_id: str, request: Request):
                 "solved": c_info["solved"],
                 "attempts": c_info["attempts"],
                 "attempts_max": c.get("attempts_max", 3),
+                "is_locked": is_locked,
+                "lock_reason": lock_reason,
                 "solution_method": c.get("solution", {}).get("method"),
                 "assembly": c.get("assembly"),
                 "locked": is_locked,
@@ -184,7 +228,7 @@ def get_room_state(room_id: str, request: Request):
                     "id": ev["id"],
                     "is_wrapped": True,
                     "display": {
-                        "title": f"Wrapped Fragment #{ev.get('seq', '?')}",
+                        "title": f"Wrapped Fragment #{len(projected_evidence) + 1}",
                         "style": ev.get("display", {}).get("style", {})
                     }
                 })
@@ -287,6 +331,8 @@ def get_room_basket(room_id: str, request: Request):
 @router.post("/room/{room_id}/search")
 def search_object(room_id: str, payload: Dict[str, Any], request: Request):
     team = verify_team_auth(request)
+    if room_id == "basement":
+        return basement_service.search_object(team["id"], payload.get("object_id"), content=get_content_data())
     object_id = payload.get("object_id")
     if not object_id:
         raise HTTPException(status_code=400, detail="Missing object_id")
@@ -295,6 +341,11 @@ def search_object(room_id: str, payload: Dict[str, Any], request: Request):
     target_room = next((r for r in content.get("rooms", []) if r["id"] == room_id), None)
     if not target_room:
         raise HTTPException(status_code=404, detail="Room not found")
+
+    if room_id == "study":
+        return study_service.search_object(team["id"], content, object_id)
+    if "study" in target_room.get("unlock", {}).get("all_clues_resolved", []):
+        study_service.check_room_access(team["id"], target_room)
         
     # Find evidence attached to this object in room definition
     room_evidence = target_room.get("evidence", [])
@@ -394,6 +445,15 @@ def search_object(room_id: str, payload: Dict[str, Any], request: Request):
                     """,
                     (team["id"], room_id)
                 )
+                if room_id == "bedroom":
+                    cur.execute(
+                        """
+                        INSERT INTO team_clues (team_id, round, clue_id, room_id, is_unlocked, unlocked_at)
+                        VALUES (%s, 1, 'R1-01', %s, TRUE, NOW())
+                        ON CONFLICT (team_id, clue_id) DO UPDATE SET is_unlocked = TRUE, unlocked_at = COALESCE(team_clues.unlocked_at, NOW())
+                        """,
+                        (team["id"], room_id)
+                    )
                 conn.commit()
                 basket_unlocked = True
                 
@@ -412,6 +472,9 @@ def search_object(room_id: str, payload: Dict[str, Any], request: Request):
 @router.post("/clue/{clue_id}/submit")
 def submit_clue_answer(clue_id: str, payload: Dict[str, Any], request: Request):
     team = verify_team_auth(request)
+    content = get_content_data()
+    if clue_id in ("R1-09", "R1-10", "R1-FIN"):
+        return basement_service.submit_clue_answer(team["id"], clue_id, payload, content)
     answer = payload.get("answer")
     if answer is None and payload:
         if len(payload) == 1:
@@ -420,14 +483,42 @@ def submit_clue_answer(clue_id: str, payload: Dict[str, Any], request: Request):
             answer = payload
     if answer is None:
         answer = ""
-    content = get_content_data()
     answer_salt = content.get("meta", {}).get("answer_salt", "")
     
     target_clue = next((c for c in content.get("clues", []) if c["id"] == clue_id), None)
     if not target_clue:
         raise HTTPException(status_code=404, detail="Clue not found")
+
+    if target_clue.get("room") == "study":
+        return study_service.submit_clue_answer(team["id"], content, target_clue, answer, bypass_sequence=bool(payload.get("_bypass_sequence")))
+    target_room = next((r for r in content.get("rooms", []) if r["id"] == target_clue.get("room")), {})
+    if "study" in target_room.get("unlock", {}).get("all_clues_resolved", []):
+        study_service.check_room_access(team["id"], target_room)
         
     room_id = target_clue.get("room")
+
+    # Sequential clue prerequisite check
+    seq = ["R1-01", "R1-02", "R1-03", "R1-04"]
+    if clue_id in seq and not payload.get("_bypass_sequence"):
+        idx = seq.index(clue_id)
+        if idx > 0:
+            prev_id = seq[idx - 1]
+            conn_pre = get_db_connection()
+            try:
+                with conn_pre.cursor(cursor_factory=RealDictCursor) as cur_pre:
+                    cur_pre.execute(
+                        "SELECT solved FROM team_clues WHERE team_id = %s AND clue_id = %s",
+                        (team["id"], prev_id)
+                    )
+                    prev_row = cur_pre.fetchone()
+                    if not (prev_row and prev_row["solved"]):
+                        raise HTTPException(
+                            status_code=403,
+                            detail={"code": "CLUE_LOCKED", "message": f"Previous clue '{prev_id}' in this sequence must be solved first."}
+                        )
+            finally:
+                conn_pre.close()
+
     attempts_max = target_clue.get("attempts_max", 3)
 
     # Room 6 prerequisite interlock: R2-10 Grand Finale requires R2-08 and R2-09 resolved
@@ -571,8 +662,12 @@ def submit_clue_answer(clue_id: str, payload: Dict[str, Any], request: Request):
             new_attempts = curr_attempts + 1
             clue_solved = is_correct
             
-            # Calculate points if correct
-            pts_awarded = 100.0 if clue_solved else 0.0
+            # Calculate points if correct (deduct 15 pts if clue hint was used)
+            if clue_solved:
+                deduction = hint_service.get_clue_hint_point_deduction(cur, team["id"], clue_id)
+                pts_awarded = max(0.0, 100.0 - deduction)
+            else:
+                pts_awarded = 0.0
 
             cur.execute(
                 """
@@ -621,6 +716,21 @@ def submit_clue_answer(clue_id: str, payload: Dict[str, Any], request: Request):
                         """,
                         (round_num, team["id"], round_num, pts_awarded)
                     )
+
+                # Unlock next clue in sequence
+                seq = ["R1-01", "R1-02", "R1-03", "R1-04"]
+                if clue_id in seq:
+                    idx = seq.index(clue_id)
+                    if idx + 1 < len(seq):
+                        next_id = seq[idx + 1]
+                        cur.execute(
+                            """
+                            INSERT INTO team_clues (team_id, round, clue_id, room_id, is_unlocked, unlocked_at)
+                            VALUES (%s, %s, %s, %s, TRUE, NOW())
+                            ON CONFLICT (team_id, clue_id) DO UPDATE SET is_unlocked = TRUE, unlocked_at = COALESCE(team_clues.unlocked_at, NOW())
+                            """,
+                            (team["id"], target_clue.get("round", 1), next_id, room_id)
+                        )
             else:
                 round_num = target_clue.get("round", 1)
                 if attempts_max is not None and curr_attempts < attempts_max and new_attempts >= attempts_max:
@@ -725,6 +835,98 @@ def get_clue_hints(clue_id: str, request: Request):
         "ok": True,
         "clue_id": clue_id,
         "hints": target_clue.get("hints", [])
+    }
+
+
+@router.get("/clue/{clue_id}")
+def get_clue_details(clue_id: str, request: Request):
+    team = verify_team_auth(request)
+    content = get_content_data()
+    target_clue = next((c for c in content.get("clues", []) if c["id"] == clue_id), None)
+    if not target_clue:
+        raise HTTPException(status_code=404, detail="Clue not found")
+
+    room_id = target_clue.get("room")
+    ROOM_CLUE_SEQUENCES = {
+        "bedroom": ["R1-01", "R1-02", "R1-03", "R1-04"],
+        "study": ["R1-05", "R1-06", "R1-07", "R1-08"],
+        "basement": ["R1-09", "R1-10", "R1-FIN"],
+    }
+    room_seq = ROOM_CLUE_SEQUENCES.get(room_id, [])
+
+    conn = get_db_connection()
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute(
+                "SELECT is_basket_unlocked FROM team_rooms WHERE team_id = %s AND room_id = %s",
+                (team["id"], room_id)
+            )
+            rm_status = cur.fetchone()
+            is_basket_unlocked = bool(rm_status and rm_status["is_basket_unlocked"])
+
+            cur.execute(
+                "SELECT clue_id, solved, attempts, score FROM team_clues WHERE team_id = %s",
+                (team["id"],)
+            )
+            team_clues = {row["clue_id"]: row for row in cur.fetchall()}
+    finally:
+        conn.close()
+
+    if not is_basket_unlocked:
+        raise HTTPException(
+            status_code=403,
+            detail={"code": "BASKET_LOCKED", "message": "Find and recover all room fragments to unlock the evidence basket first."}
+        )
+
+    if clue_id in room_seq:
+        idx = room_seq.index(clue_id)
+        if idx > 0:
+            prev_id = room_seq[idx - 1]
+            if not team_clues.get(prev_id, {}).get("solved", False):
+                raise HTTPException(
+                    status_code=403,
+                    detail={"code": "CLUE_LOCKED", "message": f"Previous clue '{prev_id}' in this sequence must be solved first."}
+                )
+
+    c_info = team_clues.get(clue_id, {"solved": False, "attempts": 0})
+    return {
+        "ok": True,
+        "clue": {
+            "id": target_clue["id"],
+            "title": target_clue.get("title", ""),
+            "object_id": target_clue.get("object_id"),
+            "scene_text": target_clue.get("scene_text", ""),
+            "solved": c_info["solved"],
+            "attempts": c_info["attempts"],
+            "attempts_max": target_clue.get("attempts_max", 3),
+            "solution_method": target_clue.get("solution", {}).get("method"),
+            "assembly": target_clue.get("assembly"),
+            "payload": target_clue.get("payload", {}),
+            "assets": target_clue.get("assets", []),
+            "stages": [
+                {
+                    "index": s["index"],
+                    "type": s["type"],
+                    "prompt": s["prompt"],
+                    "fields": s.get("fields", [])
+                }
+                for s in target_clue.get("stages", [])
+            ]
+        }
+    }
+
+
+@router.get("/time")
+def get_game_time():
+    now = datetime.now(timezone.utc)
+    remaining = 900
+    ends_at = now.timestamp() + remaining
+    return {
+        "remaining_seconds": remaining,
+        "remaining": remaining,
+        "server_time": now.isoformat(),
+        "now": now.isoformat(),
+        "ends_at": datetime.fromtimestamp(ends_at, tz=timezone.utc).isoformat()
     }
 
 # -------------------------------------------------------------
@@ -995,4 +1197,19 @@ def get_round_dossier(round_num: int, request: Request):
         "solved_count": sum(1 for r in records if r["solved"]),
         "records": records
     }
+
+
+@router.get("/hint/status")
+def get_hint_status(request: Request):
+    team = verify_team_auth(request)
+    return hint_service.get_hint_status(team["id"])
+
+
+@router.post("/hint")
+def request_hint_endpoint(request: Request, body: Optional[Dict[str, Any]] = None):
+    team = verify_team_auth(request)
+    body = body or {}
+    room_id = body.get("room_id")
+    target_id = body.get("target_id")
+    return hint_service.request_hint(team["id"], room_id=room_id, target_id=target_id)
 

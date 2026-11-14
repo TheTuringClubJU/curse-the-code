@@ -4,13 +4,14 @@ import { X, CheckCircle, Lock, AlertCircle } from 'lucide-react';
 export default function CaseFilesModal({
   isOpen,
   onClose,
-  clues = []
+  clues = [],
+  onOpenClue = null
 }) {
   if (!isOpen) return null;
 
-  // Filter Room 1 clues and sort in deterministic order (R1-01, R1-02, R1-03, R1-04)
+  // Filter Room 1 clues and sort in deterministic order (R1-01, R1-02, R1-03, R1-04, etc.)
   const roomClues = clues
-    .filter(c => c.id && c.id.startsWith('R1-') && c.id !== 'R1-FIN')
+    .filter(c => c.id && c.id.startsWith('R1-'))
     .sort((a, b) => (a.id > b.id ? 1 : -1));
 
   const solvedCount = roomClues.filter(c => c.solved).length;
@@ -43,7 +44,7 @@ export default function CaseFilesModal({
           </button>
         </div>
 
-        {/* Minimal Clue List (Clue 1, Clue 2, Clue 3, Clue 4) */}
+        {/* Minimal Clue List */}
         <div className="p-4 space-y-2.5">
           {roomClues.map((clue, index) => {
             const clueNumber = index + 1;
@@ -51,15 +52,23 @@ export default function CaseFilesModal({
             const attempts = clue.attempts || 0;
             const maxAttempts = clue.attempts_max || 3;
             const isExhausted = !isSolved && attempts >= maxAttempts;
+            const isLocked = Boolean(clue.is_locked);
 
             return (
               <div
                 key={clue.id || index}
-                className={`flex items-center justify-between px-4 py-3 rounded-lg border ${
+                onClick={() => {
+                  if (onOpenClue) onOpenClue(clue);
+                }}
+                className={`flex items-center justify-between px-4 py-3 rounded-lg border transition ${
+                  onOpenClue ? 'cursor-pointer hover:border-[#6b4fa0]' : ''
+                } ${
                   isSolved
                     ? 'bg-[#14261b]/60 border-[#22543d]'
                     : isExhausted
                     ? 'bg-[#291418]/60 border-[#7f1d1d]'
+                    : isLocked
+                    ? 'bg-[#1c1221]/50 border-[#382645] opacity-75'
                     : 'bg-[#151024] border-[#34244d]'
                 }`}
               >
@@ -70,14 +79,21 @@ export default function CaseFilesModal({
                   ) : isExhausted ? (
                     <AlertCircle className="w-4 h-4 text-[#fca5a5] shrink-0" />
                   ) : (
-                    <Lock className="w-4 h-4 text-[#7c6b9b] shrink-0" />
+                    <Lock className={`w-4 h-4 shrink-0 ${isLocked ? 'text-red-400/60' : 'text-[#a78bfa]'}`} />
                   )}
-                  <span className="text-sm font-bold text-[#e8e0ff]">
-                    Clue {clueNumber}
-                  </span>
+<div>
+                    <span className="text-sm font-bold text-[#e8e0ff]">
+                      Clue {clueNumber}
+                    </span>
+                    {clue.title && (
+                      <span className="text-xs text-[#a292cc] font-mono block">
+                        {clue.title}
+                      </span>
+                    )}
+                  </div>
                 </div>
 
-                {/* Attempts Count */}
+                {/* Attempts Count & Status */}
                 <div className="flex items-center gap-3">
                   <span className="text-xs text-gray-400">
                     Attempts:{' '}
@@ -100,10 +116,12 @@ export default function CaseFilesModal({
                         ? 'bg-[#18261e] text-[#86efac] border border-[#22543d]'
                         : isExhausted
                         ? 'bg-[#291418] text-[#fca5a5] border border-[#7f1d1d]'
-                        : 'bg-black/40 text-gray-400 border border-white/5'
+                        : isLocked
+                        ? 'bg-[#291724] text-red-300 border border-red-900/50'
+                        : 'bg-[#211a3b] text-purple-200 border border-purple-500/30'
                     }`}
                   >
-                    {isSolved ? 'Solved' : isExhausted ? 'Exhausted' : 'Unsolved'}
+                    {isSolved ? 'Solved' : isExhausted ? 'Exhausted' : isLocked ? 'Locked' : 'Open'}
                   </span>
                 </div>
               </div>

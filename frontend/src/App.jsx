@@ -4,6 +4,8 @@ import Lobby from './lobby/Lobby';
 import AdminLogin from './admin/AdminLogin';
 import AdminDashboard from './admin/AdminDashboard';
 import Room1Bedroom from './game/Room1Bedroom';
+import Room2Study from './game/Room2Study';
+import Room3Basement from './game/Room3Basement';
 import Room4Records from './game/Room4Records';
 import { checkAuthStatus, logoutTeam } from './userlogin/authApi';
 
@@ -18,6 +20,14 @@ export default function App() {
   const [checkingAuth, setCheckingAuth] = useState(true);
   const [roundStatus, setRoundStatus] = useState(null); // Pure DB-driven: null until verified from DB
   const [currentRoundNum, setCurrentRoundNum] = useState(1);
+  const [currentRoom, setCurrentRoom] = useState(() => {
+    return localStorage.getItem('ctc_current_room') || 'bedroom';
+  });
+
+  const changeRoom = (newRoom) => {
+    localStorage.setItem('ctc_current_room', newRoom);
+    setCurrentRoom(newRoom);
+  };
 
   // Listen to popstate or route changes if needed
   useEffect(() => {
@@ -62,6 +72,32 @@ export default function App() {
       .finally(() => setCheckingAuth(false));
   }, [isAdminRoute]);
 
+  // Determine active room progression for logged in team
+  useEffect(() => {
+    if (!team || isAdminRoute) return;
+    fetch('/api/game/room/basement', { credentials: 'include' })
+      .then((res) => {
+        if (res.ok) {
+          return res.json().then((data) => {
+            if (data.is_completed) {
+              setCurrentRoom('lobby');
+            } else {
+              setCurrentRoom('basement');
+            }
+          });
+        } else {
+          return fetch('/api/game/room/study', { credentials: 'include' }).then((r2) => {
+            if (r2.ok) {
+              setCurrentRoom('study');
+            } else {
+              setCurrentRoom('bedroom');
+            }
+          });
+        }
+      })
+      .catch(() => setCurrentRoom('bedroom'));
+  }, [team, isAdminRoute]);
+
   // Fast poll lobby/game status when team is logged in
   useEffect(() => {
     if (!team || isAdminRoute) return;
@@ -102,13 +138,16 @@ export default function App() {
 
   const handleLoginSuccess = (authenticatedTeam) => {
     setRoundStatus(null);
+    setCurrentRoom('bedroom');
     setTeam(authenticatedTeam);
   };
 
   const handleLogout = async () => {
+    localStorage.removeItem('ctc_current_room');
     await logoutTeam();
     setTeam(null);
     setRoundStatus(null);
+    setCurrentRoom('bedroom');
   };
 
   const handleAdminLogout = async () => {
@@ -153,9 +192,44 @@ export default function App() {
     return <UserLogin onLoginSuccess={handleLoginSuccess} />;
   }
 
-  // When Round 1 is live, display Room 1 (Lena's Bedroom)
+  // Direct Room 3 entry points (frontend routing only)
+  if (window.location.pathname === '/basement' || window.location.pathname === '/room3') {
+    return <Room3Basement team={team} onLogout={handleLogout} />;
+  }
+
+  // When Round 1 is live, display Room 1 (Bedroom), Room 2 (Study), or Room 3 (Basement)
   if (roundStatus === 'live' && currentRoundNum === 1) {
-    return <Room1Bedroom team={team} onLogout={handleLogout} />;
+    if (currentRoom === 'lobby') {
+      return <Lobby team={team} onLogout={handleLogout} />;
+    }
+
+    if (currentRoom === 'study') {
+      return (
+        <Room2Study
+          team={team}
+          onLogout={handleLogout}
+          onTransitionToRoom3={() => changeRoom('basement')}
+        />
+      );
+    }
+
+    if (currentRoom === 'basement') {
+      return (
+        <Room3Basement
+          team={team}
+          onLogout={handleLogout}
+          onProceedToLobby={() => changeRoom('lobby')}
+        />
+      );
+    }
+
+    return (
+      <Room1Bedroom
+        team={team}
+        onLogout={handleLogout}
+        onTransitionToRoom2={() => changeRoom('study')}
+      />
+    );
   }
 
   // When Round 2 is live, display Room 4 (The Rotting Archive)
