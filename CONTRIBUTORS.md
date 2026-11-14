@@ -29,6 +29,7 @@ This list is maintained by hand alongside the GitHub [contributors graph](https:
   - Built low-spec PC & Eco-mode performance optimizations: pre-init hardware detection, dynamic MSAA/stencil disabling, `<30fps` fallback, shader point-light capping, draw-call batching, per-frame GC allocation elimination, and texture downsampling (`engine.js`, `sceneControl.js`)
   - Authored headless Three.js geometric traversal and door-clearance verification, 37 opaque-box E2E tests (`Room5Control.test.jsx`, `Room5E2E.test.jsx`), and Room 5 technical/QA documentation
   - Authored frontend team onboarding and GLB standardization guidelines (`docs/frontend-team/`) covering backend/story contracts, model sourcing, Meshopt optimization, and horror design
+  - Overhauled Substation Delta gameplay: eliminated sequential item locks and false decoys (streamlined 8 authentic fragments across 6 fixtures), built single-interact multi-fragment sweep with non-spoiler investigative UI, unwrapped partial recovered documents on pickup while keeping clue terminals securely gated until 8/8 fragments, upgraded stalker AI to an aggressive Poppy Playtime–inspired pursuit with FM-synthesized monster shrieks, heartbeat tempo escalation, close-range FOV punch and jumpscare thrash VFX, and verified with 100% test pass rate across 363 backend Pytest tests and 341 frontend Vitest tests
 
 <!--
 Add new contributors below this line, following the format above.
