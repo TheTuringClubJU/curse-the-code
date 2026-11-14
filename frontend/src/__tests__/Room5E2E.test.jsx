@@ -1397,5 +1397,323 @@ describe('Room 5 (The Surveillance Morgue) E2E 4-Tier Opaque-Box Suite', () => {
       expect(fakeEngine.flashlight.intensity).toBe(9.0);
       scares.dispose();
     });
+
+    it('T5-09: EvidencePickupModal renders Open Field-Journal spread, adaptive fonts, Polaroid snapshot, and Copy/Download on wrapped items', async () => {
+      const wrappedModal = {
+        type: 'evidence',
+        objectId: 'relay_rack',
+        snapshotUrl: 'data:image/jpeg;base64,/9j/4AAQSkZJRg==',
+        sourceName: 'Relay Rack',
+        collectedCount: 2,
+        totalCount: 10,
+        remainingHere: 0,
+        evidence: {
+          id: 'SEALED-2',
+          is_wrapped: true,
+          display: { title: 'Wrapped Fragment #2', lines: ['Tamper-sealed fragment'] },
+        },
+      };
+
+      const { container, rerender } = render(
+        <EvidencePickupModal modalData={wrappedModal} onClose={vi.fn()} />
+      );
+      expect(container.querySelector('.journal-leather-cover')).toBeInTheDocument();
+      expect(container.querySelector('.journal-polaroid img')).toHaveAttribute(
+        'src',
+        'data:image/jpeg;base64,/9j/4AAQSkZJRg=='
+      );
+      expect(container.querySelector('.font-journal-tech')).toBeInTheDocument();
+
+      await act(async () => {
+        fireEvent.click(screen.getByText(/Copy Content/i));
+      });
+      expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
+        expect.stringContaining('Relay Rack')
+      );
+      fireEvent.click(screen.getByText(/Download File/i));
+      expect(URL.createObjectURL).toHaveBeenCalled();
+
+      // Adaptive handwritten font for furniture/crate inspection
+      rerender(
+        <EvidencePickupModal
+          modalData={{
+            objectId: 'wooden_crates',
+            kind: 'ambient_note',
+            title: 'Stenciled Surplus Crates',
+            lines: ['Wooden crates stacked beside the outer airlock.'],
+          }}
+          onClose={vi.fn()}
+        />
+      );
+      expect(container.querySelector('.font-journal-hand')).toBeInTheDocument();
+    });
+
+    it('T5-10: CCTVMonitorModal displays assigned wing screenshots across CRTs and zooms in/out cleanly', () => {
+      const { container } = render(<CCTVMonitorModal isOpen={true} onClose={vi.fn()} />);
+
+      // Wall mode displays assigned Room 5 wing screenshots inside phosphor CRTs
+      expect(container.querySelector('.cctv-wall-enter')).toBeInTheDocument();
+      const cam01Img = screen.getByAltText(/CAM-01 ENTRY AIRLOCK/i);
+      expect(cam01Img).toHaveAttribute('src', '/assets/ui/cctv/cam-01.jpg');
+
+      // Clicking a monitor zooms in cleanly
+      fireEvent.click(screen.getByText('CAM-04'));
+      expect(container.querySelector('.cctv-zoom-enter')).toBeInTheDocument();
+      expect(screen.getByAltText(/CAM-04 zoomed view/i)).toHaveAttribute(
+        'src',
+        '/assets/ui/cctv/cam-04.jpg'
+      );
+
+      // Clicking outside (backdrop overlay) zooms smoothly back out to wall mode
+      fireEvent.click(container.querySelector('.cctv-station-backdrop'));
+      expect(container.querySelector('.cctv-wall-enter')).toBeInTheDocument();
+      expect(container.querySelector('.cctv-zoom-enter')).toBeNull();
+
+      // Tracking UI elements (countdown timers / biometric locks) are completely absent
+      expect(screen.queryByText(/NEXT SCAN/i)).toBeNull();
+      expect(screen.queryByText(/LIVE BIOMETRIC LOCK/i)).toBeNull();
+    });
+
+    it('T5-11: ControlBasketModal allows click-to-preview of sealed manuscripts without spoilers or blank slot boxes', () => {
+      const wrappedEvidence = [
+        {
+          id: 'EC01',
+          is_wrapped: true,
+          part: 'PART 1',
+          clue_id: 'SECRET_CLUE',
+          display: { title: 'Relay Rack', lines: ['Hidden cipher text'] },
+        },
+        {
+          id: 'XC01',
+          is_wrapped: true,
+          is_decoy: true,
+          display: { title: 'Decoy', lines: ['Decoy secret text'] },
+        },
+      ];
+
+      const { container } = render(
+        <ControlBasketModal
+          isOpen={true}
+          onClose={vi.fn()}
+          evidence={wrappedEvidence}
+          collectedIds={['EC01', 'XC01']}
+          basketUnlocked={false}
+          totalInRoom={10}
+          propSnapshots={{ EC01: 'data:image/jpeg;base64,/9j/4AAQSkZJRg==' }}
+        />
+      );
+
+      // No empty blank SLOT boxes, no flat brown parcel image, no spoiler titles
+      expect(screen.queryByText(/SLOT #3/i)).toBeNull();
+      expect(screen.getByText(/8 hidden compartments still remaining/i)).toBeInTheDocument();
+      expect(screen.queryByText('Relay Rack')).toBeNull();
+      expect(screen.queryByText('Decoy')).toBeNull();
+
+      // Uses captured snapshot on card #1
+      expect(screen.getByAltText('Sealed Evidence #1')).toHaveAttribute(
+        'src',
+        'data:image/jpeg;base64,/9j/4AAQSkZJRg=='
+      );
+
+      // Clicking a sealed card opens OpenJournalSpread preview safely without spoilers
+      fireEvent.click(screen.getByText('Sealed Evidence #1'));
+      expect(container.querySelector('.journal-leather-cover')).toBeInTheDocument();
+      expect(screen.queryByText('Relay Rack')).toBeNull();
+      expect(screen.queryByText('Hidden cipher text')).toBeNull();
+      // Sealed inspector & plate expose real investigative leads (Personnel Registry / curfew)
+      expect(screen.getByText(/Personnel Registry in Bay 5B/i)).toBeInTheDocument();
+    });
+
+    it('T5-12: Sealed & unsealed manuscripts surface atmospheric Delta clues & Voice Machine leads while respecting spoiler lock', () => {
+      const sealedSet = [
+        { id: 'EC01', is_wrapped: true, display: { title: 'Wrapped Fragment #1' } },
+        { id: 'EC02', is_wrapped: true, display: { title: 'Wrapped Fragment #2' } },
+        { id: 'EC03', is_wrapped: true, display: { title: 'Wrapped Fragment #3' } },
+      ];
+      const { unmount } = render(
+        <ControlBasketModal
+          isOpen={true}
+          onClose={vi.fn()}
+          evidence={sealedSet}
+          collectedIds={['EC01', 'EC02', 'EC03']}
+          basketUnlocked={false}
+          totalInRoom={10}
+          propSnapshots={{}}
+        />
+      );
+
+      // Caseboard brief & per-card clue previews visible even before 10/10 unsealing
+      expect(screen.getByText(/CURFEW INCIDENT CASEBOARD/i)).toBeInTheDocument();
+      expect(screen.getByText(/THE GHOST BADGE/i)).toBeInTheDocument();
+      expect(screen.getByText(/BEYOND AUDIBLE STATIC/i)).toBeInTheDocument();
+      expect(screen.queryByText('Relay Rack')).toBeNull();
+      expect(screen.queryByText('Decoy')).toBeNull();
+
+      // Open parcel #3 -> Voice Machine tuning guidance + Courier Prime plate SVG with real lines
+      fireEvent.click(screen.getByText('Sealed Evidence #3'));
+      expect(screen.getByText(/Climb onto HIGH band and push the needle past two-thirds/i)).toBeInTheDocument();
+      const imgs = screen.getAllByAltText('Sealed Evidence #3');
+      const plateUri = decodeURIComponent(imgs[imgs.length - 1].getAttribute('src') || '');
+      expect(plateUri).toContain('SWITCH TO HIGH BAND');
+      expect(plateUri).toContain('Courier Prime');
+      unmount();
+
+      // Locked radio_console strips "Test Transmissions" prefix into clean in-world label
+      const lockedRender = render(
+        <EvidencePickupModal
+          modalData={{
+            type: 'locked_terminal',
+            objectId: 'radio_console',
+            terminalName: 'Test Transmissions',
+            collectedCount: 4,
+            totalCount: 10,
+          }}
+          onClose={vi.fn()}
+        />
+      );
+      expect(screen.getByText(/Terminal Restricted — Radio Teletype Console/i)).toBeInTheDocument();
+      expect(screen.queryByText(/Test Transmissions/i)).toBeNull();
+      expect(screen.getByText(/five of six Channel 7 wires are spoofed/i)).toBeInTheDocument();
+      // Never leak specific prop names or wings holding hidden evidence
+      expect(screen.queryByText(/Relay Rack|Tape Deck Cart|Operator Chair|Cable Trench|Wall Clipboard|Fuse Box/i)).toBeNull();
+      lockedRender.unmount();
+
+      // Unsealed EC03 receipt includes Voice Machine terminal cross-reference
+      render(
+        <EvidencePickupModal
+          modalData={{
+            type: 'evidence',
+            sourceName: 'Tape Deck Cart',
+            objectId: 'tape_deck_cart',
+            collectedCount: 10,
+            totalCount: 10,
+            evidence: {
+              id: 'EC03',
+              is_wrapped: false,
+              display: {
+                title: 'Maintenance Report — CRT Bank',
+                lines: ['Date: 07 NOV 1983', 'Continuous loop feed from Chamber 3'],
+              },
+            },
+          }}
+          onClose={vi.fn()}
+        />
+      );
+      expect(screen.getByText(/Clue Connection \[R2-06\]/i)).toBeInTheDocument();
+      expect(screen.getByText(/scrub past 66%/i)).toBeInTheDocument();
+    });
+
+    it('T5-13: Single-press multi-record sweep displays bundled docs, chase panic vignette renders outside 5B, and jumpscare punches FOV 50->40 with entityScream', async () => {
+      const bundleState = {
+        ...makeUnlockedState({
+          collected_fragment_ids: ['EC01', 'EC02'],
+          basket_unlocked: false,
+        }),
+        total_fragments_in_room: 8,
+        evidence: [
+          {
+            id: 'EC01',
+            clue_id: 'R2-01',
+            is_wrapped: false,
+            display: { title: 'Transmission Log', lines: ['14 AUG 1983 — 23:41'] },
+          },
+          {
+            id: 'EC02',
+            clue_id: 'R2-01',
+            is_wrapped: false,
+            display: { title: 'Equipment Requisition', lines: ['CORVIN, M.'] },
+          },
+        ],
+      };
+
+      global.fetch = vi.fn()
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({
+            ...makeUnlockedState({ collected_fragment_ids: [], basket_unlocked: false }),
+            total_fragments_in_room: 8,
+          }),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({
+            found: true,
+            fragment_id: 'EC01',
+            newly_collected: ['EC01', 'EC02'],
+            total_collected: 2,
+            total_in_room: 8,
+            message: 'Recovered 2 evidence records!',
+          }),
+        })
+        .mockResolvedValueOnce({ ok: true, json: async () => bundleState });
+
+      render(<Room5Control team={mockTeam} onLogout={mockLogout} />);
+      await waitFor(() => expect(activeEngineInstance).toBeTruthy());
+      fireEvent.click(screen.getByText(/ENTER THE SURVEILLANCE MORGUE/i));
+
+      // Single E interact yields both EC01 and EC02 simultaneously
+      await act(async () => {
+        await activeEngineInstance.callbacks.onInteract('relay_rack');
+      });
+      expect(screen.getByText(/2 Records Recovered/i)).toBeInTheDocument();
+      expect(screen.getByText(/Transmission Log/i)).toBeInTheDocument();
+      expect(screen.getByText(/Equipment Requisition/i)).toBeInTheDocument();
+      fireEvent.keyDown(window, { key: 'Escape', code: 'Escape' });
+
+      // Outside Safe Bay 5B during hunt shows peripheral chase-panic-vignette via telemetry interval
+      const origGetPos = activeEngineInstance.getPos;
+      const origGetTel = mockScares.getGhostTelemetry;
+      activeEngineInstance.getPos = vi.fn(() => ({ x: -4.5, z: 9.0, yaw: 0 }));
+      mockScares.getGhostTelemetry = vi.fn(() => ({ isHunting: true, state: 'HUNT', cyclePhase: 'MANIFESTING' }));
+      await waitFor(() => {
+        expect(screen.getByTestId('chase-panic-vignette')).toBeInTheDocument();
+      }, { timeout: 1500 });
+      activeEngineInstance.getPos = origGetPos;
+      mockScares.getGhostTelemetry = origGetTel;
+
+      // Real scaresControl jumpscare punches FOV 50 -> 40 -> 72 and fires monster scream
+      const THREE = await import('three');
+      const scaresActual = await vi.importActual('../game/engine/scaresControl.js');
+      const fovs = [];
+      const entityScream = vi.fn();
+      const jumpscareSting = vi.fn();
+      const root = new THREE.Object3D();
+      const scares = scaresActual.createControlScares(
+        {
+          S: new THREE.Scene(),
+          cam: new THREE.PerspectiveCamera(72, 16 / 9, 0.05, 80),
+          ref: {},
+          _ghost: { root, ghostGlow: { intensity: 0 }, ghostFaceLight: { intensity: 0 }, setAnim: vi.fn() },
+          px: () => -4.2,
+          pz: () => 9.0,
+          yaw: () => 0,
+          isSprinting: () => false,
+          shake: vi.fn(),
+          setCameraOverride: vi.fn(),
+          setTargetFov: (v) => fovs.push(v),
+        },
+        {
+          audio: {
+            peekSting: vi.fn(), scurrySteps: vi.fn(), jumpscareSting, entityScream,
+            womanScream: vi.fn(), heavyEntityStep: vi.fn(), stalkerGrowl: vi.fn(),
+            bulkheadBang: vi.fn(), stinger: vi.fn(), setChaseTension: vi.fn(),
+            footstep: vi.fn(), staticBurst: vi.fn(), drawerSlam: vi.fn(),
+            relayClick: vi.fn(), intercomCrackle: vi.fn(), whisperRaspy: vi.fn(),
+            phoneRing: vi.fn(), setWeepingVolume: vi.fn(),
+          },
+          onFlash: vi.fn(),
+          onScare: vi.fn(),
+        }
+      );
+
+      scares.triggerBreachHunt(1.0);
+      for (let i = 0; i < 20; i++) scares.update(0.15, i * 0.15);
+      expect(jumpscareSting).toHaveBeenCalledTimes(1);
+      expect(entityScream).toHaveBeenCalled();
+      expect(fovs).toContain(50);
+      expect(fovs).toContain(40);
+      expect(fovs[fovs.length - 1]).toBe(72);
+      scares.dispose();
+    });
   });
 });

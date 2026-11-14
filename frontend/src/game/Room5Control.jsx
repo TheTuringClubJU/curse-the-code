@@ -34,12 +34,12 @@ const WING_DOORS = {
 };
 
 const PROP_GUIDE_SPECS = [
-  { id: 'relay_rack',     label: 'Relay Rack',         wing: 'Wing 5F', short: '5F RELAY',  pos: [-12.25, 18.45], seqIds: ['EC01', 'EC02'], allIds: ['EC01', 'EC02'] },
-  { id: 'tape_deck_cart', label: 'Tape Deck Cart',     wing: 'Wing 5C', short: '5C TAPE',   pos: [-2.58, 12.60],  seqIds: ['EC03', 'EC04'], allIds: ['EC03', 'EC04'] },
-  { id: 'operator_chair', label: 'Operator Chair',     wing: 'Bay 5B',  short: '5B CHAIR',  pos: [-2.79, 0.16],   seqIds: ['EC05'],         allIds: ['EC05', 'XC01'] },
-  { id: 'cable_trench',   label: 'Cable Trench',       wing: 'Wing 5D', short: '5D TRENCH', pos: [-10.42, 10.80], seqIds: ['EC06'],         allIds: ['EC06'] },
-  { id: 'wall_clipboard', label: 'Wall Clipboard',     wing: 'Bay 5B',  short: '5B BOARD',  pos: [-2.05, 1.48],   seqIds: ['EC07'],         allIds: ['EC07', 'XC02'] },
-  { id: 'fuse_box',       label: 'Fuse Box',           wing: 'Bay 5B',  short: '5B FUSE',   pos: [3.02, -0.58],   seqIds: ['EC08'],         allIds: ['EC08'] },
+  { id: 'relay_rack',     label: 'Relay Rack',     seqIds: ['EC01', 'EC02'], allIds: ['EC01', 'EC02'] },
+  { id: 'tape_deck_cart', label: 'Tape Deck Cart', seqIds: ['EC03', 'EC04'], allIds: ['EC03', 'EC04'] },
+  { id: 'operator_chair', label: 'Operator Chair', seqIds: ['EC05'],         allIds: ['EC05'] },
+  { id: 'cable_trench',   label: 'Cable Trench',   seqIds: ['EC06'],         allIds: ['EC06'] },
+  { id: 'wall_clipboard', label: 'Wall Clipboard', seqIds: ['EC07'],         allIds: ['EC07'] },
+  { id: 'fuse_box',       label: 'Fuse Box',       seqIds: ['EC08'],         allIds: ['EC08'] },
 ];
 
 function computePropGuidance(data) {
@@ -90,7 +90,7 @@ function computePropGuidance(data) {
     propChecklist,
     nextProp: nextSpec,
     nextPropId: nextSpec?.id || null,
-    nextTargetLabel: nextSpec ? `${nextSpec.label} (${nextSpec.wing})` : 'All fragments recovered!',
+    nextTargetLabel: nextSpec ? 'Continue exploring Substation Delta fixtures.' : 'All fragments recovered!',
     pendingPropIds: propChecklist.filter((p) => !p.isDone).map((p) => p.id),
     clearedPropIds: propChecklist.filter((p) => p.isDone).map((p) => p.id),
   };
@@ -132,6 +132,24 @@ export default function Room5Control({ team, onLogout }) {
   const [isCCTVOpen, setIsCCTVOpen] = useState(false);
   const [activeClueModal, setActiveClueModal] = useState(null); // 'R2-01' | 'R2-05' | 'R2-06' | null
   const [inspectModalData, setInspectModalData] = useState(null);
+  const [propSnapshots, setPropSnapshots] = useState(() => {
+    try {
+      const saved = window.localStorage.getItem('ctc_room5_snapshots');
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  });
+
+  useEffect(() => {
+    try {
+      if (Object.keys(propSnapshots).length > 0) {
+        window.localStorage.setItem('ctc_room5_snapshots', JSON.stringify(propSnapshots));
+      }
+    } catch {
+      // Ignore storage quota / disabled storage errors cleanly
+    }
+  }, [propSnapshots]);
 
   // UX state
   const [activeHoverPrompt, setActiveHoverPrompt] = useState(null);
@@ -402,8 +420,8 @@ export default function Room5Control({ team, onLogout }) {
     if (!isStarted) return undefined;
     const iv = setInterval(() => {
       const pos = engineRef.current?.getPos?.();
-      const px = pos ? Number(pos.x.toFixed(1)) : 0.25;
-      const pz = pos ? Number(pos.z.toFixed(1)) : 0.25;
+      const px = typeof pos?.x === 'number' && !Number.isNaN(pos.x) ? Number(pos.x.toFixed(1)) : 0.25;
+      const pz = typeof pos?.z === 'number' && !Number.isNaN(pos.z) ? Number(pos.z.toFixed(1)) : 0.25;
       const pyaw =
         typeof pos?.yaw === 'number' && !Number.isNaN(pos.yaw)
           ? Number(pos.yaw.toFixed(2))
@@ -618,10 +636,14 @@ export default function Room5Control({ team, onLogout }) {
 
       if (resolvedClueId) {
         if (!currentData?.basket_unlocked) {
+          const snapUrl = engineRef.current?.captureView?.(objectId) || null;
+          if (snapUrl) setPropSnapshots((prev) => ({ ...prev, [objectId]: snapUrl }));
           audioRef.current?.bad?.();
           showNotification('This terminal is locked. Collect all evidence fragments first.');
           setInspectModalData({
             type: 'locked_terminal',
+            objectId,
+            snapshotUrl: snapUrl,
             terminalName: matchingClue?.title || objectId.replace(/_/g, ' '),
             collectedCount: collectedCountNow,
             totalCount: totalFragmentsCount,
@@ -639,6 +661,8 @@ export default function Room5Control({ team, onLogout }) {
 
       // ── Ambient / Environmental 3D Props (authentic Substation Delta writing) ─
       if (CONTROL_PROP_NOTES[objectId]) {
+        const snapUrl = engineRef.current?.captureView?.(objectId) || null;
+        if (snapUrl) setPropSnapshots((prev) => ({ ...prev, [objectId]: snapUrl }));
         const baseNote = CONTROL_PROP_NOTES[objectId];
         let customLines = baseNote.lines;
         if (objectId === 'wall_breaker') {
@@ -660,6 +684,8 @@ export default function Room5Control({ team, onLogout }) {
         }
         setInspectModalData({
           ...baseNote,
+          objectId,
+          snapshotUrl: snapUrl,
           lines: customLines,
         });
         engineRef.current?.unlock?.();
@@ -668,6 +694,7 @@ export default function Room5Control({ team, onLogout }) {
 
       // ── Backend fragment search (only spec props) ──
       try {
+        const snapUrl = engineRef.current?.captureView?.(objectId) || null;
         const res = await fetch('/api/game/room/control/search', {
           method: 'POST',
           headers: {
@@ -685,35 +712,61 @@ export default function Room5Control({ team, onLogout }) {
             controlConfig.interact?.[objectId]?.label?.replace(/^Search\s+/i, '') ||
             objectId.replace(/_/g, ' ');
           if (result.found) {
+            const foundIds = Array.isArray(result.newly_collected) && result.newly_collected.length > 0
+              ? result.newly_collected
+              : result.fragment_id
+              ? [result.fragment_id]
+              : [];
+            if (snapUrl) {
+              setPropSnapshots((prev) => {
+                const next = { ...prev, [objectId]: snapUrl };
+                foundIds.forEach((fid) => {
+                  next[fid] = snapUrl;
+                });
+                return next;
+              });
+            }
             audioRef.current?.good?.();
             scaresRef.current?.maybeFragmentScare?.();
             await fetchRoomState();
             const refreshed = roomDataRef.current;
             const refreshedGuide = computePropGuidance(refreshed);
             const propInfo = refreshedGuide.propChecklist.find((p) => p.id === objectId);
-            const evObj =
-              (refreshed?.evidence || []).find((e) => e.id === result.fragment_id) || {
-                id: result.fragment_id,
-                is_wrapped: !refreshed?.basket_unlocked,
+            const bundledEvidence = foundIds.map((fid) =>
+              (refreshed?.evidence || []).find((e) => e.id === fid) || {
+                id: fid,
+                is_wrapped: false,
                 display: {
-                  title: `Evidence ${result.fragment_id}`,
-                  lines: [result.message || 'Fragment recovered.'],
+                  title: `Evidence ${fid}`,
+                  lines: [result.message || 'Evidence recovered.'],
                 },
-              };
+              }
+            );
+            const evObj = bundledEvidence[0] || {
+              id: result.fragment_id,
+              is_wrapped: !refreshed?.basket_unlocked,
+              display: {
+                title: `Evidence ${result.fragment_id}`,
+                lines: [result.message || 'Fragment recovered.'],
+              },
+            };
             const count =
               result.total_collected ?? refreshed?.collected_fragment_ids?.length ?? 0;
             const totalInRoom =
-              result.total_in_room ?? refreshed?.total_fragments_in_room ?? 10;
-            if ((propInfo && propInfo.isDone) || count >= totalInRoom) {
+              result.total_in_room ?? refreshed?.total_fragments_in_room ?? 8;
+            if ((propInfo && propInfo.isDone) || foundIds.length > 0 || count >= totalInRoom) {
               engineRef.current?.setFragmentCleared?.(objectId);
             }
             setInspectModalData({
               type: 'evidence',
+              objectId,
+              snapshotUrl: snapUrl,
               evidence: evObj,
+              bundledEvidence,
               sourceName: propLabel,
               collectedCount: count,
               totalCount: totalInRoom,
-              remainingHere: propInfo ? propInfo.remaining : 0,
+              remainingHere: 0,
             });
             engineRef.current?.unlock?.();
           } else {
@@ -726,8 +779,11 @@ export default function Room5Control({ team, onLogout }) {
                 );
               }
             } else if (result.locked) {
+              if (snapUrl) setPropSnapshots((prev) => ({ ...prev, [objectId]: snapUrl }));
               setInspectModalData({
                 type: 'sequence_locked',
+                objectId,
+                snapshotUrl: snapUrl,
                 propName: propLabel,
                 collectedCount: collectedCountNow,
                 totalCount: totalFragmentsCount,
@@ -898,7 +954,7 @@ export default function Room5Control({ team, onLogout }) {
     ? cluesSolvedCount < totalCluesCount
       ? `Evidence Basket unsealed (${cluesSolvedCount}/${totalCluesCount} terminals solved) — inspect bunker terminals to unlock the Vault Door`
       : 'All clue terminals verified — approach the Vault Exit Door'
-    : `Search Substation Delta wings & fixtures (${remainingCount} fragment${remainingCount === 1 ? '' : 's'} remaining before Evidence Basket unseals)`;
+    : `Recover ${remainingCount} more Substation Delta record${remainingCount === 1 ? '' : 's'} to unlock Bay 5B verification terminals`;
 
   return (
     <div
@@ -937,47 +993,162 @@ export default function Room5Control({ team, onLogout }) {
         />
       )}
 
-      {/* Room 5 Entry Overlay (Curse the Code atmospheric start screen) */}
+      {/* Room 5 Entry Overlay (Curse the Code atmospheric corkboard dossier hero) */}
       {!isStarted && (
-        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/95 select-none p-6">
-          <div className="text-center space-y-5 max-w-lg">
-            <div className="font-mono text-[11px] tracking-[0.38em] uppercase text-[#c4a265]/80">
-              R2 · ROOM 2 {loading ? '· CONNECTING...' : '· SECTOR 5 CONTROL'}
-            </div>
-            <h1 className="font-mono text-2xl sm:text-3xl font-bold tracking-[0.2em] uppercase text-[#e6e1d6]">
-              {roomData?.title || 'THE SURVEILLANCE MORGUE'}
-            </h1>
-            <p className="font-mono text-xs text-[#9c9282] leading-relaxed">
-              Recover all {totalFragmentsCount} evidence fragments hidden across the facility wings, decrypt all 3 verification terminals, and equalize the Core Airlock valve. Control Bay 5B remains your sanctuary.
-            </p>
-            {assetProgress && assetProgress.pct < 100 ? (
-              <div className="text-[#4dff78] font-mono text-xs tracking-wider">
-                {assetProgress.label} — {Math.round(assetProgress.pct)}%
+        <div
+          className="absolute inset-0 z-50 flex items-center select-none overflow-hidden bg-[#070604]"
+          data-testid="room5-start-screen"
+        >
+          {/* Full-bleed atmospheric investigation corkboard artwork */}
+          <img
+            src="/assets/ui/room5-title-board.jpg"
+            alt=""
+            aria-hidden="true"
+            className="absolute inset-0 w-full h-full object-cover object-center opacity-70 scale-[1.02] pointer-events-none"
+          />
+
+          {/* Cinematic directional gradient scrim (keeps left typography crisp while letting right corkboard breathe) */}
+          <div
+            aria-hidden="true"
+            className="absolute inset-0 pointer-events-none"
+            style={{
+              background:
+                'linear-gradient(100deg, rgba(7,6,4,0.96) 0%, rgba(10,9,6,0.88) 42%, rgba(8,10,8,0.45) 74%, rgba(6,7,6,0.72) 100%)',
+            }}
+          />
+
+          {/* Subtle warm desk lamp vignette & film noise */}
+          <div
+            aria-hidden="true"
+            className="absolute inset-0 pointer-events-none"
+            style={{
+              background:
+                'radial-gradient(circle at 22% 52%, rgba(212,163,91,0.08) 0%, transparent 55%), radial-gradient(circle at center, transparent 48%, rgba(0,0,0,0.72) 100%)',
+            }}
+          />
+
+          {/* Left-aligned editorial dossier briefing */}
+          <div className="relative z-10 w-full max-w-6xl mx-auto px-8 sm:px-14 lg:px-20 py-10 flex flex-col items-start">
+            <div className="max-w-xl space-y-6">
+              {/* Top classification pill */}
+              <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-[#1a1310]/88 backdrop-blur-md shadow-[0_8px_24px_rgba(0,0,0,0.5)]">
+                <span
+                  className={`w-2 h-2 rounded-full ${
+                    loading ? 'bg-amber-400 animate-pulse' : 'bg-[#e3bd74]'
+                  }`}
+                />
+                <span
+                  className="text-[10.5px] tracking-[0.26em] uppercase text-[#e6c98a] font-semibold"
+                  style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+                >
+                  R2 · ROOM 2 {loading ? '· CONNECTING...' : '· SUBSTATION DELTA'}
+                </span>
               </div>
-            ) : (
-              <button
-                type="button"
-                data-testid="enter-morgue-btn"
-                onClick={handleStartGame}
-                className="px-8 py-3 border border-[#4dff78]/60 text-[#4dff78] font-mono text-xs sm:text-sm tracking-widest uppercase hover:bg-[#4dff78]/10 transition cursor-pointer"
+
+              {/* Hero Display Title */}
+              <div className="space-y-3">
+                <h1
+                  className="text-4xl sm:text-6xl font-bold tracking-[0.04em] uppercase text-[#faf1e2] leading-[1.03]"
+                  style={{
+                    fontFamily: "'Cormorant Garamond', Georgia, serif",
+                    textShadow: '0 8px 32px rgba(0,0,0,0.88)',
+                  }}
+                >
+                  {roomData?.title || 'THE SURVEILLANCE MORGUE'}
+                </h1>
+                <div className="h-[2px] w-24 rounded-full bg-gradient-to-r from-[#9e2626] via-[#d8b26e] to-transparent" />
+              </div>
+
+              {/* Narrative Briefing */}
+              <p
+                className="text-sm sm:text-base text-[#dcd0bc]/92 leading-relaxed max-w-lg"
+                style={{ fontFamily: "'Lora', Georgia, serif" }}
               >
-                ENTER THE SURVEILLANCE MORGUE
-              </button>
-            )}
+                Recover all {totalFragmentsCount} evidence fragments hidden across the facility wings, decrypt all 3 verification terminals, and equalize the Core Airlock valve. Control Bay 5B remains your sanctuary.
+              </p>
+
+              {/* Soft pill mission chips */}
+              <div className="flex flex-wrap items-center gap-2 pt-0.5">
+                <span
+                  className="px-3.5 py-1.5 rounded-full bg-[#1c1512]/85 backdrop-blur-sm text-[11px] font-medium text-[#e7dac5]"
+                  style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+                >
+                  {totalFragmentsCount} Evidence Fragments
+                </span>
+                <span
+                  className="px-3.5 py-1.5 rounded-full bg-[#1c1512]/85 backdrop-blur-sm text-[11px] font-medium text-[#e7dac5]"
+                  style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+                >
+                  3 Clue Terminals
+                </span>
+                <span
+                  className="px-3.5 py-1.5 rounded-full bg-[#241614]/85 backdrop-blur-sm text-[11px] font-medium text-[#e6c380]"
+                  style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+                >
+                  Bay 5B Sanctuary
+                </span>
+              </div>
+
+              {/* Primary CTA / Asset Loading Meter */}
+              <div className="pt-2">
+                {assetProgress && assetProgress.pct < 100 ? (
+                  <div className="w-full max-w-sm rounded-2xl bg-[#16110e]/90 backdrop-blur-md px-5 py-4 space-y-2.5 shadow-xl">
+                    <div
+                      className="flex items-center justify-between text-xs tracking-wider text-[#e8c684]"
+                      style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+                    >
+                      <span>
+                        {assetProgress.label} — {Math.round(assetProgress.pct)}%
+                      </span>
+                    </div>
+                    <div className="h-1.5 w-full rounded-full bg-white/10 overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-gradient-to-r from-[#8f2222] to-[#e3bd74] transition-all duration-300"
+                        style={{ width: `${Math.max(4, Math.min(100, assetProgress.pct))}%` }}
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex flex-wrap items-center gap-4">
+                    <button
+                      type="button"
+                      data-testid="enter-morgue-btn"
+                      onClick={handleStartGame}
+                      className="group relative inline-flex items-center gap-3 px-8 py-4 rounded-full bg-gradient-to-r from-[#7a1c1c] via-[#5d1414] to-[#3f0e0e] text-[#faf1e2] text-xs sm:text-[13px] font-semibold tracking-[0.18em] uppercase border border-[#e3bd74]/40 shadow-[0_14px_38px_rgba(0,0,0,0.68),inset_0_1px_0_rgba(255,232,190,0.22)] hover:from-[#922323] hover:to-[#4f1111] hover:border-[#e3bd74]/75 hover:shadow-[0_16px_44px_rgba(130,28,28,0.45)] transition-all duration-200 cursor-pointer"
+                      style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+                    >
+                      <span className="w-2 h-2 rounded-full bg-[#e6c380] shadow-[0_0_10px_#e6c380]" />
+                      <span>ENTER THE SURVEILLANCE MORGUE</span>
+                      <span className="text-[#e6c380] group-hover:translate-x-1 transition-transform">
+                        →
+                      </span>
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       )}
 
-      {/* Active 3D Jumpscare Crimson Edge Vignette */}
+      {/* Active Hunt Peripheral Panic Vignette (intensifies chase outside Safe Bay 5B) */}
+      {isStarted &&
+        telemetryState.ghostTelemetry?.isHunting &&
+        !telemetryState.inSafeRoom &&
+        !isJumpscaring && (
+          <div
+            aria-hidden="true"
+            data-testid="chase-panic-vignette"
+            className="fixed inset-0 z-[65] pointer-events-none chase-panic-vignette"
+          />
+        )}
+
+      {/* Active 3D Jumpscare Crimson/VHS Nightmare Vignette */}
       {isJumpscaring && (
         <div
           aria-hidden="true"
           data-testid="jumpscare-vignette"
-          className="fixed inset-0 z-[68] pointer-events-none animate-pulse"
-          style={{
-            background:
-              'radial-gradient(circle at center, transparent 28%, rgba(128, 10, 10, 0.56) 72%, rgba(28, 2, 2, 0.92) 100%)',
-          }}
+          className="fixed inset-0 z-[68] pointer-events-none jumpscare-nightmare-fx"
         />
       )}
 
@@ -1040,6 +1211,7 @@ export default function Room5Control({ team, onLogout }) {
           basketUnlocked={effectiveBasketUnlocked}
           totalInRoom={totalFragmentsCount}
           roomTitle={roomData?.title || 'The Surveillance Morgue'}
+          propSnapshots={propSnapshots}
         />
       )}
 

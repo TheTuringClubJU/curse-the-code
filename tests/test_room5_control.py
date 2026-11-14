@@ -33,7 +33,7 @@ def insert_all_control_fragments(team_name="Team Cipher"):
                 SELECT (SELECT id FROM teams WHERE name = %s), 'control', id, NOW()
                 FROM (VALUES 
                     ('EC01'), ('EC02'), ('EC03'), ('EC04'), ('EC05'), ('EC06'), 
-                    ('EC07'), ('EC08'), ('XC01'), ('XC02')
+                    ('EC07'), ('EC08')
                 ) AS t(id)
                 ON CONFLICT DO NOTHING;
 
@@ -126,7 +126,7 @@ def test_r5_05_room5_initial_flags_false(auth_headers):
 def test_r5_06_room5_total_fragments_count(auth_headers):
     res = client.get("/api/game/room/control", headers=auth_headers)
     data = res.json()
-    assert data["total_fragments_in_room"] == 10
+    assert data["total_fragments_in_room"] == 8
 
 def test_r5_07_room5_all_three_clues_projected(auth_headers):
     res = client.get("/api/game/room/control", headers=auth_headers)
@@ -173,114 +173,97 @@ def test_r5_12_search_empty_prop_no_hidden_compartments(auth_headers):
     assert res.status_code == 200
     assert res.json()["found"] is False
 
-def test_r5_13_search_out_of_order_seq2_locked(auth_headers):
+def test_r5_13_search_out_of_order_cable_trench_free_unlock(auth_headers):
     reset_control_team_db("Team Cipher")
-    # cable_trench has EC06 (seq 6); locked because seq 1 not collected
+    # Free-order exploration: cable_trench (EC06) is immediately collectible
     res = client.post("/api/game/room/control/search", json={"object_id": "cable_trench"}, headers=auth_headers)
     assert res.status_code == 200
     data = res.json()
-    assert data["found"] is False
-    assert data.get("locked") is True
+    assert data["found"] is True
+    assert data["fragment_id"] == "EC06"
 
-def test_r5_14_search_out_of_order_seq8_locked(auth_headers):
-    # fuse_box has EC08 (seq 8); locked
+def test_r5_14_search_out_of_order_fuse_box_free_unlock(auth_headers):
+    # Free-order exploration: fuse_box (EC08) is immediately collectible
     res = client.post("/api/game/room/control/search", json={"object_id": "fuse_box"}, headers=auth_headers)
     assert res.status_code == 200
     data = res.json()
-    assert data["found"] is False
-    assert data.get("locked") is True
+    assert data["found"] is True
+    assert data["fragment_id"] == "EC08"
 
-def test_r5_15_search_seq1_ec01_success(auth_headers):
-    # relay_rack has EC01 (seq 1)
+def test_r5_15_search_relay_rack_sweeps_ec01_and_ec02_once(auth_headers):
+    # Single-press sweep collects both EC01 and EC02 from relay_rack at once
     res = client.post("/api/game/room/control/search", json={"object_id": "relay_rack"}, headers=auth_headers)
     assert res.status_code == 200
     data = res.json()
     assert data["found"] is True
-    assert data["fragment_id"] == "EC01"
+    assert set(data["newly_collected"]) == {"EC01", "EC02"}
 
-def test_r5_16_search_seq2_ec02_from_same_prop(auth_headers):
-    # relay_rack also has EC02 (seq 2)
-    res = client.post("/api/game/room/control/search", json={"object_id": "relay_rack"}, headers=auth_headers)
+def test_r5_16_search_tape_deck_cart_sweeps_ec03_and_ec04_once(auth_headers):
+    # Single-press sweep collects both EC03 and EC04 from tape_deck_cart at once
+    res = client.post("/api/game/room/control/search", json={"object_id": "tape_deck_cart"}, headers=auth_headers)
     assert res.status_code == 200
     data = res.json()
     assert data["found"] is True
-    assert data["fragment_id"] == "EC02"
+    assert set(data["newly_collected"]) == {"EC03", "EC04"}
 
 def test_r5_17_search_already_collected_prop_exhausted(auth_headers):
-    # 3rd search on relay_rack has no further fragments
+    # Re-searching relay_rack has no further fragments
     res = client.post("/api/game/room/control/search", json={"object_id": "relay_rack"}, headers=auth_headers)
     assert res.status_code == 200
     assert res.json().get("already_collected") is True
 
-def test_r5_18_search_decoy_xc01_without_sequence_block(auth_headers):
-    # operator_chair has decoy XC01 which has seq: null; should be retrievable without blocking
+def test_r5_18_search_operator_chair_ec05_direct(auth_headers):
+    # operator_chair yields EC05 directly with decoys removed
     res = client.post("/api/game/room/control/search", json={"object_id": "operator_chair"}, headers=auth_headers)
     assert res.status_code == 200
     data = res.json()
     assert data["found"] is True
-    assert data["fragment_id"] == "XC01"
+    assert data["fragment_id"] == "EC05"
 
-def test_r5_19_search_decoy_xc02_without_sequence_block(auth_headers):
-    # wall_clipboard has decoy XC02
+def test_r5_19_search_wall_clipboard_ec07_unlocks_room(auth_headers):
+    # wall_clipboard yields final fragment EC07 (8/8) and unlocks clue terminals
     res = client.post("/api/game/room/control/search", json={"object_id": "wall_clipboard"}, headers=auth_headers)
     assert res.status_code == 200
     data = res.json()
     assert data["found"] is True
-    assert data["fragment_id"] == "XC02"
+    assert data["fragment_id"] == "EC07"
+    assert data["total_collected"] == 8
+    assert data["basket_unlocked"] is True
 
-def test_r5_20_search_seq3_to_seq8_progressive_collection(auth_headers):
-    # tape_deck_cart -> EC03 (seq 3)
-    r3 = client.post("/api/game/room/control/search", json={"object_id": "tape_deck_cart"}, headers=auth_headers)
-    assert r3.json()["found"] is True and r3.json()["fragment_id"] == "EC03"
+def test_r5_20_search_all_props_already_collected_after_sweep(auth_headers):
+    for obj in ["relay_rack", "tape_deck_cart", "operator_chair", "cable_trench", "wall_clipboard", "fuse_box"]:
+        res = client.post("/api/game/room/control/search", json={"object_id": obj}, headers=auth_headers)
+        assert res.status_code == 200
+        assert res.json().get("already_collected") is True
 
-    # tape_deck_cart -> EC04 (seq 4)
-    r4 = client.post("/api/game/room/control/search", json={"object_id": "tape_deck_cart"}, headers=auth_headers)
-    assert r4.json()["found"] is True and r4.json()["fragment_id"] == "EC04"
-
-    # operator_chair -> EC05 (seq 5, since XC01 was already collected and seq 1-4 are collected)
-    r5 = client.post("/api/game/room/control/search", json={"object_id": "operator_chair"}, headers=auth_headers)
-    assert r5.json()["found"] is True and r5.json()["fragment_id"] == "EC05"
-
-    # cable_trench -> EC06 (seq 6)
-    r6 = client.post("/api/game/room/control/search", json={"object_id": "cable_trench"}, headers=auth_headers)
-    assert r6.json()["found"] is True and r6.json()["fragment_id"] == "EC06"
-
-    # wall_clipboard -> EC07 (seq 7, since XC02 was already collected)
-    r7 = client.post("/api/game/room/control/search", json={"object_id": "wall_clipboard"}, headers=auth_headers)
-    assert r7.json()["found"] is True and r7.json()["fragment_id"] == "EC07"
-
-    # fuse_box -> EC08 (seq 8)
-    r8 = client.post("/api/game/room/control/search", json={"object_id": "fuse_box"}, headers=auth_headers)
-    assert r8.json()["found"] is True and r8.json()["fragment_id"] == "EC08"
-
-# 3. Basket Sealed vs Unsealed & Input Gates (21-27)
-def test_r5_21_partial_fragments_keeps_basket_sealed(auth_headers):
+# 3. Basket Unwrapped Docs & Input Gates (21-27)
+def test_r5_21_partial_fragments_keeps_terminal_gate_locked(auth_headers):
     reset_control_team_db("Team Cipher")
-    # Collect only 1 fragment
+    # Collect relay_rack (EC01, EC02 = 2/8)
     client.post("/api/game/room/control/search", json={"object_id": "relay_rack"}, headers=auth_headers)
     res = client.get("/api/game/room/control/basket", headers=auth_headers)
     assert res.status_code == 200
     data = res.json()
     assert data["basket_unlocked"] is False
-    assert data["collected_count"] == 1
-    assert data["fragments"][0]["is_wrapped"] is True
+    assert data["collected_count"] == 2
+    assert data["fragments"][0]["is_wrapped"] is False
 
-def test_r5_22_all_10_fragments_auto_unlocks_basket(auth_headers):
+def test_r5_22_all_8_fragments_auto_unlocks_basket(auth_headers):
     insert_all_control_fragments("Team Cipher")
     res = client.get("/api/game/room/control/basket", headers=auth_headers)
     assert res.status_code == 200
     data = res.json()
     assert data["basket_unlocked"] is True
-    assert data["collected_count"] == 10
+    assert data["collected_count"] == 8
 
-def test_r5_23_basket_endpoint_returns_wrapped_when_sealed(auth_headers):
+def test_r5_23_basket_endpoint_returns_unwrapped_items_partially(auth_headers):
     reset_control_team_db("Team Cipher")
     client.post("/api/game/room/control/search", json={"object_id": "relay_rack"}, headers=auth_headers)
     res = client.get("/api/game/room/control/basket", headers=auth_headers)
     items = res.json()["fragments"]
     for item in items:
-        assert item["is_wrapped"] is True
-        assert "secret" not in item
+        assert item["is_wrapped"] is False
+        assert "secret" in item
 
 def test_r5_24_basket_endpoint_returns_unwrapped_secrets_when_unsealed(auth_headers):
     insert_all_control_fragments("Team Cipher")

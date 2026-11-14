@@ -434,6 +434,90 @@ export function createEngine(el,room,h){
   setFragmentGuidance: (nextId, pendingIds, clearedIds) => E.setFragmentGuidance?.(nextId, pendingIds, clearedIds),
   setQualityMode: (m) => E.setQualityMode?.(m),
   getQualityMode: () => E._qualityMode || 'high',
+  captureView(objectId, opts = {}) {
+    if (halt || E._disposed) return null;
+    try {
+      const targetList = (objectId && (visualById[objectId]?.length ? visualById[objectId] : byId[objectId])) || [];
+      let snapCam = cam;
+      let tempLight = null;
+      let tempHemi = null;
+      const prevEnv = S.environmentIntensity;
+      if (opts.pos && opts.lookAt) {
+        snapCam = new THREE.PerspectiveCamera(opts.fov || 62, 4 / 3, 0.05, 45);
+        snapCam.position.set(opts.pos[0], opts.pos[1], opts.pos[2]);
+        snapCam.lookAt(opts.lookAt[0], opts.lookAt[1], opts.lookAt[2]);
+        snapCam.updateMatrixWorld();
+        tempLight = new THREE.PointLight(opts.lightColor ?? 0xb8f0c8, opts.lightIntensity ?? 7.5, 22, 1.0);
+        tempLight.position.copy(snapCam.position);
+        tempHemi = new THREE.HemisphereLight(opts.hemiColor ?? 0x9cf0b8, 0x16241a, opts.hemiIntensity ?? 1.45);
+        S.add(tempLight);
+        S.add(tempHemi);
+        S.environmentIntensity = Math.max(prevEnv || 0.25, 0.75);
+      } else if (targetList.length) {
+        const box = new THREE.Box3();
+        targetList.forEach((m) => { if (m?.updateWorldMatrix) m.updateWorldMatrix(true, false); box.expandByObject(m); });
+        if (!box.isEmpty()) {
+          const center = box.getCenter(new THREE.Vector3());
+          const size = box.getSize(new THREE.Vector3());
+          const maxDim = Math.max(size.x, size.y, size.z, 0.45);
+          const fov = Math.max(38, Math.min(56, 46 + maxDim * 3));
+          snapCam = new THREE.PerspectiveCamera(fov, 4 / 3, 0.05, 45);
+          const dir = new THREE.Vector3().subVectors(cam.position, center);
+          dir.y = 0;
+          const flatDist = dir.length();
+          if (flatDist > 0.01) dir.divideScalar(flatDist);
+          else dir.set(0, 0, 1);
+          const idealDist = Math.max(0.9, Math.min(2.4, maxDim * 1.45));
+          const dist = flatDist > 0.45 ? Math.min(idealDist, flatDist * 0.92) : idealDist;
+          snapCam.position.set(
+            center.x + dir.x * dist,
+            Math.max(0.55, Math.min(2.45, center.y + Math.max(0.24, size.y * 0.36))),
+            center.z + dir.z * dist
+          );
+          snapCam.lookAt(center);
+          snapCam.updateMatrixWorld();
+          tempLight = new THREE.PointLight(0xffe9c7, 5.2, 11, 1.1);
+          tempLight.position.copy(snapCam.position);
+          tempHemi = new THREE.HemisphereLight(0xf6e4c4, 0x2a2018, 0.95);
+          S.add(tempLight);
+          S.add(tempHemi);
+          S.environmentIntensity = Math.max(prevEnv || 0.25, 0.65);
+        }
+      } else {
+        tempLight = new THREE.PointLight(0xffe9c7, 4.2, 10, 1.1);
+        tempLight.position.copy(cam.position);
+        tempHemi = new THREE.HemisphereLight(0xf6e4c4, 0x2a2018, 0.85);
+        S.add(tempLight);
+        S.add(tempHemi);
+      }
+      R.render(S, snapCam);
+      const src = R.domElement;
+      const out = document.createElement('canvas');
+      out.width = opts.width || 480;
+      out.height = opts.height || 360;
+      const ctx = out.getContext('2d');
+      if (ctx && src.width > 0 && src.height > 0) {
+        const targetRatio = out.width / out.height;
+        const srcRatio = src.width / src.height;
+        let sx = 0, sy = 0, sw = src.width, sh = src.height;
+        if (srcRatio > targetRatio) {
+          sw = Math.round(src.height * targetRatio);
+          sx = Math.round((src.width - sw) / 2);
+        } else {
+          sh = Math.round(src.width / targetRatio);
+          sy = Math.round((src.height - sh) / 2);
+        }
+        ctx.drawImage(src, sx, sy, sw, sh, 0, 0, out.width, out.height);
+      }
+      if (tempLight) S.remove(tempLight);
+      if (tempHemi) S.remove(tempHemi);
+      S.environmentIntensity = prevEnv;
+      R.render(S, cam);
+      return out.toDataURL('image/jpeg', opts.quality || 0.85);
+    } catch (_) {
+      return null;
+    }
+  },
   get dev() { return E._dev || null; },
   dispose(){
     halt=true;

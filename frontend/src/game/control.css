@@ -4,8 +4,9 @@
    ============================================================ */
 
 :root {
-  --font-re-display: 'Cinzel', 'Cormorant Garamond', Georgia, serif;
-  --font-re-typewriter: 'Special Elite', 'Courier Prime', 'Courier New', monospace;
+  --font-re-display: 'Cormorant Garamond', 'Cinzel', Georgia, serif;
+  --font-re-ui: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-re-typewriter: 'Courier Prime', 'IBM Plex Mono', 'Courier New', monospace;
   --font-re-dossier: 'Courier Prime', 'Courier New', monospace;
   --font-re-mono: 'IBM Plex Mono', 'Courier New', monospace;
 }
@@ -664,32 +665,33 @@
   text-shadow: 0 0 8px rgba(180, 42, 42, 0.45);
 }
 
-/* ── 22. Unified RE2R Prompt Action Button ((circle glyph) Gothic Capsule Pill) ─ */
+/* ── 22. Unified Action Button (Smoked Obsidian & Antique Brass/Oxblood Pill) ─ */
 .re-btn {
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  padding: 6px 22px 6px 8px;
-  border: 1px solid rgba(255, 255, 255, 0.13);
+  padding: 7px 20px 7px 8px;
+  border: 1px solid rgba(216, 178, 110, 0.28);
   border-radius: 9999px;
-  background: linear-gradient(90deg, rgba(18, 16, 15, 0.92) 0%, rgba(28, 22, 20, 0.8) 72%, rgba(16, 13, 12, 0.45) 100%);
-  color: #f3ede0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  font-size: 13px;
-  font-weight: 500;
-  letter-spacing: 0.03em;
-  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.92);
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  background: linear-gradient(135deg, rgba(31, 20, 19, 0.94) 0%, rgba(19, 13, 12, 0.96) 100%);
+  color: #f6efe2;
+  font-family: var(--font-re-ui, 'Space Grotesk', sans-serif);
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.52), inset 0 1px 0 rgba(255, 224, 174, 0.12);
   cursor: pointer;
-  transition: filter 0.14s ease, border-color 0.14s ease, transform 0.12s ease, box-shadow 0.14s ease;
+  transition: all 0.16s ease;
   user-select: none;
   white-space: nowrap;
 }
 
 .re-btn:hover {
-  filter: brightness(1.16);
-  border-color: rgba(196, 162, 101, 0.48);
-  box-shadow: 0 6px 20px rgba(110, 24, 24, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  background: linear-gradient(135deg, rgba(114, 29, 29, 0.95) 0%, rgba(56, 15, 16, 0.96) 100%);
+  border-color: rgba(232, 194, 124, 0.62);
+  color: #fff9ee;
+  box-shadow: 0 8px 26px rgba(128, 28, 28, 0.42), inset 0 1px 0 rgba(255, 235, 195, 0.22);
 }
 
 .re-btn:active {
@@ -702,14 +704,330 @@
   justify-content: center;
   min-width: 24px;
   height: 24px;
-  padding: 0 5px;
+  padding: 0 6px;
   border-radius: 9999px;
-  background: #f3eee3;
-  color: #151210;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: linear-gradient(145deg, #e7c687 0%, #bd9349 100%);
+  color: #1c120b;
+  font-family: var(--font-re-ui, 'Space Grotesk', sans-serif);
   font-size: 10px;
   font-weight: 800;
-  letter-spacing: 0.02em;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.85);
+  letter-spacing: 0.03em;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.65);
   flex-shrink: 0;
+}
+
+/* ── 23. Open Aged Leather Field Journal & Polaroid Spread (Uniform Archival Type) ── */
+.font-journal-typewriter,
+.font-journal-editorial,
+.font-journal-tech,
+.font-journal-hand {
+  font-family: 'Courier Prime', 'Courier New', monospace;
+  letter-spacing: 0.01em;
+}
+
+.journal-desk-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  overflow-y: auto;
+  background:
+    radial-gradient(ellipse 56% 48% at 10% 8%, rgba(255, 206, 134, 0.25) 0%, rgba(128, 78, 36, 0.14) 36%, rgba(18, 14, 12, 0.94) 74%),
+    radial-gradient(circle at 88% 84%, rgba(36, 26, 20, 0.55) 0%, rgba(10, 8, 7, 0.98) 70%),
+    #110d0b;
+  backdrop-filter: blur(7px);
+}
+
+.journal-leather-cover {
+  position: relative;
+  border-radius: 12px;
+  padding: 10px 11px;
+  background: linear-gradient(135deg, #4b2b1a 0%, #311a0f 48%, #22120a 100%);
+  border: 1px solid rgba(112, 70, 42, 0.45);
+  box-shadow:
+    0 30px 80px rgba(0, 0, 0, 0.88),
+    0 6px 18px rgba(0, 0, 0, 0.72),
+    inset 0 1px 0 rgba(255, 212, 165, 0.16),
+    inset 0 -3px 8px rgba(0, 0, 0, 0.6);
+}
+
+.journal-pages-shell {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr;
+  border-radius: 5px;
+  overflow: hidden;
+  background: linear-gradient(180deg, #ede2c9 0%, #dfd0b0 100%);
+  box-shadow:
+    0 0 0 1px rgba(48, 28, 14, 0.42),
+    inset 0 0 28px rgba(72, 46, 18, 0.14);
+}
+
+@media (min-width: 768px) {
+  .journal-pages-shell {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.journal-page {
+  position: relative;
+  background:
+    radial-gradient(ellipse at 25% 18%, rgba(255, 250, 236, 0.45) 0%, transparent 58%),
+    linear-gradient(180deg, #ede2cb 0%, #e4d6b8 65%, #dac8a2 100%);
+  color: #2e241b;
+  min-height: 410px;
+}
+
+.journal-page-left {
+  box-shadow: inset -18px 0 28px -14px rgba(34, 18, 8, 0.28);
+}
+
+.journal-page-right {
+  box-shadow: inset 18px 0 28px -14px rgba(34, 18, 8, 0.28);
+}
+
+.journal-spine-crease {
+  pointer-events: none;
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .journal-spine-crease {
+    display: block;
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    width: 34px;
+    transform: translateX(-50%);
+    z-index: 6;
+    background: linear-gradient(
+      90deg,
+      rgba(56, 32, 14, 0) 0%,
+      rgba(48, 26, 10, 0.16) 36%,
+      rgba(22, 11, 4, 0.44) 50%,
+      rgba(48, 26, 10, 0.15) 64%,
+      rgba(56, 32, 14, 0) 100%
+    );
+  }
+}
+
+.journal-double-rule {
+  border-top: 1px solid rgba(76, 62, 46, 0.48);
+  border-bottom: 1px solid rgba(76, 62, 46, 0.28);
+  height: 4px;
+}
+
+.journal-vertical-watermark {
+  position: absolute;
+  top: 20px;
+  bottom: 20px;
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  white-space: nowrap;
+  font-family: 'Cinzel', Georgia, serif;
+  font-weight: 700;
+  font-size: 32px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: transparent;
+  -webkit-text-stroke: 1px rgba(102, 86, 66, 0.14);
+  user-select: none;
+  pointer-events: none;
+  line-height: 1;
+}
+
+.journal-polaroid {
+  position: relative;
+  background: linear-gradient(180deg, #f4f1ea 0%, #eae3d4 72%, #dfd6c1 100%);
+  padding: 11px 11px 30px 11px;
+  border-radius: 2px;
+  border: 1px solid rgba(82, 68, 48, 0.28);
+  box-shadow:
+    0 16px 34px rgba(18, 10, 4, 0.46),
+    0 3px 8px rgba(0, 0, 0, 0.26),
+    inset 0 0 14px rgba(110, 88, 56, 0.12);
+}
+
+.journal-torn-strip {
+  position: relative;
+  background: linear-gradient(178deg, rgba(64, 62, 60, 0.94) 0%, rgba(44, 42, 40, 0.96) 100%);
+  color: #e6dfd3;
+  clip-path: polygon(
+    0% 5%, 6% 0%, 14% 4%, 25% 1%, 38% 5%, 52% 0%, 66% 4%, 81% 1%, 94% 4%, 100% 0%,
+    98% 28%, 100% 56%, 97% 84%, 100% 97%,
+    89% 100%, 73% 96%, 57% 100%, 41% 96%, 24% 100%, 10% 97%, 0% 100%,
+    2% 72%, 0% 42%
+  );
+  box-shadow: 0 5px 14px rgba(0, 0, 0, 0.34);
+}
+
+.journal-desk-letter {
+  position: absolute;
+  background: linear-gradient(180deg, #d7d2c7 0%, #beb6a6 100%);
+  color: #3a342c;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  pointer-events: none;
+}
+
+.journal-ticket-stub {
+  position: absolute;
+  background: linear-gradient(180deg, #2d7c46 0%, #1d5730 100%);
+  color: #0e1d12;
+  border-radius: 3px;
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.45);
+  pointer-events: none;
+}
+
+/* ── 24. Surveillance Multi-CRT Desk Wall & Smooth Zoom (Inspo #3) ─────── */
+.cctv-station-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse 80% 55% at 50% 38%, rgba(44, 118, 86, 0.28) 0%, rgba(12, 26, 22, 0.94) 68%, rgba(5, 9, 8, 0.99) 100%),
+    linear-gradient(180deg, #101d1a 0%, #070d0b 100%);
+}
+
+.cctv-crt-housing {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: 10px;
+  border-radius: 24px;
+  background: linear-gradient(155deg, rgba(40, 48, 45, 0.92) 0%, rgba(20, 26, 24, 0.96) 55%, rgba(12, 16, 15, 0.98) 100%);
+  box-shadow:
+    0 20px 44px rgba(0, 0, 0, 0.72),
+    0 0 28px rgba(74, 222, 128, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.25s ease;
+  cursor: pointer;
+}
+
+.cctv-crt-housing:hover {
+  transform: translateY(-3px) scale(1.015);
+  box-shadow:
+    0 24px 48px rgba(0, 0, 0, 0.8),
+    0 0 38px rgba(74, 222, 128, 0.26);
+}
+
+.cctv-crt-housing.is-selected {
+  box-shadow:
+    0 0 0 2px rgba(134, 239, 172, 0.45),
+    0 18px 42px rgba(74, 222, 128, 0.28);
+}
+
+.cctv-crt-screen {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border-radius: 18px;
+  background: #06120c;
+  box-shadow: inset 0 0 32px rgba(0, 0, 0, 0.85);
+}
+
+.cctv-phosphor-feed {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: sepia(100%) hue-rotate(86deg) saturate(195%) brightness(0.95) contrast(1.18);
+  transition: transform 0.4s ease, filter 0.3s ease;
+}
+
+.cctv-scanline-mask {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  background:
+    repeating-linear-gradient(
+      0deg,
+      rgba(0, 0, 0, 0.28) 0px,
+      rgba(0, 0, 0, 0.28) 1px,
+      transparent 1px,
+      transparent 3px
+    ),
+    radial-gradient(ellipse at center, transparent 52%, rgba(0, 10, 6, 0.62) 100%);
+}
+
+@keyframes cctvZoomIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.76);
+    filter: blur(2px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes cctvWallFadeIn {
+  0% {
+    opacity: 0;
+    transform: scale(1.06);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.cctv-zoom-enter {
+  animation: cctvZoomIn 0.34s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.cctv-wall-enter {
+  animation: cctvWallFadeIn 0.3s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.cctv-desk-surface {
+  background:
+    linear-gradient(180deg, rgba(16, 30, 26, 0.92) 0%, rgba(10, 18, 16, 0.98) 100%);
+  border-top: 2px solid rgba(94, 152, 124, 0.28);
+  box-shadow: 0 -18px 42px rgba(0, 0, 0, 0.85);
+}
+
+/* ── Poppy-style Jumpscare VHS Tear & Chase Panic Pulse ─────────────────── */
+@keyframes jumpscareThrash {
+  0%   { transform: translate(0, 0) scale(1); filter: contrast(1.25) saturate(1.6); }
+  20%  { transform: translate(-5px, 4px) scale(1.025); filter: contrast(1.5) saturate(2.1); }
+  40%  { transform: translate(6px, -4px) scale(1.015); filter: contrast(1.15) saturate(1.4); }
+  60%  { transform: translate(-4px, -5px) scale(1.03); filter: contrast(1.55) saturate(2.2); }
+  80%  { transform: translate(4px, 3px) scale(1.01); filter: contrast(1.3) saturate(1.7); }
+  100% { transform: translate(0, 0) scale(1); filter: contrast(1.25) saturate(1.6); }
+}
+
+.jumpscare-nightmare-fx {
+  animation: jumpscareThrash 0.11s steps(2, end) infinite;
+  background:
+    repeating-linear-gradient(
+      0deg,
+      rgba(255, 24, 24, 0.08) 0px,
+      rgba(0, 0, 0, 0.18) 2px,
+      transparent 3px,
+      transparent 7px
+    ),
+    radial-gradient(circle at center, transparent 22%, rgba(156, 8, 8, 0.58) 66%, rgba(18, 0, 0, 0.96) 100%);
+}
+
+@keyframes chaseHeartbeatPulse {
+  0%, 100% { opacity: 0.42; }
+  35%      { opacity: 0.88; }
+  65%      { opacity: 0.56; }
+}
+
+.chase-panic-vignette {
+  animation: chaseHeartbeatPulse 0.65s ease-in-out infinite;
+  background:
+    radial-gradient(circle at center, transparent 48%, rgba(135, 12, 12, 0.44) 84%, rgba(30, 2, 2, 0.86) 100%);
 }

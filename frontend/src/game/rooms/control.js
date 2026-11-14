@@ -14,6 +14,7 @@ export const CONTROL_PROP_NOTES = {
     ],
     reportLines: [
       'Several late-shift timestamps were circled in red grease pencil before the desk was abandoned in haste.',
+      'Field Lead [R2-06 Voice Machine]: Ignore low/mid-band generator static (3.18 kHz); switch the Bay 5B Sound Console to HIGH band and scrub 66%+ on the R2-05 verified reel.',
     ],
     highlight: 'Operative note: Substation logbook left open mid-entry during the 1983 curfew breach.',
   },
@@ -59,6 +60,7 @@ export const CONTROL_PROP_NOTES = {
     ],
     reportLines: [
       'Side bulkhead doors link Chamber 3 directly with both Observation Lab 5D and the northern Relay Vault.',
+      'Acoustic Note: Sub-vocal ultrasonic telemetry rides high above speech frequencies — look for 4-frame BCD-8421 (8-4-2-1 weights) and ITU Morse bursts on HIGH band.',
     ],
     highlight: 'Cell medical record — subject vitals erratic prior to containment failure.',
   },
@@ -131,6 +133,9 @@ export const CONTROL_PROP_NOTES = {
     title: 'Desk Field Telephone (Ext. 502)',
     lines: [
       'You lift the heavy Bakelite receiver. Only a low 60Hz relay hum and rhythmic static clicks answer on the line.',
+    ],
+    reportLines: [
+      'Teletype Relay Note [R2-05]: Spoofed transmissions borrow Channel 7 voice labels — verify the Base64 X-AUTH header against your Active R2-01 Staff Badge ID.',
     ],
     highlight: 'Line silenced — external trunk circuits remain severed.',
   },

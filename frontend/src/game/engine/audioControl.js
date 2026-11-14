@@ -19,8 +19,10 @@ export class GameAudioControl {
     this.bgmNodes = null;
     this.chimeTimer = null;
     this.heartbeatTimer = null;
+    this.chaseBeatTimer = null;
     this.eventTimer = null;
     this._tension = 0;
+    this._distCurve = null;
     this.cryAudio = null;
     this.cryGain = null;
     this.crySource = null;
@@ -210,6 +212,19 @@ export class GameAudioControl {
     }
   }
 
+  _getDistortionCurve(amount = 42) {
+    if (this._distCurve) return this._distCurve;
+    const n = 256;
+    const curve = new Float32Array(n);
+    const k = Number(amount) || 42;
+    for (let i = 0; i < n; i++) {
+      const x = (i * 2) / n - 1;
+      curve[i] = ((3 + k) * x * 20 * (Math.PI / 180)) / (Math.PI + k * Math.abs(x));
+    }
+    this._distCurve = curve;
+    return curve;
+  }
+
   _startEerieBGM() {
     const c = this.ctx;
     if (!c) return;
@@ -233,21 +248,39 @@ export class GameAudioControl {
     lfoDepth.connect(padFilter.frequency);
     lfo.start();
 
-    // Dissolving dissonance voice driven smoothly by hunter proximity/chase tension
+    // Layered industrial chase dissonance cluster (sub-brass + minor-9th string shriek)
     const chaseOsc = c.createOscillator();
     chaseOsc.type = 'sawtooth';
     chaseOsc.frequency.value = 146.83;
+    const chaseSub = c.createOscillator();
+    chaseSub.type = 'sawtooth';
+    chaseSub.frequency.value = 73.42;
+    const chaseShriekOsc = c.createOscillator();
+    chaseShriekOsc.type = 'sawtooth';
+    chaseShriekOsc.frequency.value = 311.13;
+
     const chaseFilter = c.createBiquadFilter();
-    chaseFilter.type = 'bandpass';
+    chaseFilter.type = 'lowpass';
     chaseFilter.frequency.value = 460;
-    chaseFilter.Q.value = 2.2;
+    chaseFilter.Q.value = 3.2;
+
+    const chaseShaper = c.createWaveShaper();
+    chaseShaper.curve = this._getDistortionCurve(36);
+    chaseShaper.oversample = '2x';
+
     const chaseGain = c.createGain();
     chaseGain.gain.value = 0.001;
+
     chaseOsc.connect(chaseFilter);
-    chaseFilter.connect(chaseGain);
+    chaseSub.connect(chaseFilter);
+    chaseShriekOsc.connect(chaseFilter);
+    chaseFilter.connect(chaseShaper);
+    chaseShaper.connect(chaseGain);
     chaseGain.connect(this.verb);
     chaseGain.connect(this.master);
     chaseOsc.start();
+    chaseSub.start();
+    chaseShriekOsc.start();
 
     const oscs = freqs.map((f, i) => {
       const o = c.createOscillator();
@@ -264,7 +297,17 @@ export class GameAudioControl {
     padFilter.connect(padGain);
     padGain.connect(this.verb);
     padGain.connect(this.master);
-    this.bgmNodes = { oscs, lfo, chaseOsc, chaseGain, padGain };
+    this.bgmNodes = {
+      oscs,
+      lfo,
+      chaseOsc,
+      chaseSub,
+      chaseShriekOsc,
+      chaseFilter,
+      chaseGain,
+      padGain,
+      padFilter,
+    };
 
     // Haunted survival-horror piano / music-box ostinato through bunker reverb (unmistakable in mid-range)
     const motif = [261.63, 311.13, 392.0, 369.99, 246.94, 311.13, 466.16, 392.0];
@@ -313,7 +356,7 @@ export class GameAudioControl {
           ho.frequency.exponentialRampToValueAtTime(30, now + off + 0.15);
           const hg = this.ctx.createGain();
           hg.gain.setValueAtTime(0.001, now + off);
-          hg.gain.linearRampToValueAtTime(0.24 * t, now + off + 0.015);
+          hg.gain.linearRampToValueAtTime(0.36 * t, now + off + 0.015);
           hg.gain.exponentialRampToValueAtTime(0.001, now + off + 0.17);
           ho.connect(hg);
           hg.connect(this.master);
@@ -321,10 +364,73 @@ export class GameAudioControl {
           ho.stop(now + off + 0.19);
         });
       }
-      const nextMs = Math.max(380, 1020 - t * 580);
+      const nextMs = Math.max(275, 980 - t * 670);
       this.heartbeatTimer = setTimeout(pulseHeart, nextMs);
     };
     this.heartbeatTimer = setTimeout(pulseHeart, 900);
+
+    // Poppy Playtime-inspired industrial panic chase percussion + dissonant string stabs
+    let beatIdx = 0;
+    const playChaseBeat = () => {
+      if (!this.ctx) return;
+      const t = this._tension;
+      if (!this.muted && t >= 0.34) {
+        const now = this.ctx.currentTime;
+        const drive = Math.min(1, (t - 0.34) / 0.66);
+
+        // Deep industrial kick slam
+        const kick = this.ctx.createOscillator();
+        kick.type = 'sine';
+        kick.frequency.setValueAtTime(102, now);
+        kick.frequency.exponentialRampToValueAtTime(30, now + 0.16);
+        const kg = this.ctx.createGain();
+        kg.gain.setValueAtTime(0.001, now);
+        kg.gain.linearRampToValueAtTime(0.28 * drive + 0.08, now + 0.008);
+        kg.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+        kick.connect(kg);
+        kg.connect(this.master);
+        kick.start(now);
+        kick.stop(now + 0.24);
+
+        // Off-beat metallic hangar rail clang & high string stab
+        if (beatIdx % 2 === 1 && drive > 0.22) {
+          const ns = this.ctx.createBufferSource();
+          ns.buffer = this.noiseBuf;
+          const hp = this.ctx.createBiquadFilter();
+          hp.type = 'bandpass';
+          hp.frequency.value = 1850 + drive * 950;
+          hp.Q.value = 3.2;
+          const ng = this.ctx.createGain();
+          ng.gain.setValueAtTime(0.001, now);
+          ng.gain.linearRampToValueAtTime(0.22 * drive, now + 0.008);
+          ng.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
+          ns.connect(hp); hp.connect(ng); ng.connect(this.verb); ng.connect(this.master);
+          ns.start(now); ns.stop(now + 0.18);
+        }
+
+        // Urgent minor-second screech stab every bar
+        if (beatIdx % 4 === 0 && drive > 0.28) {
+          [293.66, 311.13, 440.0].forEach((f, idx) => {
+            const so = this.ctx.createOscillator();
+            so.type = 'sawtooth';
+            so.frequency.setValueAtTime(f * (beatIdx % 8 === 0 ? 1.0 : 1.06), now);
+            const sg = this.ctx.createGain();
+            sg.gain.setValueAtTime(0.001, now);
+            sg.gain.linearRampToValueAtTime((idx === 1 ? 0.075 : 0.055) * drive, now + 0.015);
+            sg.gain.exponentialRampToValueAtTime(0.001, now + 0.24);
+            so.connect(sg);
+            sg.connect(this.verb);
+            sg.connect(this.master);
+            so.start(now);
+            so.stop(now + 0.26);
+          });
+        }
+        beatIdx += 1;
+      }
+      const nextBeatMs = Math.max(205, 450 - t * 235);
+      this.chaseBeatTimer = setTimeout(playChaseBeat, nextBeatMs);
+    };
+    this.chaseBeatTimer = setTimeout(playChaseBeat, 500);
   }
 
   setChaseTension(level = 0) {
@@ -332,8 +438,10 @@ export class GameAudioControl {
     this._tension = clamped;
     if (!this.ctx || !this.bgmNodes) return;
     const now = this.ctx.currentTime;
-    this.bgmNodes.chaseGain.gain.setTargetAtTime(0.001 + clamped * 0.18, now, 0.22);
-    this.bgmNodes.padGain.gain.setTargetAtTime(0.14 + clamped * 0.08, now, 0.22);
+    this.bgmNodes.chaseGain.gain.setTargetAtTime(0.001 + clamped * 0.28, now, 0.14);
+    this.bgmNodes.chaseFilter?.frequency.setTargetAtTime(420 + clamped * 2000, now, 0.14);
+    this.bgmNodes.padGain.gain.setTargetAtTime(0.14 + clamped * 0.14, now, 0.16);
+    this.bgmNodes.padFilter?.frequency.setTargetAtTime(520 + clamped * 680, now, 0.16);
   }
 
   dispose() {
@@ -345,6 +453,7 @@ export class GameAudioControl {
     clearTimeout(this.eventTimer);
     clearTimeout(this.chimeTimer);
     clearTimeout(this.heartbeatTimer);
+    clearTimeout(this.chaseBeatTimer);
     if (this.cryAudio) {
       try {
         this.cryAudio.pause?.();
@@ -362,6 +471,8 @@ export class GameAudioControl {
       this.bgmNodes?.oscs?.forEach((o) => o.stop());
       this.bgmNodes?.lfo?.stop();
       this.bgmNodes?.chaseOsc?.stop();
+      this.bgmNodes?.chaseSub?.stop();
+      this.bgmNodes?.chaseShriekOsc?.stop();
       this.ctx.close();
     } catch (e) {}
     this.ctx = null;
@@ -770,55 +881,87 @@ export class GameAudioControl {
     });
   }
 
-  // ── Full-Spectrum Shriek Jumpscare Stinger (on player catch) ────────────
+  // ── Full-Spectrum Monster Roar & Shriek Jumpscare Stinger ─────────────────
   jumpscareSting() {
     if (!this.ctx || this.muted) return;
     const c = this.ctx;
     const now = c.currentTime;
 
-    // 1. Sub chest drop punch
+    // 1. Massive chest-slam sub impact
     const sub = c.createOscillator();
     sub.type = 'sine';
-    sub.frequency.setValueAtTime(92, now);
-    sub.frequency.exponentialRampToValueAtTime(28, now + 0.55);
+    sub.frequency.setValueAtTime(118, now);
+    sub.frequency.exponentialRampToValueAtTime(24, now + 0.72);
     const subG = c.createGain();
-    subG.gain.setValueAtTime(0.55, now);
-    subG.gain.exponentialRampToValueAtTime(0.001, now + 0.65);
+    subG.gain.setValueAtTime(0.78, now);
+    subG.gain.exponentialRampToValueAtTime(0.001, now + 0.85);
     sub.connect(subG); subG.connect(this.master);
-    sub.start(now); sub.stop(now + 0.68);
+    sub.start(now); sub.stop(now + 0.88);
 
-    // 2. Dissonant metallic shriek cluster
-    [392.0, 415.3, 622.25, 830.61].forEach((freq, i) => {
+    // 2. Guttural FM vocal-cord overdrive scream cluster
+    const growl = c.createOscillator();
+    growl.frequency.setValueAtTime(48, now);
+    const growlG = c.createGain();
+    growlG.gain.setValueAtTime(88, now);
+    growl.connect(growlG);
+    growl.start(now);
+    growl.stop(now + 1.4);
+
+    const shaper = c.createWaveShaper();
+    shaper.curve = this._getDistortionCurve(55);
+    shaper.oversample = '2x';
+    const screamFilter = c.createBiquadFilter();
+    screamFilter.type = 'bandpass';
+    screamFilter.frequency.setValueAtTime(1650, now);
+    screamFilter.frequency.exponentialRampToValueAtTime(720, now + 1.32);
+    screamFilter.Q.value = 1.25;
+    shaper.connect(screamFilter);
+    screamFilter.connect(this.verb);
+    screamFilter.connect(this.master);
+
+    [155.56, 293.66, 415.3, 622.25, 932.33, 1244.5].forEach((freq, i) => {
       const o = c.createOscillator();
       o.type = i % 2 === 0 ? 'sawtooth' : 'square';
-      o.frequency.setValueAtTime(freq, now);
-      o.frequency.exponentialRampToValueAtTime(freq * 0.62, now + 0.95);
+      o.frequency.setValueAtTime(freq * 0.88, now);
+      o.frequency.linearRampToValueAtTime(freq * 1.18, now + 0.055);
+      o.frequency.exponentialRampToValueAtTime(freq * 0.56, now + 1.32);
+      growlG.connect(o.frequency);
       const g = c.createGain();
       g.gain.setValueAtTime(0.001, now);
-      g.gain.linearRampToValueAtTime(0.18, now + 0.02);
-      g.gain.exponentialRampToValueAtTime(0.001, now + 0.95);
-      const f = c.createBiquadFilter();
-      f.type = 'bandpass';
-      f.frequency.value = 1400;
-      f.Q.value = 1.4;
-      o.connect(f); f.connect(g); g.connect(this.verb); g.connect(this.master);
-      o.start(now); o.stop(now + 1.0);
+      g.gain.linearRampToValueAtTime(i < 2 ? 0.24 : 0.16, now + 0.015);
+      g.gain.exponentialRampToValueAtTime(0.001, now + 1.34);
+      o.connect(g); g.connect(shaper);
+      o.start(now); o.stop(now + 1.38);
     });
 
-    // 3. Saturated horror scream noise burst
+    // 3. Tearing predator shriek noise burst + double jaw-snap cracks
     const src = c.createBufferSource();
     src.buffer = this.noiseBuf;
     const nf = c.createBiquadFilter();
     nf.type = 'bandpass';
-    nf.frequency.setValueAtTime(1850, now);
-    nf.frequency.exponentialRampToValueAtTime(640, now + 0.85);
-    nf.Q.value = 2.0;
+    nf.frequency.setValueAtTime(2400, now);
+    nf.frequency.exponentialRampToValueAtTime(580, now + 1.25);
+    nf.Q.value = 1.65;
     const ng = c.createGain();
     ng.gain.setValueAtTime(0.001, now);
-    ng.gain.linearRampToValueAtTime(0.42, now + 0.025);
-    ng.gain.exponentialRampToValueAtTime(0.001, now + 0.9);
-    src.connect(nf); nf.connect(ng); ng.connect(this.master);
-    src.start(now); src.stop(now + 0.92);
+    ng.gain.linearRampToValueAtTime(0.62, now + 0.018);
+    ng.gain.exponentialRampToValueAtTime(0.001, now + 1.28);
+    src.connect(nf); nf.connect(ng); ng.connect(shaper);
+    src.start(now); src.stop(now + 1.3);
+
+    [0.04, 0.26].forEach((snapOff) => {
+      const t0 = now + snapOff;
+      const snap = c.createBufferSource();
+      snap.buffer = this.noiseBuf;
+      const sf = c.createBiquadFilter();
+      sf.type = 'highpass';
+      sf.frequency.value = 1200;
+      const sg = c.createGain();
+      sg.gain.setValueAtTime(0.55, t0);
+      sg.gain.exponentialRampToValueAtTime(0.001, t0 + 0.08);
+      snap.connect(sf); sf.connect(sg); sg.connect(this.master);
+      snap.start(t0); snap.stop(t0 + 0.09);
+    });
   }
 
   // ── Rapid Claw-Foot Scurry When Peeking Entity Darts Into Darkness ────────
@@ -881,45 +1024,50 @@ export class GameAudioControl {
 
     const formant = c.createBiquadFilter();
     formant.type = 'bandpass';
-    formant.frequency.setValueAtTime(920 + clamped * 480, now);
-    formant.frequency.exponentialRampToValueAtTime(480, now + 1.15);
-    formant.Q.value = 2.6;
+    formant.frequency.setValueAtTime(1120 + clamped * 620, now);
+    formant.frequency.exponentialRampToValueAtTime(520, now + 1.25);
+    formant.Q.value = 2.1;
+
+    const shaper = c.createWaveShaper();
+    shaper.curve = this._getDistortionCurve(44);
+    shaper.oversample = '2x';
+    shaper.connect(formant);
     formant.connect(dest);
     if (this.verb && dest !== this.verb) {
       const send = c.createGain();
-      send.gain.value = 0.45;
+      send.gain.value = 0.55;
       formant.connect(send);
       send.connect(this.verb);
     }
 
-    [418, 449].forEach((f0, idx) => {
+    [138, 418, 449, 698].forEach((f0, idx) => {
       const o = c.createOscillator();
-      o.type = idx === 0 ? 'sawtooth' : 'square';
+      o.type = idx % 2 === 0 ? 'sawtooth' : 'square';
       o.frequency.setValueAtTime(f0, now);
-      o.frequency.linearRampToValueAtTime(f0 * (1.75 + clamped * 0.35), now + 0.18);
-      o.frequency.exponentialRampToValueAtTime(f0 * 0.78, now + 1.15);
+      o.frequency.linearRampToValueAtTime(f0 * (1.85 + clamped * 0.4), now + 0.16);
+      o.frequency.exponentialRampToValueAtTime(f0 * 0.72, now + 1.24);
       lfoGain.connect(o.frequency);
 
       const g = c.createGain();
       g.gain.setValueAtTime(0.001, now);
-      g.gain.linearRampToValueAtTime((idx === 0 ? 0.19 : 0.11) * clamped, now + 0.08);
-      g.gain.exponentialRampToValueAtTime(0.001, now + 1.18);
+      g.gain.linearRampToValueAtTime((idx === 0 ? 0.24 : 0.16) * clamped, now + 0.06);
+      g.gain.exponentialRampToValueAtTime(0.001, now + 1.26);
       o.connect(g);
-      g.connect(formant);
+      g.connect(shaper);
       o.start(now);
-      o.stop(now + 1.24);
+      o.stop(now + 1.3);
     });
 
     const nSrc = c.createBufferSource();
     nSrc.buffer = this.noiseBuf;
     const ng = c.createGain();
     ng.gain.setValueAtTime(0.001, now);
-    ng.gain.linearRampToValueAtTime(0.24 * clamped, now + 0.07);
-    ng.gain.exponentialRampToValueAtTime(0.001, now + 1.05);
+    ng.gain.linearRampToValueAtTime(0.36 * clamped, now + 0.05);
+    ng.gain.exponentialRampToValueAtTime(0.001, now + 1.15);
     nSrc.connect(ng);
-    ng.connect(formant);
+    ng.connect(shaper);
     nSrc.start(now);
-    nSrc.stop(now + 1.1);
+    nSrc.stop(now + 1.2);
   }
 
   // ── Spatial Distant Crying / Weeping Woman in Darkened Corners ────────────

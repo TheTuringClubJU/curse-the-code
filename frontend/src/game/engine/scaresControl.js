@@ -541,10 +541,9 @@ export function createControlScares(E, handlers) {
     if (jumpscareState && ghost) {
       jumpscareState.elapsed += dt;
       const p = Math.min(1, jumpscareState.elapsed / jumpscareState.duration);
-      // Cinematic framing distance: slides smoothly from 1.35m down to 1.08m
-      // Camera near plane is 0.05m; ghost head is ~0.35m forward from root,
-      // so face is ~0.73m from camera lens — 100% visible, centered, and NEVER clips inside the mesh!
-      const slideDist = 1.35 - 0.25 * Math.min(1, p * 1.6);
+      // Fast cubic lunge from 1.35m right down to 0.79m: fills camera frame without near-plane clipping
+      const lungeEase = 1 - Math.pow(1 - Math.min(1, p * 3.1), 3);
+      const slideDist = 1.35 - 0.56 * lungeEase;
       const candX = jumpscareState.cx + jumpscareState.ux * slideDist;
       const candZ = jumpscareState.cz + jumpscareState.uz * slideDist;
 
@@ -554,28 +553,36 @@ export function createControlScares(E, handlers) {
       ghost.isJumpscaring = true;
       ghost.behavior = 'JUMPSCARE';
       ghost.root.position.set(candX, 0.02, candZ);
-      // Face squarely back into the camera
-      ghost.root.rotation.y = Math.atan2(-jumpscareState.ux, -jumpscareState.uz);
+      // Frantic predator head/body thrashing squarely into lens
+      ghost.root.rotation.y = Math.atan2(-jumpscareState.ux, -jumpscareState.uz) + Math.sin(p * 36) * 0.14;
+      ghost.root.rotation.z = Math.sin(p * 29) * 0.09;
 
-      // Horror keylight dynamically illuminates decayed skin, head, and teeth
+      // Nightmare strobe keylight across sunken skull, eyes, and fangs
       if (ghost.ghostFaceLight) {
-        ghost.ghostFaceLight.intensity = 6.5 + Math.sin(p * 26) * 1.5;
+        ghost.ghostFaceLight.intensity = 10.5 + (Math.sin(p * 54) > 0 ? 11.5 : -2.5);
       }
       if (ghost.ghostGlow) {
-        ghost.ghostGlow.intensity = 2.5 + Math.sin(p * 32) * 0.8;
+        ghost.ghostGlow.intensity = 3.8 + Math.sin(p * 44) * 1.6;
       }
-      // Dynamic chattering jaw snap
+      // Violent wide-open shrieking jaw snap
       if (ghost.bones?.Jaw) {
-        ghost.bones.Jaw.rotation.x = 0.35 + Math.sin(p * 28) * 0.14;
+        ghost.bones.Jaw.rotation.x = 0.62 + Math.sin(p * 44) * 0.24;
       }
 
-      // Look slightly down at crawling creature's head (y ~ 0.75m, cam at 1.60m)
-      E.setCameraOverride?.(true, jumpscareState.yaw, 0.18);
-      E.setTargetFov?.(50);
+      if (p >= 0.34 && !jumpscareState.didMidRoar) {
+        jumpscareState.didMidRoar = true;
+        A()?.entityScream?.(candX, candZ, 1.0);
+        flash('#dc0808', 0.42, 95);
+      }
+
+      // Snap FOV (50 on impact -> 40 extreme close-up thrash) with pitch shake
+      E.setCameraOverride?.(true, jumpscareState.yaw, 0.18 + Math.sin(p * 40) * 0.04);
+      E.setTargetFov?.(p < 0.12 ? 50 : 40);
 
       if (jumpscareState.elapsed >= jumpscareState.duration) {
         const finished = jumpscareState;
         jumpscareState = null;
+        ghost.root.rotation.z = 0;
         if (ghost.ghostFaceLight) ghost.ghostFaceLight.intensity = 0;
         if (ghost.ghostGlow) ghost.ghostGlow.intensity = 0;
         if (ghost.bones?.Jaw) ghost.bones.Jaw.rotation.x = 0;
@@ -690,6 +697,7 @@ export function createControlScares(E, handlers) {
     // Active stalker pursuit, Safe Room 5B threshold barrier & lethal 3D jumpscare
     if (huntTimer > 0 && ghost) {
       huntTimer -= dt;
+      const wasStaring = huntStareTimer > 0;
       if (huntStareTimer > 0) {
         huntStareTimer = Math.max(0, huntStareTimer - dt);
       }
@@ -703,21 +711,30 @@ export function createControlScares(E, handlers) {
       const dz = cz - gz;
       const dist = Math.hypot(dx, dz);
       const tension = playerInSafeRoom
-        ? Math.min(0.45, Math.max(0.12, 0.7 - dist / 12.0))
-        : Math.max(0.32, Math.min(1, 1.2 - dist / 10.5));
+        ? Math.min(0.55, Math.max(0.22, 0.8 - dist / 12.0))
+        : Math.max(0.52, Math.min(1, 1.32 - dist / 11.0));
       A()?.setChaseTension?.(tension);
+
+      if (wasStaring && huntStareTimer <= 0) {
+        // Stare beat erupts into full chase shriek!
+        A()?.entityScream?.(gx, gz, 1.0);
+        A()?.womanScream?.(gx, gz, 0.96);
+        A()?.stinger?.('hard');
+        flash('#360202', 0.44, 180);
+        E.shake?.(0.35, 0.3);
+      }
 
       if (huntStareTimer > 0) {
         // Dramatic reveal beat in corridor so player sees entity before it charges
         ghostVelX = 0;
         ghostVelZ = 0;
         ghost.setAnim?.('DoorPeek', 1.1, 0.12);
-        if (ghost.ghostFaceLight) ghost.ghostFaceLight.intensity = 14.0;
-        if (ghost.ghostGlow) ghost.ghostGlow.intensity = 4.0;
+        if (ghost.ghostFaceLight) ghost.ghostFaceLight.intensity = 16.0;
+        if (ghost.ghostGlow) ghost.ghostGlow.intensity = 4.5;
         ghost.root.rotation.y = Math.atan2(dx, dz);
       } else if (dist > 1.05) {
-        ghost.setAnim?.('SprintLunge', 1.05, 0.14);
-        const targetSpeed = playerInSafeRoom ? 0.85 : 1.15;
+        ghost.setAnim?.('SprintLunge', 1.35, 0.12);
+        const targetSpeed = playerInSafeRoom ? 1.55 : (3.35 + noiseLevel * 0.45);
         const inv = 1 / Math.max(0.001, dist);
         const dirX = dx * inv;
         const dirZ = dz * inv;
@@ -763,7 +780,7 @@ export function createControlScares(E, handlers) {
         const ux = fx;
         const uz = fz;
         const yaw = E.yaw?.() ?? Math.atan2(-ux, -uz);
-        jumpscareState = { elapsed: 0, duration: 1.35, ux, uz, yaw, cx, cz, gx, gz };
+        jumpscareState = { elapsed: 0, duration: 1.35, ux, uz, yaw, cx, cz, gx, gz, didMidRoar: false };
         const initX = cx + ux * 1.35;
         const initZ = cz + uz * 1.35;
         ghost.root.visible = true;
@@ -773,17 +790,18 @@ export function createControlScares(E, handlers) {
         ghost.behavior = 'JUMPSCARE';
         ghost.root.position.set(initX, 0.02, initZ);
         ghost.root.rotation.y = Math.atan2(-ux, -uz);
-        ghost.setAnim?.('JumpscareSnap', 1.35, 0.04);
-        if (ghost.ghostGlow) ghost.ghostGlow.intensity = 2.5;
-        if (ghost.ghostFaceLight) ghost.ghostFaceLight.intensity = 6.5;
+        ghost.setAnim?.('JumpscareSnap', 1.45, 0.03);
+        if (ghost.ghostGlow) ghost.ghostGlow.intensity = 4.2;
+        if (ghost.ghostFaceLight) ghost.ghostFaceLight.intensity = 14.0;
         E.setCameraOverride?.(true, yaw, 0.18);
         E.setTargetFov?.(50);
-        E.shake?.(1.35, 1.35);
+        E.shake?.(2.5, 1.45);
         A()?.jumpscareSting?.();
+        A()?.entityScream?.(initX, initZ, 1.0);
         A()?.womanScream?.(initX, initZ, 1.0);
         A()?.setChaseTension?.(1.0);
-        // Crisp non-blinding rim flash (38% opacity, 110ms) so 3D animated face is instantly visible!
-        flash('#ff1111', 0.38, 110);
+        // Intense crimson grab flash (still leaves 3D shrieking face clearly visible)
+        flash('#dc0808', 0.56, 150);
         handlers.onJumpscareStart?.({ x: cx, z: cz, gx, gz });
         return;
       }

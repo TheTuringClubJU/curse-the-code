@@ -2513,7 +2513,7 @@
           "part": "A",
           "is_decoy": false,
           "chain": "control",
-          "seq": 1,
+          "seq": null,
           "hiding": {
             "room": "control",
             "object_id": "relay_rack",
@@ -2550,7 +2550,7 @@
           "part": "B",
           "is_decoy": false,
           "chain": "control",
-          "seq": 2,
+          "seq": null,
           "hiding": {
             "room": "control",
             "object_id": "relay_rack",
@@ -2587,7 +2587,7 @@
           "part": "A",
           "is_decoy": false,
           "chain": "control",
-          "seq": 3,
+          "seq": null,
           "hiding": {
             "room": "control",
             "object_id": "tape_deck_cart",
@@ -2624,7 +2624,7 @@
           "part": "B",
           "is_decoy": false,
           "chain": "control",
-          "seq": 4,
+          "seq": null,
           "hiding": {
             "room": "control",
             "object_id": "tape_deck_cart",
@@ -2661,7 +2661,7 @@
           "part": "A",
           "is_decoy": false,
           "chain": "control",
-          "seq": 5,
+          "seq": null,
           "hiding": {
             "room": "control",
             "object_id": "operator_chair",
@@ -2698,7 +2698,7 @@
           "part": "B",
           "is_decoy": false,
           "chain": "control",
-          "seq": 6,
+          "seq": null,
           "hiding": {
             "room": "control",
             "object_id": "cable_trench",
@@ -2735,7 +2735,7 @@
           "part": "C",
           "is_decoy": false,
           "chain": "control",
-          "seq": 7,
+          "seq": null,
           "hiding": {
             "room": "control",
             "object_id": "wall_clipboard",
@@ -2772,7 +2772,7 @@
           "part": "C",
           "is_decoy": false,
           "chain": "control",
-          "seq": 8,
+          "seq": null,
           "hiding": {
             "room": "control",
             "object_id": "fuse_box",
@@ -2801,78 +2801,6 @@
           "locate_hint": "Open the fuse box. The note is taped to the inside of the door.",
           "secret": {
             "note": "TEST: Corvin's initials \u2014 fuses to Chamber 3 kept live deliberately."
-          }
-        },
-        {
-          "id": "XC01",
-          "clue_id": null,
-          "part": null,
-          "is_decoy": true,
-          "chain": "control",
-          "seq": null,
-          "hiding": {
-            "room": "control",
-            "object_id": "operator_chair",
-            "spot": "between the seat and backrest cushion",
-            "placement": "provisional"
-          },
-          "requires": {
-            "fragments": []
-          },
-          "display": {
-            "title": "TEST: DECOY \u2014 Canteen menu",
-            "style": {
-              "ink": "black",
-              "paper": "bureaucratic"
-            },
-            "lines": [
-              "TEST: DECOY CONTENT",
-              "TEST: Standard canteen menu.",
-              "TEST: Irrelevant."
-            ],
-            "corner_mark": "DCY-C01",
-            "image_file": "",
-            "audio_file": ""
-          },
-          "locate_hint": "Jammed between the seat and backrest \u2014 probably fell out of someone's pocket.",
-          "secret": {
-            "note": "TEST: Decoy \u2014 no story relevance."
-          }
-        },
-        {
-          "id": "XC02",
-          "clue_id": null,
-          "part": null,
-          "is_decoy": true,
-          "chain": "control",
-          "seq": null,
-          "hiding": {
-            "room": "control",
-            "object_id": "wall_clipboard",
-            "spot": "top sheet of the clipboard",
-            "placement": "provisional"
-          },
-          "requires": {
-            "fragments": []
-          },
-          "display": {
-            "title": "TEST: DECOY \u2014 Blank sign-in sheet",
-            "style": {
-              "ink": "black",
-              "paper": "bureaucratic"
-            },
-            "lines": [
-              "TEST: DECOY CONTENT",
-              "TEST: Routine sign-in sheet, all entries standard.",
-              "TEST: Nothing unusual."
-            ],
-            "corner_mark": "DCY-C02",
-            "image_file": "",
-            "audio_file": ""
-          },
-          "locate_hint": "It's the top sheet on the clipboard \u2014 this one's the first thing you see.",
-          "secret": {
-            "note": "TEST: Decoy \u2014 no story relevance."
           }
         }
       ],
