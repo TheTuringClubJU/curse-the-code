@@ -132,13 +132,16 @@ export function createEngine(el,room,h){
    buildRecordsScene(E);
    scares = createRecordsScares(E, h);
  } else if (room.id === 'vault') {
+   ref.onLoadProgress = (pct, loaded, total) => h?.onProgress?.(pct, loaded, total);
+   ref.onLoadComplete = () => h?.onComplete?.();
    // Common held torch model from Room 5, battery dead (0%) on entry per Vault storyline
    attachTorch(E, cam);
    setTorch(E, false);
-   R.setPixelRatio(Math.min(devicePixelRatio, 1.1));
+   if (E.flashlightModel) E.flashlightModel.visible = false;
+   R.setPixelRatio(Math.min(devicePixelRatio, 1.0));
    R.shadowMap.enabled = false;
-   R.toneMappingExposure = 1.42;
-   S.fog = new THREE.FogExp2(T.bg || 0x09070b, 0.0235);
+   R.toneMappingExposure = 1.54;
+   S.fog = new THREE.FogExp2(T.bg || 0x09070b, 0.0175);
    buildVaultScene(E, h);
    scares = createVaultScares(E, h);
  } else {

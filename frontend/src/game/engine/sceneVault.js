@@ -189,48 +189,32 @@ export function buildVaultScene(E) {
     return light;
   };
 
-  // Global shadow/moonlight ambient bounce — prevents dark props from crushing to black
-  registerLight(new THREE.HemisphereLight(0x4b4258, 0x1e1822, 0.98));
+  // Global shadow/moonlight ambient bounce — calibrated for clear visibility and zero pure-black crush
+  registerLight(new THREE.HemisphereLight(0x645c72, 0x28202d, 1.25));
 
-  const narthexLight = registerLight(new THREE.PointLight(0xffb470, 2.35, 11.5, 1.55));
+  const narthexLight = registerLight(new THREE.PointLight(0xffba78, 2.6, 12.5, 1.5));
   narthexLight.position.set(0, 3.6, 12.2);
 
-  const cellLight = registerLight(new THREE.PointLight(0x6d92c4, 0.92, 8.2, 1.55));
+  const cellLight = registerLight(new THREE.PointLight(0x769ec8, 1.15, 9.0, 1.5));
   cellLight.position.set(-5.2, 3.0, 10.9);
 
-  const coreLight = registerLight(new THREE.PointLight(0xd42c3c, 3.2, 13.5, 1.45));
+  const coreLight = registerLight(new THREE.PointLight(0xdc3240, 3.6, 15.0, 1.4));
   coreLight.position.set(0, 2.5, -4.9);
 
-  const altarSpotLight = registerLight(new THREE.PointLight(0xffca82, 2.4, 10.0, 1.5));
+  const altarSpotLight = registerLight(new THREE.PointLight(0xffd28e, 2.6, 11.5, 1.5));
   altarSpotLight.position.set(0, 3.8, -1.6);
 
-  const westCryptLight = registerLight(new THREE.PointLight(0x8bb0c2, 2.1, 13.5, 1.5));
+  const westCryptLight = registerLight(new THREE.PointLight(0x94bbce, 2.4, 14.5, 1.5));
   westCryptLight.position.set(-12.6, 3.2, 0);
 
-  const eastCryptLight = registerLight(new THREE.PointLight(0xe5a45c, 2.2, 13.5, 1.5));
+  const eastCryptLight = registerLight(new THREE.PointLight(0xebac68, 2.5, 14.5, 1.5));
   eastCryptLight.position.set(12.8, 3.1, 0);
 
-  const cellarLight = registerLight(new THREE.PointLight(0xd99e58, 1.65, 8.2, 1.5));
+  const cellarLight = registerLight(new THREE.PointLight(0xdca562, 1.85, 9.5, 1.5));
   cellarLight.position.set(12.9, 2.7, 8.5);
 
-  const reliquaryLight = registerLight(new THREE.PointLight(0xe0785a, 1.95, 8.8, 1.5));
+  const reliquaryLight = registerLight(new THREE.PointLight(0xe48265, 2.2, 9.8, 1.5));
   reliquaryLight.position.set(-13.3, 3.1, -8.5);
-
-  // Targeted shelf/station readability pools (ensures dark wood & terminal reliefs read crisply)
-  const addAccentFill = (hex, intensity, distance, x, y, z) => {
-    const l = registerLight(new THREE.PointLight(hex, intensity, distance, 1.6));
-    l.position.set(x, y, z);
-    return l;
-  };
-  addAccentFill(0xffba74, 1.55, 6.2, 1.9, 2.1, 11.2); // 6A ledger desk
-  addAccentFill(0xffba74, 1.35, 5.5, -3.3, 1.8, 10.9); // 6A Cell 01 lectern plaque
-  addAccentFill(0xe8c48e, 1.65, 6.5, 4.4, 2.4, 2.2); // 6B autopsy gurney
-  addAccentFill(0x72c2a8, 1.75, 6.8, -14.6, 2.1, 0); // 6C manual terminal CRT pool
-  addAccentFill(0xffae66, 2.15, 7.2, -13.6, 2.3, 3.6); // 6C scriptorium cabinets (zero black boxes)
-  addAccentFill(0xffb470, 1.65, 6.2, -12.0, 2.5, -2.9); // 6C weeping statue rim
-  addAccentFill(0xf0b268, 1.85, 6.8, 15.2, 2.2, 0); // 6D failsafe switchboard light
-  addAccentFill(0xd8a86a, 1.55, 6.2, 12.6, 2.1, -3.7); // 6D switchgear bench
-  addAccentFill(0x9bc7e6, 1.75, 6.4, -13.3, 2.3, -9.2); // 6F specimen cryo-reliquary cabinet
 
   // Flame sprites & animated torches
   const flameSprites = [];
@@ -271,25 +255,27 @@ export function buildVaultScene(E) {
     relPath,
     { pos = [0, 0, 0], ry = 0, targetHeight = null, scale = null, albedoLift = 0.26, playClip = false, clipSpeed = 1, flameOffset = null, onReady = null } = {}
   ) =>
-    loadGLB(`${VAULT_MODEL_BASE}/${relPath}`)
-      .then((gltf) => {
-        if (!gltf?.scene) return null;
-        const root = gltf.scene.clone();
-        normalizeModelMaterials(root, { psx: relPath.includes('/glb/'), npAll: true, albedoLift });
-        if (targetHeight) fitModelToHeight(root, targetHeight);
-        if (scale) root.scale.multiplyScalar(scale);
-        root.position.set(...pos);
-        root.rotation.y = ry;
-        S.add(root);
-        let clipCtrl = null;
-        if (playClip) clipCtrl = mountClipAnimation(root, gltf.animations, 0, { speed: clipSpeed });
-        if (flameOffset) {
-          spawnFlameSprite(pos[0] + flameOffset[0], pos[1] + flameOffset[1], pos[2] + flameOffset[2], 0.34);
-        }
-        onReady?.(root, gltf, clipCtrl);
-        return root;
-      })
-      .catch(() => null);
+    arch.track(
+      loadGLB(`${VAULT_MODEL_BASE}/${relPath}`)
+        .then((gltf) => {
+          if (!gltf?.scene) return null;
+          const root = gltf.scene.clone();
+          normalizeModelMaterials(root, { psx: relPath.includes('/glb/'), npAll: true, albedoLift });
+          if (targetHeight) fitModelToHeight(root, targetHeight);
+          if (scale) root.scale.multiplyScalar(scale);
+          root.position.set(...pos);
+          root.rotation.y = ry;
+          S.add(root);
+          let clipCtrl = null;
+          if (playClip) clipCtrl = mountClipAnimation(root, gltf.animations, 0, { speed: clipSpeed });
+          if (flameOffset) {
+            spawnFlameSprite(pos[0] + flameOffset[0], pos[1] + flameOffset[1], pos[2] + flameOffset[2], 0.34);
+          }
+          onReady?.(root, gltf, clipCtrl);
+          return root;
+        })
+        .catch(() => null)
+    );
 
   const registerHitProxy = (id, pos, size) => {
     const proxy = new THREE.Mesh(new THREE.BoxGeometry(...size), matInvisibleHit);
@@ -315,28 +301,30 @@ export function buildVaultScene(E) {
     } = {}
   ) => {
     registerHitProxy(id, hitPos || [pos[0], pos[1] + (targetHeight || 1.2) * 0.5, pos[2]], hitSize);
-    return loadGLB(`${VAULT_MODEL_BASE}/${relPath}`)
-      .then((gltf) => {
-        if (!gltf?.scene) return null;
-        const root = gltf.scene.clone();
-        normalizeModelMaterials(root, {
-          crtMap: screenTex,
-          screenNames: screenTex ? ['screen', 'crt', 'monitor', 'display', 'phosphor'] : [],
-          psx: relPath.includes('/glb/'),
-          npAll: false,
-          albedoLift,
-        });
-        if (targetHeight) fitModelToHeight(root, targetHeight);
-        if (scale) root.scale.multiplyScalar(scale);
-        root.position.set(...pos);
-        root.rotation.y = ry;
-        interact(root, id);
-        add(root, { noShadow: true });
-        visualInteract(id, root);
-        onReady?.(root, gltf);
-        return root;
-      })
-      .catch(() => null);
+    return arch.track(
+      loadGLB(`${VAULT_MODEL_BASE}/${relPath}`)
+        .then((gltf) => {
+          if (!gltf?.scene) return null;
+          const root = gltf.scene.clone();
+          normalizeModelMaterials(root, {
+            crtMap: screenTex,
+            screenNames: screenTex ? ['screen', 'crt', 'monitor', 'display', 'phosphor'] : [],
+            psx: relPath.includes('/glb/'),
+            npAll: false,
+            albedoLift,
+          });
+          if (targetHeight) fitModelToHeight(root, targetHeight);
+          if (scale) root.scale.multiplyScalar(scale);
+          root.position.set(...pos);
+          root.rotation.y = ry;
+          interact(root, id);
+          add(root, { noShadow: true });
+          visualInteract(id, root);
+          onReady?.(root, gltf);
+          return root;
+        })
+        .catch(() => null)
+    );
   };
 
   // ── 5. Central Nave Centerpiece (Altar R2-10, Core Glass, Split-Flap Clock) ─
@@ -456,23 +444,25 @@ export function buildVaultScene(E) {
   });
 
   let fleshRoot = null;
-  loadGLB(`${VAULT_MODEL_BASE}/flesh_blob.glb`)
-    .then((gltf) => {
-      if (!gltf?.scene) return;
-      const blob = gltf.scene.clone();
-      blob.traverse((o) => {
-        if (o.isMesh) {
-          o.material = matFlesh;
-          o.userData.np = true;
-        }
-      });
-      fitModelToHeight(blob, 1.75);
-      blob.position.set(0, 0.72, -4.9);
-      S.add(blob);
-      fleshRoot = blob;
-      mountClipAnimation(blob, gltf.animations, 0, { speed: 0.9 });
-    })
-    .catch(() => null);
+  arch.track(
+    loadGLB(`${VAULT_MODEL_BASE}/flesh_blob.glb`)
+      .then((gltf) => {
+        if (!gltf?.scene) return;
+        const blob = gltf.scene.clone();
+        blob.traverse((o) => {
+          if (o.isMesh) {
+            o.material = matFlesh;
+            o.userData.np = true;
+          }
+        });
+        fitModelToHeight(blob, 1.75);
+        blob.position.set(0, 0.72, -4.9);
+        S.add(blob);
+        fleshRoot = blob;
+        mountClipAnimation(blob, gltf.animations, 0, { speed: 0.9 });
+      })
+      .catch(() => null)
+  );
 
   placePropGLB('temple/glb/pillar_gothic.glb', { pos: [-2.45, 0, -4.9], targetHeight: 4.8, albedoLift: 0.25 });
   placePropGLB('temple/glb/pillar_gothic.glb', { pos: [2.45, 0, -4.9], targetHeight: 4.8, albedoLift: 0.25 });
@@ -712,12 +702,12 @@ export function buildVaultScene(E) {
     },
   });
 
-  // Industrial dressing in 6D
-  placePropGLB('industrial_pipes.glb', { pos: [12.8, 3.9, -4.8], targetHeight: 1.5, albedoLift: 0.28 });
-  placePropGLB('industrial/SM_Pipe_Straight_2m.glb', { pos: [12.5, 4.1, 2.8], ry: Math.PI / 2, scale: 1.4 });
-  placePropGLB('industrial/SM_Barrel.glb', { pos: [15.65, 0, 4.45], scale: 1.2, albedoLift: 0.28 });
-  placePropGLB('industrial/SM_Barrel.glb', { pos: [15.65, 0, 3.25], scale: 1.18, albedoLift: 0.28 });
-  placePropGLB('industrial/SM_Crate.glb', { pos: [15.45, 0, -4.45], ry: 0.2, scale: 1.25, albedoLift: 0.28 });
+  // Gothic medieval dressing in 6D (replaces sci-fi industrial pipes/barrels)
+  placePropGLB('temple/glb/pillar_gothic.glb', { pos: [16.4, 0, 5.2], targetHeight: 3.2, albedoLift: 0.26 });
+  placePropGLB('temple/glb/pillar_gothic.glb', { pos: [16.4, 0, -5.2], targetHeight: 3.2, albedoLift: 0.26 });
+  placePropGLB('wall_sconce.glb', { pos: [16.85, 2.4, 2.8], ry: -Math.PI / 2, targetHeight: 0.45 });
+  placePropGLB('wall_sconce.glb', { pos: [16.85, 2.4, -2.8], ry: -Math.PI / 2, targetHeight: 0.45 });
+  placePropGLB('candelabra.glb', { pos: [13.4, 0, -4.1], targetHeight: 1.35, flameOffset: [0, 1.25, 0] });
   placePropGLB('barrel_stove.glb', { pos: [10.4, 0, 4.55], targetHeight: 1.45, albedoLift: 0.28 });
 
   // switchgear_log bench + articulated crate_medical (classic_console moved onto floor in 6C)
@@ -768,33 +758,37 @@ export function buildVaultScene(E) {
   S.add(ghostLight);
   ref.ghostLight = ghostLight;
 
-  loadGLB(`${VAULT_MODEL_BASE}/manthing.glb`)
-    .then((gltf) => {
-      if (!gltf?.scene) return;
-      const g = gltf.scene.clone();
-      normalizeModelMaterials(g, { npAll: true, albedoLift: 0.2 });
-      fitModelToHeight(g, 1.98);
-      g.visible = false;
-      S.add(g);
-      ref.ghost = g;
-      const ctrl = mountClipAnimation(g, gltf.animations, 0, { speed: 1.25 });
-      ref.ghostMixer = ctrl?.mixer || null;
-    })
-    .catch(() => null);
+  arch.track(
+    loadGLB(`${VAULT_MODEL_BASE}/manthing.glb`)
+      .then((gltf) => {
+        if (!gltf?.scene) return;
+        const g = gltf.scene.clone();
+        normalizeModelMaterials(g, { npAll: true, albedoLift: 0.2 });
+        fitModelToHeight(g, 1.98);
+        g.visible = false;
+        S.add(g);
+        ref.ghost = g;
+        const ctrl = mountClipAnimation(g, gltf.animations, 0, { speed: 1.25 });
+        ref.ghostMixer = ctrl?.mixer || null;
+      })
+      .catch(() => null)
+  );
 
-  loadGLB(`${VAULT_MODEL_BASE}/stalker.glb`)
-    .then((gltf) => {
-      if (!gltf?.scene) return;
-      const st = gltf.scene.clone();
-      normalizeModelMaterials(st, { npAll: true, albedoLift: 0.18 });
-      fitModelToHeight(st, 2.08);
-      st.visible = false;
-      S.add(st);
-      ref.stalker = st;
-      const ctrl = mountClipAnimation(st, gltf.animations, 0, { speed: 1.0 });
-      ref.stalkerMixer = ctrl?.mixer || null;
-    })
-    .catch(() => null);
+  arch.track(
+    loadGLB(`${VAULT_MODEL_BASE}/stalker.glb`)
+      .then((gltf) => {
+        if (!gltf?.scene) return;
+        const st = gltf.scene.clone();
+        normalizeModelMaterials(st, { npAll: true, albedoLift: 0.18 });
+        fitModelToHeight(st, 2.08);
+        st.visible = false;
+        S.add(st);
+        ref.stalker = st;
+        const ctrl = mountClipAnimation(st, gltf.animations, 0, { speed: 1.0 });
+        ref.stalkerMixer = ctrl?.mixer || null;
+      })
+      .catch(() => null)
+  );
 
   // ── 8. Reactive Engine Hooks & Per-Frame Heartbeat / Proximity Doors ──────
   ref.narthexLight = narthexLight;

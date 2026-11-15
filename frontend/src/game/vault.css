@@ -23,69 +23,113 @@
   font-family: 'JetBrains Mono', 'Courier Prime', ui-monospace, monospace;
 }
 
-/* Primary Resident Evil Remake Tactical Plate */
-.re-btn,
+/* Primary Resident Evil Remake Capsule Buttons & Plates (Room 5 Match) */
+.re-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 16px 6px 7px;
+  border: 1px solid rgba(216, 178, 110, 0.28);
+  border-radius: 9999px;
+  background: linear-gradient(135deg, rgba(31, 20, 19, 0.94) 0%, rgba(19, 13, 12, 0.96) 100%);
+  color: #f6efe2;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.52), inset 0 1px 0 rgba(255, 224, 174, 0.12);
+  cursor: pointer;
+  transition: all 0.16s ease;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.re-btn:hover {
+  background: linear-gradient(135deg, rgba(114, 29, 29, 0.95) 0%, rgba(56, 15, 16, 0.96) 100%);
+  border-color: rgba(232, 194, 124, 0.62);
+  color: #fff9ee;
+  box-shadow: 0 8px 26px rgba(128, 28, 28, 0.42), inset 0 1px 0 rgba(255, 235, 195, 0.22);
+}
+
+.re-btn:active {
+  transform: scale(0.97);
+}
+
+.re-btn-circle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 5px;
+  border-radius: 9999px;
+  background: linear-gradient(145deg, #e7c687 0%, #bd9349 100%);
+  color: #1c120b;
+  font-family: ui-monospace, 'JetBrains Mono', 'Courier Prime', monospace;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.65);
+  flex-shrink: 0;
+}
+
 .re-plate {
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  border-radius: 2px;
-  background: rgba(11, 12, 16, 0.9);
+  gap: 8px;
+  border-radius: 9999px;
+  background: rgba(18, 14, 14, 0.88);
   border: 1px solid rgba(212, 184, 150, 0.24);
-  border-left: 2px solid #b91c1c;
   color: #ede7db;
-  font-family: 'Courier Prime', 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 0.72rem;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 11.5px;
   font-weight: 600;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  padding: 0.42rem 0.78rem;
-  transition: background-color 140ms ease, border-color 140ms ease, color 140ms ease, transform 80ms ease;
+  letter-spacing: 0.05em;
+  padding: 5px 14px 5px 6px;
+  transition: all 140ms ease;
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.55);
 }
 
-.re-btn:hover,
 .re-plate:hover {
-  background: rgba(24, 17, 20, 0.96);
+  background: rgba(45, 18, 18, 0.92);
   border-color: rgba(212, 184, 150, 0.46);
-  border-left-color: #ef4444;
   color: #ffffff;
 }
 
-.re-btn:active,
 .re-plate:active {
   transform: translateY(1px);
 }
 
 .re-plate-amber {
-  border-left-color: #d97706;
+  border-color: rgba(217, 119, 6, 0.45);
 }
 
 .re-plate-amber:hover {
-  background: rgba(28, 20, 12, 0.96);
-  border-left-color: #fbbf24;
+  background: rgba(45, 28, 14, 0.92);
+  border-color: #fbbf24;
 }
 
 .re-plate-emerald {
-  border-left-color: #10b981;
+  border-color: #10b981;
 }
 
 .re-keycap {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 1.35rem;
-  height: 1.3rem;
-  padding: 0 0.3rem;
-  border-radius: 2px;
-  border: 1px solid rgba(226, 200, 165, 0.4);
-  background: rgba(5, 6, 9, 0.96);
-  color: #e6cea8;
-  font-family: 'Courier Prime', 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 0.65rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: 9999px;
+  background: linear-gradient(145deg, #e7c687 0%, #bd9349 100%);
+  color: #1c120b;
+  font-family: ui-monospace, 'JetBrains Mono', monospace;
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.03em;
   line-height: 1;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.65);
 }
 
 /* Overlays & Diegetic Camera FX */

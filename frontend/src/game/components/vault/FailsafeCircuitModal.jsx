@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Cpu, X, AlertTriangle, CheckCircle2, Zap, HelpCircle } from 'lucide-react';
+import { X, AlertTriangle, CheckCircle2, Zap, HelpCircle } from 'lucide-react';
 
 function evaluateCircuit(circuit, inputState) {
   const values = { ...inputState };
@@ -89,15 +89,15 @@ function buildSchematicLayout(circuit, inputNames) {
 }
 
 function GateSymbol({ type, x, y, active }) {
-  const fill = active ? '#fbe5b2' : '#d5c7a9';
-  const stroke = active ? '#b45309' : '#3a3024';
+  const fill = active ? '#fae8c8' : '#e2d5bd';
+  const stroke = active ? '#9a3412' : '#453528';
   const t = String(type || 'AND').toUpperCase();
 
   if (t === 'NOT') {
     return (
       <g>
-        <polygon points={`${x - 16},${y - 11} ${x + 11},${y} ${x - 16},${y + 11}`} fill={fill} stroke={stroke} strokeWidth="2" />
-        <circle cx={x + 15} cy={y} r="3.5" fill={fill} stroke={stroke} strokeWidth="1.8" />
+        <polygon points={`${x - 16},${y - 11} ${x + 11},${y} ${x - 16},${y + 11}`} fill={fill} stroke={stroke} strokeWidth="1.8" />
+        <circle cx={x + 15} cy={y} r="3.5" fill={fill} stroke={stroke} strokeWidth="1.6" />
       </g>
     );
   }
@@ -106,15 +106,15 @@ function GateSymbol({ type, x, y, active }) {
     return (
       <g>
         {t === 'XOR' && (
-          <path d={`M ${x - 22} ${y - 12} Q ${x - 15} ${y} ${x - 22} ${y + 12}`} fill="none" stroke={stroke} strokeWidth="2" />
+          <path d={`M ${x - 22} ${y - 12} Q ${x - 15} ${y} ${x - 22} ${y + 12}`} fill="none" stroke={stroke} strokeWidth="1.8" />
         )}
         <path
           d={`M ${x - 16} ${y - 12} Q ${x - 9} ${y} ${x - 16} ${y + 12} Q ${x + 5} ${y + 12} ${x + 16} ${y} Q ${x + 5} ${y - 12} ${x - 16} ${y - 12} Z`}
           fill={fill}
           stroke={stroke}
-          strokeWidth="2"
+          strokeWidth="1.8"
         />
-        {hasBubble && <circle cx={x + 19} cy={y} r="3.5" fill={fill} stroke={stroke} strokeWidth="1.8" />}
+        {hasBubble && <circle cx={x + 19} cy={y} r="3.5" fill={fill} stroke={stroke} strokeWidth="1.6" />}
       </g>
     );
   }
@@ -126,9 +126,9 @@ function GateSymbol({ type, x, y, active }) {
         d={`M ${x - 16} ${y - 12} L ${x} ${y - 12} A 14 12 0 0 1 ${x} ${y + 12} L ${x - 16} ${y + 12} Z`}
         fill={fill}
         stroke={stroke}
-        strokeWidth="2"
+        strokeWidth="1.8"
       />
-      {hasBubble && <circle cx={x + 18} cy={y} r="3.5" fill={fill} stroke={stroke} strokeWidth="1.8" />}
+      {hasBubble && <circle cx={x + 18} cy={y} r="3.5" fill={fill} stroke={stroke} strokeWidth="1.6" />}
     </g>
   );
 }
@@ -197,26 +197,44 @@ export default function FailsafeCircuitModal({
   return (
     <div className="vault-desk-surface select-none" onClick={onClose}>
       <div
-        className="vault-copper-housing relative w-full max-w-5xl max-h-[93vh] flex flex-col rounded-[2px] overflow-hidden text-[#efe3cf]"
+        className="relative w-full max-w-5xl max-h-[92vh] flex flex-col rounded-2xl overflow-hidden text-[#ede3cf] shadow-[0_25px_70px_rgba(0,0,0,0.95)]"
+        style={{
+          background: 'linear-gradient(180deg, #181310 0%, #0d0a08 100%)',
+          border: '1px solid rgba(196, 162, 101, 0.28)',
+        }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Corner brass hex bolts */}
-        <span className="absolute top-2.5 left-2.5 w-2 h-2 rounded-[1px] bg-[#926e37] border border-black/80 pointer-events-none" />
-        <span className="absolute top-2.5 right-2.5 w-2 h-2 rounded-[1px] bg-[#926e37] border border-black/80 pointer-events-none" />
-        <span className="absolute bottom-2.5 left-2.5 w-2 h-2 rounded-[1px] bg-[#926e37] border border-black/80 pointer-events-none" />
-        <span className="absolute bottom-2.5 right-2.5 w-2 h-2 rounded-[1px] bg-[#926e37] border border-black/80 pointer-events-none" />
+        {/* Ornamental brass corner insets */}
+        <span className="absolute top-3 left-3 w-2.5 h-2.5 rounded-full bg-[#b89355] border border-black/70 pointer-events-none shadow-[0_1px_3px_rgba(0,0,0,0.8)]" />
+        <span className="absolute top-3 right-3 w-2.5 h-2.5 rounded-full bg-[#b89355] border border-black/70 pointer-events-none shadow-[0_1px_3px_rgba(0,0,0,0.8)]" />
+        <span className="absolute bottom-3 left-3 w-2.5 h-2.5 rounded-full bg-[#b89355] border border-black/70 pointer-events-none shadow-[0_1px_3px_rgba(0,0,0,0.8)]" />
+        <span className="absolute bottom-3 right-3 w-2.5 h-2.5 rounded-full bg-[#b89355] border border-black/70 pointer-events-none shadow-[0_1px_3px_rgba(0,0,0,0.8)]" />
 
-        {/* Engraved Switchgear Header */}
-        <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-3.5 bg-[#0b0d13] border-b border-slate-700/60">
+        {/* ── Medieval Ecclesiastical Header ── */}
+        <div
+          className="flex flex-wrap items-center justify-between gap-3 px-6 py-3.5 border-b"
+          style={{
+            background: 'linear-gradient(90deg, rgba(28, 20, 16, 0.95) 0%, rgba(18, 14, 12, 0.95) 100%)',
+            borderColor: 'rgba(196, 162, 101, 0.22)',
+          }}
+        >
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-[2px] border border-red-500/55 bg-red-950/40 flex items-center justify-center">
-              <Cpu className="w-4 h-4 text-red-400" />
+            <div
+              className="w-9 h-9 rounded-full flex items-center justify-center border"
+              style={{
+                background: 'rgba(180, 83, 9, 0.18)',
+                borderColor: 'rgba(217, 119, 6, 0.45)',
+              }}
+            >
+              <Zap className="w-4 h-4 text-[#e5a93c]" />
             </div>
             <div>
-              <h2 className="font-re-display text-sm sm:text-base font-bold tracking-[0.14em] text-[#f5f3ee] uppercase">
+              <h2 className="font-re-display text-sm sm:text-base font-bold tracking-[0.14em] text-[#f5f0e4] uppercase">
                 {clue.title || 'Failsafe Logic Panel'} ({clue.id})
               </h2>
-              <p className="font-re-typewriter text-[11px] text-slate-300">{clue.scene_text}</p>
+              <p className="font-re-typewriter text-[11px] text-[#bdae95]">
+                {clue.scene_text || 'Consecrated Copper Busbars · Crypt Substation 6D'}
+              </p>
             </div>
           </div>
 
@@ -224,14 +242,16 @@ export default function FailsafeCircuitModal({
             <button
               type="button"
               onClick={() => setShowTruthTable((v) => !v)}
-              className="re-plate !py-1.5 !px-3 text-[11px] cursor-pointer"
+              className="re-btn cursor-pointer"
             >
-              <HelpCircle className="w-3.5 h-3.5 text-red-400" />
+              <span className="re-btn-circle">?</span>
+              <HelpCircle className="w-3.5 h-3.5 text-[#d8b26e]" />
               <span>{showTruthTable ? 'Hide Gate Table' : 'Logic Gate Table'}</span>
             </button>
-            <span className="re-plate !py-1.5 !px-3 cursor-default">
-              <span className="text-[10px] uppercase tracking-wider text-slate-400">Attempts</span>
-              <span className="font-mono text-red-200">
+            <span className="re-btn cursor-default !border-white/10">
+              <span className="re-btn-circle">#</span>
+              <span className="text-[11px] uppercase tracking-wider text-[#9f9483]">Attempts:</span>
+              <span className="font-mono text-[#fca5a5] font-bold">
                 {clue.attempts ?? 0}/{clue.attempts_max ?? 3}
               </span>
             </span>
@@ -239,17 +259,24 @@ export default function FailsafeCircuitModal({
               type="button"
               onClick={onClose}
               aria-label="Close Failsafe Panel"
-              className="re-plate !py-1.5 !px-3.5 cursor-pointer"
+              className="re-btn cursor-pointer"
             >
+              <span className="re-btn-circle">ESC</span>
               <X className="w-3.5 h-3.5" />
-              <span>Close [ESC]</span>
+              <span>Close</span>
             </button>
           </div>
         </div>
 
         <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4">
           {showTruthTable && (
-            <div className="p-3.5 rounded-[2px] bg-[#16100b] border border-[#b4843d]/45 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2 text-[11px] font-re-typewriter">
+            <div
+              className="p-3.5 rounded-xl border grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2 text-[11px] font-re-typewriter"
+              style={{
+                background: 'rgba(20, 14, 10, 0.92)',
+                borderColor: 'rgba(196, 162, 101, 0.3)',
+              }}
+            >
               {[
                 ['AND', '1 only if ALL inputs = 1'],
                 ['OR', '1 if ANY input = 1'],
@@ -258,41 +285,53 @@ export default function FailsafeCircuitModal({
                 ['NOR', '1 only if ALL inputs = 0'],
                 ['NOT', 'Inverts single input (0↔1)'],
               ].map(([gName, desc]) => (
-                <div key={gName} className="p-2 rounded-[2px] bg-black/45 border border-[#5c4121]">
+                <div key={gName} className="p-2 rounded-lg bg-black/50 border border-[#523d24]">
                   <div className="font-bold text-[#fbbf24] tracking-wider">{gName}</div>
-                  <div className="text-[10px] text-[#d6be92] mt-0.5 leading-snug">{desc}</div>
+                  <div className="text-[10px] text-[#cfbe9a] mt-0.5 leading-snug">{desc}</div>
                 </div>
               ))}
             </div>
           )}
-          {/* Brass Engraved Legend Plate + Step-by-Step Guide */}
-          <div className="px-4 py-3 rounded-[2px] bg-[#21170e] border border-[#926933]/70 font-re-typewriter text-xs text-[#ebd4aa] space-y-1.5">
+
+          {/* ── Antique Brass Engraved Legend Plate ── */}
+          <div
+            className="px-4 py-3 rounded-xl border font-re-typewriter text-xs space-y-1"
+            style={{
+              background: 'linear-gradient(135deg, rgba(38, 26, 16, 0.88) 0%, rgba(24, 16, 10, 0.92) 100%)',
+              borderColor: 'rgba(180, 132, 61, 0.45)',
+              color: '#ecd6ad',
+            }}
+          >
             {clue.payload?.panel_note && (
               <div className="flex items-start gap-2.5">
                 <Zap className="w-4 h-4 text-[#e5a93c] shrink-0 mt-0.5" />
                 <span>
-                  <strong className="text-[#f4c66a] tracking-wider">ENGRAVED PLATE // </strong>
+                  <strong className="text-[#f6cb76] tracking-wider">ENGRAVED PLATE // </strong>
                   {clue.payload.panel_note}
                 </span>
               </div>
             )}
-            <div className="text-[11px] text-[#d6be92]">
-              <strong className="text-[#f4c66a]">How to Solve: </strong>
+            <div className="text-[11px] text-[#ceb991]">
+              <strong className="text-[#f6cb76]">How to Solve: </strong>
               Toggle knife switches (A1..D0) per the engraved instruction, watch the 4 filament bulbs update live, press{' '}
-              <strong>LOAD CODE</strong>, then press <strong>TRANSMIT CODE</strong>.
+              <strong className="text-white">LOAD CODE</strong>, then press <strong className="text-white">TRANSMIT CODE</strong>.
             </div>
           </div>
 
-          {/* 8 Copper-Jaw Knife Switches (Pairs A, B, C, D) */}
+          {/* ── 8 Heavy Ceramic/Slate Knife Switches (Pairs A, B, C, D) ── */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {pairs.map((pair, pIdx) => {
               const groupLetter = pair[0]?.[0] || String.fromCharCode(65 + pIdx);
               return (
                 <div
                   key={groupLetter}
-                  className="p-3 rounded-[2px] bg-[#140f0b] border border-[#5e4120] flex flex-col items-center gap-2.5"
+                  className="p-3 rounded-xl border flex flex-col items-center gap-2.5 shadow-[inset_0_2px_6px_rgba(0,0,0,0.6)]"
+                  style={{
+                    background: 'rgba(16, 12, 10, 0.85)',
+                    borderColor: 'rgba(196, 162, 101, 0.22)',
+                  }}
                 >
-                  <div className="w-full text-center border-b border-[#4c3419] pb-1 font-re-typewriter text-[10px] font-bold tracking-[0.2em] text-[#deb56d]">
+                  <div className="w-full text-center border-b border-[#43311f] pb-1 font-re-typewriter text-[10px] font-bold tracking-[0.2em] text-[#deb56d]">
                     PAIR {groupLetter}
                   </div>
                   <div className="flex items-center gap-3">
@@ -304,22 +343,22 @@ export default function FailsafeCircuitModal({
                           type="button"
                           onClick={() => toggleSwitch(swName)}
                           aria-label={`Toggle switch ${swName}`}
-                          className={`group relative flex flex-col items-center justify-between w-14 h-24 p-2 rounded-[2px] border transition-colors cursor-pointer ${
+                          className={`group relative flex flex-col items-center justify-between w-14 h-24 p-2 rounded-lg border transition-all cursor-pointer ${
                             on
-                              ? 'bg-[#26180b] border-[#e09f3e]'
-                              : 'bg-[#0e0b08] border-[#423222] hover:border-[#8c6434]'
+                              ? 'bg-[#2b1a0d] border-[#f59e0b] shadow-[0_0_14px_rgba(245,158,11,0.24)]'
+                              : 'bg-[#0f0b08] border-[#382a1b] hover:border-[#7a582c]'
                           }`}
                         >
-                          <span className="font-re-typewriter text-[10px] font-bold text-[#e6d1ac]">
+                          <span className="font-re-typewriter text-[10.5px] font-bold text-[#e6d1ac]">
                             {swName}
                           </span>
-                          {/* Bakelite switch channel + rectangular knife blade */}
-                          <div className="relative w-6 h-10 bg-black/85 rounded-[2px] border border-[#3a2d1f] flex items-center justify-center">
+                          {/* Slate base switch slot with copper knife blade */}
+                          <div className="relative w-6 h-10 bg-black/90 rounded border border-[#3a2d1f] flex items-center justify-center">
                             <div
-                              className={`w-4 h-3.5 rounded-[1px] border transition-transform duration-150 ${
+                              className={`w-4 h-3.5 rounded-[2px] border transition-transform duration-150 ${
                                 on
-                                  ? '-translate-y-2.5 bg-[#f59e0b] border-[#fef3c7]'
-                                  : 'translate-y-2.5 bg-[#57534e] border-[#a8a29e]'
+                                  ? '-translate-y-2.5 bg-gradient-to-b from-[#f59e0b] to-[#b45309] border-[#fef3c7] shadow-[0_0_8px_rgba(245,158,11,0.6)]'
+                                  : 'translate-y-2.5 bg-[#44403c] border-[#78716c]'
                               }`}
                             />
                           </div>
@@ -339,14 +378,20 @@ export default function FailsafeCircuitModal({
             })}
           </div>
 
-          {/* Hand-Drawn 1981 Interactive Engineering Blueprint Schematic */}
-          <div className="vault-blueprint-grid rounded-[2px] border-2 border-[#4e4230] p-3 text-[#2a2117] relative overflow-x-auto">
-            <div className="flex items-center justify-between border-b border-[#7a6b54]/50 pb-1.5 mb-2 font-re-typewriter">
-              <span className="text-[11px] font-bold tracking-[0.14em] uppercase">
-                HAND-DRAWN LOGIC SCHEMATIC // REV. 1981
+          {/* ── Hand-Drawn Engineering Schematic on Aged Vellum Parchment ── */}
+          <div
+            className="rounded-xl border p-3 text-[#2a2117] relative overflow-x-auto shadow-[inset_0_0_30px_rgba(100,70,30,0.12)]"
+            style={{
+              background: '#f4eedd',
+              borderColor: 'rgba(150, 115, 65, 0.45)',
+            }}
+          >
+            <div className="flex items-center justify-between border-b border-[#a89679]/60 pb-1.5 mb-2 font-re-typewriter">
+              <span className="text-[11px] font-bold tracking-[0.14em] uppercase text-[#382b1b]">
+                CONSECRATED LOGIC SCHEMATIC // ST. JUDE SUBSTATION
               </span>
-              <span className="text-[10px] uppercase tracking-wider text-[#544736]">
-                ACTIVE COPPER TRACES: {evalResult.code}
+              <span className="text-[10.5px] uppercase tracking-wider text-[#63513a] font-semibold">
+                ACTIVE BUSBAR TRACES: {evalResult.code}
               </span>
             </div>
 
@@ -355,16 +400,7 @@ export default function FailsafeCircuitModal({
               className="w-full min-w-[560px] h-auto max-h-64 block"
               aria-label="Failsafe Logic Circuit Schematic"
             >
-              <defs>
-                <filter id="vault-wire-glow" x="-15%" y="-15%" width="130%" height="130%">
-                  <feGaussianBlur stdDeviation="2.2" result="blur" />
-                  <feMerge>
-                    <feMergeNode in="blur" />
-                    <feMergeNode in="SourceGraphic" />
-                  </feMerge>
-                </filter>
-              </defs>
-              {/* Orthogonal Wires from Inputs/Gates to Gate Inputs */}
+              {/* Orthogonal Copper Traces from Inputs/Gates to Gate Inputs */}
               {layout.gates.map((g) => {
                 const gn = layout.nodes[g.id];
                 if (!gn) return null;
@@ -381,15 +417,15 @@ export default function FailsafeCircuitModal({
                       key={`w-${g.id}-${srcId}-${i}`}
                       d={dPath}
                       fill="none"
-                      stroke={active ? '#c2410c' : '#574a38'}
-                      strokeWidth={active ? '2.4' : '1.4'}
-                      opacity={active ? 0.95 : 0.62}
+                      stroke={active ? '#b45309' : '#735f47'}
+                      strokeWidth={active ? '2.5' : '1.3'}
+                      opacity={active ? 1 : 0.65}
                     />
                   );
                 });
               })}
 
-              {/* Wires from Terminal Gates to 4 Output Filament Bulbs */}
+              {/* Traces from Terminal Gates to 4 Output Filament Bulbs */}
               {layout.outNodes.map((on) => {
                 const sn = layout.nodes[on.srcId];
                 if (!sn) return null;
@@ -401,14 +437,14 @@ export default function FailsafeCircuitModal({
                     key={`out-${on.id}`}
                     d={dPath}
                     fill="none"
-                    stroke={active ? '#d97706' : '#574a38'}
-                    strokeWidth={active ? '2.8' : '1.5'}
-                    opacity={active ? 1 : 0.6}
+                    stroke={active ? '#d97706' : '#735f47'}
+                    strokeWidth={active ? '2.8' : '1.4'}
+                    opacity={active ? 1 : 0.65}
                   />
                 );
               })}
 
-              {/* Input Pin Nodes */}
+              {/* Input Pin Nodes on Vellum */}
               {inputNames.map((id) => {
                 const n = layout.nodes[id];
                 const active = Boolean(switches[id]);
@@ -419,10 +455,10 @@ export default function FailsafeCircuitModal({
                       y={n.y - 9}
                       width="36"
                       height="18"
-                      rx="2"
-                      fill={active ? '#fde68a' : '#cdc0a6'}
-                      stroke={active ? '#b45309' : '#4a3d2d'}
-                      strokeWidth="1.5"
+                      rx="3"
+                      fill={active ? '#fef3c7' : '#ded1ba'}
+                      stroke={active ? '#b45309' : '#574836'}
+                      strokeWidth="1.4"
                     />
                     <text
                       x={n.x - 6}
@@ -463,7 +499,7 @@ export default function FailsafeCircuitModal({
                       textAnchor="middle"
                       fontSize="8"
                       fontFamily="monospace"
-                      fill="#4a3d2d"
+                      fill="#544431"
                     >
                       {g.id} ({active ? '1' : '0'})
                     </text>
@@ -471,7 +507,7 @@ export default function FailsafeCircuitModal({
                 );
               })}
 
-              {/* Output Bulb Nodes */}
+              {/* Output Filament Lamp Icons on Schematic */}
               {layout.outNodes.map((on, i) => {
                 const active = Boolean(evalResult.outputs[i]);
                 return (
@@ -480,8 +516,8 @@ export default function FailsafeCircuitModal({
                       cx={on.x}
                       cy={on.y}
                       r="11"
-                      fill={active ? '#f59e0b' : '#2a241d'}
-                      stroke={active ? '#78350f' : '#574a38'}
+                      fill={active ? '#f59e0b' : '#332920'}
+                      stroke={active ? '#78350f' : '#6b5842'}
                       strokeWidth="2"
                     />
                     <text
@@ -491,7 +527,7 @@ export default function FailsafeCircuitModal({
                       fontSize="10"
                       fontWeight="bold"
                       fontFamily="monospace"
-                      fill={active ? '#1c1104' : '#a89f91'}
+                      fill={active ? '#1c1104' : '#c4b7a2'}
                     >
                       {active ? '1' : '0'}
                     </text>
@@ -501,16 +537,22 @@ export default function FailsafeCircuitModal({
             </svg>
           </div>
 
-          {/* 4 Physical Edison Filament Bulbs & Nixie Lamp Readout */}
-          <div className="p-4 rounded-[2px] bg-[#140f0b] border border-[#5e4120] flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-4">
+          {/* ── 4 Antique Edison Vacuum Filament Lamps & Readout ── */}
+          <div
+            className="p-4 rounded-xl border flex flex-col sm:flex-row items-center justify-between gap-4"
+            style={{
+              background: 'rgba(16, 12, 10, 0.9)',
+              borderColor: 'rgba(196, 162, 101, 0.22)',
+            }}
+          >
+            <div className="flex items-center gap-5">
               {evalResult.outputs.map((val, idx) => (
                 <div key={`lamp-${idx}`} className="flex flex-col items-center gap-1.5">
                   <div
-                    className={`w-11 h-11 rounded-[2px] border-2 flex items-center justify-center font-re-typewriter font-bold text-sm transition-colors ${
+                    className={`w-12 h-12 rounded-full border-2 flex items-center justify-center font-mono font-bold text-base transition-all duration-200 ${
                       val
-                        ? 'bg-[#d97706] border-[#fef3c7] text-[#1c0f02]'
-                        : 'bg-[#120e0b] border-[#3d3024] text-[#736455]'
+                        ? 'bg-gradient-to-b from-[#f59e0b] to-[#b45309] border-[#fef3c7] text-[#1c0f02] shadow-[0_0_16px_rgba(245,158,11,0.65)]'
+                        : 'bg-[#15110d] border-[#382b1d] text-[#6b5d4f]'
                     }`}
                   >
                     {val}
@@ -523,7 +565,7 @@ export default function FailsafeCircuitModal({
             </div>
 
             <div className="flex items-center gap-3">
-              <div className="text-right px-4 py-1.5 rounded-[2px] bg-black/70 border border-[#4a341b]">
+              <div className="text-right px-4 py-2 rounded-xl bg-black/75 border border-[#4a341b]">
                 <span className="font-re-typewriter text-[9px] tracking-widest text-[#948066] block">
                   READOUT (L → R)
                 </span>
@@ -534,9 +576,9 @@ export default function FailsafeCircuitModal({
               <button
                 type="button"
                 onClick={applyLampCode}
-                className="re-plate re-plate-amber !py-2 !px-3.5 cursor-pointer"
+                className="re-btn cursor-pointer"
               >
-                <span className="re-keycap">↓</span>
+                <span className="re-btn-circle">↓</span>
                 <span>LOAD CODE</span>
               </button>
             </div>
@@ -544,10 +586,10 @@ export default function FailsafeCircuitModal({
 
           {feedback && (
             <div
-              className={`p-3.5 rounded-[2px] border border-l-2 font-re-typewriter text-xs flex items-center gap-2 ${
+              className={`p-3.5 rounded-xl border font-re-typewriter text-xs flex items-center gap-2 ${
                 feedback.correct
-                  ? 'bg-[#0e1f15] border-emerald-600/70 border-l-emerald-400 text-emerald-200'
-                  : 'bg-[#210b0d] border-red-700/70 border-l-red-400 text-red-200'
+                  ? 'bg-[#0e1f15] border-emerald-600/70 text-emerald-200'
+                  : 'bg-[#210b0d] border-red-700/70 text-red-200'
               }`}
             >
               {feedback.correct ? (
@@ -560,10 +602,14 @@ export default function FailsafeCircuitModal({
           )}
         </div>
 
-        {/* Submission Switch Plate */}
+        {/* ── Submission Switch Plate ── */}
         <form
           onSubmit={handleFormSubmit}
-          className="p-4 bg-[#16100c] border-t border-[#5e4120] flex flex-col sm:flex-row items-stretch sm:items-end gap-3"
+          className="p-4 border-t flex flex-col sm:flex-row items-stretch sm:items-end gap-3"
+          style={{
+            background: 'linear-gradient(180deg, rgba(20, 15, 12, 0.95) 0%, rgba(12, 9, 8, 0.98) 100%)',
+            borderColor: 'rgba(196, 162, 101, 0.22)',
+          }}
         >
           <div className="flex-1">
             <label className="block font-re-typewriter text-[11px] uppercase tracking-[0.12em] text-[#e2be7f] mb-1.5">
@@ -576,16 +622,16 @@ export default function FailsafeCircuitModal({
               disabled={clue.solved || isExhausted || isSubmitting}
               placeholder={stage.fields?.[0]?.placeholder || `Current lamp code: ${evalResult.code}`}
               aria-label={stage.fields?.[0]?.label || 'Authorization code'}
-              className="w-full px-4 py-2.5 rounded-[2px] bg-[#070605] border border-[#6e4c23] focus:border-[#f59e0b] outline-none font-re-typewriter text-sm tracking-[0.26em] text-[#fef3c7]"
+              className="w-full px-4 py-2.5 rounded-xl bg-[#090705] border border-[#523d24] focus:border-[#f59e0b] outline-none font-re-typewriter text-sm tracking-[0.26em] text-[#fef3c7]"
             />
           </div>
 
           <button
             type="submit"
             disabled={clue.solved || isExhausted || isSubmitting}
-            className="re-plate re-plate-amber !px-5 !py-2.5 !justify-center disabled:opacity-40 cursor-pointer"
+            className="re-btn !px-6 !py-2.5 !justify-center disabled:opacity-40 cursor-pointer"
           >
-            <span className="re-keycap">⚡</span>
+            <span className="re-btn-circle">⚡</span>
             <span className="tracking-widest uppercase">
               {clue.solved ? 'LATCHED' : isExhausted ? 'LOCKED OUT' : isSubmitting ? 'TRANSMITTING...' : 'TRANSMIT CODE'}
             </span>

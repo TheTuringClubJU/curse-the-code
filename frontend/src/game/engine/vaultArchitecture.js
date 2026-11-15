@@ -105,16 +105,40 @@ export function createVaultArchitecture(E, { matLancet, pushStatic }) {
   const { S, loadGLB, solid, removeSolid, anim, audio, ref } = E;
   const protoPromises = new Map();
 
+  const assetTracker = {
+    total: 0,
+    loaded: 0,
+    isReady: false,
+    track(p) {
+      assetTracker.total++;
+      p.finally(() => {
+        assetTracker.loaded++;
+        const pct = assetTracker.total > 0 ? Math.min(100, Math.round((assetTracker.loaded / assetTracker.total) * 100)) : 100;
+        if (assetTracker.loaded >= assetTracker.total && assetTracker.total >= 8) {
+          assetTracker.isReady = true;
+        }
+        ref?.onLoadProgress?.(pct, assetTracker.loaded, assetTracker.total);
+        if (assetTracker.isReady) {
+          ref?.onLoadComplete?.();
+        }
+      });
+      return p;
+    },
+  };
+  ref.assetTracker = assetTracker;
+
   const loadCached = (relPath, opts = { psx: true, npAll: true }) => {
     const key = `${relPath}|${Boolean(opts.psx)}|${opts.albedoLift || 0}`;
     if (!protoPromises.has(key)) {
-      const p = loadGLB(`${VAULT_MODEL_BASE}/${relPath}`)
-        .then((gltf) => {
-          if (!gltf?.scene) return null;
-          normalizeModelMaterials(gltf.scene, opts);
-          return gltf;
-        })
-        .catch(() => null);
+      const p = assetTracker.track(
+        loadGLB(`${VAULT_MODEL_BASE}/${relPath}`)
+          .then((gltf) => {
+            if (!gltf?.scene) return null;
+            normalizeModelMaterials(gltf.scene, opts);
+            return gltf;
+          })
+          .catch(() => null)
+      );
       protoPromises.set(key, p);
     }
     return protoPromises.get(key);
@@ -223,7 +247,7 @@ export function createVaultArchitecture(E, { matLancet, pushStatic }) {
     pushStatic(new THREE.PlaneGeometry(7.2, 9.6), matFlagstone, 0, -0.012, 12.1, -Math.PI / 2, 0, 0);
     pushStatic(new THREE.PlaneGeometry(17.4, 17.4), matFlagstone, 0, -0.012, -1.0, -Math.PI / 2, 0, 0);
     pushStatic(new THREE.PlaneGeometry(8.8, 12.6), matFlagstone, -12.85, -0.012, 0, -Math.PI / 2, 0, 0);
-    pushStatic(new THREE.PlaneGeometry(8.8, 12.6), matConcrete, 12.85, -0.012, 0, -Math.PI / 2, 0, 0);
+    pushStatic(new THREE.PlaneGeometry(8.8, 12.6), matFlagstone, 12.85, -0.012, 0, -Math.PI / 2, 0, 0);
     pushStatic(new THREE.PlaneGeometry(4.4, 5.8), matConcrete, -5.5, -0.012, 10.9, -Math.PI / 2, 0, 0);
     pushStatic(new THREE.PlaneGeometry(3.8, 5.4), matConcrete, 12.9, -0.012, 8.65, -Math.PI / 2, 0, 0);
     pushStatic(new THREE.PlaneGeometry(6.0, 5.4), matFlagstone, -13.3, -0.012, -8.75, -Math.PI / 2, 0, 0);
@@ -233,7 +257,7 @@ export function createVaultArchitecture(E, { matLancet, pushStatic }) {
     buildModularFloor('dungeon/glb/floor_straw.glb', -7.5, -3.5, 8.1, 13.7, 0, 0.002); // 6A Cell 01
     buildModularFloor('temple/glb/floor_temple.glb', -8.4, 8.4, -9.4, 7.4, 0, 0.002); // 6B Central Nave
     buildModularFloor('dungeon/glb/floor_stone.glb', -17.0, -8.6, -6.0, 6.0, 0, 0.002); // 6C West Scriptorium
-    buildModularFloor('industrial/SM_Floor_Concrete.glb', 8.6, 17.0, -6.0, 6.0, 0, -0.195); // 6D East Switchgear
+    buildModularFloor('dungeon/glb/floor_stone.glb', 8.6, 17.0, -6.0, 6.0, 0, 0.002); // 6D East Relay Gallery
     buildModularFloor('dungeon/glb/floor_straw.glb', 11.2, 14.6, 6.1, 11.1, 0, 0.002); // 6E Cellar
     buildModularFloor('temple/glb/floor_temple.glb', -16.1, -10.5, -11.2, -6.2, 0, 0.002); // 6F Reliquary Chapel
 
@@ -359,17 +383,17 @@ export function createVaultArchitecture(E, { matLancet, pushStatic }) {
     buildWallRun('temple/glb/wall_temple.glb', [-10.5, -11.2], [-10.5, -6.1], 0, 2, 2.85, -Math.PI / 2);
     placeLancetWindow(-13.3, 1.85, -11.2, 0, 0.95, 0, 1.9);
 
-    // ─── 6D EAST SWITCHGEAR & 1981 CONCRETE INTRUSION (x: 8.6..17.0, z: -6.0..6.0) ───
+    // ─── 6D EAST RELAY GALLERY (x: 8.6..17.0, z: -6.0..6.0) ───
     addBacking(17.25, 3.1, 0, 0.25, 6.4, 12.6);
     addBacking(12.85, 3.1, -6.25, 8.8, 6.4, 0.25);
     addBacking(9.8, 3.1, 6.25, 3.2, 6.4, 0.25);
     addBacking(15.8, 3.1, 6.25, 3.2, 6.4, 0.25);
 
-    buildWallRun('industrial/SM_Wall_Plain.glb', [16.95, -6.0], [16.95, 6.0], 0, 2, 3.1, -Math.PI / 2);
-    buildWallRun('industrial/SM_Wall_Plain.glb', [8.6, -6.05], [17.0, -6.05], 0, 2, 3.1, 0);
-    buildWallRun('industrial/SM_Wall_Plain.glb', [8.6, 6.05], [11.6, 6.05], 0, 2, 3.1, Math.PI);
-    buildWallRun('industrial/SM_Wall_Plain.glb', [14.1, 6.05], [17.0, 6.05], 0, 2, 3.1, Math.PI);
-    placeModularBay('industrial/SM_Wall_Plain.glb', 12.85, 3.2, 6.05, Math.PI, [1.3, 1.0, 1.1]);
+    buildWallRun('dungeon/glb/wall_stone.glb', [16.95, -6.0], [16.95, 6.0], 0, 2, 3.1, -Math.PI / 2);
+    buildWallRun('dungeon/glb/wall_stone.glb', [8.6, -6.05], [17.0, -6.05], 0, 2, 3.1, 0);
+    buildWallRun('dungeon/glb/wall_stone.glb', [8.6, 6.05], [11.6, 6.05], 0, 2, 3.1, Math.PI);
+    buildWallRun('dungeon/glb/wall_stone.glb', [14.1, 6.05], [17.0, 6.05], 0, 2, 3.1, Math.PI);
+    placeModularBay('dungeon/glb/wall_stone.glb', 12.85, 3.2, 6.05, Math.PI, [1.3, 1.0, 1.1]);
     placeModularBay('temple/glb/wall_breach.glb', 9.25, 0, -1.65, 0, [1.4, 1.25, 1.15]);
     placeModularBay('temple/glb/wall_breach.glb', 9.25, 0, 1.65, Math.PI, [1.4, 1.25, 1.15]);
 
@@ -582,6 +606,7 @@ export function createVaultArchitecture(E, { matLancet, pushStatic }) {
 
   return {
     loadCached,
+    track: (p) => assetTracker.track(p),
     placeModularBay,
     placeLancetWindow,
     buildRoomFloors,

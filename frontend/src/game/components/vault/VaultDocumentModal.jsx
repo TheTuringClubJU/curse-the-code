@@ -164,7 +164,7 @@ export const VAULT_DOCUMENTS = {
       'TRANSLATION FROM CHISELED STONE PLATE: "Three iron locks bind the Crimson Sphere: first purify the Scripture in the Western Study; second balance the Copper Knives in the Eastern Relay Bay; third speak both seals and your operator mark upon the Central Altar."',
     ],
     marginalia:
-      'Modern pencil underneath: "Translation for night shift — 1) Solve Manual Diff in West 6C (gets clean steps). 2) Solve Failsafe Switches in East 6D (gets auth code). 3) Inspect your Dossier [C] and unlock Central Console here in 6B!"',
+      'Faded charcoal rubbing beneath the plinth: "The sacred relays answer only in sequence. Clear the corrupted diff in 6C Scriptorium to recover the true steps, energize the knife switches in 6D East to derive the 4-digit beacon, then bring both recovered keys to the Central Altar in 6B."',
     telemetry: [
       { label: 'Seal I', value: 'WEST WING · 6C' },
       { label: 'Seal II', value: 'EAST WING · 6D' },
@@ -271,37 +271,36 @@ export default function VaultDocumentModal({
       aria-label={`Archival Manuscript: ${doc.title}`}
     >
       <div
-        className="w-full max-w-4xl rounded-[2px] overflow-hidden flex flex-col max-h-[88vh] backdrop-blur-xl"
+        className="w-full max-w-4xl rounded-2xl overflow-hidden flex flex-col max-h-[88vh] backdrop-blur-xl"
         style={{
-          background: 'rgba(10, 12, 18, 0.94)',
-          border: '1px solid rgba(180, 160, 130, 0.26)',
-          borderLeft: '3px solid #991b1b',
-          boxShadow: '0 28px 80px rgba(0, 0, 0, 0.88)',
+          background: 'linear-gradient(180deg, #161210 0%, #0a0807 100%)',
+          border: '1px solid rgba(196, 162, 101, 0.28)',
+          boxShadow: '0 28px 80px rgba(0, 0, 0, 0.95)',
         }}
       >
-        {/* Top Obsidian Archive Header */}
+        {/* Top Antique Archive Header */}
         <div
           className="px-6 py-4 flex items-center justify-between gap-4 border-b"
           style={{
-            background: 'rgba(13, 16, 23, 0.85)',
-            borderColor: 'rgba(148, 163, 184, 0.18)',
+            background: 'linear-gradient(90deg, rgba(28, 20, 16, 0.95) 0%, rgba(16, 12, 10, 0.95) 100%)',
+            borderColor: 'rgba(196, 162, 101, 0.22)',
           }}
         >
           <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2 text-[10px] vault-font-mono tracking-[0.22em] uppercase">
+            <div className="flex flex-wrap items-center gap-2 text-[10px] font-mono tracking-[0.22em] uppercase">
               <span
-                className="px-2 py-0.5 rounded-[2px] font-bold"
+                className="px-2.5 py-0.5 rounded-full font-bold"
                 style={{
-                  background: 'rgba(185, 28, 28, 0.18)',
+                  background: 'rgba(185, 28, 28, 0.22)',
                   border: '1px solid rgba(239, 68, 68, 0.45)',
                   color: '#fca5a5',
                 }}
               >
                 {doc.wing}
               </span>
-              <span className="text-slate-400">{doc.folioCode}</span>
-              <span className="text-slate-600">·</span>
-              <span className="text-slate-300">{doc.classification}</span>
+              <span className="text-[#a89a85]">{doc.folioCode}</span>
+              <span className="text-stone-600">·</span>
+              <span className="text-stone-300">{doc.classification}</span>
             </div>
             <h2
               className="mt-1 text-lg sm:text-xl font-bold tracking-wider truncate vault-font-serif"
@@ -312,14 +311,14 @@ export default function VaultDocumentModal({
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
-            <div className="hidden sm:flex rounded-[2px] p-0.5 border border-slate-700/70 bg-black/60">
+            <div className="hidden sm:flex rounded-full p-0.5 border border-white/10 bg-black/60">
               <button
                 type="button"
                 onClick={() => setTab('folio')}
-                className={`px-3 py-1 rounded-[2px] text-[11px] vault-font-mono tracking-wider uppercase transition cursor-pointer ${
+                className={`px-3.5 py-1 rounded-full text-[11px] font-mono tracking-wider uppercase transition cursor-pointer ${
                   tab === 'folio'
-                    ? 'bg-red-900/60 text-red-100 border border-red-500/45'
-                    : 'text-slate-400 hover:text-slate-200'
+                    ? 'bg-gradient-to-r from-red-950 to-red-900 text-[#fde8e8] border border-red-500/40'
+                    : 'text-stone-400 hover:text-stone-200'
                 }`}
               >
                 Folio Sheet
@@ -327,10 +326,10 @@ export default function VaultDocumentModal({
               <button
                 type="button"
                 onClick={() => setTab('ledger')}
-                className={`px-3 py-1 rounded-[2px] text-[11px] vault-font-mono tracking-wider uppercase transition cursor-pointer ${
+                className={`px-3.5 py-1 rounded-full text-[11px] font-mono tracking-wider uppercase transition cursor-pointer ${
                   tab === 'ledger'
-                    ? 'bg-red-900/60 text-red-100 border border-red-500/45'
-                    : 'text-slate-400 hover:text-slate-200'
+                    ? 'bg-gradient-to-r from-red-950 to-red-900 text-[#fde8e8] border border-red-500/40'
+                    : 'text-stone-400 hover:text-stone-200'
                 }`}
               >
                 Index ({discoveredList.length})
@@ -339,10 +338,10 @@ export default function VaultDocumentModal({
             <button
               type="button"
               onClick={onClose}
-              className="re-plate !px-3.5 !py-1.5 cursor-pointer"
+              className="re-btn cursor-pointer"
             >
+              <span className="re-btn-circle">ESC</span>
               <span>Close</span>
-              <span className="re-keycap">ESC</span>
             </button>
           </div>
         </div>
@@ -508,9 +507,9 @@ export default function VaultDocumentModal({
                   <button
                     type="button"
                     onClick={onClose}
-                    className="re-plate !py-1 !px-3.5 cursor-pointer"
+                    className="re-btn cursor-pointer"
                   >
-                    Return to Nave
+                    <span>Return to Nave</span>
                   </button>
                 </div>
               </div>

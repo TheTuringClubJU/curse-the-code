@@ -78,10 +78,15 @@ export default function Room6Vault({ team, onLogout }) {
   const [isBootLoading, setIsBootLoading] = useState(
     () => typeof navigator !== 'undefined' && !/jsdom/i.test(navigator.userAgent)
   );
+  const [loadPct, setLoadPct] = useState(0);
 
   useEffect(() => {
     if (!isBootLoading) return undefined;
-    const t = setTimeout(() => setIsBootLoading(false), 1600);
+    // Safety fallback: dismiss after 5.5s if any network or asset load stalls
+    const t = setTimeout(() => {
+      setLoadPct(100);
+      setIsBootLoading(false);
+    }, 5500);
     return () => clearTimeout(t);
   }, [isBootLoading]);
 
@@ -291,6 +296,13 @@ export default function Room6Vault({ team, onLogout }) {
     try {
       engine = createEngine(mountEl, vaultConfig, {
         audio,
+        onProgress: (pct) => {
+          setLoadPct(pct);
+        },
+        onComplete: () => {
+          setLoadPct(100);
+          setTimeout(() => setIsBootLoading(false), 320);
+        },
         onInteract: (objId) => handleInteract(objId),
         onTarget: (targetId) => {
           const entry = targetId ? vaultConfig.interact?.[targetId] : null;
@@ -610,14 +622,24 @@ export default function Room6Vault({ team, onLogout }) {
           </div>
 
           <div className="relative z-10 space-y-2.5">
-            <div className="w-full h-[2px] bg-[#1a1c22] overflow-hidden">
-              <div className="h-full w-2/3 bg-[#b91c1c] animate-pulse" />
+            <div className="w-full h-[3px] bg-[#1a1c22] rounded-full overflow-hidden border border-white/10">
+              <div
+                className="h-full bg-gradient-to-r from-[#991b1b] via-[#dc2626] to-[#f87171] transition-all duration-200"
+                style={{ width: `${Math.max(8, loadPct)}%` }}
+              />
             </div>
-            <div className="flex items-center justify-between text-[10px] uppercase tracking-[0.24em] text-[#848078]"
+            <div
+              className="flex items-center justify-between text-[10px] uppercase tracking-[0.24em] text-[#848078]"
               style={{ fontFamily: "'IBM Plex Mono', monospace" }}
             >
-              <span>LOADING 3D GEOMETRY &amp; AUDIO...</span>
-              <span>CLICK TO ENTER</span>
+              <span>
+                {loadPct >= 100
+                  ? 'SANCTUARY ARCHITECTURE READY'
+                  : `LOADING 3D GEOMETRY & CONDUITS (${loadPct}%)...`}
+              </span>
+              <span className={loadPct >= 100 ? 'text-[#e5dcc9] font-bold animate-pulse' : ''}>
+                {loadPct >= 100 ? 'CLICK TO ENTER VAULT →' : 'PLEASE WAIT'}
+              </span>
             </div>
           </div>
         </div>
