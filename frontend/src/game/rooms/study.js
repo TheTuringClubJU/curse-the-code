@@ -49,7 +49,6 @@ export default {
     rug: { pos: [0, 0.012, -0.6], size: [3.2, 0.02, 3.8], role: 'decor' },
     beams_webs: { pos: [0, 4.34, 0], size: [6.8, 0.3, 6.2], role: 'decor' },
     coat_stand: { pos: [-4.95, 1, 4.0], size: [0.45, 2.0, 0.45], role: 'decor' },
-    study_door_back: { pos: [0, 1.25, 4.34], size: [1.3, 2.28, .1], role: 'door_back' },
     study_door_exit: { pos: [0, 1.25, -4.34], size: [1.2, 2.2, 0.2], role: 'door_exit' }
   },
   interact: {
@@ -69,7 +68,6 @@ export default {
     wastebin: { label: 'Search Waste Bin' },
     window: { label: 'Search Window' },
     radiator: { label: 'Search Radiator' },
-    study_door_back: { label: 'Return to Bedroom' },
     study_door_exit: { label: 'Basement Blast Door' }
   },
   boxes: []

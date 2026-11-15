@@ -14,14 +14,13 @@ import CrashDumpModal from './components/study/CrashDumpModal.jsx';
 import LinePrinterModal from './components/study/LinePrinterModal.jsx';
 import StudyCompleteModal from './components/study/StudyCompleteModal.jsx';
 import Round1DossierModal from './components/Round1DossierModal.jsx';
-import HintModal from './components/study/StudyHints.jsx';
+import HintModal from './components/HintModal.jsx';
 import './game.css';
 import './study.css';
 
 export default function Room2Study({
   team,
   onLogout,
-  onTransitionToRoom1,
   onTransitionToRoom3
 }) {
   const mountRef = useRef(null);
@@ -172,14 +171,9 @@ export default function Room2Study({
   // Main interaction handler
   const handleInteract = async (objectId) => {
     if (stateRef.current.paused || searchBusyRef.current) return;
+    if (!studyConfig.objectCoordinates[objectId] && objectId !== 'exit_door') return;
     const currentData = roomDataRef.current;
     if (!currentData) return;
-
-    if (objectId === 'study_door_back') {
-      const held=engineRef.current?.canLeaveStudy?.();if(held?.blocked){showNotification(held.message);return;}
-      onTransitionToRoom1?.();
-      return;
-    }
 
     // 2. Check if this is the Basement Exit Door
     if (objectId === 'study_door_exit' || objectId === 'exit_door') {
@@ -328,17 +322,13 @@ export default function Room2Study({
         handleInteractRef.current?.(targetId);
       },
       onTarget: (targetId) => {
-        activeTargetRef.current = targetId;
-        if (!targetId) {
+        activeTargetRef.current = studyConfig.objectCoordinates[targetId] || targetId === 'exit_door' ? targetId : null;
+        if (!activeTargetRef.current) {
           setActiveHoverPrompt(null);
           return;
         }
 
         const data = roomDataRef.current;
-        if (targetId === 'study_door_back') {
-          setActiveHoverPrompt("Return to Lena's Bedroom [E]");
-          return;
-        }
         if (targetId === 'study_door_exit' || targetId === 'exit_door') {
           if (data?.is_completed) {
             setActiveHoverPrompt('Step into Subterranean Bunker / Enter Room 3 [E]');
@@ -651,7 +641,8 @@ export default function Room2Study({
           setIsHintOpen(false);
           engineRef.current?.lock();
         }}
-        roomData={roomData}
+        roomId="study"
+        roomTitle="Daniel's Study"
       />
       </div>
     </div>

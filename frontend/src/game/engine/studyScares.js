@@ -24,7 +24,7 @@ export function studyScareRate(progress={}){
 
 export function createStudyScares(E,reduced=false,options={}){
  const random=options.random||Math.random;
- // Cosmetic events belong to this visit, including completed-room previews. Old caps cannot silence replays.
+ // Cosmetic event limits apply to each room visit.
  let passes=0,uneases=0,entryCount=null,exitCleared=false,activeTime=0,scareClock=0,lastLoud=-100,lastEventEnd=-100,audioWasBusy=false,lastEventType=null,disposed=false;
  let nextPass=40+random()*10,nextUnease=20+random()*8,pass=null,dim=null,finale=null,spiritPlaced=false,uneaseBag=[];
  const originals=new Map(),refs=()=>E.ref.studyHorror||{};

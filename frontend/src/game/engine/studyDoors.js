@@ -4,11 +4,13 @@ import * as THREE from 'three';
 export function buildStudyDoors(E, {model, add, wood, iron}) {
   for (const side of [-1, 1]) {
     const z = side * (E.D / 2 - .16);
-    const id = side < 0 ? 'study_door_exit' : 'study_door_back';
+    const id = side < 0 ? 'study_door_exit' : null;
     const fallback = new THREE.Group(), hinge = new THREE.Group();
     fallback.position.z = z; hinge.position.x = -.63; fallback.add(hinge);
     const leaf = new THREE.Mesh(new THREE.BoxGeometry(1.26, 2.5, .12), side < 0 ? iron : wood);
-    leaf.position.set(.63, 1.25, 0); hinge.add(leaf); add(fallback, id);
+    leaf.position.set(.63, 1.25, 0); hinge.add(leaf);
+    fallback.name = side < 0 ? 'study-exit-fallback' : 'study-entry-door';
+    add(fallback, id);
     E.solid(-.8, .8, z - .12, z + .12);
     if (side < 0) {
       const bulb = new THREE.Mesh(new THREE.SphereGeometry(.035, 8, 6), new THREE.MeshBasicMaterial({color:0x7e3828}));
@@ -20,14 +22,13 @@ export function buildStudyDoors(E, {model, add, wood, iron}) {
         door.hinge.rotation.y = door.angle;
         bulb.material.color.setHex(door.unlocked ? 0x647f66 : 0x7e3828);
       });
-    }else{
-      E.ref.studyBackDoor={hinge,angle:0,scriptOpen:false};
-      E.anim((_t,dt)=>{const d=E.ref.studyBackDoor;d.angle+=((d.scriptOpen?-1.5:0)-d.angle)*Math.min(1,dt*3);d.hinge.rotation.y=d.angle;});
     }
     // Source bounds include the steps below the leaf; keep them under the floor.
     model('gothic_door', id, [0, -.53, z - side * .365], [1.9, 3.2, 1], side > 0 ? Math.PI : 0, fallback, assembly => {
       const importedLeaf = assembly.getObjectByName('door_iron_low_wood_0');
       if (!importedLeaf) throw new Error('Gothic door leaf is missing');
+      // The entry door is sealed scenery, including during the haunting.
+      if (side > 0) {assembly.name = 'study-entry-door'; return;}
       assembly.updateMatrixWorld(true);
       const b = new THREE.Box3().setFromObject(importedLeaf);
       const pivot = new THREE.Group();
@@ -40,7 +41,7 @@ export function buildStudyDoors(E, {model, add, wood, iron}) {
           if (side < 0) { o.material.color.multiplyScalar(.62); o.material.roughness = .88; }
         }
       });
-      if (side < 0) E.ref.studyExitDoor.hinge = pivot;else E.ref.studyBackDoor.hinge=pivot;
+      E.ref.studyExitDoor.hinge = pivot;
     });
   }
 }

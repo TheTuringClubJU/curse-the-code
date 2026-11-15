@@ -244,7 +244,6 @@ export function createEngine(el,room,h){
   setStudyState(state){if(room.id==='study'){E._studyState.exitScare=Boolean(state.exitScare);E._studyState.cinematic=Boolean(state.cinematic);Object.assign(E._studyState,state);if(state.paused&&!state.exitScare)controls.unlock();}},
   setStudyProgress(progress){if(room.id==='study'){E._studyProgress=progress;E.ref.updateStudyDisplays?.(progress);}},
   tryStudyExit(){if(room.id!=='study')return {blocked:false};const held=haunting?.beforeExit();return held?.blocked?held:scares?.requestExit?.()||{blocked:false};},
-  canLeaveStudy(){return haunting?.canReturn?.()||{blocked:false};},
   standUpStudy(){return haunting?.standUp?.()||false;},
   notifyStudyEvent(event){if(room.id==='study'){E.ref.onStudyInteract?.(event);scares?.notify?.(event);}},
   setPaused(){ /* Intentionally no-op: movement & controls never get blocked! */ },

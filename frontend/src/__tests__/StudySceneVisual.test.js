@@ -16,7 +16,7 @@ function scene(loadGLB) {
 function ids(E){const result=new Set();E.S.traverse(o=>{if(o.userData.id)result.add(o.userData.id);});return result;}
 
 describe('Study actual Three.js scene contract',()=>{
-  it('keeps visible fallbacks and all content props, plus both navigation doors without a loader',()=>{
+  it('keeps visible fallbacks and all content props, plus a forward exit and sealed entry without a loader',()=>{
     const E=scene();const present=ids(E);
     for(const id of Object.keys(config.objectCoordinates))expect(present.has(id),id).toBe(true);
     expect(E.ref.studyExitDoor.isOpen).toBe(false);
@@ -38,7 +38,7 @@ describe('Study actual Three.js scene contract',()=>{
     const urls=loader.mock.calls.map(c=>c[0]);expect(new Set(urls).size).toBe(urls.length);
     expect(E.retire).toHaveBeenCalled();
     expect(E.S.getObjectByName('study-model-computer')).toBeDefined();
-    expect(E.ref.studyExitDoor.isOpen).toBe(false);
+    expect(E.ref.studyExitDoor.isOpen).toBe(false);const entry=E.S.children.find(o=>o.name==='study-entry-door'&&o.userData.studyAsset==='gothic_door');expect(entry).toBeDefined();entry.traverse(o=>expect(o.userData.id).toBeUndefined());expect(entry.getObjectByName('door_iron_low_wood_0').parent.name).not.toContain('study-door-hinge');
   });
   it('keeps outdoor haze bounded and the moon visible without adding another light',()=>{
     const E=scene(),fog=E.S.getObjectByName('study-valley-mist'),moon=E.S.getObjectByName('study-blood-moon');
@@ -84,12 +84,12 @@ describe('Study actual Three.js scene contract',()=>{
     expect(positions.recorder).toBeCloseTo(.465);expect(positions.lamp).toBeCloseTo(.91);
   });
 
-  it('leaves real wall openings behind both doors',()=>{
-    const E=scene();E.S.updateMatrixWorld(true);const structure=[];
+  it('keeps the south entry sealed and only the north exit interactive',()=>{
+    const E=scene();E.S.updateMatrixWorld(true);const entry=E.S.getObjectByName('study-entry-door');expect(entry).toBeDefined();entry.traverse(o=>{expect(o.userData.id).toBeUndefined();});E.anims.forEach(fn=>fn(10,1));expect(entry.children[0].rotation.y).toBe(0);const structure=[];
     E.S.traverse(o=>{if(o.isMesh&&!o.userData.id)structure.push(o);});
     for(const side of [-1,1]){
       const ray=new THREE.Raycaster(new THREE.Vector3(0,1.6,side*4),new THREE.Vector3(0,0,side),0,1);
-      expect(ray.intersectObjects(structure,false)).toHaveLength(0);
+      if(side<0)expect(ray.intersectObjects(structure,false)).toHaveLength(0);else expect(ray.intersectObjects(structure,false).length).toBeGreaterThan(0);
       const corner=new THREE.Raycaster(new THREE.Vector3(.7,2.5,side*4),new THREE.Vector3(0,0,side),0,1);
       expect(corner.intersectObjects(structure,false).length).toBeGreaterThan(0);
     }

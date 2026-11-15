@@ -33,7 +33,7 @@ export function createStudyHaunting(E,scares,{random=Math.random,storage=globalT
  const setView=(x,z,yaw,pitch,height=1.6,roll=0)=>{E.setStudyView?.(x,z,yaw,pitch,height,roll);viewYaw=yaw;viewPitch=pitch;};
  const lock=on=>{E._studyCinematicInput=on;if(on)E.unlockStudy?.();};
  const hideActors=()=>{const r=refs();if(r.woman)r.woman.visible=false;if(r.gurney)r.gurney.visible=false;if(r.closeup)r.closeup.visible=false;};
- const doors=(back,exit)=>{if(E.ref.studyBackDoor)E.ref.studyBackDoor.scriptOpen=back;if(E.ref.studyExitDoor)E.ref.studyExitDoor.scriptOpen=exit;};
+ const doors=exit=>{if(E.ref.studyExitDoor)E.ref.studyExitDoor.scriptOpen=exit;};
  const to=(next,caption='')=>{phase=next;elapsed=0;report(caption);};
  const play=(clip,options={})=>audio()?.playClip?.(clip,{channel:'story',volume:.4,...options});
  const assetsReady=()=>Boolean(refs().woman&&refs().gurney&&refs().closeup);
@@ -50,7 +50,7 @@ export function createStudyHaunting(E,scares,{random=Math.random,storage=globalT
   audio()?.setCrying?.(0,0,false);audio()?.stopClip?.('subtle');to('knock-one','A knock at Lena’s door.');play('doorKnock',{pan:.55});return true;
  };
  const end=()=>{
-  lighting(1);lightOriginals.clear();emissives.clear();stopStory();audio()?.stopClip?.('subtle');hideActors();doors(false,false);lock(false);E._studyBlackout=0;E._studyEyeHeight=1.6;E._studyCameraRoll=0;E._studyHorrorReserved=false;audio()?.setAtmosphereSilence?.(false,.6);
+  lighting(1);lightOriginals.clear();emissives.clear();stopStory();audio()?.stopClip?.('subtle');hideActors();doors(false);lock(false);E._studyBlackout=0;E._studyEyeHeight=1.6;E._studyCameraRoll=0;E._studyHorrorReserved=false;audio()?.setAtmosphereSilence?.(false,.6);
   if(bodyWasVisible&&E.ref.studyHorror?.windowGhost)E.ref.studyHorror.windowGhost.visible=true;to('done');
   if(E.flashlightModel)E.flashlightModel.visible=torchVisible;
  };
@@ -68,7 +68,6 @@ export function createStudyHaunting(E,scares,{random=Math.random,storage=globalT
    if(major())return {blocked:true,message:phase==='recovery'?`Catch your breath (${Math.ceil(Math.max(0,30-recovery))}s) before opening the Basement.`:'Something is still moving nearby. Stay in the Study.'};
    return {blocked:false};
   },
-  canReturn(){return major()&&phase!=='recovery'?{blocked:true,message:'Something is still moving nearby. Stay in the Study.'}:{blocked:false};},
   standUp(){if(phase!=='prone'||disposed)return false;to('standing','Getting back on your feet…');audio()?.setAtmosphereSilence?.(false,.8);return true;},
   tick(dt){
    if(disposed)return;
@@ -100,7 +99,7 @@ export function createStudyHaunting(E,scares,{random=Math.random,storage=globalT
     if(elapsed>=.7){E._studyBlackout=0;to('knock-two','Do not move.');play('doorKnock',{pan:-.5});}return;
    }
    if(phase==='knock-two'){
-    if(elapsed>=knockDuration){doors(true,false);to('opening');play('doorCreak',{channel:'storyDoor',volume:.26,limitSeconds:3,fadeOutSeconds:.4});}return;
+    if(elapsed>=knockDuration){to('opening');play('doorCreak',{channel:'storyDoor',volume:.26,limitSeconds:3,fadeOutSeconds:.4});}return;
    }
    if(phase==='opening'){
     if(elapsed>=2){r.woman.visible=r.gurney.visible=true;lookSound=exitOpened=false;to('crossing');play('paranormal',{volume:.17,loop:true});play('processionSteps',{channel:'storySteps',volume:.085,loop:true});}return;
@@ -115,9 +114,8 @@ export function createStudyHaunting(E,scares,{random=Math.random,storage=globalT
     if(looking&&!lookSound){lookSound=true;play('uneaseB',{channel:'storySting',volume:.32,limitSeconds:2.7,fadeOutSeconds:.4});}
     const target=r.woman.position.clone();target.y=1.45;const dx=target.x-4.05,dz=target.z-.35,wanted=Math.atan2(-dx,-dz),pitch=Math.atan2(target.y-1.6,Math.hypot(dx,dz));
     setView(4.05,.35,viewYaw+angle(viewYaw,wanted)*Math.min(1,dt*1.7),viewPitch+(pitch-viewPitch)*Math.min(1,dt*1.7));
-    if(u>.24&&E.ref.studyBackDoor)E.ref.studyBackDoor.scriptOpen=false;
     if(u>.81&&!exitOpened){exitOpened=true;if(E.ref.studyExitDoor)E.ref.studyExitDoor.scriptOpen=true;play('doorCreak',{channel:'storyDoor',volume:.24,limitSeconds:3,fadeOutSeconds:.4});}
-    if(elapsed>=24){hideActors();doors(false,false);stopStory();lighting(1);lock(false);audio()?.setAtmosphereSilence?.(true,.3);to('aftermath');}return;
+    if(elapsed>=24){hideActors();doors(false);stopStory();lighting(1);lock(false);audio()?.setAtmosphereSilence?.(true,.3);to('aftermath');}return;
    }
    if(phase==='aftermath'){
     if(elapsed>=10)audio()?.setAtmosphereSilence?.(false,.8);

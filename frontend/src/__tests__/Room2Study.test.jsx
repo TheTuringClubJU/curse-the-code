@@ -770,16 +770,17 @@ describe('Room 2 (Daniel\'s Study) Comprehensive Test Suite (50 Tests)', () => {
   // ==========================================================================
   // Door Navigation (QA-R2-FE-39 to QA-R2-FE-41)
   // ==========================================================================
-  it('QA-R2-FE-39: return door goes to Bedroom without searching or requiring completion', async () => {
-    const onTransitionToRoom1 = vi.fn();
-    render(<Room2Study team={mockTeam} onLogout={vi.fn()} onTransitionToRoom1={onTransitionToRoom1} />);
+  it('QA-R2-FE-39: sealed entry door has no target prompt, request or backward transition', async () => {
+    render(<Room2Study team={mockTeam} onLogout={vi.fn()} />);
     fireEvent.click(await screen.findByText(/CLICK TO ENTER ROOM/i));
     act(() => activeEngineInstance.callbacks.onTarget('study_door_back'));
-    expect(screen.getByText(/Return to Lena's Bedroom/i)).toBeInTheDocument();
-    const callsBeforeDoor = global.fetch.mock.calls.length;
-    fireEvent.keyDown(window, { key: 'e', code: 'KeyE' });
-    expect(onTransitionToRoom1).toHaveBeenCalledTimes(1);
-    expect(global.fetch).toHaveBeenCalledTimes(callsBeforeDoor);
+    expect(screen.queryByText(/Return to Lena's Bedroom/i)).toBeNull();
+    const before = global.fetch.mock.calls.length;
+    fireEvent.keyDown(window, {key:'e',code:'KeyE'});
+    await act(async () => activeEngineInstance.callbacks.onInteract('study_door_back'));
+    expect(global.fetch).toHaveBeenCalledTimes(before);
+    expect(studyConfig.interact.study_door_back).toBeUndefined();
+    expect(studyConfig.objectCoordinates.study_door_back).toBeUndefined();
   });
 
   it('QA-R2-FE-40: test_room2_forward_exit_door_shows_authoritative_locked_state', async () => {
@@ -1016,4 +1017,23 @@ describe('Room 2 (Daniel\'s Study) Comprehensive Test Suite (50 Tests)', () => {
     act(()=>activeEngineInstance.callbacks.onStudyCinematic({locked:false,phase:'recovery',caption:''}));
     expect(activeEngineInstance.setStudyState).toHaveBeenLastCalledWith({started:true,paused:false});
   });
+  it('uses the shared Study hint modal and tournament costs from the first hint', async () => {
+    const originalFetch = global.fetch;
+    global.fetch = vi.fn((url, options) => {
+      if (String(url).endsWith('/api/game/hint/status')) return Promise.resolve({ok:true,json:async()=>({total_budget:15,hints_remaining:15,total_penalty_seconds:0,unlocked_hints:[]})});
+      if (String(url).endsWith('/api/game/hint')) return Promise.resolve({ok:true,json:async()=>({success:true,target_id:'ES01',is_free:false,penalty_applied:10,hint_text:'Exact guidance from the shared service.'})});
+      return originalFetch(url, options);
+    });
+    render(<Room2Study team={mockTeam} onLogout={vi.fn()} />);
+    fireEvent.click(await screen.findByText(/CLICK TO ENTER ROOM/i));
+    fireEvent.keyDown(window, {key:'h',code:'KeyH'});
+    await screen.findByText(/Active Chamber:/);
+    expect(screen.getByText(/Fragment Search:/)).toHaveTextContent('+10s time penalty');
+    expect(screen.getByText(/Clue Solve:/)).toHaveTextContent('+30s time penalty');
+    expect(screen.queryByText(/first two|free Study hints|Current hint: free/i)).toBeNull();
+    fireEvent.click(screen.getByRole('button', {name:/REQUEST NEXT HINT/i}));
+    expect(await screen.findByText('Exact guidance from the shared service.')).toBeInTheDocument();
+    expect(global.fetch.mock.calls.find(([url]) => String(url).endsWith('/api/game/hint'))[1].body).toBe('{"room_id":"study"}');
+  });
+
 });

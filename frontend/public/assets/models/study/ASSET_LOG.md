@@ -16,7 +16,7 @@
 | `distant_castle.glb` | Distant keep embedded in foggy forest terrain | 1.229 | Innerscene / https://www.innerscene.com/tools/library/3d-parts/castle-with-keep-1a75a9e1 | CC0 |
 | `gothic_chair.glb` | gothic_chair | 0.878 | Dirtrock (https://sketchfab.com/dirtrock) / https://sketchfab.com/3d-models/gothic-chair-5bcc5557ba2e4999afc3d7ecd5e30de7 | CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/) |
 | `gothic_coffee_table.glb` | Recorder support table | 0.211 | Ulan Cabanilla / https://polyhaven.com/a/gothic_coffee_table | CC0 |
-| `gothic_door.glb` | Two complete stone surrounds and animated leaves | 1.226 | Peter_268 (https://sketchfab.com/petrucavcaliuc1) / https://sketchfab.com/3d-models/medieval-gothic-style-door-ba45230fd0fa4a6bad72caabf2644d84 | CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/) |
+| `gothic_door.glb` | Animated exit and sealed entry door assemblies | 1.226 | Peter_268 (https://sketchfab.com/petrucavcaliuc1) / https://sketchfab.com/3d-models/medieval-gothic-style-door-ba45230fd0fa4a6bad72caabf2644d84 | CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/) |
 | `GothicCabinet_01.glb` | Searchable carved archive cabinet beside console | 0.286 | Kirill Sannikov / https://polyhaven.com/a/GothicCabinet_01 | CC0 |
 | `horror_ghost_character_-_blood_stained_spirit.glb` | Halfway-progress spirit and camera close-up | 0.997 | adhamasalah (https://sketchfab.com/adhamAsalah) / https://sketchfab.com/3d-models/horror-ghost-character-blood-stained-spirit-ed1a90be19404450935720f7abaae471 | CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/) |
 | `iron_radiator.glb` | Cast-iron radiator aligned beneath the window | 0.037 | Poly by Google / https://poly.pizza/m/ftrnBGmhoFz | CC-BY-3.0 |

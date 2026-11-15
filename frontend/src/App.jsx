@@ -10,8 +10,6 @@ import Room4Records from './game/Room4Records';
 import { checkAuthStatus, logoutTeam } from './userlogin/authApi';
 
 export default function App() {
-  // Local Room 2 review keeps real authentication/progress, but skips automatic room selection.
-  const isStudyPreview = import.meta.env.DEV && ['/study', '/room2'].includes(window.location.pathname);
   const [isAdminRoute, setIsAdminRoute] = useState(
     typeof window !== 'undefined' && window.location.pathname.startsWith('/admin')
   );
@@ -23,7 +21,6 @@ export default function App() {
   const [roundStatus, setRoundStatus] = useState(null); // Pure DB-driven: null until verified from DB
   const [currentRoundNum, setCurrentRoundNum] = useState(1);
   const [currentRoom, setCurrentRoom] = useState(() => {
-    if (isStudyPreview) return 'study';
     return localStorage.getItem('ctc_current_room') || 'bedroom';
   });
 
@@ -77,7 +74,7 @@ export default function App() {
 
   // Determine active room progression for logged in team
   useEffect(() => {
-    if (!team || isAdminRoute || isStudyPreview) return;
+    if (!team || isAdminRoute) return;
     fetch('/api/game/room/basement', { credentials: 'include' })
       .then((res) => {
         if (res.ok) {
@@ -99,7 +96,7 @@ export default function App() {
         }
       })
       .catch(() => setCurrentRoom('bedroom'));
-  }, [team, isAdminRoute, isStudyPreview]);
+  }, [team, isAdminRoute]);
 
   // Fast poll lobby/game status when team is logged in
   useEffect(() => {
@@ -141,7 +138,7 @@ export default function App() {
 
   const handleLoginSuccess = (authenticatedTeam) => {
     setRoundStatus(null);
-    setCurrentRoom(isStudyPreview ? 'study' : 'bedroom');
+    setCurrentRoom('bedroom');
     setTeam(authenticatedTeam);
   };
 
@@ -201,7 +198,7 @@ export default function App() {
   }
 
   // When Round 1 is live, display Room 1 (Bedroom), Room 2 (Study), or Room 3 (Basement)
-  if ((roundStatus === 'live' && currentRoundNum === 1) || isStudyPreview) {
+  if (roundStatus === 'live' && currentRoundNum === 1) {
     if (currentRoom === 'lobby') {
       return <Lobby team={team} onLogout={handleLogout} />;
     }
@@ -211,7 +208,6 @@ export default function App() {
         <Room2Study
           team={team}
           onLogout={handleLogout}
-          onTransitionToRoom1={() => changeRoom('bedroom')}
           onTransitionToRoom3={() => changeRoom('basement')}
         />
       );

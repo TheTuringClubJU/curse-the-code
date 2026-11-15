@@ -36,9 +36,8 @@ npm.cmd run dev
 ```
 
 Open `http://localhost:5173`. Vite forwards `/api` requests to the local API.
-`http://127.0.0.1:8000/docs` shows the API explorer. The participant app resumes
-room progression from server state. During development, `/study` (alias `/room2`)
-opens Room 2 directly after normal sign-in and backend access checks.
+`http://127.0.0.1:8000/docs` shows the API explorer. Currently the participant
+app mounts Room 1; the Room 2 frontend is a separate assigned task.
 
 **Existing startup behavior:** importing the authentication service seeds demo
 teams and resets their sessions. This needs review before event deployment;
