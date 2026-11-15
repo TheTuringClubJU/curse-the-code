@@ -16,7 +16,7 @@ export function createVaultScares(E, h = {}) {
   let lookHoldTimer = 0;
   let lookAwayTimer = 0;
   let patrolEntity = null;
-  let nextPatrolAt = 24.0;
+  let nextPatrolAt = 14.0;
 
   let pendingStatueTurn = false;
   let pendingWestBreach = false;
@@ -58,16 +58,25 @@ export function createVaultScares(E, h = {}) {
     return (dx / len) * fx + (dz / len) * fz >= minDot;
   };
 
-  const placeEntity = (entity, x, z, faceX, faceZ, lightIntensity = 3.2, tiltZ = 0) => {
+  const placeEntity = (entity, x, z, faceX, faceZ, lightIntensity = 3.8, tiltZ = 0) => {
     if (!entity) return;
     entity.position.set(x, 0, z);
-    entity.rotation.y = Math.atan2(faceX - x, faceZ - z);
+    const dx = faceX - x;
+    const dz = faceZ - z;
+    entity.rotation.y = Math.atan2(dx, dz);
     entity.rotation.z = tiltZ;
     entity.visible = true;
     if (E.ref.ghostLight) {
-      E.ref.ghostLight.position.set(x, 1.72, z);
-      E.ref.ghostLight.color.setHex(0xd6e8ff);
-      E.ref.ghostLight.intensity = lightIntensity;
+      // Position illumination in FRONT of the apparition (toward the viewer) so faces & limbs never render backlit black
+      const dist = Math.hypot(dx, dz) || 1;
+      const frontOffset = Math.min(0.95, dist * 0.45);
+      E.ref.ghostLight.position.set(
+        x + (dx / dist) * frontOffset,
+        1.64,
+        z + (dz / dist) * frontOffset
+      );
+      E.ref.ghostLight.color.setHex(0xffead6);
+      E.ref.ghostLight.intensity = Math.max(4.6, lightIntensity * 1.35);
     }
   };
 
@@ -102,11 +111,11 @@ export function createVaultScares(E, h = {}) {
     setThreat(null, '');
 
     const { px, pz, fx, fz } = getPlayerPose();
-    setGlobalLightScale(0.18);
-    const [gx, gz] = clampNaveSpot(px + fx * 1.52, pz + fz * 1.52);
-    const tilt = (Math.random() < 0.5 ? -1 : 1) * 0.09;
-    placeEntity(lungeEntity, gx, gz, px, pz, 6.4, tilt);
-    if (E.ref.ghostLight) E.ref.ghostLight.color.setHex(0xdbeafe);
+    setGlobalLightScale(0.22);
+    const [gx, gz] = clampNaveSpot(px + fx * 1.48, pz + fz * 1.48);
+    const tilt = (Math.random() < 0.5 ? -1 : 1) * 0.08;
+    placeEntity(lungeEntity, gx, gz, px, pz, 6.8, tilt);
+    if (E.ref.ghostLight) E.ref.ghostLight.color.setHex(0xffe8d6);
 
     E.audio?.playStab?.(0.95);
     E.audio?.playMonster?.(0.88);
@@ -128,26 +137,26 @@ export function createVaultScares(E, h = {}) {
     setThreat('surge', 'RELIQUARY SEAL FRACTURING');
 
     const { px, pz, fx, fz } = getPlayerPose();
-    const [gx, gz] = clampNaveSpot(px + fx * 1.65, pz + fz * 1.65);
+    const [gx, gz] = clampNaveSpot(px + fx * 1.42, pz + fz * 1.42);
 
-    E.audio?.playMonster?.(0.92);
+    E.audio?.playMonster?.(0.95);
     E.audio?.screamStinger?.();
     E.audio?.setTension?.(2.0);
-    E.shake?.(1.75, 0.58);
+    E.shake?.(1.8, 0.65);
     h.onGlassCrack?.();
-    h.onFlash?.('#68000c', 0.56, 240);
-    h.onNightmarePulse?.(520);
+    h.onFlash?.('#68000c', 0.58, 240);
+    h.onNightmarePulse?.(560);
     h.onScare?.('core_glass_slam', null);
 
-    setGlobalLightScale(0.25);
-    if (E.ref.coreLight) E.ref.coreLight.intensity = 9.5;
-    placeGhost(gx, gz, px, pz, 5.8, -0.08);
+    setGlobalLightScale(0.26);
+    if (E.ref.coreLight) E.ref.coreLight.intensity = 9.8;
+    placeGhost(gx, gz, px, pz, 6.8, -0.07);
 
     schedule(() => {
       if (patrolState === 'idle') hideGhost();
       setGlobalLightScale(1.0);
       setThreat(null, '');
-    }, 920);
+    }, 1050);
 
     schedule(() => {
       E.audio?.setTension?.(1.2);
@@ -438,19 +447,19 @@ export function createVaultScares(E, h = {}) {
   };
 
   const tick = (dt) => {
-    // Advance close-quarters lunge animation cleanly at 1.15m..1.52m
+    // Advance close-quarters lunge animation cleanly at 1.12m..1.48m so creature fills viewport clearly
     if (lungeT >= 0) {
       lungeT += dt;
-      const k = Math.min(1, lungeT / 0.32);
+      const k = Math.min(1, lungeT / 0.34);
       const { px, pz, fx, fz } = getPlayerPose();
-      const dist = 1.52 - 0.37 * k;
+      const dist = 1.48 - 0.36 * k;
       const [gx, gz] = clampNaveSpot(px + fx * dist, pz + fz * dist);
-      placeEntity(lungeEntity || E.ref.ghost, gx, gz, px, pz, 6.2, lungeEntity?.rotation?.z || 0);
+      placeEntity(lungeEntity || E.ref.ghost, gx, gz, px, pz, 6.8, lungeEntity?.rotation?.z || 0);
       if (E.cam && E.cam.isPerspectiveCamera) {
-        E.cam.fov = baseFov - 15 * Math.sin(Math.min(1, lungeT / 0.72) * Math.PI);
+        E.cam.fov = baseFov - 15 * Math.sin(Math.min(1, lungeT / 0.85) * Math.PI);
         E.cam.updateProjectionMatrix();
       }
-      if (lungeT >= 0.86) {
+      if (lungeT >= 1.02) {
         lungeT = -1;
         lungeEntity = null;
         hideGhost();
@@ -616,7 +625,7 @@ export function createVaultScares(E, h = {}) {
           setGlobalLightScale(1.0);
           setThreat(null, '');
           E.audio?.chainsRattle?.();
-          nextPatrolAt = elapsed + 38.0;
+          nextPatrolAt = elapsed + 22.0;
         }
       } else if (patrolState === 'rush') {
         patrolTimer += dt;
@@ -641,11 +650,24 @@ export function createVaultScares(E, h = {}) {
   const handleLoreInspect = (id) => {
     E.ref.triggerInteractAnim?.(id);
     const key = `lore_react_${id}`;
-    if (fired.has(key) || E.ref.vaultRestored) return;
+    if (fired.has(key) || E.ref.vaultRestored) return false;
     fired.add(key);
 
     if (id === 'narthex_registry' || id === 'scriptorium_books') {
       E.audio?.creak?.();
+      if (id === 'narthex_registry') {
+        const { px, pz, fx, fz } = getPlayerPose();
+        const [gx, gz] = clampNaveSpot(px + fx * 1.55, pz + fz * 1.55);
+        placeGhost(gx, gz, px, pz, 5.4, -0.06);
+        E.audio?.playBreathScared?.(0.85);
+        E.audio?.playStab?.(0.62);
+        E.shake?.(0.65, 0.35);
+        h.onFlash?.('#4e0008', 0.34, 180);
+        schedule(() => {
+          if (patrolState === 'idle') hideGhost();
+        }, 850);
+        return true;
+      }
     } else if (id === 'specimen_locker') {
       E.audio?.playBreathScared?.(0.55);
       E.audio?.playCrows?.(0.24);
@@ -657,6 +679,7 @@ export function createVaultScares(E, h = {}) {
     } else if (id === 'switchgear_log') {
       E.audio?.voltageBuzz?.();
     }
+    return false;
   };
 
   return {
@@ -687,8 +710,7 @@ export function createVaultScares(E, h = {}) {
         return true;
       }
       if (typeof name === 'string' && name.startsWith('inspect_')) {
-        handleLoreInspect(name.slice(8));
-        return true;
+        return handleLoreInspect(name.slice(8));
       }
       return false;
     },

@@ -262,260 +262,283 @@ export default function VaultDocumentModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 select-none backdrop-blur-md"
-      style={{
-        background: 'rgba(6, 7, 11, 0.82)',
-      }}
+      className="fixed inset-0 z-50 flex flex-col items-center justify-center p-3 sm:p-6 select-none re-wood-desk overflow-y-auto"
       role="dialog"
       aria-modal="true"
       aria-label={`Archival Manuscript: ${doc.title}`}
     >
-      <div
-        className="w-full max-w-4xl rounded-2xl overflow-hidden flex flex-col max-h-[88vh] backdrop-blur-xl"
-        style={{
-          background: 'linear-gradient(180deg, #161210 0%, #0a0807 100%)',
-          border: '1px solid rgba(196, 162, 101, 0.28)',
-          boxShadow: '0 28px 80px rgba(0, 0, 0, 0.95)',
-        }}
-      >
-        {/* Top Antique Archive Header */}
+      {/* Decorative Desk Props Matching Physical Study Surface (Brass Lamp Glow, Fountain Pen, Magnifier, Photos) */}
+      <div className="pointer-events-none fixed inset-0 overflow-hidden hidden lg:block" aria-hidden="true">
+        {/* Top-Right Warm Brass Desk Lamp Base */}
         <div
-          className="px-6 py-4 flex items-center justify-between gap-4 border-b"
+          className="absolute -top-14 -right-14 w-56 h-56 rounded-full"
           style={{
-            background: 'linear-gradient(90deg, rgba(28, 20, 16, 0.95) 0%, rgba(16, 12, 10, 0.95) 100%)',
-            borderColor: 'rgba(196, 162, 101, 0.22)',
+            background: 'radial-gradient(circle at 38% 62%, #d4af64 0%, #8a6428 45%, #3a2710 82%)',
+            boxShadow: '0 24px 70px rgba(255, 198, 104, 0.42), inset 0 4px 18px rgba(255, 240, 195, 0.6)',
+            border: '4px solid #593e18',
           }}
+        />
+        {/* Bottom-Left Pinned Polaroid Evidence Slips */}
+        <div
+          className="absolute bottom-8 left-8 w-36 h-44 bg-[#dfd5c1] p-2.5 shadow-2xl border border-[#8f7b5d]"
+          style={{ transform: 'rotate(-14deg)', boxShadow: '0 18px 36px rgba(0,0,0,0.85)' }}
         >
-          <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2 text-[10px] font-mono tracking-[0.22em] uppercase">
-              <span
-                className="px-2.5 py-0.5 rounded-full font-bold"
-                style={{
-                  background: 'rgba(185, 28, 28, 0.22)',
-                  border: '1px solid rgba(239, 68, 68, 0.45)',
-                  color: '#fca5a5',
-                }}
-              >
-                {doc.wing}
-              </span>
-              <span className="text-[#a89a85]">{doc.folioCode}</span>
-              <span className="text-stone-600">·</span>
-              <span className="text-stone-300">{doc.classification}</span>
-            </div>
-            <h2
-              className="mt-1 text-lg sm:text-xl font-bold tracking-wider truncate vault-font-serif"
-              style={{ color: '#f5f3ee' }}
-            >
-              {doc.title}
-            </h2>
+          <div className="w-full h-28 bg-[#221914] opacity-90 flex items-center justify-center text-[9px] font-mono text-amber-200/45 tracking-widest">
+            6B // SPECIMEN
           </div>
+          <div className="mt-2 h-2 w-3/4 bg-[#9e8969]/45" />
+        </div>
+        {/* Silver Fountain Pen beside right page */}
+        <svg className="absolute right-12 top-1/2 -translate-y-1/2 w-10 h-64 drop-shadow-[0_14px_20px_rgba(0,0,0,0.85)]" viewBox="0 0 40 240">
+          <defs>
+            <linearGradient id="penSteel" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stopColor="#6a6d74" />
+              <stop offset="45%" stopColor="#d4d7de" />
+              <stop offset="100%" stopColor="#484b52" />
+            </linearGradient>
+          </defs>
+          <polygon points="20,6 15,28 25,28" fill="#c7b58b" />
+          <line x1="20" y1="6" x2="20" y2="21" stroke="#1f1712" strokeWidth="1.2" />
+          <rect x="13" y="28" width="14" height="196" rx="4" fill="url(#penSteel)" />
+          <rect x="12" y="138" width="16" height="6" fill="#2c241d" />
+          <rect x="14" y="54" width="2" height="58" rx="1" fill="#e8e2d0" opacity="0.65" />
+        </svg>
+        {/* Bottom-Right Brass Magnifying Glass */}
+        <svg className="absolute bottom-4 right-8 w-44 h-44 drop-shadow-[0_20px_28px_rgba(0,0,0,0.88)]" viewBox="0 0 180 180">
+          <circle cx="80" cy="76" r="54" fill="rgba(218, 232, 238, 0.14)" stroke="#b88b3d" strokeWidth="10" />
+          <circle cx="80" cy="76" r="46" fill="none" stroke="rgba(255,244,214,0.45)" strokeWidth="2" />
+          <path d="M50,52 Q74,34 102,48" fill="none" stroke="rgba(255,255,255,0.28)" strokeWidth="5" strokeLinecap="round" />
+          <rect x="116" y="114" width="18" height="62" rx="6" transform="rotate(-42 125 145)" fill="#4d321c" stroke="#9e7430" strokeWidth="3" />
+        </svg>
+      </div>
 
-          <div className="flex items-center gap-2 shrink-0">
-            <div className="hidden sm:flex rounded-full p-0.5 border border-white/10 bg-black/60">
-              <button
-                type="button"
-                onClick={() => setTab('folio')}
-                className={`px-3.5 py-1 rounded-full text-[11px] font-mono tracking-wider uppercase transition cursor-pointer ${
-                  tab === 'folio'
-                    ? 'bg-gradient-to-r from-red-950 to-red-900 text-[#fde8e8] border border-red-500/40'
-                    : 'text-stone-400 hover:text-stone-200'
-                }`}
-              >
-                Folio Sheet
-              </button>
-              <button
-                type="button"
-                onClick={() => setTab('ledger')}
-                className={`px-3.5 py-1 rounded-full text-[11px] font-mono tracking-wider uppercase transition cursor-pointer ${
-                  tab === 'ledger'
-                    ? 'bg-gradient-to-r from-red-950 to-red-900 text-[#fde8e8] border border-red-500/40'
-                    : 'text-stone-400 hover:text-stone-200'
-                }`}
-              >
-                Index ({discoveredList.length})
-              </button>
-            </div>
+      {/* Top Desk Ribbon: Examined Folios & Escape Close */}
+      <div className="relative z-10 w-full max-w-5xl mb-3 flex flex-wrap items-center justify-between gap-2.5">
+        <div className="flex flex-wrap items-center gap-1.5">
+          <div className="inline-flex rounded-full p-0.5 bg-black/75 border border-amber-800/45 shadow-lg">
             <button
               type="button"
-              onClick={onClose}
-              className="re-btn cursor-pointer"
+              onClick={() => setTab('folio')}
+              className={`px-3.5 py-1 rounded-full text-[11px] font-mono tracking-wider uppercase transition cursor-pointer ${
+                tab === 'folio'
+                  ? 'bg-gradient-to-r from-[#5a1616] to-[#320c0c] text-[#f7ecd7] border border-red-400/35'
+                  : 'text-stone-300 hover:text-white'
+              }`}
             >
-              <span className="re-btn-circle">ESC</span>
-              <span>Close</span>
+              Folio Sheet
             </button>
+            <button
+              type="button"
+              onClick={() => setTab('ledger')}
+              className={`px-3.5 py-1 rounded-full text-[11px] font-mono tracking-wider uppercase transition cursor-pointer ${
+                tab === 'ledger'
+                  ? 'bg-gradient-to-r from-[#5a1616] to-[#320c0c] text-[#f7ecd7] border border-red-400/35'
+                  : 'text-stone-300 hover:text-white'
+              }`}
+            >
+              Index ({discoveredList.length})
+            </button>
+          </div>
+          <div className="hidden md:flex items-center gap-1.5 ml-1">
+            {discoveredList.slice(0, 6).map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => {
+                  setTab('folio');
+                  onSelectDocument?.(item.id);
+                }}
+                className={`px-2.5 py-1 rounded-full text-[10px] font-mono tracking-wider uppercase border transition cursor-pointer ${
+                  item.id === doc.id && tab === 'folio'
+                    ? 'bg-[#e8dcc2] text-[#24160b] border-[#8b5e34] font-bold shadow'
+                    : 'bg-black/60 text-amber-200/80 border-amber-900/45 hover:bg-black/85'
+                }`}
+              >
+                {item.folioCode.split(' ')[0]}
+              </button>
+            ))}
           </div>
         </div>
 
-        {/* Body */}
-        <div className="flex-1 overflow-y-auto p-5 sm:p-6 grid grid-cols-1 lg:grid-cols-[220px_1fr] gap-5">
-          {/* Left shelf index of inspected manuscripts */}
-          <aside className="space-y-2">
-            <div className="text-[10px] font-mono uppercase tracking-[0.2em] text-amber-400/75 px-1">
-              Examined Folios ({discoveredList.length}/10)
+        <button
+          type="button"
+          onClick={onClose}
+          className="re-btn cursor-pointer"
+        >
+          <span className="re-btn-circle">ESC</span>
+          <span>Close</span>
+        </button>
+      </div>
+
+      {/* Physical Open Leather Field Notes Notebook */}
+      <div className="relative z-10 w-full max-w-5xl rounded-xl p-2.5 sm:p-3.5 re-field-notebook-cover max-h-[84vh] overflow-y-auto">
+        {tab === 'ledger' ? (
+          <div className="re-journal-page-left rounded-md p-6 sm:p-8 space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b-2 border-[#7b603b]/40 pb-3">
+              <div>
+                <div className="text-[11px] font-re-typewriter uppercase tracking-[0.22em] text-[#7c1d1d] font-bold">
+                  Cathedral Inspection Registry · Examined Folios ({discoveredList.length}/10)
+                </div>
+                <h2 className="text-2xl font-bold font-re-dossier tracking-wide text-[#24170e] mt-1">
+                  FIELD NOTES ARCHIVE INDEX
+                </h2>
+              </div>
+              <div className="re-crimson-stamp px-3 py-1 text-[11px] font-re-typewriter font-bold uppercase tracking-widest">
+                FIELD NOTES
+              </div>
             </div>
-            <div className="space-y-1.5 max-h-[46vh] lg:max-h-[58vh] overflow-y-auto pr-1">
-              {discoveredList.map((item) => {
-                const active = item.id === doc.id && tab === 'folio';
+            <p className="text-sm font-re-typewriter text-[#4b3826]">
+              Select any inspected folio entry to reopen both field notebook pages, handwritten marginalia, and sector clues.
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+              {Object.values(VAULT_DOCUMENTS).map((item) => {
+                const found = discoveredIds.includes(item.id) || item.id === documentId;
                 return (
                   <button
                     key={item.id}
                     type="button"
+                    disabled={!found}
                     onClick={() => {
                       setTab('folio');
                       onSelectDocument?.(item.id);
                     }}
-                    className={`w-full text-left px-3 py-2.5 rounded-[2px] border transition cursor-pointer ${
-                      active
-                        ? 'bg-amber-900/35 border-amber-400/55 border-l-2 border-l-amber-400'
-                        : 'bg-black/35 border-stone-800/80 hover:border-amber-700/45'
+                    className={`text-left p-3.5 rounded border transition ${
+                      found
+                        ? 'border-[#8a6f47]/65 bg-[#dfd0b1]/70 hover:bg-[#d6c29b] cursor-pointer shadow-sm'
+                        : 'border-[#8a6f47]/25 bg-black/5 opacity-45 cursor-not-allowed'
                     }`}
                   >
-                    <div className="text-[9px] font-mono tracking-widest uppercase text-amber-300/70">
-                      {item.folioCode}
+                    <div className="text-[10px] font-re-typewriter font-bold tracking-widest uppercase text-[#7b1d1d]">
+                      {item.wing} · {item.folioCode}
                     </div>
-                    <div className="text-xs font-semibold text-stone-100 leading-snug mt-0.5">
-                      {item.title}
+                    <div className="text-sm font-bold font-re-display text-[#1e130b] mt-0.5">
+                      {found ? item.title : 'Unexamined Artifact'}
                     </div>
                   </button>
                 );
               })}
             </div>
-          </aside>
-
-          {/* Right parchment manuscript view */}
-          {tab === 'ledger' ? (
-            <div className="rounded-[2px] border border-amber-900/40 bg-black/45 p-5 space-y-3">
-              <div className="text-xs font-mono uppercase tracking-[0.18em] text-amber-300">
-                Cathedral Inspection Registry
-              </div>
-              <p className="text-xs text-stone-400">
-                Select any examined folio below to re-read notes, marginalia, and room coordinates.
-              </p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
-                {Object.values(VAULT_DOCUMENTS).map((item) => {
-                  const found = discoveredIds.includes(item.id) || item.id === documentId;
-                  return (
-                    <button
-                      key={item.id}
-                      type="button"
-                      disabled={!found}
-                      onClick={() => {
-                        setTab('folio');
-                        onSelectDocument?.(item.id);
-                      }}
-                      className={`text-left p-3 rounded-[2px] border transition ${
-                        found
-                          ? 'border-amber-700/40 bg-amber-950/20 hover:bg-amber-900/30 cursor-pointer'
-                          : 'border-stone-800/70 bg-black/25 opacity-45 cursor-not-allowed'
-                      }`}
-                    >
-                      <div className="text-[10px] font-mono tracking-widest text-amber-300/80">
-                        {item.wing}
-                      </div>
-                      <div className="text-xs font-semibold text-stone-100 mt-0.5">
-                        {found ? item.title : 'Unexamined Artifact'}
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          ) : (
-            <div
-              className="rounded-[2px] p-6 sm:p-7 relative overflow-hidden flex flex-col justify-between gap-5"
-              style={{
-                background: '#ebe0c7',
-                border: '1px solid #9f8154',
-                boxShadow: 'inset 0 0 36px rgba(84, 52, 22, 0.18)',
-                color: '#251a11',
-              }}
-            >
-              {/* Embossed crimson wax stamp */}
-              <div
-                className="inline-flex items-center self-start gap-2 px-3 py-1 rounded-[2px] text-[10px] font-mono font-bold tracking-[0.18em] uppercase"
-                style={{
-                  background: 'rgba(130, 22, 22, 0.12)',
-                  border: '1px solid rgba(130, 22, 22, 0.42)',
-                  color: '#7f1d1d',
-                }}
-              >
-                <span>✦</span>
-                <span>{doc.sealLabel}</span>
-              </div>
-
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 rounded-md overflow-hidden shadow-inner border border-[#6e5233]/60">
+            {/* LEFT NOTEBOOK PAGE */}
+            <section className="re-journal-page-left p-6 sm:p-8 flex flex-col justify-between gap-5 border-b md:border-b-0 md:border-r border-[#8d7048]/50 relative">
               <div>
-                <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-amber-950/20 pb-2">
-                  <span className="text-xs font-mono tracking-wider text-stone-700">
-                    {doc.subtitle}
-                  </span>
-                  <span className="text-[11px] font-mono italic text-stone-700">
-                    {doc.dated}
-                  </span>
+                <div className="flex items-center justify-between gap-2 text-[10px] font-re-typewriter uppercase tracking-[0.18em] text-[#6d5033]">
+                  <span>{doc.wing}</span>
+                  <span>{doc.folioCode}</span>
                 </div>
 
-                <div
-                  className="mt-4 space-y-3 text-sm sm:text-[15px] leading-relaxed"
-                  style={{ fontFamily: 'Georgia, "Times New Roman", serif' }}
-                >
+                <h2 className="mt-2.5 text-xl sm:text-2xl font-bold tracking-wide text-center uppercase font-re-dossier text-[#1b120c] leading-snug border-b border-[#7a5f3b]/35 pb-2.5">
+                  {doc.title}
+                </h2>
+
+                <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-[11px] font-re-typewriter italic text-[#5c432b]">
+                  <span>{doc.subtitle}</span>
+                  <span>{doc.dated}</span>
+                </div>
+
+                <div className="mt-5 space-y-3.5 text-[14px] sm:text-[15px] leading-[1.68] font-re-typewriter text-[#221710]">
                   {doc.body.map((para, i) => (
-                    <p key={i}>{para}</p>
+                    <p key={i}>- {para}</p>
                   ))}
                 </div>
+              </div>
 
-                {/* Handwritten marginalia slip */}
+              {/* Left Footer: Examined Folio Ribbon Switcher */}
+              <div className="pt-3 border-t border-[#7a5f3b]/30">
+                <div className="text-[10px] font-re-typewriter uppercase tracking-[0.18em] text-[#6e5034] mb-1.5">
+                  Examined Folios ({discoveredList.length}/10)
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {discoveredList.map((item) => {
+                    const active = item.id === doc.id;
+                    return (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => onSelectDocument?.(item.id)}
+                        className={`px-2 py-0.5 rounded-[2px] text-[10px] font-re-typewriter border transition cursor-pointer ${
+                          active
+                            ? 'bg-[#7c1d1d] text-[#f9efd8] border-[#591313] font-bold'
+                            : 'bg-[#d9c8a5]/80 text-[#342316] border-[#9c815a] hover:bg-[#cbb58a]'
+                        }`}
+                      >
+                        {item.title}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </section>
+
+            {/* RIGHT NOTEBOOK PAGE */}
+            <section className="re-journal-page-right p-6 sm:p-8 flex flex-col justify-between gap-5 relative">
+              <div>
+                <div className="flex items-center justify-between gap-2 text-[10px] font-re-typewriter uppercase tracking-[0.18em] text-[#6d5033]">
+                  <span>{doc.classification}</span>
+                  <span>SECTOR OBSERVATION</span>
+                </div>
+
+                <h3 className="mt-2.5 text-lg sm:text-xl font-bold tracking-wide text-center uppercase font-re-dossier text-[#1b120c] border-b border-[#7a5f3b]/35 pb-2.5">
+                  FIELD MARGINALIA & READOUTS
+                </h3>
+
+                {/* Telemetry bullets ruled like handwritten ink notebook items */}
+                <ul className="mt-4 space-y-2.5 font-re-typewriter text-[13px] sm:text-[14px] text-[#24170f]">
+                  {doc.telemetry.map((t) => (
+                    <li key={t.label} className="flex flex-col border-b border-dashed border-[#8d724c]/35 pb-1.5">
+                      <span className="text-[10px] uppercase tracking-[0.16em] text-[#735538]">
+                        - {t.label}
+                      </span>
+                      <span className="font-bold text-[#191009] pl-3">
+                        {t.value}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+
+                {/* Handwritten Red Ink Marginalia */}
                 <div
-                  className="mt-5 p-4 rounded-[2px] border-l-4"
+                  className="mt-5 p-3.5 rounded-[2px] border-l-[3px]"
                   style={{
-                    background: 'rgba(120, 26, 20, 0.08)',
-                    borderColor: '#881b1b',
+                    background: 'rgba(130, 24, 20, 0.07)',
+                    borderColor: '#7f1d1d',
                   }}
                 >
-                  <div className="text-[10px] font-mono font-bold uppercase tracking-[0.2em] text-red-900 mb-1">
+                  <div className="text-[10px] font-re-typewriter font-bold uppercase tracking-[0.18em] text-[#7f1d1d] mb-1">
                     Handwritten Marginalia
                   </div>
-                  <p
-                    className="text-sm italic text-red-950 leading-relaxed"
-                    style={{ fontFamily: 'Georgia, "Times New Roman", serif' }}
-                  >
+                  <p className="text-[13.5px] sm:text-sm italic leading-relaxed text-[#4f1212] font-re-display">
                     {doc.marginalia}
                   </p>
                 </div>
               </div>
 
-              {/* Telemetry cards + progression tip */}
-              <div className="space-y-3 pt-2 border-t border-amber-950/20">
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                  {doc.telemetry.map((t) => (
-                    <div
-                      key={t.label}
-                      className="px-3 py-2 rounded-[2px] border border-amber-950/25 bg-amber-950/5"
-                    >
-                      <div className="text-[9px] font-mono uppercase tracking-wider text-stone-600">
-                        {t.label}
-                      </div>
-                      <div className="text-xs font-mono font-bold text-stone-900 mt-0.5">
-                        {t.value}
-                      </div>
-                    </div>
-                  ))}
+              {/* Next Lead + Stamped Crimson FIELD NOTES Badge + Return Button */}
+              <div className="space-y-4 pt-2 border-t border-[#7a5f3b]/30">
+                <div className="text-xs font-re-typewriter text-[#2d1e12] leading-relaxed">
+                  <strong className="uppercase tracking-wider text-[#6e1616]">Next Lead:</strong>{' '}
+                  {doc.leadHint}
                 </div>
 
-                <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-mono text-stone-800 bg-black/5 px-3.5 py-2.5 rounded-[2px] border border-amber-950/20">
-                  <span>
-                    <strong>Next Lead:</strong> {doc.leadHint}
-                  </span>
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="re-crimson-stamp px-3 py-1 text-[11px] font-re-dossier font-bold tracking-[0.2em] uppercase">
+                    FIELD NOTES · {doc.sealLabel}
+                  </div>
                   <button
                     type="button"
                     onClick={onClose}
                     className="re-btn cursor-pointer"
                   >
+                    <span className="re-btn-circle">ESC</span>
                     <span>Return to Nave</span>
                   </button>
                 </div>
               </div>
-            </div>
-          )}
-        </div>
+            </section>
+          </div>
+        )}
       </div>
     </div>
   );

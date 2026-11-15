@@ -233,7 +233,7 @@ export default function Room6Vault({ team, onLogout }) {
         docDelayRef.current = setTimeout(() => {
           setActiveDocumentId('core_glass');
           engineRef.current?.unlock?.();
-        }, fired ? 680 : 0);
+        }, fired ? 1150 : 0);
         return;
       }
 
@@ -260,11 +260,19 @@ export default function Room6Vault({ team, onLogout }) {
         const doc = VAULT_DOCUMENTS[objectId];
         audioRef.current?.ensureActive?.();
         audioRef.current?.click?.();
-        engineRef.current?.triggerScare?.(`inspect_${objectId}`);
+        const inspectFired = engineRef.current?.triggerScare?.(`inspect_${objectId}`);
         markDocDiscovered(objectId);
         showNotice(`Examining manuscript: ${doc.title}`);
-        setActiveDocumentId(objectId);
-        engineRef.current?.unlock?.();
+        if (inspectFired) {
+          if (docDelayRef.current) clearTimeout(docDelayRef.current);
+          docDelayRef.current = setTimeout(() => {
+            setActiveDocumentId(objectId);
+            engineRef.current?.unlock?.();
+          }, 920);
+        } else {
+          setActiveDocumentId(objectId);
+          engineRef.current?.unlock?.();
+        }
       }
     },
     [markDocDiscovered, openClueByObjectId, showNotice]

@@ -229,7 +229,7 @@ export function createCarvedOakTexture() {
   c.width = c.height = S;
   const ctx = c.getContext('2d');
 
-  ctx.fillStyle = '#241710';
+  ctx.fillStyle = '#3b2517';
   ctx.fillRect(0, 0, S, S);
 
   let seed = 319;
@@ -239,11 +239,11 @@ export function createCarvedOakTexture() {
   };
 
   for (let y = 0; y < S; y += 2) {
-    const shade = 20 + Math.floor(rnd() * 18);
-    ctx.fillStyle = `rgba(${shade + 14}, ${shade + 2}, ${shade - 6}, 0.45)`;
+    const shade = 34 + Math.floor(rnd() * 24);
+    ctx.fillStyle = `rgba(${shade + 26}, ${shade + 8}, ${shade - 8}, 0.52)`;
     ctx.fillRect(0, y, S, 1.5);
   }
-  ctx.fillStyle = 'rgba(8, 5, 3, 0.72)';
+  ctx.fillStyle = 'rgba(14, 8, 5, 0.72)';
   for (let x = 0; x < S; x += 64) {
     ctx.fillRect(x, 0, 2, S);
   }
@@ -263,12 +263,11 @@ export function createCrackedGlassTexture() {
   c.width = c.height = S;
   const ctx = c.getContext('2d');
 
-  // Subtle smoky grime perimeter
-  ctx.fillStyle = 'rgba(135, 170, 182, 0.08)';
-  ctx.fillRect(0, 0, S, S);
-  const rim = ctx.createRadialGradient(S * 0.5, S * 0.5, S * 0.16, S * 0.5, S * 0.5, S * 0.72);
+  // Clear central viewing window with subtle smoky soot rim so the suspended entity reads sharply
+  ctx.clearRect(0, 0, S, S);
+  const rim = ctx.createRadialGradient(S * 0.5, S * 0.5, S * 0.24, S * 0.5, S * 0.5, S * 0.72);
   rim.addColorStop(0, 'rgba(0,0,0,0)');
-  rim.addColorStop(1, 'rgba(18, 12, 14, 0.52)');
+  rim.addColorStop(1, 'rgba(32, 18, 12, 0.48)');
   ctx.fillStyle = rim;
   ctx.fillRect(0, 0, S, S);
 
@@ -794,6 +793,63 @@ export function createAgedBoneTextures() {
   bumpMap.anisotropy = 8;
 
   return { map, bumpMap };
+}
+
+/**
+ * Dried crimson blood pool, drag-marks, and smoky brown grime splatter decals.
+ */
+export function createBloodGrimeTexture() {
+  const S = 256;
+  const c = document.createElement('canvas');
+  c.width = c.height = S;
+  const ctx = c.getContext('2d');
+  ctx.clearRect(0, 0, S, S);
+
+  let seed = 1337;
+  const rnd = () => {
+    seed = (seed * 16807) % 2147483647;
+    return (seed - 1) / 2147483646;
+  };
+
+  // Outer soot / dried-rust grime wash
+  const soot = ctx.createRadialGradient(128, 128, 12, 128, 128, 118);
+  soot.addColorStop(0, 'rgba(38, 16, 10, 0.72)');
+  soot.addColorStop(0.55, 'rgba(48, 18, 12, 0.42)');
+  soot.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = soot;
+  ctx.fillRect(0, 0, S, S);
+
+  // Dark arterial core blotches
+  for (let i = 0; i < 22; i++) {
+    const x = 68 + rnd() * 120;
+    const y = 68 + rnd() * 120;
+    const r = 8 + rnd() * 30;
+    const g = ctx.createRadialGradient(x, y, 2, x, y, r);
+    g.addColorStop(0, 'rgba(78, 8, 11, 0.88)');
+    g.addColorStop(0.7, 'rgba(42, 6, 8, 0.56)');
+    g.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Dragged finger / smear streaks
+  ctx.lineCap = 'round';
+  for (let s = 0; s < 5; s++) {
+    const x0 = 96 + rnd() * 44;
+    const y0 = 100 + s * 10;
+    ctx.strokeStyle = 'rgba(84, 10, 14, 0.62)';
+    ctx.lineWidth = 3 + rnd() * 4;
+    ctx.beginPath();
+    ctx.moveTo(x0, y0);
+    ctx.lineTo(x0 + 48 + rnd() * 48, y0 + (rnd() - 0.5) * 18);
+    ctx.stroke();
+  }
+
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
 }
 
 

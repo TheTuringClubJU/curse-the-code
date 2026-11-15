@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js';
 
 /**
  * Modular GLB Architectural Grid & Interactive Door System for Room 6 (The Anointing Vault).
@@ -57,6 +58,82 @@ export function fitAndPivotModel(model, targetHeight = null, { extraScale = 1, a
     model.position.y -= scaledBox.min.y;
   }
   model.updateMatrixWorld(true);
+
+  const pivot = new THREE.Group();
+  pivot.add(model);
+  pivot.updateMatrixWorld(true);
+  return pivot;
+}
+
+/**
+ * Computes true animated world-space Box3 for SkinnedMeshes (whose static geometry
+ * bind-pose bounds are frequently scaled 0.001x–0.1x or offset by bone rest poses).
+ */
+export function computeAnimatedBox3(root) {
+  root.updateMatrixWorld(true);
+  const box = new THREE.Box3();
+  const v = new THREE.Vector3();
+  let sampled = false;
+  root.traverse((obj) => {
+    if (obj.isSkinnedMesh && obj.skeleton && obj.geometry?.attributes?.position) {
+      obj.skeleton.update();
+      const pos = obj.geometry.attributes.position;
+      const step = Math.max(1, Math.floor(pos.count / 450));
+      for (let i = 0; i < pos.count; i += step) {
+        v.fromBufferAttribute(pos, i);
+        obj.applyBoneTransform(i, v);
+        v.applyMatrix4(obj.matrixWorld);
+        box.expandByPoint(v);
+        sampled = true;
+      }
+    } else if (obj.isMesh && !obj.isSkinnedMesh) {
+      box.expandByObject(obj);
+      sampled = true;
+    }
+  });
+  return sampled ? box : new THREE.Box3().setFromObject(root);
+}
+
+/**
+ * Clones, normalizes animated SkinnedMesh scale to exact `targetHeight`, and grounds cleanly on `y = 0`.
+ */
+export function fitAndPivotSkinnedModel(gltf, targetHeight, { extraScale = 1, anchor = 'bottom' } = {}) {
+  const model = SkeletonUtils.clone(gltf.scene);
+  let scratchMixer = null;
+  if (gltf.animations && gltf.animations.length > 0) {
+    scratchMixer = new THREE.AnimationMixer(model);
+    scratchMixer.clipAction(gltf.animations[0]).play();
+    scratchMixer.update(0.12);
+  }
+
+  const box = computeAnimatedBox3(model);
+  const size = new THREE.Vector3();
+  box.getSize(size);
+
+  let scale = targetHeight && size.y > 0.0005 ? targetHeight / size.y : 1;
+  if (extraScale && extraScale !== 1) scale *= extraScale;
+  if (scale !== 1) {
+    model.scale.multiplyScalar(scale);
+  }
+
+  const scaledBox = computeAnimatedBox3(model);
+  const scaledCenter = new THREE.Vector3();
+  scaledBox.getCenter(scaledCenter);
+  model.position.x -= scaledCenter.x;
+  model.position.z -= scaledCenter.z;
+  if (anchor === 'top') {
+    model.position.y -= scaledBox.max.y;
+  } else if (anchor === 'center') {
+    model.position.y -= scaledCenter.y;
+  } else {
+    model.position.y -= scaledBox.min.y;
+  }
+  model.updateMatrixWorld(true);
+
+  if (scratchMixer) {
+    scratchMixer.stopAllAction();
+    scratchMixer.uncacheRoot(model);
+  }
 
   const pivot = new THREE.Group();
   pivot.add(model);
@@ -125,11 +202,15 @@ export function normalizeModelMaterials(
           // Prevent dark-stained wood/steel assets from crushing to pure black bricks in low light
           if (albedoLift > 0 && hsl.l < albedoLift) {
             m.color.setHSL(hsl.h, Math.min(hsl.s, 0.38), albedoLift);
-          } else if (psx && (hsl.s > 0.34 || hsl.l > 0.58)) {
-            m.color.setHSL(hsl.h, Math.min(hsl.s, 0.28), Math.min(hsl.l, 0.52));
+          } else if (psx) {
+            // Shift cold PSX dungeon/temple atlas masonry toward weathered tarnished sepia-brown
+            if (hsl.s > 0.34 || hsl.l > 0.58) {
+              m.color.setHSL(hsl.h, Math.min(hsl.s, 0.28), Math.min(hsl.l, 0.52));
+            }
+            m.color.multiply(new THREE.Color(0xc29874));
           }
         }
-        if (m.roughness !== undefined) m.roughness = Math.max(m.roughness, psx ? 0.72 : 0.54);
+        if (m.roughness !== undefined) m.roughness = Math.max(m.roughness, psx ? 0.78 : 0.54);
         if (m.metalness !== undefined && psx) m.metalness = Math.min(m.metalness, 0.16);
       }
     });
@@ -313,7 +394,7 @@ export function createVaultArchitecture(E, { matLancet, pushStatic }) {
   // ── Assemble ALL 6 Vault Chambers from Modular 2m GLBs ──
   const buildAllSixChambers = () => {
     // Exterior matte void-sealing curtain behind lancets/joints so no black tear ever shows at oblique angles
-    const matShellBack = new THREE.MeshStandardMaterial({ color: 0x161215, roughness: 0.98 });
+    const matShellBack = new THREE.MeshStandardMaterial({ color: 0x221712, roughness: 0.96 });
     const addBacking = (x, y, z, w, h, d) => {
       pushStatic(new THREE.BoxGeometry(w, h, d), matShellBack, x, y, z);
     };
@@ -480,7 +561,7 @@ export function createVaultArchitecture(E, { matLancet, pushStatic }) {
     loadGLB(`${VAULT_MODEL_BASE}/${relPath}`).then((gltf) => {
       if (!gltf?.scene) return;
       const root = gltf.scene.clone();
-      normalizeModelMaterials(root, { psx: true, npAll: true, albedoLift: 0.22 });
+      normalizeModelMaterials(root, { psx: true, npAll: true, albedoLift: 0.34 });
       root.position.set(x, y, z);
       root.rotation.y = ry;
       root.scale.set(...scale);
@@ -561,14 +642,14 @@ export function createVaultArchitecture(E, { matLancet, pushStatic }) {
       };
     });
 
-    // 3) West Scriptorium Temple Double Doors (`x = -7.25, z = 0`)
+    // 3) West Scriptorium Temple Double Doors (`x = -8.45, z = 0` — seated cleanly inside West Nave archway)
     setupClipDoor('west_scriptorium', 'temple/glb/door_temple.glb', {
-      x: -7.25,
+      x: -8.45,
       y: 0,
       z: 0,
       ry: Math.PI / 2,
-      scale: [1.55, 1.24, 1.25],
-      colliderBounds: [-7.45, -7.05, -1.25, 1.25],
+      scale: [1.58, 1.24, 1.25],
+      colliderBounds: [-8.65, -8.25, -1.25, 1.25],
     });
 
     // 4) North Reliquary Dungeon Door (`x = -13.95..-12.65, z = -6.05`)
@@ -594,14 +675,14 @@ export function createVaultArchitecture(E, { matLancet, pushStatic }) {
       swingTargetY: 1.48,
     });
 
-    // 6) East Breach Iron Gate (`x = 7.45, z = 0`) — ajar on spawn, bolts slide + leaves open wide on R2-09 or approach!
+    // 6) East Breach Iron Gate (`x = 8.45, z = 0`) — seated inside East breach threshold, ajar on spawn
     loadGLB(`${VAULT_MODEL_BASE}/iron_gate.glb`).then((gltf) => {
       const raw = gltf?.scene;
       if (!raw) return;
       const gate = raw.clone();
-      normalizeModelMaterials(gate, { npAll: true, albedoLift: 0.24 });
+      normalizeModelMaterials(gate, { npAll: true, albedoLift: 0.34 });
       const pivot = fitAndPivotModel(gate, 3.25);
-      pivot.position.set(7.45, 0, 0);
+      pivot.position.set(8.45, 0, 0);
       pivot.rotation.y = Math.PI / 2;
       S.add(pivot);
 
@@ -631,7 +712,7 @@ export function createVaultArchitecture(E, { matLancet, pushStatic }) {
         if (!silent) audio?.playGateOpen?.(0.75);
       };
 
-      doors.east_gate = { root: pivot, opened: false, pos: new THREE.Vector3(7.45, 0, 0), open: openGate };
+      doors.east_gate = { root: pivot, opened: false, pos: new THREE.Vector3(8.45, 0, 0), open: openGate };
       if (!ref.openFailsafeDoor) ref.openFailsafeDoor = () => openGate(false);
     });
   };
