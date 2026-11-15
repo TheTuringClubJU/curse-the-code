@@ -1,5 +1,5 @@
 import React from 'react';
-import { Trophy, Unlock, ArrowRight, Sparkles, CheckCircle2 } from 'lucide-react';
+import { Trophy, Unlock, ArrowRight, CheckCircle2 } from 'lucide-react';
 
 export default function RoomCompleteModal({
   isOpen,
@@ -17,69 +17,123 @@ export default function RoomCompleteModal({
 }) {
   if (!isOpen) return null;
 
+  const cleanActionLabel = String(actionLabel).replace(/\s*→+\s*$/, '');
+
   return (
-    <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-lg flex items-center justify-center p-4 select-none animate-fadeIn">
-      <div className="relative w-full max-w-lg bg-[#0e091c] border-2 border-[#8f7bff] rounded-2xl shadow-[0_0_50px_rgba(143,123,255,0.3)] overflow-hidden text-center p-8 space-y-6">
-        
-        {/* Glow ambient background element */}
-        <div className="absolute -top-24 -left-24 w-48 h-48 bg-[#8f7bff]/20 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-24 -right-24 w-48 h-48 bg-[#86efac]/20 rounded-full blur-3xl pointer-events-none" />
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 select-none bg-[#050608] overflow-hidden"
+      data-testid="room-complete-modal"
+    >
+      {/* Resident Evil Atmospheric Inspo Backdrop */}
+      <img
+        src="/assets/textures/re-loading-bg.jpg"
+        alt=""
+        aria-hidden="true"
+        className="absolute inset-0 w-full h-full object-cover opacity-45 contrast-125 saturate-50 brightness-75 pointer-events-none"
+      />
+      {/* Solid dark obsidian scrim (zero gradients) */}
+      <div className="absolute inset-0 bg-[#050608]/78 pointer-events-none" />
 
-        {/* Big Icon */}
-        <div className="mx-auto w-20 h-20 rounded-2xl bg-gradient-to-br from-[#8f7bff]/30 to-[#86efac]/20 border border-[#8f7bff]/50 flex items-center justify-center shadow-xl">
-          <Unlock className="w-10 h-10 text-[#86efac] animate-bounce" />
-        </div>
-
-        {/* Titles */}
-        <div className="space-y-2">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#18261e] border border-[#22543d] text-[#86efac] text-xs font-mono font-bold tracking-wider uppercase">
-            <Sparkles className="w-3.5 h-3.5" />
-            {roomLabel}
-          </div>
-          <h2 className="text-2xl font-black text-[#e8e0ff] font-serif tracking-wide">
-            {title}
-          </h2>
-          <p className="text-xs text-[#cdbfff] font-mono max-w-md mx-auto leading-relaxed">
-            {description}
-          </p>
-        </div>
-
-        {/* Rewards Recap */}
-        <div className="p-4 rounded-xl bg-black/50 border border-white/10 text-xs font-mono text-gray-300 space-y-2 text-left">
-          {rewards.map((item, idx) => (
-            <div
-              key={idx}
-              className={`flex items-center justify-between ${
-                idx === 0 ? 'text-[#86efac]' : idx === 1 ? 'text-[#ffcf8a]' : 'text-[#cdbfff]'
-              }`}
-            >
-              <span>{item}</span>
-              {idx === 0 ? (
-                <CheckCircle2 className="w-4 h-4" />
-              ) : idx === 1 ? (
-                <Trophy className="w-4 h-4" />
-              ) : (
-                <Unlock className="w-4 h-4" />
-              )}
-            </div>
-          ))}
-        </div>
-
-        {/* Action Button */}
-        <div className="pt-2">
-          <button
-            type="button"
-            onClick={() => {
-              onClose();
-              onProceedToDoor?.();
-            }}
-            className="w-full py-3 rounded-xl bg-gradient-to-r from-[#8f7bff] to-[#a696ff] hover:from-[#a696ff] hover:to-[#cdbfff] text-black font-black font-mono text-sm tracking-wider uppercase transition shadow-lg shadow-[#8f7bff]/30 flex items-center justify-center gap-2"
+      <div className="relative z-10 w-full max-w-xl space-y-5">
+        {/* Spooky CURSE THE CODE Branding Header */}
+        <div className="text-center space-y-1.5">
+          <div
+            className="text-[10px] uppercase tracking-[0.42em] text-[#b91c1c]"
+            style={{ fontFamily: "'Special Elite', 'Courier Prime', monospace" }}
           >
-            <span>{actionLabel}</span>
-            <ArrowRight className="w-4 h-4" />
-          </button>
+            ST. JUDE CONTAINMENT ARCHIVE // SECTOR CLEARANCE
+          </div>
+          <h1
+            className="text-3xl sm:text-4xl font-black uppercase tracking-[0.24em] text-[#ebe3d5]"
+            style={{
+              fontFamily: "'Cinzel', 'Cormorant Garamond', Georgia, serif",
+              textShadow: '0 2px 14px rgba(153, 27, 27, 0.78), 0 0 2px #000',
+            }}
+          >
+            CURSE THE CODE
+          </h1>
+          <div className="mx-auto w-28 h-[1px] bg-[#991b1b]" />
         </div>
 
+        {/* Resident Evil Matte-Obsidian Dossier Plate */}
+        <div className="relative bg-[#0a0b0e]/92 border border-[#d4b896]/25 border-l-[3px] border-l-[#b91c1c] rounded-[2px] shadow-[0_24px_60px_rgba(0,0,0,0.92)] p-6 sm:p-7 space-y-5 text-left">
+          {/* Top Status Row */}
+          <div className="flex items-center justify-between gap-3 border-b border-[#d4b896]/15 pb-3">
+            <div className="inline-flex items-center gap-2 px-2.5 py-1 bg-[#140d0e] border border-[#991b1b]/60 rounded-[2px] text-[#e5a9a9] text-[11px] font-bold tracking-[0.22em] uppercase"
+              style={{ fontFamily: "'JetBrains Mono', monospace" }}
+            >
+              <Unlock className="w-3.5 h-3.5 text-[#dc2626]" />
+              <span>{roomLabel}</span>
+            </div>
+            <span
+              className="text-[10px] uppercase tracking-[0.22em] text-[#8c8478]"
+              style={{ fontFamily: "'Courier Prime', monospace" }}
+            >
+              LOCK DISENGAGED
+            </span>
+          </div>
+
+          {/* Spooky Title & Description */}
+          <div className="space-y-2">
+            <h2
+              className="text-xl sm:text-2xl font-bold text-[#efe7da] tracking-[0.06em]"
+              style={{
+                fontFamily: "'Cinzel', 'Cormorant Garamond', Georgia, serif",
+                textShadow: '0 2px 8px rgba(0, 0, 0, 0.9)',
+              }}
+            >
+              {title}
+            </h2>
+            <p
+              className="text-xs sm:text-[13px] text-[#b8ae9f] leading-relaxed"
+              style={{ fontFamily: "'Special Elite', 'Courier Prime', monospace" }}
+            >
+              {description}
+            </p>
+          </div>
+
+          {/* Evidence / Sector Log */}
+          <div className="p-3.5 rounded-[2px] bg-[#06070a]/90 border border-[#d4b896]/15 text-xs space-y-2"
+            style={{ fontFamily: "'Courier Prime', monospace" }}
+          >
+            {rewards.map((item, idx) => (
+              <div
+                key={idx}
+                className={`flex items-center justify-between gap-3 py-0.5 ${
+                  idx === 0 ? 'text-[#86efac]' : idx === 1 ? 'text-[#e2c288]' : 'text-[#d4c8b8]'
+                }`}
+              >
+                <span>{item}</span>
+                {idx === 0 ? (
+                  <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                ) : idx === 1 ? (
+                  <Trophy className="w-3.5 h-3.5 shrink-0" />
+                ) : (
+                  <Unlock className="w-3.5 h-3.5 shrink-0" />
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* Resident Evil Action Plate Button */}
+          <div className="pt-1">
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
+                onProceedToDoor?.();
+              }}
+              className="w-full py-3 px-4 rounded-[2px] bg-[#14171f] hover:bg-[#1d1416] border border-[#d4b896]/30 hover:border-[#b91c1c] border-l-[3px] border-l-[#b91c1c] text-[#f3ece0] font-bold text-xs sm:text-sm tracking-[0.2em] uppercase transition-colors flex items-center justify-center gap-3 cursor-pointer"
+              style={{ fontFamily: "'JetBrains Mono', monospace" }}
+            >
+              <span className="px-1.5 py-0.5 text-[10px] border border-[#d4b896]/35 bg-[#0a0b0e] text-[#d4b896] rounded-[2px]">
+                ENTER
+              </span>
+              <span>{cleanActionLabel}</span>
+              <ArrowRight className="w-4 h-4 text-[#dc2626]" />
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -639,7 +639,7 @@ export default function Room4Records({ team, onLogout }) {
           '✓ Primary Wing B Route Authenticated',
           '✓ Hydraulic Bulkhead Door Unsealed'
         ]}
-        actionLabel="Enter Next Sector (Vault) →"
+        actionLabel="Enter Next Sector (Vault)"
         onProceedToDoor={() => {
           setIsRoomCompleteModalOpen(false);
           window.dispatchEvent(new CustomEvent('ctc:navigate-room', { detail: 'vault' }));

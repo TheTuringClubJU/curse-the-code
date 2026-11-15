@@ -75,6 +75,15 @@ export default function Room6Vault({ team, onLogout }) {
   const [vaultRestored, setVaultRestored] = useState(false);
   const [victoryData, setVictoryData] = useState(null);
   const [clearanceDismissed, setClearanceDismissed] = useState(false);
+  const [isBootLoading, setIsBootLoading] = useState(
+    () => typeof navigator !== 'undefined' && !/jsdom/i.test(navigator.userAgent)
+  );
+
+  useEffect(() => {
+    if (!isBootLoading) return undefined;
+    const t = setTimeout(() => setIsBootLoading(false), 1600);
+    return () => clearTimeout(t);
+  }, [isBootLoading]);
 
   const showNotice = useCallback((msg, durationMs = 4200) => {
     setNotice(msg);
@@ -553,6 +562,66 @@ export default function Room6Vault({ team, onLogout }) {
       {scanTear && <div className="vault-scan-tear" data-testid="vault-scan-tear" />}
       {nightmarePulse && <div className="fixed inset-0 z-30 pointer-events-none jumpscare-nightmare-fx" />}
       {visorCrack && <div className="vault-visor-crack" aria-hidden="true" />}
+
+      {/* Resident Evil Atmospheric Loading Screen */}
+      {isBootLoading && (
+        <div
+          className="fixed inset-0 z-50 bg-[#050608] flex flex-col justify-between p-6 sm:p-10 select-none cursor-pointer overflow-hidden"
+          onClick={() => setIsBootLoading(false)}
+          data-testid="vault-loading-screen"
+        >
+          <img
+            src="/assets/textures/re-loading-bg.jpg"
+            alt=""
+            aria-hidden="true"
+            className="absolute inset-0 w-full h-full object-cover opacity-55 contrast-125 saturate-50 brightness-75 pointer-events-none"
+          />
+          <div className="absolute inset-0 bg-[#050608]/70 pointer-events-none" />
+
+          <div className="relative z-10 flex items-center justify-between text-[11px] uppercase tracking-[0.28em] text-[#a89c8d]"
+            style={{ fontFamily: "'Courier Prime', monospace" }}
+          >
+            <span className="border-l-2 border-[#b91c1c] pl-2.5">SECTOR VI // ST. JUDE VAULT</span>
+            <span>BIO-CONTAINMENT ARCHIVE</span>
+          </div>
+
+          <div className="relative z-10 max-w-2xl space-y-3 my-auto">
+            <div
+              className="text-xs uppercase tracking-[0.38em] text-[#dc2626]"
+              style={{ fontFamily: "'Special Elite', 'Courier Prime', monospace" }}
+            >
+              INITIALIZING CHAMBER VI — THE ANOINTING VAULT
+            </div>
+            <h1
+              className="text-4xl sm:text-6xl font-black uppercase tracking-[0.22em] text-[#ebe3d5]"
+              style={{
+                fontFamily: "'Cinzel', 'Cormorant Garamond', Georgia, serif",
+                textShadow: '0 3px 18px rgba(153, 27, 27, 0.85), 0 0 3px #000',
+              }}
+            >
+              CURSE THE CODE
+            </h1>
+            <p
+              className="text-xs sm:text-sm text-[#c4b8a6] max-w-lg leading-relaxed"
+              style={{ fontFamily: "'Special Elite', 'Courier Prime', monospace" }}
+            >
+              Battery depleted. Keep your eyes on the shadows ahead—the vault remembers every step.
+            </p>
+          </div>
+
+          <div className="relative z-10 space-y-2.5">
+            <div className="w-full h-[2px] bg-[#1a1c22] overflow-hidden">
+              <div className="h-full w-2/3 bg-[#b91c1c] animate-pulse" />
+            </div>
+            <div className="flex items-center justify-between text-[10px] uppercase tracking-[0.26em] text-[#8c8478]"
+              style={{ fontFamily: "'JetBrains Mono', monospace" }}
+            >
+              <span>LOADING 3D GEOMETRY &amp; AUDIO...</span>
+              <span>CLICK TO ENTER</span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* HUD */}
       <HUDVault
