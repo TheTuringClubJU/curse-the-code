@@ -611,36 +611,14 @@ export function createVaultArchitecture(E, { matLancet, pushStatic }) {
       S.add(pivot);
     });
 
-    // 2) Narthex -> Sanctuary double castle doors (`z = 8.45`) that automatically creak open as you approach!
-    loadGLB(`${VAULT_MODEL_BASE}/castle_door.glb`).then((gltf) => {
-      const raw = gltf?.scene;
-      if (!raw) return;
-      const door = raw.clone();
-      normalizeModelMaterials(door, { npAll: true, albedoLift: 0.22 });
-      const pivot = fitAndPivotModel(door, 3.85);
-      pivot.position.set(0, 0, 8.38);
-      S.add(pivot);
-
-      const leftLeaf = pivot.getObjectByName('large_castle_door_left');
-      const rightLeaf = pivot.getObjectByName('large_castle_door_right');
-      const baseLy = leftLeaf?.rotation.y ?? 0;
-      const baseRy = rightLeaf?.rotation.y ?? 0;
-      const col = solid(-1.45, 1.45, 8.2, 8.55);
-
-      doors.nave_threshold = {
-        root: pivot,
-        opened: false,
-        pos: new THREE.Vector3(0, 0, 8.38),
-        open: (silent = false) => {
-          if (doors.nave_threshold.opened) return;
-          doors.nave_threshold.opened = true;
-          removeSolid(col);
-          if (leftLeaf) animateScalar(() => leftLeaf.rotation.y, (v) => { leftLeaf.rotation.y = v; }, baseLy - 1.38, 1.8);
-          if (rightLeaf) animateScalar(() => rightLeaf.rotation.y, (v) => { rightLeaf.rotation.y = v; }, baseRy + 1.38, 1.8);
-          if (!silent) audio?.playGateOpen?.(0.76);
-        },
-      };
-    });
+    // 2) Narthex -> Sanctuary open Gothic archway threshold (z = 7.48, wall_doorway_temple)
+    // The archway is an open stone portal providing a clean cathedral vista down the Nave aisle
+    doors.nave_threshold = {
+      root: null,
+      opened: true,
+      pos: new THREE.Vector3(0, 0, 7.48),
+      open: () => {},
+    };
 
     // 3) West Scriptorium Temple Double Doors (`x = -8.45, z = 0` — seated cleanly inside West Nave archway)
     setupClipDoor('west_scriptorium', 'temple/glb/door_temple.glb', {

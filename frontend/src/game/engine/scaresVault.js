@@ -58,7 +58,7 @@ export function createVaultScares(E, h = {}) {
     return (dx / len) * fx + (dz / len) * fz >= minDot;
   };
 
-  const placeEntity = (entity, x, z, faceX, faceZ, lightIntensity = 3.8, tiltZ = 0) => {
+  const placeEntity = (entity, x, z, faceX, faceZ, lightIntensity = 2.6, tiltZ = 0) => {
     if (!entity) return;
     entity.position.set(x, 0, z);
     const dx = faceX - x;
@@ -67,16 +67,19 @@ export function createVaultScares(E, h = {}) {
     entity.rotation.z = tiltZ;
     entity.visible = true;
     if (E.ref.ghostLight) {
-      // Position illumination in FRONT of the apparition (toward the viewer) so faces & limbs never render backlit black
+      // Low side-angled crimson-amber rim light so apparitions keep chilling shadow contours (never studio-bleached white)
       const dist = Math.hypot(dx, dz) || 1;
-      const frontOffset = Math.min(0.95, dist * 0.45);
+      const nx = dx / dist;
+      const nz = dz / dist;
+      const frontOffset = Math.min(0.85, dist * 0.4);
+      const sideOffset = 0.65;
       E.ref.ghostLight.position.set(
-        x + (dx / dist) * frontOffset,
-        1.64,
-        z + (dz / dist) * frontOffset
+        x + nx * frontOffset - nz * sideOffset,
+        1.38,
+        z + nz * frontOffset + nx * sideOffset
       );
-      E.ref.ghostLight.color.setHex(0xffead6);
-      E.ref.ghostLight.intensity = Math.max(4.6, lightIntensity * 1.35);
+      E.ref.ghostLight.color.setHex(0xe0583c);
+      E.ref.ghostLight.intensity = Math.min(3.4, Math.max(2.1, lightIntensity));
     }
   };
 
@@ -100,57 +103,56 @@ export function createVaultScares(E, h = {}) {
     if (E.sc) E.sc.v = val;
   };
 
-  // High-impact readable 3D Jump Scare (stays cleanly outside camera near plane at 1.15m..1.55m for 0.86s)
+  // High-impact telegraphed rush scare (surges forward from 3.8m to 1.8m in shadowed crimson rim light)
   const triggerPhantomLunge = (reasonMsg = null, preferStalker = false) => {
     if (E.ref.vaultRestored) return;
     lungeT = 0;
     lungeEntity = (preferStalker && E.ref.stalker) || E.ref.ghost || E.ref.stalker;
     scriptedBusyUntil = Math.max(scriptedBusyUntil, elapsed + 3.0);
-    nextPatrolAt = Math.max(nextPatrolAt, elapsed + 34.0);
+    nextPatrolAt = Math.max(nextPatrolAt, elapsed + 38.0);
     patrolState = 'idle';
     setThreat(null, '');
 
     const { px, pz, fx, fz } = getPlayerPose();
-    setGlobalLightScale(0.22);
-    const [gx, gz] = clampNaveSpot(px + fx * 1.48, pz + fz * 1.48);
-    const tilt = (Math.random() < 0.5 ? -1 : 1) * 0.08;
-    placeEntity(lungeEntity, gx, gz, px, pz, 6.8, tilt);
-    if (E.ref.ghostLight) E.ref.ghostLight.color.setHex(0xffe8d6);
+    setGlobalLightScale(0.18);
+    const [gx, gz] = clampNaveSpot(px + fx * 3.8, pz + fz * 3.8);
+    const tilt = (Math.random() < 0.5 ? -1 : 1) * 0.06;
+    placeEntity(lungeEntity, gx, gz, px, pz, 2.8, tilt);
 
     E.audio?.playStab?.(0.95);
-    E.audio?.playMonster?.(0.88);
+    E.audio?.playMonster?.(0.92);
     E.audio?.screamStinger?.();
-    E.shake?.(1.75, 0.62);
-    h.onFlash?.('#64000c', 0.58, 220);
-    h.onNightmarePulse?.(560);
+    E.shake?.(1.85, 0.65);
+    h.onFlash?.('#5c000a', 0.56, 220);
+    h.onNightmarePulse?.(520);
     h.onGlassCrack?.();
     h.onScare?.('phantom_lunge', reasonMsg);
   };
 
-  // Milestone 1: Inspecting core_glass — cracked reliquary manifestation directly in front of player
+  // Milestone 1: Inspecting core_glass — entity slams from behind/inside the shrine cage in crimson surge
   const triggerCoreGlassScare = () => {
     if (fired.has('core_glass_slam')) return false;
     fired.add('core_glass_slam');
     scriptedBusyUntil = Math.max(scriptedBusyUntil, elapsed + 4.5);
-    nextPatrolAt = Math.max(nextPatrolAt, elapsed + 32.0);
     patrolState = 'idle';
     setThreat('surge', 'RELIQUARY SEAL FRACTURING');
 
-    const { px, pz, fx, fz } = getPlayerPose();
-    const [gx, gz] = clampNaveSpot(px + fx * 1.42, pz + fz * 1.42);
+    const { px, pz } = getPlayerPose();
+    // Appear on the far/shadowed side of core_glass looking directly through/beside the cage
+    const shrineZ = pz > -4.9 ? -5.85 : -3.95;
 
     E.audio?.playMonster?.(0.95);
     E.audio?.screamStinger?.();
     E.audio?.setTension?.(2.0);
-    E.shake?.(1.8, 0.65);
+    E.shake?.(1.65, 0.65);
     h.onGlassCrack?.();
-    h.onFlash?.('#68000c', 0.58, 240);
-    h.onNightmarePulse?.(560);
+    h.onFlash?.('#68000c', 0.52, 240);
+    h.onNightmarePulse?.(520);
     h.onScare?.('core_glass_slam', null);
 
-    setGlobalLightScale(0.26);
-    if (E.ref.coreLight) E.ref.coreLight.intensity = 9.8;
-    placeGhost(gx, gz, px, pz, 6.8, -0.07);
+    setGlobalLightScale(0.2);
+    if (E.ref.coreLight) E.ref.coreLight.intensity = 10.5;
+    placeGhost(0, shrineZ, px, pz, 2.9, -0.05);
 
     schedule(() => {
       if (patrolState === 'idle') hideGhost();
@@ -258,17 +260,16 @@ export function createVaultScares(E, h = {}) {
     }, 950);
   };
 
-  // Progression Vengeance I (after solving R2-08 in 6C): Seal-I Wraith stalks out of West doorway into jump scare
+  // Progression Vengeance I (after solving R2-08 in 6C): Seal-I Wraith emerges into the West Nave archway
   const triggerWestSealVengeance = () => {
     if (fired.has('west_seal_vengeance') || E.ref.vaultRestored) return;
     fired.add('west_seal_vengeance');
-    scriptedBusyUntil = Math.max(scriptedBusyUntil, elapsed + 5.2);
-    nextPatrolAt = Math.max(nextPatrolAt, elapsed + 36.0);
-    setThreat('warning', 'SEAL I BROKEN // SOMETHING IN THE SCRIPTORIUM');
+    scriptedBusyUntil = Math.max(scriptedBusyUntil, elapsed + 4.8);
+    setThreat('warning', 'SEAL I BROKEN // SOMETHING IN THE WEST ARCH');
 
     E.audio?.chainsRattle?.();
     E.audio?.phantomSteps?.();
-    setGlobalLightScale(0.35);
+    setGlobalLightScale(0.32);
 
     schedule(() => {
       if (E.ref.vaultRestored || E.isModalOpen?.()) {
@@ -277,32 +278,30 @@ export function createVaultScares(E, h = {}) {
         return;
       }
       const { px, pz } = getPlayerPose();
-      placeStalker(-9.4, 0, px, pz, 4.6, 0.08);
+      // Manifest grounded inside the West doorway corridor (~6-7m away) instead of teleporting in front of camera
+      placeGhost(-8.1, 0, px, pz, 2.8, 0.06);
       E.audio?.playEvilLaugh?.(0.32);
-      h.onScare?.('west_seal_vengeance', 'Seal I fractured — something crossed the West Arch!');
+      E.shake?.(0.65, 0.35);
+      h.onFlash?.('#520008', 0.36, 180);
+      h.onScare?.('west_seal_vengeance', 'Seal I fractured — something crossed into the Nave!');
 
       schedule(() => {
-        if (!E.ref.vaultRestored && !E.isModalOpen?.()) {
-          triggerPhantomLunge(null, true);
-        } else {
-          hideGhost();
-          setGlobalLightScale(1.0);
-          setThreat(null, '');
-        }
-      }, 1350);
-    }, 1500);
+        if (patrolState === 'idle') hideGhost();
+        setGlobalLightScale(1.0);
+        setThreat(null, '');
+      }, 1900);
+    }, 1150);
   };
 
-  // Progression Vengeance II (after solving R2-09 in 6D): Breaker overload -> total dark footsteps -> close flash scare
+  // Progression Vengeance II (after solving R2-09 in 6D): Breaker overload -> dark corridor silhouette across East breach
   const triggerBlackoutAmbush = () => {
     if (fired.has('blackout_ambush') || E.ref.vaultRestored) return;
     fired.add('blackout_ambush');
-    scriptedBusyUntil = Math.max(scriptedBusyUntil, elapsed + 5.0);
-    nextPatrolAt = Math.max(nextPatrolAt, elapsed + 38.0);
+    scriptedBusyUntil = Math.max(scriptedBusyUntil, elapsed + 4.8);
     patrolState = 'idle';
     setThreat('surge', 'BREAKER OVERLOAD // DEAD DARK');
 
-    setGlobalLightScale(0.02);
+    setGlobalLightScale(0.04);
     E.audio?.powerOut?.();
     E.audio?.voltageBuzz?.();
     E.audio?.playBreathScared?.(0.9);
@@ -319,54 +318,41 @@ export function createVaultScares(E, h = {}) {
         setThreat(null, '');
         return;
       }
-      const { px, pz, fx, fz } = getPlayerPose();
-      const [gx, gz] = clampNaveSpot(px + fx * 1.48, pz + fz * 1.48);
-      setGlobalLightScale(1.05);
-      placeGhost(gx, gz, px, pz, 6.2, 0.07);
-      if (E.ref.ghostLight) E.ref.ghostLight.color.setHex(0xd8e8ff);
-
-      E.audio?.playStab?.(0.95);
-      E.audio?.playMonster?.(0.9);
-      E.audio?.screamStinger?.();
-      E.shake?.(1.8, 0.56);
-      h.onFlash?.('#64000c', 0.65, 200);
-      h.onNightmarePulse?.(560);
-
-      schedule(() => {
-        setGlobalLightScale(0.06);
-        hideGhost();
-      }, 620);
+      const { px, pz } = getPlayerPose();
+      setGlobalLightScale(0.28);
+      placeGhost(8.1, 0, px, pz, 2.9, -0.05);
+      E.audio?.playStab?.(0.82);
+      E.audio?.playMonster?.(0.75);
+      E.shake?.(1.1, 0.45);
+      h.onFlash?.('#5e000b', 0.48, 200);
 
       schedule(() => {
         hideGhost();
         setGlobalLightScale(1.0);
         setThreat(null, '');
         if (!E.ref.vaultRestored) E.audio?.setTension?.(1.2);
-      }, 1050);
-    }, 1750);
+      }, 1550);
+    }, 1450);
   };
 
   // Optional Horror Wings (6F Reliquary Chapel & 6E Cellar)
   const triggerChapelReliquaryScare = () => {
     if (fired.has('chapel_reliquary') || E.ref.vaultRestored) return;
     fired.add('chapel_reliquary');
-    scriptedBusyUntil = Math.max(scriptedBusyUntil, elapsed + 3.6);
+    scriptedBusyUntil = Math.max(scriptedBusyUntil, elapsed + 3.4);
     setThreat('warning', '6F CHAPEL // COLD DRAFT');
     const { px, pz } = getPlayerPose();
     E.audio?.playCrows?.(0.36);
     E.audio?.playEvilLaugh?.(0.32);
-    placeStalker(-13.3, -8.5, px, pz, 4.2);
+    placeGhost(-13.3, -9.2, px, pz, 2.7, -0.06);
     E.shake?.(0.75, 0.32);
+    h.onFlash?.('#540008', 0.32, 160);
 
     schedule(() => {
       E.audio?.stopWomanCrying?.();
-      if (!E.ref.vaultRestored && !E.isModalOpen?.()) {
-        triggerPhantomLunge(null, true);
-      } else {
-        hideGhost();
-        setThreat(null, '');
-      }
-    }, 950);
+      if (patrolState === 'idle') hideGhost();
+      setThreat(null, '');
+    }, 1350);
   };
 
   const triggerCellarTrapScare = () => {
@@ -447,19 +433,19 @@ export function createVaultScares(E, h = {}) {
   };
 
   const tick = (dt) => {
-    // Advance close-quarters lunge animation cleanly at 1.12m..1.48m so creature fills viewport clearly
+    // Dynamic shadow rush scare: entity surges from 3.8m to 1.8m then dissolves before camera clipping
     if (lungeT >= 0) {
       lungeT += dt;
-      const k = Math.min(1, lungeT / 0.34);
+      const k = Math.min(1, lungeT / 0.42);
       const { px, pz, fx, fz } = getPlayerPose();
-      const dist = 1.48 - 0.36 * k;
+      const dist = 3.8 - 2.0 * k;
       const [gx, gz] = clampNaveSpot(px + fx * dist, pz + fz * dist);
-      placeEntity(lungeEntity || E.ref.ghost, gx, gz, px, pz, 6.8, lungeEntity?.rotation?.z || 0);
+      placeEntity(lungeEntity || E.ref.ghost, gx, gz, px, pz, 2.8, lungeEntity?.rotation?.z || 0);
       if (E.cam && E.cam.isPerspectiveCamera) {
-        E.cam.fov = baseFov - 15 * Math.sin(Math.min(1, lungeT / 0.85) * Math.PI);
+        E.cam.fov = baseFov - 12 * Math.sin(Math.min(1, lungeT / 0.65) * Math.PI);
         E.cam.updateProjectionMatrix();
       }
-      if (lungeT >= 1.02) {
+      if (lungeT >= 0.68) {
         lungeT = -1;
         lungeEntity = null;
         hideGhost();
@@ -563,8 +549,8 @@ export function createVaultScares(E, h = {}) {
       }
     }
 
-    // Structured, Telegraphed Reliquary Stalker Patrol Cycle
-    if (leftNarthex && !behindWatch && elapsed >= scriptedBusyUntil && (E.ref.stalker || E.ref.ghost)) {
+    // Logic-driven corridor vigil: only begins AFTER player investigates or disturbs at least one Wing (6C/6D), never randomly out of nowhere
+    if (leftNarthex && visitedSideWing && !behindWatch && elapsed >= scriptedBusyUntil && (E.ref.ghost || E.ref.stalker)) {
       if (patrolState === 'idle' && elapsed >= nextPatrolAt) {
         patrolState = 'telegraph';
         patrolTimer = 0;
@@ -583,21 +569,21 @@ export function createVaultScares(E, h = {}) {
             patrolTimer = 0;
             lookHoldTimer = 0;
             lookAwayTimer = 0;
-            patrolEntity = E.ref.stalker || E.ref.ghost;
-            setGlobalLightScale(0.82);
-            placeEntity(patrolEntity, spot[0], spot[1], px, pz, 4.4, 0.08);
+            patrolEntity = E.ref.ghost || E.ref.stalker;
+            setGlobalLightScale(0.72);
+            placeEntity(patrolEntity, spot[0], spot[1], px, pz, 2.7, 0.06);
             E.audio?.creak?.();
-            setThreat('surge', 'APPARITION SIGHTED // KEEP BACK');
+            setThreat('surge', 'APPARITION IN DOORWAY // DO NOT APPROACH');
           } else {
             patrolState = 'idle';
             setGlobalLightScale(1.0);
             setThreat(null, '');
-            nextPatrolAt = elapsed + 16.0;
+            nextPatrolAt = elapsed + 28.0;
           }
         }
       } else if (patrolState === 'manifest') {
         patrolTimer += dt;
-        const active = patrolEntity || E.ref.stalker || E.ref.ghost;
+        const active = patrolEntity || E.ref.ghost || E.ref.stalker;
         const gx = active.position.x;
         const gz = active.position.z;
         const gDist = Math.hypot(px - gx, pz - gz);
@@ -611,37 +597,37 @@ export function createVaultScares(E, h = {}) {
           lookAwayTimer += dt;
         }
 
-        // Counterplay: Staring too long (>1.1s) or approaching close (<4.0m) provokes a direct corridor rush!
-        if (lookHoldTimer >= 1.1 || gDist < 4.0) {
+        // Fair Horror Rule: It ONLY attacks if you actively walk straight toward it (< 3.4m) — never teleported into your face!
+        if (gDist < 3.4) {
           patrolState = 'rush';
           patrolTimer = 0;
           E.audio?.playMonster?.(0.86);
           E.audio?.phantomSteps?.();
-          if (E.ref.ghostLight) E.ref.ghostLight.intensity = 5.4;
-        } else if (lookAwayTimer >= 2.6 || gDist > 12.5 || patrolTimer >= 6.0) {
-          // Looking away & backing off cleanly dismisses the manifestation into the dark
+          if (E.ref.ghostLight) E.ref.ghostLight.intensity = 3.2;
+        } else if (lookAwayTimer >= 2.2 || gDist > 13.0 || patrolTimer >= 5.5) {
+          // Looking away or holding distance cleanly lets the doorway apparition vanish back into shadow
           patrolState = 'idle';
           hideGhost();
           setGlobalLightScale(1.0);
           setThreat(null, '');
           E.audio?.chainsRattle?.();
-          nextPatrolAt = elapsed + 22.0;
+          nextPatrolAt = elapsed + 36.0;
         }
       } else if (patrolState === 'rush') {
         patrolTimer += dt;
-        const active = patrolEntity || E.ref.stalker || E.ref.ghost;
+        const active = patrolEntity || E.ref.ghost || E.ref.stalker;
         const gx = active.position.x;
         const gz = active.position.z;
         const dx = px - gx;
         const dz = pz - gz;
         const gDist = Math.hypot(dx, dz) || 1;
         const step = Math.min(gDist, 7.6 * dt);
-        placeEntity(active, gx + (dx / gDist) * step, gz + (dz / gDist) * step, px, pz, 5.2, 0.1);
+        placeEntity(active, gx + (dx / gDist) * step, gz + (dz / gDist) * step, px, pz, 2.9, 0.08);
 
-        if (gDist < 1.9 || patrolTimer > 1.5) {
+        if (gDist < 1.9 || patrolTimer > 1.3) {
           patrolState = 'idle';
           hideGhost();
-          triggerPhantomLunge(null, active === E.ref.stalker);
+          triggerPhantomLunge('YOU WALKED INTO IT', false);
         }
       }
     }
@@ -656,18 +642,22 @@ export function createVaultScares(E, h = {}) {
     if (id === 'narthex_registry' || id === 'scriptorium_books') {
       E.audio?.creak?.();
       if (id === 'narthex_registry') {
-        const { px, pz, fx, fz } = getPlayerPose();
-        const [gx, gz] = clampNaveSpot(px + fx * 1.55, pz + fz * 1.55);
-        placeGhost(gx, gz, px, pz, 5.4, -0.06);
+        // Place shadowed entity at the 6A->6B archway threshold watching from afar rather than in front of the desk
+        const { px, pz } = getPlayerPose();
+        placeGhost(0, 7.35, px, pz, 2.7, -0.04);
         E.audio?.playBreathScared?.(0.85);
         E.audio?.playStab?.(0.62);
         E.shake?.(0.65, 0.35);
         h.onFlash?.('#4e0008', 0.34, 180);
         schedule(() => {
           if (patrolState === 'idle') hideGhost();
-        }, 850);
+        }, 900);
         return true;
       }
+    } else if (id === 'autopsy_gurney') {
+      setGlobalLightScale(0.12);
+      E.audio?.playBonecrack?.(0.85);
+      schedule(() => setGlobalLightScale(1.0), 340);
     } else if (id === 'specimen_locker') {
       E.audio?.playBreathScared?.(0.55);
       E.audio?.playCrows?.(0.24);
