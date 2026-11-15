@@ -119,7 +119,7 @@ export function buildStudy(E){
  // A short unlit passage is visible through the open Basement door.
  const passage=new THREE.Group();box([0,-.06,-5.8],[1.6,.12,2.8],stone,passage);
  for(const x of [-.85,.85])box([x,1.3,-5.8],[.15,2.6,2.8],stone,passage);
- box([0,2.65,-5.8],[1.8,.15,2.8],stone,passage);box([0,1.3,-7.2],[1.8,2.6,.1],new THREE.MeshBasicMaterial({color:0x030504}),passage);add(passage);
+ box([0,2.65,-5.8],[1.8,.15,2.8],stone,passage);box([0,1.3,-7.2],[1.8,2.6,.1],new THREE.MeshBasicMaterial({color:0x030504}),passage);add(passage,'study_door_exit');
  // Clone cached downloads, then normalize in a wrapper. Source node transforms stay intact.
  function model(file,id,p,size,rot=0,old=null,after,options={}){tasks.push(async()=>{
   if(!cache.has(file))cache.set(file,E.loadGLB(BASE+file+'.glb'));const gltf=await cache.get(file);if(disposed)return;

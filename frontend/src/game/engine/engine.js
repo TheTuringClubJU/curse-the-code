@@ -194,6 +194,13 @@ export function createEngine(el,room,h){
    const walk = ctrl.walk;
    const mv = ctrl.isMoving ? 1 : 0;
 
+   // Automatic walk-through transition when player steps into the open Study exit passage
+   if (room.id === 'study' && E._studyProgress?.completed && pz <= -4.1 && Math.abs(px) < 1.2) {
+     if (!E._studyState?.paused && !E._studyCinematicInput) {
+       h.onInteract?.('study_door_exit');
+     }
+   }
+
    // Study aims at the current camera pose, at up to 30 Hz even on slower displays.
    if(room.id==='study'){cam.position.set(px,E._studyEyeHeight??1.6,pz);cam.rotation.set(pitch,yaw,E._studyCameraRoll||0);cam.updateMatrixWorld();}
    if (room.id==='study'?now-lastStudyPick>=1000/30:frameCount%2===0) {
