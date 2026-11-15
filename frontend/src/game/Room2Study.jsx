@@ -6,7 +6,7 @@ import {isStudyLowDetail,studyQualityUrl,rememberStudyQuality} from './engine/st
 import HUD from './components/study/StudyHUD.jsx';
 import BasketModal from './components/study/StudyEvidenceTable.jsx';
 import CaseFilesModal from './components/study/StudyCaseFiles.jsx';
-import {studyObjective,studyPropName} from './components/study/studyGuide.js';
+import {studyObjective} from './components/study/studyGuide.js';
 import PhotoPuzzleModal from './components/PhotoPuzzleModal.jsx';
 import TabletPasscodeModal from './components/study/TabletPasscodeModal.jsx';
 import CrtEmailModal from './components/study/CrtEmailModal.jsx';
@@ -223,8 +223,7 @@ export default function Room2Study({
         searchResult = await res.json();
         if (!mountedRef.current) return;
         if (searchResult?.message && (searchResult.found || !currentData.clues?.some(c=>c.object_id===objectId))) {
-          const lead=searchResult.next_search||currentData.investigation?.next_search;
-          showNotification(searchResult.locked && lead ? `An earlier record is missing. Current lead: ${studyPropName(lead.object_id)}. Follow the objective in your field notes.` : searchResult.message);
+          showNotification(searchResult.message);
         }
         if (searchResult.found) {
           engineRef.current?.notifyStudyEvent?.({ type: 'fragment', objectId });

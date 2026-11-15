@@ -120,7 +120,6 @@ def get_clue_hint_point_deduction(cur, team_id: int, clue_id: str) -> float:
     cur.execute(
         """SELECT 1 FROM team_hints
            WHERE team_id = %s AND round = 1 AND target_id = %s AND hint_category = 'clue'
-             AND (room_id <> 'study' OR penalty_seconds > 0)
            LIMIT 1""",
         (team_id, clue_id),
     )
@@ -170,14 +169,6 @@ def get_hint_status(team_id: int) -> Dict[str, Any]:
         "hints_remaining": max(0, TOTAL_HINT_BUDGET - hints_used),
         "total_penalty_seconds": total_penalty,
         "unlocked_hints": [dict(h) for h in hints],
-        "study_policy": {
-            "free_allowance": 2,
-            "free_remaining": max(0, 2 - sum(h["room_id"] == "study" for h in hints)),
-            "hints_used": sum(h["room_id"] == "study" for h in hints),
-            "fragment_penalty_seconds": FRAGMENT_PENALTY_SECONDS,
-            "clue_penalty_seconds": CLUE_PENALTY_SECONDS,
-            "paid_clue_point_deduction": 15,
-        },
     }
 
 
@@ -218,11 +209,6 @@ def request_hint(
 
             if room_id not in ROOM_FRAGMENTS:
                 raise HTTPException(400, f"Invalid room_id '{room_id}'")
-
-            # Study has its own atomic two-free-hints policy; other rooms keep their rules.
-            if room_id == "study":
-                from app.game.study_hints import request_study_hint
-                return request_study_hint(team_id, content, target_id)
 
             # 2. Check if the specific target_id requested is ALREADY unlocked
             if target_id:

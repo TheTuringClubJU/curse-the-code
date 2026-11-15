@@ -1,6 +1,5 @@
 import React,{useEffect,useState} from 'react';
 import {X,ArrowLeft,FileText,Lock} from 'lucide-react';
-import {studyPropName} from './studyGuide.js';
 
 export default function StudyEvidenceTable({isOpen,onClose,onOpenCaseFiles,evidence=[],collectedIds=[],basketUnlocked=false,totalInRoom=16}){
   const [selected,setSelected]=useState(null);
@@ -38,7 +37,6 @@ export default function StudyEvidenceTable({isOpen,onClose,onOpenCaseFiles,evide
         {items.map((item,index)=><button className={'study-evidence__card '+(unlocked(item)?'':'study-evidence__card--sealed')} key={item.id} onClick={()=>setSelected(item)} aria-label={'Examine '+(unlocked(item)?item.display?.title||item.id:'wrapped fragment '+(index+1))}>
           <span className="study-evidence__reference">{String(index+1).padStart(2,'0')} / {item.id}</span>
           {unlocked(item)?<FileText size={22}/>:<Lock size={22}/>}
-          {item.source_object_id&&<span className="study-evidence__origin">Recovered at: {studyPropName(item.source_object_id)}</span>}
           <h3>{unlocked(item)?item.display?.title||'Recovered record':'Wrapped Fragment'}</h3>
           <pre>{unlocked(item)?lines(item).slice(0,2).join('\n'):'OILCLOTH WRAPPER\nCONTENTS SEALED'}</pre>
           <span className="study-evidence__card-footer">{unlocked(item)?'UNWRAPPED · EXAMINE':'SEALED'}</span>
