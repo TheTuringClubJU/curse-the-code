@@ -62,6 +62,7 @@ export default function Room6Vault({ team, onLogout }) {
   const [visorCrack, setVisorCrack] = useState(false);
   const [playerPos, setPlayerPos] = useState({ x: 0, z: 13.8, yaw: 0 });
   const [mouseSensitivity, setMouseSensitivity] = useState(1.0);
+  const [threatState, setThreatState] = useState(null);
   const [qualityMode, setQualityMode] = useState(() => {
     try {
       const saved = localStorage.getItem('vault_quality');
@@ -315,6 +316,7 @@ export default function Room6Vault({ team, onLogout }) {
         onScare: (_scareId, msg) => {
           if (msg) showNotice(msg, 3600);
         },
+        onThreatState: (st) => setThreatState(st),
         onFlash: () => triggerScanTear(),
         onNightmarePulse: (ms) => triggerNightmarePulse(ms),
         onGlassCrack: () => triggerVisorCrack(),
@@ -647,57 +649,28 @@ export default function Room6Vault({ team, onLogout }) {
 
       {/* HUD */}
       <HUDVault
-        roomTitle={roomData.title}
+        team={team}
+        clues={clues}
         cluesSolved={cluesSolved}
         totalClues={totalClues}
-        isRoomCompleted={vaultRestored || roomData.is_completed}
-        vaultClues={clues}
-        playerPos={playerPos}
+        activeHoverPrompt={activeHoverPrompt}
         isPointerLocked={isPointerLocked}
-        mouseSensitivity={mouseSensitivity}
-        onCycleSensitivity={() => {
-          const tiers = [0.7, 1.0, 1.4];
-          const idx = tiers.indexOf(mouseSensitivity);
-          const next = tiers[(idx + 1) % tiers.length];
-          setMouseSensitivity(next);
-          engineRef.current?.setSensitivity?.(next);
+        sensitivity={mouseSensitivity}
+        onChangeSensitivity={(next) => {
+          const val = typeof next === 'number' ? next : 1.0;
+          setMouseSensitivity(val);
+          engineRef.current?.setSensitivity?.(val);
         }}
-        onRequestLock={() => {
-          if (!anyModalOpenRef.current) {
-            audioRef.current?.start?.();
-            audioRef.current?.ensureActive?.();
-            engineRef.current?.lock?.();
-          }
-        }}
-        onTogglePointerLock={() => {
-          if (anyModalOpenRef.current) return;
-          if (engineRef.current?.isLocked?.()) {
-            engineRef.current?.unlock?.();
-          } else {
-            audioRef.current?.start?.();
-            audioRef.current?.ensureActive?.();
-            engineRef.current?.lock?.();
-          }
-        }}
-        onOpenCaseDossier={() => setIsDossierOpen(true)}
-        onOpenHints={() => setIsHintOpen(true)}
-        onFlashlightAttempt={() => {
-          engineRef.current?.sparkDeadTorch?.();
-          audioRef.current?.click?.();
-          showNotice('Torch battery dead (0%). Follow the candle sconces and amber lamps.');
-        }}
-        onLogout={onLogout}
-        audioMuted={audioMuted}
-        onToggleAudio={() => {
+        muted={audioMuted}
+        onToggleMute={() => {
           setAudioMuted((prev) => {
             const next = !prev;
             audioRef.current?.setMuted?.(next);
             return next;
           });
         }}
-        activeHoverPrompt={activeHoverPrompt}
         qualityMode={qualityMode}
-        onToggleQuality={() => {
+        onChangeQuality={() => {
           setQualityMode((prev) => {
             const order = ['low', 'med', 'high'];
             const cur = prev === 'eco' ? 'low' : prev === 'crisp' ? 'high' : order.includes(prev) ? prev : 'med';
@@ -712,8 +685,25 @@ export default function Room6Vault({ team, onLogout }) {
             return next;
           });
         }}
+        onToggleDossier={() => setIsDossierOpen((v) => !v)}
+        onToggleHint={() => setIsHintOpen((v) => !v)}
+        onRequestLock={() => {
+          if (anyModalOpenRef.current) return;
+          if (engineRef.current?.isLocked?.()) {
+            engineRef.current?.unlock?.();
+          } else {
+            audioRef.current?.start?.();
+            audioRef.current?.ensureActive?.();
+            engineRef.current?.lock?.();
+          }
+        }}
+        onLogout={onLogout}
+        discoveredDocsCount={discoveredDocIds.length}
+        totalDocsCount={Object.keys(VAULT_DOCUMENTS).length}
         isSystemOpen={isSystemOpen}
         onToggleSystem={() => setIsSystemOpen((v) => !v)}
+        getPlayerPos={() => engineRef.current?.getPos?.() || playerPos}
+        threatState={threatState}
       />
 
       {/* Atmospheric / Status Notice Banner */}

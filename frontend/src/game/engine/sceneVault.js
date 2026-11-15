@@ -13,6 +13,7 @@ import {
 } from './texVault.js';
 import {
   createVaultArchitecture,
+  fitAndPivotModel,
   fitModelToHeight,
   normalizeModelMaterials,
   VAULT_MODEL_BASE,
@@ -131,6 +132,7 @@ export function buildVaultScene(E) {
     solid(-3.8, 3.8, 16.05, 16.95);
     solid(3.0, 3.6, 7.6, 16.5);
     solid(-3.6, -3.1, 7.6, 16.5);
+    solid(1.4, 2.95, 10.4, 12.0); // narthex registry table
     // 6A -> 6B South Nave threshold wall (door opening x = -1.45..1.45)
     solid(-8.6, -1.45, 7.2, 7.75);
     solid(1.45, 8.6, 7.2, 7.75);
@@ -143,12 +145,14 @@ export function buildVaultScene(E) {
     solid(8.15, 8.8, 1.45, 7.5);
     solid(-5.5, -4.5, -5.35, -4.35);
     solid(4.5, 5.5, -5.35, -4.35);
-    solid(-1.35, 1.35, -6.25, -3.55); // core_glass rotunda
-    solid(-1.05, 1.05, -2.65, -1.45); // central_console altar
-    solid(-5.25, -2.35, 1.65, 2.75); // west pew 1
-    solid(-5.25, -2.35, 4.05, 5.15); // west pew 2
-    solid(2.35, 5.25, 4.05, 5.15); // east pew 2
-    solid(3.45, 5.55, 1.65, 2.95); // autopsy gurney
+    solid(-1.25, 1.25, -6.15, -3.65); // core_glass Gothic reliquary shrine
+    solid(-1.55, 1.55, -2.95, -1.05); // central_console containment altar
+    solid(-1.45, 1.45, -8.85, -7.25); // North Apse High Altar under clock
+    solid(-4.75, -3.05, 1.45, 2.55); // west pew 1
+    solid(-4.75, -3.05, 4.05, 5.15); // west pew 2
+    solid(-6.75, -5.75, 2.35, 4.25); // west flank pew
+    solid(3.05, 4.75, 4.05, 5.15); // east pew 2
+    solid(3.35, 5.65, 1.15, 3.45); // autopsy table & corpse
 
     // 6C West Scriptorium walls & furniture (6F archway opening x = -14.2..-12.4)
     solid(-17.4, -16.6, -6.3, 6.3);
@@ -157,21 +161,26 @@ export function buildVaultScene(E) {
     solid(-12.4, -8.5, -6.35, -5.75);
     solid(-16.1, -14.35, -0.95, 0.95); // manual_terminal desk
     solid(-12.35, -11.25, -4.15, -3.05); // weeping_statue pedestal
-    solid(-15.1, -12.5, 3.25, 5.25); // scriptorium_books cabinet & table
+    solid(-15.1, -12.5, 2.65, 5.55); // scriptorium_books cabinet & table
+    solid(-12.6, -10.8, 3.05, 4.15); // 6C reading pew
 
     // 6F North Reliquary Chapel
     solid(-16.4, -10.2, -11.6, -10.95);
     solid(-16.4, -15.8, -11.3, -6.0);
     solid(-10.8, -10.2, -11.3, -6.0);
-    solid(-14.6, -11.9, -10.6, -9.05); // specimen_locker altar
+    solid(-14.6, -11.9, -10.75, -9.2); // specimen_locker altar
 
-    // 6D East Switchgear (6E cellar archway opening x = 11.75..14.05 centered at 12.9)
+    // 6D East Switchgear & Vestry (6E cellar archway opening x = 11.75..14.05 centered at 12.9)
     solid(16.6, 17.4, -6.3, 6.3);
     solid(8.5, 17.1, -6.4, -5.75);
     solid(8.5, 11.75, 5.75, 6.38);
     solid(14.05, 17.1, 5.75, 6.38);
-    solid(15.25, 16.65, -0.95, 0.95); // failsafe_panel rack
-    solid(11.35, 13.85, -5.0, -3.25); // switchgear_log bench
+    solid(14.7, 16.55, -0.95, 0.95); // failsafe_panel pedestal & switchboard
+    solid(11.8, 13.4, -4.15, -2.95); // switchgear_log table
+    solid(9.75, 16.05, -5.85, -4.55); // 6D north vestry cabinets
+    solid(9.35, 11.45, 3.35, 5.45); // 6D SW gothic table
+    solid(9.6, 11.2, 2.05, 2.95); // 6D SW pew
+    solid(14.85, 16.3, 2.95, 4.75); // 6D SE pew
 
     // 6E South Quarantine Cellar
     solid(10.8, 11.45, 6.0, 11.4);
@@ -190,35 +199,35 @@ export function buildVaultScene(E) {
   };
 
   // Global shadow/moonlight ambient bounce — calibrated for clear visibility and zero pure-black crush
-  registerLight(new THREE.HemisphereLight(0x645c72, 0x28202d, 1.25));
+  registerLight(new THREE.HemisphereLight(0x6e667e, 0x2d2433, 1.38));
 
-  const narthexLight = registerLight(new THREE.PointLight(0xffba78, 2.6, 12.5, 1.5));
+  const narthexLight = registerLight(new THREE.PointLight(0xffba78, 2.75, 13.0, 1.5));
   narthexLight.position.set(0, 3.6, 12.2);
 
-  const cellLight = registerLight(new THREE.PointLight(0x769ec8, 1.15, 9.0, 1.5));
+  const cellLight = registerLight(new THREE.PointLight(0x769ec8, 1.3, 9.5, 1.5));
   cellLight.position.set(-5.2, 3.0, 10.9);
 
   const coreLight = registerLight(new THREE.PointLight(0xdc3240, 3.6, 15.0, 1.4));
   coreLight.position.set(0, 2.5, -4.9);
 
-  const altarSpotLight = registerLight(new THREE.PointLight(0xffd28e, 2.6, 11.5, 1.5));
+  const altarSpotLight = registerLight(new THREE.PointLight(0xffd28e, 2.75, 12.0, 1.5));
   altarSpotLight.position.set(0, 3.8, -1.6);
 
-  const westCryptLight = registerLight(new THREE.PointLight(0x94bbce, 2.4, 14.5, 1.5));
-  westCryptLight.position.set(-12.6, 3.2, 0);
+  const westCryptLight = registerLight(new THREE.PointLight(0x94bbce, 2.65, 15.5, 1.5));
+  westCryptLight.position.set(-12.8, 3.2, 0);
 
-  const eastCryptLight = registerLight(new THREE.PointLight(0xebac68, 2.5, 14.5, 1.5));
-  eastCryptLight.position.set(12.8, 3.1, 0);
+  const eastCryptLight = registerLight(new THREE.PointLight(0xebb06e, 3.1, 16.5, 1.45));
+  eastCryptLight.position.set(13.5, 3.15, 0);
 
-  const cellarLight = registerLight(new THREE.PointLight(0xdca562, 1.85, 9.5, 1.5));
+  const cellarLight = registerLight(new THREE.PointLight(0xdca562, 2.05, 10.0, 1.5));
   cellarLight.position.set(12.9, 2.7, 8.5);
 
-  const reliquaryLight = registerLight(new THREE.PointLight(0xe48265, 2.2, 9.8, 1.5));
+  const reliquaryLight = registerLight(new THREE.PointLight(0xe48265, 2.35, 10.2, 1.5));
   reliquaryLight.position.set(-13.3, 3.1, -8.5);
 
   // Flame sprites & animated torches
   const flameSprites = [];
-  const spawnFlameSprite = (x, y, z, scale = 0.28) => {
+  const spawnFlameSprite = (x, y, z, scale = 0.28, parent = S) => {
     const mat = new THREE.SpriteMaterial({
       map: texFlame,
       color: 0xffc878,
@@ -230,7 +239,7 @@ export function buildVaultScene(E) {
     const sp = new THREE.Sprite(mat);
     sp.position.set(x, y, z);
     sp.scale.set(scale, scale * 1.35, scale);
-    S.add(sp);
+    parent.add(sp);
     flameSprites.push({ sp, baseY: y, baseScale: scale, phase: Math.random() * 6.28 });
     return sp;
   };
@@ -253,7 +262,22 @@ export function buildVaultScene(E) {
 
   const placePropGLB = (
     relPath,
-    { pos = [0, 0, 0], ry = 0, targetHeight = null, scale = null, albedoLift = 0.26, playClip = false, clipSpeed = 1, flameOffset = null, onReady = null } = {}
+    {
+      pos = [0, 0, 0],
+      ry = 0,
+      rx = 0,
+      rz = 0,
+      targetHeight = null,
+      scale = null,
+      anchor = 'bottom',
+      albedoLift = 0.26,
+      playClip = false,
+      clipSpeed = 1,
+      flameOffset = null,
+      flameOffsets = null,
+      flameScale = 0.28,
+      onReady = null,
+    } = {}
   ) =>
     arch.track(
       loadGLB(`${VAULT_MODEL_BASE}/${relPath}`)
@@ -261,18 +285,24 @@ export function buildVaultScene(E) {
           if (!gltf?.scene) return null;
           const root = gltf.scene.clone();
           normalizeModelMaterials(root, { psx: relPath.includes('/glb/'), npAll: true, albedoLift });
-          if (targetHeight) fitModelToHeight(root, targetHeight);
-          if (scale) root.scale.multiplyScalar(scale);
-          root.position.set(...pos);
-          root.rotation.y = ry;
-          S.add(root);
+          if (rx) root.rotation.x = rx;
+          if (rz) root.rotation.z = rz;
+          const pivot = fitAndPivotModel(root, targetHeight, { extraScale: scale || 1, anchor });
+          pivot.position.set(...pos);
+          pivot.rotation.y = ry;
+          S.add(pivot);
           let clipCtrl = null;
-          if (playClip) clipCtrl = mountClipAnimation(root, gltf.animations, 0, { speed: clipSpeed });
+          if (playClip) clipCtrl = mountClipAnimation(pivot, gltf.animations, 0, { speed: clipSpeed });
           if (flameOffset) {
-            spawnFlameSprite(pos[0] + flameOffset[0], pos[1] + flameOffset[1], pos[2] + flameOffset[2], 0.34);
+            spawnFlameSprite(flameOffset[0], flameOffset[1], flameOffset[2], flameScale, pivot);
           }
-          onReady?.(root, gltf, clipCtrl);
-          return root;
+          if (Array.isArray(flameOffsets)) {
+            flameOffsets.forEach(([fx, fy, fz]) => {
+              spawnFlameSprite(fx, fy, fz, flameScale, pivot);
+            });
+          }
+          onReady?.(pivot, gltf, clipCtrl);
+          return pivot;
         })
         .catch(() => null)
     );
@@ -291,8 +321,10 @@ export function buildVaultScene(E) {
     {
       pos = [0, 0, 0],
       ry = 0,
+      rx = 0,
       targetHeight = null,
       scale = null,
+      anchor = 'bottom',
       albedoLift = 0.28,
       screenTex = null,
       hitPos = null,
@@ -313,15 +345,15 @@ export function buildVaultScene(E) {
             npAll: false,
             albedoLift,
           });
-          if (targetHeight) fitModelToHeight(root, targetHeight);
-          if (scale) root.scale.multiplyScalar(scale);
-          root.position.set(...pos);
-          root.rotation.y = ry;
-          interact(root, id);
-          add(root, { noShadow: true });
-          visualInteract(id, root);
-          onReady?.(root, gltf);
-          return root;
+          if (rx) root.rotation.x = rx;
+          const pivot = fitAndPivotModel(root, targetHeight, { extraScale: scale || 1, anchor });
+          pivot.position.set(...pos);
+          pivot.rotation.y = ry;
+          interact(pivot, id);
+          add(pivot, { noShadow: true });
+          visualInteract(id, pivot);
+          onReady?.(pivot, gltf);
+          return pivot;
         })
         .catch(() => null)
     );
@@ -405,31 +437,60 @@ export function buildVaultScene(E) {
     }
   };
 
-  // 5B. core_glass (0, 0, -4.9): Anointing Specimen Vessel + flesh_blob.glb inside cracked glass
+  // 5B. core_glass (0, 0, -4.9): Medieval Gothic Reliquary Shrine + grounded flesh_blob.glb
   const coreGroup = new THREE.Group();
   coreGroup.position.set(0, 0, -4.9);
   S.add(coreGroup);
 
-  const pedBase = new THREE.Mesh(new THREE.CylinderGeometry(1.18, 1.32, 0.55, 16), matDarkIron);
-  pedBase.position.y = 0.275;
-  coreGroup.add(pedBase);
-  const capRing = new THREE.Mesh(new THREE.CylinderGeometry(1.22, 1.15, 0.32, 16), matDarkIron);
-  capRing.position.y = 3.25;
-  coreGroup.add(capRing);
+  const pedStep = new THREE.Mesh(new THREE.CylinderGeometry(1.18, 1.28, 0.24, 8), matFlagstone);
+  pedStep.position.y = 0.12;
+  coreGroup.add(pedStep);
 
-  for (let i = 0; i < 6; i++) {
-    const ang = (i / 6) * Math.PI * 2;
-    const strut = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 2.7, 8), matDarkIron);
-    strut.position.set(Math.cos(ang) * 1.14, 1.9, Math.sin(ang) * 1.14);
-    coreGroup.add(strut);
+  const pedDrum = new THREE.Mesh(new THREE.CylinderGeometry(0.86, 0.96, 0.56, 8), matConcrete);
+  pedDrum.position.y = 0.52;
+  coreGroup.add(pedDrum);
+
+  const ironCollar = new THREE.Mesh(new THREE.CylinderGeometry(0.91, 0.93, 0.08, 8), matDarkIron);
+  ironCollar.position.y = 0.81;
+  coreGroup.add(ironCollar);
+
+  for (let i = 0; i < 4; i++) {
+    const ang = (i * Math.PI) / 2 + Math.PI / 4;
+    const px = Math.cos(ang) * 0.78;
+    const pz = Math.sin(ang) * 0.78;
+    const pier = new THREE.Mesh(new THREE.BoxGeometry(0.13, 1.52, 0.13), matDarkIron);
+    pier.position.set(px, 1.58, pz);
+    pier.rotation.y = ang;
+    coreGroup.add(pier);
+
+    const spire = new THREE.Mesh(new THREE.ConeGeometry(0.11, 0.42, 4), matDarkIron);
+    spire.position.set(px, 2.54, pz);
+    spire.rotation.y = ang;
+    coreGroup.add(spire);
   }
 
-  const glassTube = new THREE.Mesh(new THREE.CylinderGeometry(1.06, 1.06, 2.65, 24, 1, true), matCrackedGlass);
-  glassTube.position.y = 1.88;
-  coreGroup.add(glassTube);
+  const midBand = new THREE.Mesh(new THREE.TorusGeometry(0.75, 0.028, 6, 8), matDarkIron);
+  midBand.rotation.x = Math.PI / 2;
+  midBand.position.y = 1.58;
+  coreGroup.add(midBand);
+
+  const canopy = new THREE.Mesh(new THREE.ConeGeometry(0.94, 0.58, 8), matDarkIron);
+  canopy.position.y = 2.62;
+  coreGroup.add(canopy);
+
+  const crossPost = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.34, 0.05), matDarkIron);
+  crossPost.position.y = 3.04;
+  coreGroup.add(crossPost);
+  const crossArm = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.05, 0.05), matDarkIron);
+  crossArm.position.y = 3.1;
+  coreGroup.add(crossArm);
+
+  const leadedVessel = new THREE.Mesh(new THREE.CylinderGeometry(0.72, 0.72, 1.48, 8, 1, true), matCrackedGlass);
+  leadedVessel.position.y = 1.56;
+  coreGroup.add(leadedVessel);
   interact(coreGroup, 'core_glass');
   add(coreGroup, { noShadow: true });
-  registerHitProxy('core_glass', [0, 1.75, -4.9], [2.45, 3.2, 2.45]);
+  registerHitProxy('core_glass', [0, 1.5, -4.9], [2.2, 2.9, 2.2]);
 
   const bioMaps = createBioFleshTextures();
   const matFlesh = new THREE.MeshStandardMaterial({
@@ -455,30 +516,43 @@ export function buildVaultScene(E) {
             o.userData.np = true;
           }
         });
-        fitModelToHeight(blob, 1.75);
-        blob.position.set(0, 0.72, -4.9);
-        S.add(blob);
-        fleshRoot = blob;
-        mountClipAnimation(blob, gltf.animations, 0, { speed: 0.9 });
+        const blobPivot = fitAndPivotModel(blob, 0.92, { anchor: 'bottom' });
+        blobPivot.position.set(0, 0.85, -4.9);
+        S.add(blobPivot);
+        fleshRoot = blobPivot;
+        mountClipAnimation(blobPivot, gltf.animations, 0, { speed: 0.9 });
       })
       .catch(() => null)
   );
 
-  placePropGLB('temple/glb/pillar_gothic.glb', { pos: [-2.45, 0, -4.9], targetHeight: 4.8, albedoLift: 0.25 });
-  placePropGLB('temple/glb/pillar_gothic.glb', { pos: [2.45, 0, -4.9], targetHeight: 4.8, albedoLift: 0.25 });
+  placePropGLB('temple/glb/candelabra.glb', {
+    pos: [-1.7, 0, -4.9],
+    ry: Math.PI / 2,
+    targetHeight: 1.75,
+    flameOffsets: [[-0.29, 1.67, 0], [0, 1.76, 0], [0.29, 1.67, 0]],
+    flameScale: 0.24,
+  });
+  placePropGLB('temple/glb/candelabra.glb', {
+    pos: [1.7, 0, -4.9],
+    ry: -Math.PI / 2,
+    targetHeight: 1.75,
+    flameOffsets: [[-0.29, 1.67, 0], [0, 1.76, 0], [0.29, 1.67, 0]],
+    flameScale: 0.24,
+  });
+  placePropGLB('temple/glb/pillar_gothic.glb', { pos: [-3.65, 0, -4.9], targetHeight: 4.8, albedoLift: 0.25 });
+  placePropGLB('temple/glb/pillar_gothic.glb', { pos: [3.65, 0, -4.9], targetHeight: 4.8, albedoLift: 0.25 });
 
   // 5C. central_console (0, 0, -2.05): Anointing Containment Altar R2-10
-  placePropGLB('temple/glb/altar_high.glb', { pos: [0, 0, -2.95], ry: 0, scale: 1.1, albedoLift: 0.28 });
   placeInteractiveGLB('central_console.glb', 'central_console', {
     pos: [0, 0, -2.05],
     ry: 0,
-    targetHeight: 1.38,
+    targetHeight: 1.12,
     albedoLift: 0.3,
-    hitPos: [0, 0.9, -2.05],
-    hitSize: [1.55, 1.65, 1.25],
+    hitPos: [0, 0.85, -2.05],
+    hitSize: [2.75, 1.65, 1.85],
   });
 
-  // 5D. countdown_timer: Overhead Split-Flap Board + Apse Inspection Switch
+  // 5D. countdown_timer: Overhead Split-Flap Board + Apse High Altar Switch
   const flapBoardMat = new THREE.MeshStandardMaterial({
     map: splitFlap.texture,
     emissiveMap: splitFlap.texture,
@@ -498,30 +572,54 @@ export function buildVaultScene(E) {
   interact(flapBoardMesh, 'countdown_timer');
   add(flapBoardMesh, { noShadow: true });
 
-  // Lower clock plaque & relay post under apse so eye-level raycast catches countdown_timer effortlessly
-  pushStatic(new THREE.BoxGeometry(0.95, 1.28, 0.35), matDarkIron, 0, 0.64, -8.15);
-  registerHitProxy('countdown_timer', [0, 1.45, -8.05], [1.65, 2.4, 1.4]);
+  // Gothic High Altar below the apse clock so eye-level raycast catches countdown_timer cleanly
+  placePropGLB('temple/glb/altar_high.glb', { pos: [0, 0, -8.0], ry: 0, scale: 1.05, albedoLift: 0.3 });
+  registerHitProxy('countdown_timer', [0, 1.35, -7.85], [2.4, 2.3, 1.6]);
   registerHitProxy('countdown_timer', [0, 3.6, -8.45], [3.6, 1.6, 1.2]);
 
   // ── 6. Dress All 6 Chambers With Normalized Props & Articulated Events ─────
   // Zone 6A: Narthex & Holding Cell 01
-  placePropGLB('dungeon/glb/banner_red.glb', { pos: [-2.85, 2.55, 13.2], ry: Math.PI / 2, playClip: true });
-  placePropGLB('dungeon/glb/banner_red.glb', { pos: [2.85, 2.55, 13.2], ry: -Math.PI / 2, playClip: true });
-  placePropGLB('dungeon/glb/banner_red.glb', { pos: [-2.85, 2.55, 9.6], ry: Math.PI / 2, playClip: true });
-  placePropGLB('dungeon/glb/banner_red.glb', { pos: [2.85, 2.55, 9.6], ry: -Math.PI / 2, playClip: true });
-  placePropGLB('dungeon/glb/torch_wall.glb', { pos: [-2.95, 2.05, 11.4], ry: Math.PI / 2, albedoLift: 0.34, playClip: true, flameOffset: [0.22, 0.38, 0] });
-  placePropGLB('dungeon/glb/torch_wall.glb', { pos: [2.95, 2.05, 11.4], ry: -Math.PI / 2, albedoLift: 0.34, playClip: true, flameOffset: [-0.22, 0.38, 0] });
-  placePropGLB('candelabra.glb', { pos: [-1.75, 0, 8.95], targetHeight: 1.55, flameOffset: [0, 1.42, 0] });
-  placePropGLB('candelabra.glb', { pos: [1.75, 0, 8.95], targetHeight: 1.55, flameOffset: [0, 1.42, 0] });
+  placePropGLB('dungeon/glb/banner_red.glb', { pos: [-3.12, 2.35, 13.2], ry: Math.PI / 2, playClip: true });
+  placePropGLB('dungeon/glb/banner_red.glb', { pos: [3.12, 2.35, 13.2], ry: -Math.PI / 2, playClip: true });
+  placePropGLB('dungeon/glb/banner_red.glb', { pos: [-3.12, 2.35, 9.6], ry: Math.PI / 2, playClip: true });
+  placePropGLB('dungeon/glb/banner_red.glb', { pos: [3.12, 2.35, 9.6], ry: -Math.PI / 2, playClip: true });
+  placePropGLB('dungeon/glb/torch_wall.glb', {
+    pos: [-3.15, 1.85, 11.4],
+    ry: Math.PI / 2,
+    albedoLift: 0.34,
+    playClip: true,
+    flameOffset: [0, 0.72, -0.03],
+  });
+  placePropGLB('dungeon/glb/torch_wall.glb', {
+    pos: [3.08, 1.85, 11.4],
+    ry: -Math.PI / 2,
+    albedoLift: 0.34,
+    playClip: true,
+    flameOffset: [0, 0.72, -0.03],
+  });
+  placePropGLB('temple/glb/candelabra.glb', {
+    pos: [-1.85, 0, 8.95],
+    targetHeight: 1.72,
+    flameOffsets: [[-0.28, 1.64, 0], [0, 1.72, 0], [0.28, 1.64, 0]],
+    flameScale: 0.24,
+  });
+  placePropGLB('temple/glb/candelabra.glb', {
+    pos: [1.85, 0, 8.95],
+    targetHeight: 1.72,
+    flameOffsets: [[-0.28, 1.64, 0], [0, 1.72, 0], [0.28, 1.64, 0]],
+    flameScale: 0.24,
+  });
+  placePropGLB('dungeon/glb/chest_wood.glb', { pos: [-2.45, 0, 14.5], ry: 0.35, targetHeight: 0.62 });
   placePropGLB('dungeon/glb/bed_straw.glb', { pos: [-6.15, 0, 11.6], ry: Math.PI / 2, scale: 1.05 });
-  placePropGLB('dungeon/glb/skeleton_chained.glb', { pos: [-6.5, 0, 9.15], ry: 0.45, scale: 1.08 });
+  placePropGLB('dungeon/glb/skeleton_chained.glb', { pos: [-6.75, 0, 9.15], ry: 0.55, targetHeight: 1.55 });
 
   // Interactable #1 (Lore 6A): narthex_registry
   placePropGLB('gothic_table.glb', { pos: [2.15, 0, 11.2], ry: -Math.PI / 2, targetHeight: 0.82, albedoLift: 0.34 });
+  placePropGLB('candleholders.glb', { pos: [2.35, 0.82, 11.6], targetHeight: 0.34, flameOffset: [0.13, 0.35, 0], flameScale: 0.18 });
   placeInteractiveGLB('binder_notebook.glb', 'narthex_registry', {
-    pos: [2.15, 0.83, 11.2],
+    pos: [2.05, 0.82, 11.15],
     ry: -Math.PI / 2,
-    targetHeight: 0.16,
+    scale: 0.85,
     albedoLift: 0.36,
     hitPos: [2.15, 0.95, 11.2],
     hitSize: [1.1, 1.0, 1.1],
@@ -540,18 +638,57 @@ export function buildVaultScene(E) {
   pushStatic(new THREE.BoxGeometry(0.42, 0.34, 0.08), matCarvedOak, -3.28, 1.15, 10.9);
   registerHitProxy('cell_manifest', [-3.28, 1.15, 10.9], [0.9, 1.15, 1.1]);
 
-  // Zone 6B: Nave Sightlines, Pews, Braziers & Autopsy Gurney
-  placePropGLB('temple/glb/brazier_hell.glb', { pos: [-2.15, 0, 6.2], playClip: true, flameOffset: [0, 1.05, 0] });
-  placePropGLB('temple/glb/brazier_hell.glb', { pos: [2.15, 0, 6.2], playClip: true, flameOffset: [0, 1.05, 0] });
-  placePropGLB('dungeon/glb/torch_wall.glb', { pos: [-7.95, 2.0, -1.65], ry: Math.PI / 2, albedoLift: 0.34, playClip: true, flameOffset: [0.22, 0.38, 0] });
-  placePropGLB('dungeon/glb/torch_wall.glb', { pos: [-7.95, 2.0, 1.65], ry: Math.PI / 2, albedoLift: 0.34, playClip: true, flameOffset: [0.22, 0.38, 0] });
-  placePropGLB('wall_sconce.glb', { pos: [8.05, 2.25, -1.65], ry: -Math.PI / 2, targetHeight: 0.45 });
-  placePropGLB('wall_sconce.glb', { pos: [8.05, 2.25, 1.65], ry: -Math.PI / 2, targetHeight: 0.45 });
-  placePropGLB('temple/glb/banner_hell.glb', { pos: [-4.6, 4.4, -4.85], ry: Math.PI / 2, playClip: true });
-  placePropGLB('temple/glb/banner_hell.glb', { pos: [4.6, 4.4, -4.85], ry: -Math.PI / 2, playClip: true });
-  placePropGLB('temple/glb/pew.glb', { pos: [-3.8, 0, 2.2], ry: Math.PI, scale: 1.08, albedoLift: 0.3 });
-  placePropGLB('temple/glb/pew.glb', { pos: [-3.8, 0, 4.6], ry: Math.PI, scale: 1.08, albedoLift: 0.3 });
-  placePropGLB('church_pew.glb', { pos: [3.8, 0, 4.6], ry: Math.PI, targetHeight: 1.05, albedoLift: 0.3 });
+  // Zone 6B: Nave Sightlines, Symmetrical Pews, Braziers & Autopsy Table
+  placePropGLB('temple/glb/brazier_hell.glb', { pos: [-2.25, 0, 6.2], targetHeight: 1.4, playClip: true, flameOffset: [0, 1.25, 0] });
+  placePropGLB('temple/glb/brazier_hell.glb', { pos: [2.25, 0, 6.2], targetHeight: 1.4, playClip: true, flameOffset: [0, 1.25, 0] });
+  placePropGLB('dungeon/glb/torch_wall.glb', {
+    pos: [-8.25, 1.9, -1.65],
+    ry: Math.PI / 2,
+    albedoLift: 0.34,
+    playClip: true,
+    flameOffset: [0, 0.72, -0.03],
+  });
+  placePropGLB('dungeon/glb/torch_wall.glb', {
+    pos: [-8.25, 1.9, 1.65],
+    ry: Math.PI / 2,
+    albedoLift: 0.34,
+    playClip: true,
+    flameOffset: [0, 0.72, -0.03],
+  });
+  placePropGLB('dungeon/glb/torch_wall.glb', {
+    pos: [8.25, 1.9, -1.65],
+    ry: -Math.PI / 2,
+    albedoLift: 0.34,
+    playClip: true,
+    flameOffset: [0, 0.72, -0.03],
+  });
+  placePropGLB('dungeon/glb/torch_wall.glb', {
+    pos: [8.25, 1.9, 1.65],
+    ry: -Math.PI / 2,
+    albedoLift: 0.34,
+    playClip: true,
+    flameOffset: [0, 0.72, -0.03],
+  });
+  placePropGLB('temple/glb/banner_hell.glb', { pos: [-4.9, 4.1, -4.85], ry: Math.PI / 2, playClip: true });
+  placePropGLB('temple/glb/banner_hell.glb', { pos: [4.9, 4.1, -4.85], ry: -Math.PI / 2, playClip: true });
+  placePropGLB('temple/glb/pew.glb', { pos: [-3.9, 0, 2.0], ry: Math.PI, targetHeight: 1.05, albedoLift: 0.3 });
+  placePropGLB('temple/glb/pew.glb', { pos: [-3.9, 0, 4.6], ry: Math.PI, targetHeight: 1.05, albedoLift: 0.3 });
+  placePropGLB('temple/glb/pew.glb', { pos: [-6.25, 0, 3.3], ry: Math.PI / 2, targetHeight: 1.05, albedoLift: 0.3 });
+  placePropGLB('temple/glb/pew.glb', { pos: [3.9, 0, 4.6], ry: Math.PI, targetHeight: 1.05, albedoLift: 0.3 });
+  placePropGLB('dungeon/glb/chest_wood.glb', { pos: [-6.8, 0, -7.9], ry: 0.4, targetHeight: 0.65 });
+  placePropGLB('dungeon/glb/chest_wood.glb', { pos: [6.8, 0, -7.9], ry: -0.4, targetHeight: 0.65 });
+  placePropGLB('temple/glb/candelabra.glb', {
+    pos: [-2.65, 0, -7.95],
+    targetHeight: 1.75,
+    flameOffsets: [[-0.29, 1.67, 0], [0, 1.76, 0], [0.29, 1.67, 0]],
+    flameScale: 0.24,
+  });
+  placePropGLB('temple/glb/candelabra.glb', {
+    pos: [2.65, 0, -7.95],
+    targetHeight: 1.75,
+    flameOffsets: [[-0.29, 1.67, 0], [0, 1.76, 0], [0.29, 1.67, 0]],
+    flameScale: 0.24,
+  });
 
   // Interactable #3 (Lore 6B): autopsy_gurney
   placeInteractiveGLB('gothic_table.glb', 'autopsy_gurney', {
@@ -560,11 +697,11 @@ export function buildVaultScene(E) {
     targetHeight: 0.86,
     albedoLift: 0.32,
     hitPos: [4.5, 0.9, 2.3],
-    hitSize: [1.8, 1.2, 1.2],
+    hitSize: [2.1, 1.2, 2.1],
   });
-  placePropGLB('dead_body.glb', { pos: [4.5, 0.87, 2.3], ry: Math.PI / 2, targetHeight: 0.42, albedoLift: 0.3 });
-  placePropGLB('handsaw.glb', { pos: [4.85, 0.89, 1.85], ry: 0.5, targetHeight: 0.14 });
-  placePropGLB('tool_cart.glb', { pos: [5.55, 0, 2.95], ry: -0.4, targetHeight: 0.95, albedoLift: 0.3 });
+  placePropGLB('dead_body.glb', { pos: [4.5, 0.86, 2.3], ry: Math.PI / 2, targetHeight: 0.23, albedoLift: 0.3 });
+  placePropGLB('handsaw.glb', { pos: [5.28, 0.862, 2.35], rx: 0, rz: Math.PI / 2, ry: 0.28, targetHeight: 0.04 });
+  placePropGLB('tool_cart.glb', { pos: [5.95, 0, 2.95], ry: -0.4, targetHeight: 0.95, albedoLift: 0.3 });
 
   // Zone 6C: West Scriptorium (manual_terminal R2-08, weeping_statue, scriptorium_books)
   placeInteractiveGLB('manual_terminal.glb', 'manual_terminal', {
@@ -576,16 +713,6 @@ export function buildVaultScene(E) {
     hitPos: [-15.1, 1.0, 0],
     hitSize: [1.6, 1.65, 1.6],
   });
-  pushStatic(
-    new THREE.PlaneGeometry(0.42, 0.3),
-    new THREE.MeshBasicMaterial({ map: texCrtManual }),
-    -14.66,
-    1.18,
-    0,
-    0,
-    Math.PI / 2,
-    0
-  );
 
   // weeping_statue (turns off-screen during scaresVault)
   placeInteractiveGLB('gothic_statue.glb', 'weeping_statue', {
@@ -600,13 +727,13 @@ export function buildVaultScene(E) {
     },
   });
 
-  // scriptorium_books (articulated gothic_cabinet doors + table + candleholders)
+  // scriptorium_books (articulated gothic_cabinet doors + table + candleholders + reading pew)
   placeInteractiveGLB('gothic_cabinet.glb', 'scriptorium_books', {
-    pos: [-13.8, 0, 4.45],
+    pos: [-13.8, 0, 4.95],
     ry: Math.PI,
     targetHeight: 2.25,
     albedoLift: 0.36,
-    hitPos: [-13.8, 1.2, 4.25],
+    hitPos: [-13.8, 1.2, 4.75],
     hitSize: [1.9, 2.1, 1.4],
     onReady: (root) => {
       const doors = ['GothicCabinet_01_door1', 'GothicCabinet_01_door2', 'GothicCabinet_01_door3', 'GothicCabinet_01_door4']
@@ -623,17 +750,35 @@ export function buildVaultScene(E) {
       };
     },
   });
-  placePropGLB('gothic_table.glb', { pos: [-13.8, 0, 3.05], targetHeight: 0.78, albedoLift: 0.34 });
-  placePropGLB('candleholders.glb', { pos: [-13.4, 0.79, 3.05], targetHeight: 0.42, flameOffset: [0, 0.38, 0] });
-  placePropGLB('gothic_commode.glb', { pos: [-15.85, 0, -4.4], ry: Math.PI / 2, targetHeight: 1.05, albedoLift: 0.36 });
+  placePropGLB('gothic_table.glb', { pos: [-13.8, 0, 3.25], targetHeight: 0.78, albedoLift: 0.34 });
+  placePropGLB('candleholders.glb', { pos: [-13.5, 0.78, 3.25], targetHeight: 0.42, flameOffset: [0.16, 0.43, 0], flameScale: 0.22 });
+  placePropGLB('temple/glb/pew.glb', { pos: [-11.7, 0, 3.6], ry: Math.PI, targetHeight: 1.02, albedoLift: 0.32 });
+  placePropGLB('temple/glb/candelabra.glb', {
+    pos: [-15.85, 0, 4.8],
+    targetHeight: 1.72,
+    flameOffsets: [[-0.28, 1.64, 0], [0, 1.72, 0], [0.28, 1.64, 0]],
+    flameScale: 0.24,
+  });
+  placePropGLB('dungeon/glb/chest_wood.glb', { pos: [-10.35, 0, 4.85], ry: -0.55, targetHeight: 0.62 });
+  placePropGLB('dungeon/glb/skeleton_chained.glb', { pos: [-16.15, 0, -4.7], ry: 0.65, targetHeight: 1.55 });
+  placePropGLB('dungeon/glb/banner_red.glb', { pos: [-16.82, 2.5, -4.4], ry: Math.PI / 2, playClip: true });
+  placePropGLB('dungeon/glb/banner_red.glb', { pos: [-16.82, 2.5, 4.4], ry: Math.PI / 2, playClip: true });
+  placePropGLB('dungeon/glb/torch_wall.glb', {
+    pos: [-16.75, 1.85, 0],
+    ry: Math.PI / 2,
+    albedoLift: 0.34,
+    playClip: true,
+    flameOffset: [0, 0.72, -0.03],
+  });
+  placePropGLB('gothic_commode.glb', { pos: [-15.85, 0, -3.9], ry: Math.PI / 2, targetHeight: 1.05, albedoLift: 0.36 });
 
-  // Zone 6F: North Reliquary Chapel (specimen_locker + chest_wood)
+  // Zone 6F: North Reliquary Chapel (specimen_locker + chest_wood + skull_totem + candelabras)
   placeInteractiveGLB('vintage_cabinet.glb', 'specimen_locker', {
-    pos: [-13.3, 0, -9.85],
+    pos: [-13.3, 0, -10.15],
     ry: 0,
     targetHeight: 2.15,
     albedoLift: 0.36,
-    hitPos: [-13.3, 1.15, -9.75],
+    hitPos: [-13.3, 1.15, -9.95],
     hitSize: [1.9, 2.1, 1.3],
     onReady: (root) => {
       const cabinetDoors = [
@@ -658,7 +803,7 @@ export function buildVaultScene(E) {
   placePropGLB('dungeon/glb/chest_wood.glb', {
     pos: [-11.55, 0, -9.85],
     ry: -0.25,
-    scale: 1.15,
+    targetHeight: 0.62,
     onReady: (root, gltf) => {
       const chestAnim = mountClipAnimation(root, gltf.animations, 0, { loop: THREE.LoopOnce, speed: 1.25, autoPlay: false });
       const prev = interactAnims.specimen_locker;
@@ -668,19 +813,26 @@ export function buildVaultScene(E) {
       };
     },
   });
-  placePropGLB('temple/glb/skull_totem.glb', { pos: [-15.1, 0, -9.9], ry: 0.4, scale: 1.15 });
-  placePropGLB('candelabra.glb', { pos: [-14.8, 0, -8.3], targetHeight: 1.45, flameOffset: [0, 1.32, 0] });
+  placePropGLB('temple/glb/skull_totem.glb', { pos: [-15.1, 0, -9.9], ry: 0.4, targetHeight: 2.15 });
+  placePropGLB('temple/glb/candelabra.glb', {
+    pos: [-14.8, 0, -7.8],
+    targetHeight: 1.68,
+    flameOffsets: [[-0.28, 1.61, 0], [0, 1.69, 0], [0.28, 1.61, 0]],
+    flameScale: 0.24,
+  });
 
-  // Zone 6D: East Switchgear & 1981 Concrete Intrusion (failsafe_panel R2-09 + switchgear_log)
-  pushStatic(new THREE.BoxGeometry(0.95, 0.44, 1.45), matDarkIron, 15.85, 0.22, 0);
+  // Zone 6D: East Switchgear & Gothic Relay Sanctuary (failsafe_panel R2-09 + switchgear_log)
+  // Carved dark stone & forged-iron pedestal ensures full unclipped failsafe_panel clearance
+  pushStatic(new THREE.BoxGeometry(1.76, 0.36, 1.76), matFlagstone, 15.55, 0.18, 0);
+  pushStatic(new THREE.BoxGeometry(1.82, 0.06, 1.82), matDarkIron, 15.55, 0.35, 0);
   let failsafeAction = null;
   placeInteractiveGLB('failsafe_panel.glb', 'failsafe_panel', {
-    pos: [15.85, 0.44, 0],
+    pos: [15.55, 0.36, 0],
     ry: -Math.PI / 2,
-    targetHeight: 1.85,
-    albedoLift: 0.3,
-    hitPos: [15.7, 1.25, 0],
-    hitSize: [1.55, 2.3, 1.75],
+    targetHeight: 1.55,
+    albedoLift: 0.34,
+    hitPos: [15.4, 1.15, 0],
+    hitSize: [1.7, 2.1, 1.85],
     onReady: (root, gltf) => {
       const ctrl = mountClipAnimation(root, gltf.animations, 0, {
         loop: THREE.LoopOnce,
@@ -691,34 +843,75 @@ export function buildVaultScene(E) {
     },
   });
 
-  // Hanging swinging industrial lamp in 6D
-  let eastSwingLamp = null;
-  placePropGLB('hanging_lamp.glb', {
-    pos: [12.8, 3.65, 0],
-    targetHeight: 1.1,
-    albedoLift: 0.3,
-    onReady: (root) => {
-      eastSwingLamp = root;
-    },
-  });
+  // Ceiling-anchored swinging sanctuary lamp in 6D (suspended by iron chain from y=6.18m roof!)
+  const eastLampPivot = new THREE.Group();
+  eastLampPivot.position.set(12.8, 6.18, 0);
+  S.add(eastLampPivot);
+  let eastSwingLamp = eastLampPivot;
+  const lampChain = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 2.32, 8), matDarkIron);
+  lampChain.position.y = -1.16;
+  eastLampPivot.add(lampChain);
+  arch.track(
+    loadGLB(`${VAULT_MODEL_BASE}/hanging_lamp.glb`)
+      .then((gltf) => {
+        if (!gltf?.scene) return null;
+        const lamp = gltf.scene.clone();
+        normalizeModelMaterials(lamp, { npAll: true, albedoLift: 0.3 });
+        const pivotedLamp = fitAndPivotModel(lamp, 1.08, { anchor: 'top' });
+        pivotedLamp.position.set(0, -2.3, 0);
+        eastLampPivot.add(pivotedLamp);
+        return pivotedLamp;
+      })
+      .catch(() => null)
+  );
 
-  // Gothic medieval dressing in 6D (replaces sci-fi industrial pipes/barrels)
-  placePropGLB('temple/glb/pillar_gothic.glb', { pos: [16.4, 0, 5.2], targetHeight: 3.2, albedoLift: 0.26 });
-  placePropGLB('temple/glb/pillar_gothic.glb', { pos: [16.4, 0, -5.2], targetHeight: 3.2, albedoLift: 0.26 });
-  placePropGLB('wall_sconce.glb', { pos: [16.85, 2.4, 2.8], ry: -Math.PI / 2, targetHeight: 0.45 });
-  placePropGLB('wall_sconce.glb', { pos: [16.85, 2.4, -2.8], ry: -Math.PI / 2, targetHeight: 0.45 });
-  placePropGLB('candelabra.glb', { pos: [13.4, 0, -4.1], targetHeight: 1.35, flameOffset: [0, 1.25, 0] });
-  placePropGLB('barrel_stove.glb', { pos: [10.4, 0, 4.55], targetHeight: 1.45, albedoLift: 0.28 });
-
-  // switchgear_log bench + articulated crate_medical (classic_console moved onto floor in 6C)
-  placePropGLB('work_table.glb', { pos: [12.6, 0, -4.1], ry: 0, targetHeight: 0.85, albedoLift: 0.3 });
-  placePropGLB('classic_console.glb', { pos: [-10.5, 0, 5.25], ry: Math.PI / 2, targetHeight: 0.95, albedoLift: 0.3 });
-  placeInteractiveGLB('crate_medical.glb', 'switchgear_log', {
-    pos: [12.6, 0.86, -4.1],
-    ry: -0.25,
-    targetHeight: 0.42,
+  // Rich Gothic furnishing across all 4 quadrants of 6D (zero barren empty floor!)
+  placePropGLB('temple/glb/pillar_gothic.glb', { pos: [16.4, 0, 5.4], targetHeight: 6.15, albedoLift: 0.26 });
+  placePropGLB('temple/glb/pillar_gothic.glb', { pos: [16.4, 0, -5.4], targetHeight: 6.15, albedoLift: 0.26 });
+  placePropGLB('dungeon/glb/torch_wall.glb', {
+    pos: [16.75, 1.85, -2.6],
+    ry: -Math.PI / 2,
     albedoLift: 0.34,
-    hitPos: [12.6, 1.05, -4.1],
+    playClip: true,
+    flameOffset: [0, 0.72, -0.03],
+  });
+  placePropGLB('dungeon/glb/torch_wall.glb', {
+    pos: [16.75, 1.85, 2.6],
+    ry: -Math.PI / 2,
+    albedoLift: 0.34,
+    playClip: true,
+    flameOffset: [0, 0.72, -0.03],
+  });
+  placePropGLB('dungeon/glb/banner_red.glb', { pos: [16.82, 2.4, -4.2], ry: -Math.PI / 2, playClip: true });
+  placePropGLB('dungeon/glb/banner_red.glb', { pos: [16.82, 2.4, 4.2], ry: -Math.PI / 2, playClip: true });
+  placePropGLB('temple/glb/candelabra.glb', {
+    pos: [15.2, 0, -2.0],
+    ry: -Math.PI / 2,
+    targetHeight: 1.72,
+    flameOffsets: [[-0.28, 1.64, 0], [0, 1.72, 0], [0.28, 1.64, 0]],
+    flameScale: 0.24,
+  });
+  placePropGLB('temple/glb/candelabra.glb', {
+    pos: [15.2, 0, 2.0],
+    ry: -Math.PI / 2,
+    targetHeight: 1.72,
+    flameOffsets: [[-0.28, 1.64, 0], [0, 1.72, 0], [0.28, 1.64, 0]],
+    flameScale: 0.24,
+  });
+  placePropGLB('temple/glb/brazier_hell.glb', { pos: [10.15, 0, -2.3], targetHeight: 1.35, playClip: true, flameOffset: [0, 1.22, 0] });
+  placePropGLB('gothic_cabinet.glb', { pos: [10.8, 0, -5.25], ry: 0, targetHeight: 2.25, albedoLift: 0.34 });
+  placePropGLB('vintage_cabinet.glb', { pos: [14.95, 0, -5.35], ry: 0, targetHeight: 2.15, albedoLift: 0.34 });
+  placePropGLB('temple/glb/skull_totem.glb', { pos: [16.2, 0, -4.75], ry: -0.6, targetHeight: 2.05 });
+
+  // switchgear_log study table + articulated crate_medical + ledger
+  placePropGLB('work_table.glb', { pos: [12.6, 0, -3.55], ry: 0, targetHeight: 0.85, albedoLift: 0.34 });
+  placePropGLB('candleholders.glb', { pos: [12.05, 0.85, -3.55], targetHeight: 0.36, flameOffset: [0.14, 0.37, 0], flameScale: 0.18 });
+  placeInteractiveGLB('crate_medical.glb', 'switchgear_log', {
+    pos: [12.65, 0.85, -3.55],
+    ry: -0.2,
+    targetHeight: 0.4,
+    albedoLift: 0.36,
+    hitPos: [12.6, 1.05, -3.55],
     hitSize: [1.85, 1.25, 1.15],
     onReady: (root) => {
       const lid = root.getObjectByName('wooden_military_crate_lid');
@@ -731,6 +924,14 @@ export function buildVaultScene(E) {
     },
   });
 
+  // South half of 6D (pews, oak table, chest, chained skeleton)
+  placePropGLB('gothic_table.glb', { pos: [10.4, 0, 4.4], targetHeight: 0.8, albedoLift: 0.34 });
+  placePropGLB('candleholders.glb', { pos: [10.4, 0.8, 4.4], targetHeight: 0.38, flameOffset: [0.15, 0.39, 0], flameScale: 0.2 });
+  placePropGLB('temple/glb/pew.glb', { pos: [10.4, 0, 2.55], ry: 0, targetHeight: 1.02, albedoLift: 0.32 });
+  placePropGLB('temple/glb/pew.glb', { pos: [15.45, 0, 3.85], ry: -Math.PI / 2, targetHeight: 1.02, albedoLift: 0.32 });
+  placePropGLB('dungeon/glb/chest_wood.glb', { pos: [15.65, 0, 5.2], ry: -2.4, targetHeight: 0.62 });
+  placePropGLB('dungeon/glb/skeleton_chained.glb', { pos: [16.2, 0, 4.9], ry: -2.2, targetHeight: 1.55 });
+
   // Zone 6E: South Quarantine Cellar (sarcophagus_se)
   placeInteractiveGLB('gothic_bed.glb', 'sarcophagus_se', {
     pos: [12.9, 0, 9.6],
@@ -740,11 +941,17 @@ export function buildVaultScene(E) {
     hitPos: [12.9, 0.9, 9.6],
     hitSize: [1.75, 1.35, 1.75],
   });
-  placePropGLB('dungeon/glb/skeleton_chained.glb', { pos: [11.6, 0, 10.1], ry: -0.6, scale: 1.05 });
+  placePropGLB('dungeon/glb/skeleton_chained.glb', { pos: [11.6, 0, 10.1], ry: -0.6, targetHeight: 1.55 });
+  placePropGLB('temple/glb/candelabra.glb', {
+    pos: [11.65, 0, 8.15],
+    targetHeight: 1.55,
+    flameOffsets: [[-0.26, 1.48, 0], [0, 1.56, 0], [0.26, 1.48, 0]],
+    flameScale: 0.22,
+  });
   placePropGLB('dungeon/glb/chest_wood.glb', {
     pos: [14.0, 0, 8.2],
     ry: -1.1,
-    scale: 1.0,
+    targetHeight: 0.58,
     onReady: (root, gltf) => {
       const chestAnim = mountClipAnimation(root, gltf.animations, 0, { loop: THREE.LoopOnce, speed: 1.2, autoPlay: false });
       interactAnims.sarcophagus_se = () => {
@@ -753,8 +960,8 @@ export function buildVaultScene(E) {
     },
   });
 
-  // ── 7. 3D Horror Apparitions (manthing.glb + stalker.glb) ─────────────────
-  const ghostLight = new THREE.PointLight(0xd6e6ff, 0, 7.5, 1.4);
+  // ── 7. 3D Horror Apparitions (manthing.glb + stalker.glb — grounded via fitAndPivotModel) ─
+  const ghostLight = new THREE.PointLight(0xd6e6ff, 0, 8.5, 1.35);
   S.add(ghostLight);
   ref.ghostLight = ghostLight;
 
@@ -763,12 +970,12 @@ export function buildVaultScene(E) {
       .then((gltf) => {
         if (!gltf?.scene) return;
         const g = gltf.scene.clone();
-        normalizeModelMaterials(g, { npAll: true, albedoLift: 0.2 });
-        fitModelToHeight(g, 1.98);
-        g.visible = false;
-        S.add(g);
-        ref.ghost = g;
-        const ctrl = mountClipAnimation(g, gltf.animations, 0, { speed: 1.25 });
+        normalizeModelMaterials(g, { npAll: true, albedoLift: 0.24 });
+        const gPivot = fitAndPivotModel(g, 2.02, { anchor: 'bottom' });
+        gPivot.visible = false;
+        S.add(gPivot);
+        ref.ghost = gPivot;
+        const ctrl = mountClipAnimation(gPivot, gltf.animations, 0, { speed: 1.25 });
         ref.ghostMixer = ctrl?.mixer || null;
       })
       .catch(() => null)
@@ -779,12 +986,12 @@ export function buildVaultScene(E) {
       .then((gltf) => {
         if (!gltf?.scene) return;
         const st = gltf.scene.clone();
-        normalizeModelMaterials(st, { npAll: true, albedoLift: 0.18 });
-        fitModelToHeight(st, 2.08);
-        st.visible = false;
-        S.add(st);
-        ref.stalker = st;
-        const ctrl = mountClipAnimation(st, gltf.animations, 0, { speed: 1.0 });
+        normalizeModelMaterials(st, { npAll: true, albedoLift: 0.22 });
+        const stPivot = fitAndPivotModel(st, 2.1, { anchor: 'bottom' });
+        stPivot.visible = false;
+        S.add(stPivot);
+        ref.stalker = stPivot;
+        const ctrl = mountClipAnimation(stPivot, gltf.animations, 0, { speed: 1.0 });
         ref.stalkerMixer = ctrl?.mixer || null;
       })
       .catch(() => null)

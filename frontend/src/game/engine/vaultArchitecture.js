@@ -27,6 +27,43 @@ export function fitModelToHeight(model, targetHeight) {
   return model;
 }
 
+/**
+ * Scales and centers a GLB inside an outer pivot Group so calling
+ * pivot.position.set(...) / pivot.rotation.y NEVER overwrites grounding or XZ centering.
+ */
+export function fitAndPivotModel(model, targetHeight = null, { extraScale = 1, anchor = 'bottom' } = {}) {
+  model.updateMatrixWorld(true);
+  const box = new THREE.Box3().setFromObject(model);
+  const size = new THREE.Vector3();
+  box.getSize(size);
+
+  let scale = targetHeight && size.y > 0.001 ? targetHeight / size.y : 1;
+  if (extraScale && extraScale !== 1) scale *= extraScale;
+  if (scale !== 1) {
+    model.scale.multiplyScalar(scale);
+    model.updateMatrixWorld(true);
+  }
+
+  const scaledBox = new THREE.Box3().setFromObject(model);
+  const scaledCenter = new THREE.Vector3();
+  scaledBox.getCenter(scaledCenter);
+  model.position.x -= scaledCenter.x;
+  model.position.z -= scaledCenter.z;
+  if (anchor === 'top') {
+    model.position.y -= scaledBox.max.y;
+  } else if (anchor === 'center') {
+    model.position.y -= scaledCenter.y;
+  } else {
+    model.position.y -= scaledBox.min.y;
+  }
+  model.updateMatrixWorld(true);
+
+  const pivot = new THREE.Group();
+  pivot.add(model);
+  pivot.updateMatrixWorld(true);
+  return pivot;
+}
+
 export function normalizeModelMaterials(
   root,
   { crtMap = null, screenNames = [], psx = false, npAll = false, albedoLift = 0.0 } = {}
@@ -270,6 +307,7 @@ export function createVaultArchitecture(E, { matLancet, pushStatic }) {
     pushStatic(new THREE.PlaneGeometry(4.0, 5.6), matCeilingStone, 12.9, 4.95, 8.65, Math.PI / 2, 0, 0);
     pushStatic(new THREE.PlaneGeometry(6.2, 5.6), matCeilingStone, -13.3, 5.65, -8.75, Math.PI / 2, 0, 0);
     buildModularFloor('dungeon/glb/ceiling_stone.glb', -17.0, -8.6, -6.0, 6.0, 3.18, 0);
+    buildModularFloor('dungeon/glb/ceiling_stone.glb', 8.6, 17.0, -6.0, 6.0, 3.18, 0);
   };
 
   // ── Assemble ALL 6 Vault Chambers from Modular 2m GLBs ──
@@ -485,11 +523,11 @@ export function createVaultArchitecture(E, { matLancet, pushStatic }) {
     loadGLB(`${VAULT_MODEL_BASE}/castle_door.glb`).then((gltf) => {
       const door = gltf?.scene;
       if (!door) return;
-      fitModelToHeight(door, 4.35);
       normalizeModelMaterials(door, { npAll: true });
-      door.position.set(0, 0, 16.36);
-      door.rotation.y = Math.PI;
-      S.add(door);
+      const pivot = fitAndPivotModel(door, 4.35);
+      pivot.position.set(0, 0, 16.36);
+      pivot.rotation.y = Math.PI;
+      S.add(pivot);
     });
 
     // 2) Narthex -> Sanctuary double castle doors (`z = 8.45`) that automatically creak open as you approach!
@@ -497,19 +535,19 @@ export function createVaultArchitecture(E, { matLancet, pushStatic }) {
       const raw = gltf?.scene;
       if (!raw) return;
       const door = raw.clone();
-      fitModelToHeight(door, 3.85);
       normalizeModelMaterials(door, { npAll: true, albedoLift: 0.22 });
-      door.position.set(0, 0, 8.38);
-      S.add(door);
+      const pivot = fitAndPivotModel(door, 3.85);
+      pivot.position.set(0, 0, 8.38);
+      S.add(pivot);
 
-      const leftLeaf = door.getObjectByName('large_castle_door_left');
-      const rightLeaf = door.getObjectByName('large_castle_door_right');
+      const leftLeaf = pivot.getObjectByName('large_castle_door_left');
+      const rightLeaf = pivot.getObjectByName('large_castle_door_right');
       const baseLy = leftLeaf?.rotation.y ?? 0;
       const baseRy = rightLeaf?.rotation.y ?? 0;
       const col = solid(-1.45, 1.45, 8.2, 8.55);
 
       doors.nave_threshold = {
-        root: door,
+        root: pivot,
         opened: false,
         pos: new THREE.Vector3(0, 0, 8.38),
         open: (silent = false) => {
@@ -561,21 +599,21 @@ export function createVaultArchitecture(E, { matLancet, pushStatic }) {
       const raw = gltf?.scene;
       if (!raw) return;
       const gate = raw.clone();
-      fitModelToHeight(gate, 3.25);
       normalizeModelMaterials(gate, { npAll: true, albedoLift: 0.24 });
-      gate.position.set(7.45, 0, 0);
-      gate.rotation.y = Math.PI / 2;
-      S.add(gate);
+      const pivot = fitAndPivotModel(gate, 3.25);
+      pivot.position.set(7.45, 0, 0);
+      pivot.rotation.y = Math.PI / 2;
+      S.add(pivot);
 
       const wrapHinge = (leaf, hingeX) => {
         if (!leaf || !leaf.parent) return null;
-        const pivot = new THREE.Group();
-        pivot.name = `${leaf.name}_pivot`;
-        pivot.position.set(hingeX, leaf.position.y, leaf.position.z);
-        leaf.parent.add(pivot);
-        pivot.add(leaf);
+        const hingePivot = new THREE.Group();
+        hingePivot.name = `${leaf.name}_pivot`;
+        hingePivot.position.set(hingeX, leaf.position.y, leaf.position.z);
+        leaf.parent.add(hingePivot);
+        hingePivot.add(leaf);
         leaf.position.set(leaf.position.x - hingeX, 0, 0);
-        return pivot;
+        return hingePivot;
       };
       const leftLeaf = wrapHinge(gate.getObjectByName('large_iron_gate_left_door'), -1.43);
       const rightLeaf = wrapHinge(gate.getObjectByName('large_iron_gate_right_door'), 1.43);
@@ -593,7 +631,7 @@ export function createVaultArchitecture(E, { matLancet, pushStatic }) {
         if (!silent) audio?.playGateOpen?.(0.75);
       };
 
-      doors.east_gate = { root: gate, opened: false, pos: new THREE.Vector3(7.45, 0, 0), open: openGate };
+      doors.east_gate = { root: pivot, opened: false, pos: new THREE.Vector3(7.45, 0, 0), open: openGate };
       if (!ref.openFailsafeDoor) ref.openFailsafeDoor = () => openGate(false);
     });
   };

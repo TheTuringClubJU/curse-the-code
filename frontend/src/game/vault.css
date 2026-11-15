@@ -23,22 +23,22 @@
   font-family: 'JetBrains Mono', 'Courier Prime', ui-monospace, monospace;
 }
 
-/* Primary Resident Evil Remake Capsule Buttons & Plates (Room 5 Match) */
+/* Primary Resident Evil Remake Capsule Buttons & Plates (Room 5 Crisp White Match) */
 .re-btn {
   display: inline-flex;
   align-items: center;
   gap: 8px;
   padding: 6px 16px 6px 7px;
-  border: 1px solid rgba(216, 178, 110, 0.28);
+  border: 1px solid rgba(255, 255, 255, 0.16);
   border-radius: 9999px;
-  background: linear-gradient(135deg, rgba(31, 20, 19, 0.94) 0%, rgba(19, 13, 12, 0.96) 100%);
-  color: #f6efe2;
+  background: linear-gradient(135deg, rgba(22, 18, 18, 0.9) 0%, rgba(12, 10, 10, 0.94) 100%);
+  color: #ffffff;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 600;
-  letter-spacing: 0.05em;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85);
-  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.52), inset 0 1px 0 rgba(255, 224, 174, 0.12);
+  letter-spacing: 0.03em;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.88);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.52), inset 0 1px 0 rgba(255, 255, 255, 0.09);
   cursor: pointer;
   transition: all 0.16s ease;
   user-select: none;
@@ -46,10 +46,10 @@
 }
 
 .re-btn:hover {
-  background: linear-gradient(135deg, rgba(114, 29, 29, 0.95) 0%, rgba(56, 15, 16, 0.96) 100%);
-  border-color: rgba(232, 194, 124, 0.62);
-  color: #fff9ee;
-  box-shadow: 0 8px 26px rgba(128, 28, 28, 0.42), inset 0 1px 0 rgba(255, 235, 195, 0.22);
+  background: linear-gradient(135deg, rgba(102, 26, 26, 0.94) 0%, rgba(44, 13, 14, 0.96) 100%);
+  border-color: rgba(255, 255, 255, 0.36);
+  color: #ffffff;
+  box-shadow: 0 8px 26px rgba(128, 28, 28, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.16);
 }
 
 .re-btn:active {
@@ -62,14 +62,14 @@
   justify-content: center;
   min-width: 22px;
   height: 22px;
-  padding: 0 5px;
+  padding: 0 6px;
   border-radius: 9999px;
-  background: linear-gradient(145deg, #e7c687 0%, #bd9349 100%);
-  color: #1c120b;
-  font-family: ui-monospace, 'JetBrains Mono', 'Courier Prime', monospace;
+  background: #f5f4f0;
+  color: #111213;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   font-size: 10px;
   font-weight: 800;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.02em;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.65);
   flex-shrink: 0;
 }

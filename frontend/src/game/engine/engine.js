@@ -137,7 +137,6 @@ export function createEngine(el,room,h){
    // Common held torch model from Room 5, battery dead (0%) on entry per Vault storyline
    attachTorch(E, cam);
    setTorch(E, false);
-   if (E.flashlightModel) E.flashlightModel.visible = false;
    R.setPixelRatio(Math.min(devicePixelRatio, 1.0));
    R.shadowMap.enabled = false;
    R.toneMappingExposure = 1.54;
@@ -282,7 +281,7 @@ export function createEngine(el,room,h){
      }
    }
 
-   scares?.tick(dt,t);
+   if (!uiPaused) scares?.tick(dt,t);
    h.audio?.listen?.(px,pz,yaw);
 
    let sx=0,sy=0;
