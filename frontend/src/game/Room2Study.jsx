@@ -3,10 +3,9 @@ import { createEngine } from './engine/engine.js';
 import studyConfig from './rooms/study.js';
 import { StudyAudio } from './engine/studyAudio.js';
 import {isStudyLowDetail,studyQualityUrl,rememberStudyQuality} from './engine/studyPerformance.js';
-import HUD from './components/study/StudyHUD.jsx';
-import BasketModal from './components/study/StudyEvidenceTable.jsx';
-import CaseFilesModal from './components/study/StudyCaseFiles.jsx';
-import {studyObjective} from './components/study/studyGuide.js';
+import HUD from './components/HUD.jsx';
+import BasketModal from './components/BasketModal.jsx';
+import CaseFilesModal from './components/CaseFilesModal.jsx';
 import PhotoPuzzleModal from './components/PhotoPuzzleModal.jsx';
 import TabletPasscodeModal from './components/study/TabletPasscodeModal.jsx';
 import CrtEmailModal from './components/study/CrtEmailModal.jsx';
@@ -186,11 +185,7 @@ export default function Room2Study({
           pauseForModal();
         }
       } else {
-        const objective=studyObjective(currentData);
-        const resolvedCount = currentData?.clues?.filter((c) => c.solved || c.exhausted || (c.attempts_max !== null && c.attempts >= (c.attempts_max ?? 3)))?.length || 0;
-        showNotification(
-          `The Basement needs four resolved case files (${resolvedCount}/4 resolved). ${objective.title}. ${objective.detail} A case is resolved when solved or its attempts are exhausted.`
-        );
+        showNotification('The Basement door is locked.');
       }
       return;
     }
@@ -238,13 +233,13 @@ export default function Room2Study({
     if (matchingClue) {
       if (!currentData?.basket_unlocked) {
         showNotification(
-          "Arcane seal unbroken: Recover all 16 study fragments to inspect this clue terminal."
+          'This clue is sealed.'
         );
         return;
       }
       if (matchingClue.is_locked) {
         showNotification(
-          `This case follows an earlier file. ${studyObjective(currentData).title}. Open Case Files (C) to see the sequence.`
+          matchingClue.lock_reason || 'This clue is locked.'
         );
         return;
       }
@@ -419,7 +414,7 @@ export default function Room2Study({
             <h1>DANIEL'S<br /><em>STUDY</em></h1>
             <div className="study-room__rule" />
             <p className="study-room__description">The screen is still warm.<br />Someone left in a hurry.</p>
-            <p className="study-room__brief">Follow the field notes to recover sixteen sealed fragments. Open your Basket to read them, then resolve four case files in order to unlock the Basement.</p>
+            <p className="study-room__brief">Search the study. Daniel's belongings hold the evidence he left behind.</p>
             <div className="study-room__objectives">
               <span><b>16</b> EVIDENCE FRAGMENTS</span>
               <span><b>04</b> CASE FILES</span>
@@ -456,7 +451,6 @@ export default function Room2Study({
       {/* In-Game HUD */}
       {isStarted && (
         <div className="study-room__hud"><HUD
-          objective={studyObjective(roomData||{})}
           roomTitle={roomData?.title || "Daniel's Study"}
           collectedCount={roomData?.collected_fragment_ids?.length || 0}
           totalFragments={roomData?.total_fragments_in_room || 16}
@@ -501,15 +495,13 @@ export default function Room2Study({
         </div>
       )}
 
-      {/* Modals use a room-scoped gothic shell. */}
-      <div className="study-modal-theme">
+      {/* Shared tournament HUD and modals retain their global behavior and appearance. */}
       <BasketModal
         isOpen={isBasketOpen}
         onClose={() => {
           setIsBasketOpen(false);
           engineRef.current?.lock();
         }}
-        onOpenCaseFiles={()=>{setIsBasketOpen(false);setIsCaseFilesOpen(true);pauseForModal();}}
         evidence={roomData?.evidence || []}
         collectedIds={roomData?.collected_fragment_ids || []}
         basketUnlocked={Boolean(roomData?.basket_unlocked)}
@@ -523,19 +515,17 @@ export default function Room2Study({
           setIsCaseFilesOpen(false);
           engineRef.current?.lock();
         }}
-        collectedCount={roomData?.collected_fragment_ids?.length||0}
-        totalFragments={roomData?.total_fragments_in_room||16}
         clues={roomData?.clues || []}
         basketUnlocked={Boolean(roomData?.basket_unlocked)}
         onOpenClue={(clue) => {
           setIsCaseFilesOpen(false);
           if (!roomData?.basket_unlocked) {
-            showNotification("Arcane seal unbroken: Recover all 16 study fragments to inspect this clue terminal.");
+            showNotification('This clue is sealed.');
             return;
           }
           if (clue.is_locked) {
             showNotification(
-              `This case follows an earlier file. ${studyObjective(roomData).title}. Open Case Files (C) to see the sequence.`
+              clue.lock_reason || 'This clue is locked.'
             );
             return;
           }
@@ -644,7 +634,6 @@ export default function Room2Study({
         roomId="study"
         roomTitle="Daniel's Study"
       />
-      </div>
     </div>
   );
 }

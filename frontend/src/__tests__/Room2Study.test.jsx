@@ -231,7 +231,7 @@ describe('Room 2 (Daniel\'s Study) Comprehensive Test Suite (50 Tests)', () => {
 
     // 4. Verify basket hotkey B
     fireEvent.keyDown(window, { key: 'b', code: 'KeyB' });
-    expect(screen.getByText(/^Evidence Table$/i)).toBeInTheDocument();
+    expect(screen.getByText(/INVESTIGATION BASKET/i)).toBeInTheDocument();
     fireEvent.keyDown(window, { key: 'b', code: 'KeyB' });
 
     // 5. Open and solve R1-05 (tablet_drawer -> ALPHA)
@@ -336,7 +336,7 @@ describe('Room 2 (Daniel\'s Study) Comprehensive Test Suite (50 Tests)', () => {
     render(<Room2Study team={mockTeam} onLogout={vi.fn()} />);
     fireEvent.click(await screen.findByText(/CLICK TO ENTER ROOM/i));
     fireEvent.keyDown(window, { key: 'b', code: 'KeyB' });
-    expect(screen.getByText(/^Evidence Table$/i)).toBeInTheDocument();
+    expect(screen.getByText(/INVESTIGATION BASKET/i)).toBeInTheDocument();
   });
 
   it('QA-R2-FE-11: test_room2_basket_renders_study_png_thumbnails_correctly', () => {
@@ -972,7 +972,7 @@ describe('Room 2 (Daniel\'s Study) Comprehensive Test Suite (50 Tests)', () => {
     fireEvent.click(await screen.findByText(/CLICK TO ENTER ROOM/i));
     act(() => activeEngineInstance.callbacks.onInteract('study_door_exit'));
     expect(next).not.toHaveBeenCalled();
-    expect(screen.getByText(/4\/4 resolved/)).toHaveTextContent('attempts are exhausted');
+    expect(screen.getByRole('status')).toHaveTextContent('The Basement door is locked.');
     unmount();
     initialStudyState.is_completed = true;
     render(<Room2Study team={mockTeam} onTransitionToRoom3={next} />);
@@ -1034,6 +1034,31 @@ describe('Room 2 (Daniel\'s Study) Comprehensive Test Suite (50 Tests)', () => {
     fireEvent.click(screen.getByRole('button', {name:/REQUEST NEXT HINT/i}));
     expect(await screen.findByText('Exact guidance from the shared service.')).toBeInTheDocument();
     expect(global.fetch.mock.calls.find(([url]) => String(url).endsWith('/api/game/hint'))[1].body).toBe('{"room_id":"study"}');
+  });
+
+  it('uses the shared HUD and clue directory without a field-notes walkthrough', async () => {
+    render(<Room2Study team={mockTeam} onLogout={vi.fn()} />);
+    fireEvent.click(await screen.findByText(/CLICK TO ENTER ROOM/i));
+    expect(screen.queryByLabelText('Current objective')).toBeNull();
+    expect(screen.queryByText(/FIELD NOTES|Current lead:/i)).toBeNull();
+    expect(screen.getByTitle('Open Case Files Directory (Press C)')).toBeInTheDocument();
+    fireEvent.keyDown(window, {key:'c',code:'KeyC'});
+    expect(await screen.findByText('Clues Status')).toBeInTheDocument();
+    expect(screen.getByText('Test Tablet')).toBeInTheDocument();
+    expect(screen.queryByText(/Resolve Console drawer first|Beneath the map on the west wall/i)).toBeNull();
+  });
+
+  it('uses the shared Basket and existing evidence image mapping', async () => {
+    initialStudyState.basket_unlocked=true;
+    initialStudyState.collected_fragment_ids=['ES01'];
+    initialStudyState.evidence=[{id:'ES01',is_wrapped:false,display:{title:'Server record',lines:['Server evidence text.']}}];
+    render(<Room2Study team={mockTeam} onLogout={vi.fn()} />);
+    fireEvent.click(await screen.findByText(/CLICK TO ENTER ROOM/i));
+    fireEvent.keyDown(window, {key:'b',code:'KeyB'});
+    expect(await screen.findByText(/INVESTIGATION BASKET/i)).toBeInTheDocument();
+    expect(screen.getByAltText('Server record')).toHaveAttribute('src','/evidence/study/ES01.png');
+    expect(screen.getByText(/Server evidence text/)).toBeInTheDocument();
+    expect(screen.queryByText(/Recovered at:|Follow the field notes/i)).toBeNull();
   });
 
 });
