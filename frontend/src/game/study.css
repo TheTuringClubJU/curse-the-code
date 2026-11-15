@@ -79,6 +79,60 @@
 .study-room .study-room__enter { color:#f0dfbe; background:#54222c; border:1px solid #a17b4d; box-shadow:inset 0 0 0 4px #160b0d,inset 0 0 0 5px #a17b4d55; }
 .study-room .study-room__enter:hover { background:#702c38; }
 .study-room .study-room__notification { background:#1b0d11f5; border-color:#75503a; border-left-color:#ba945b; }
+/* Colour overrides for shared UI, scoped to Room 2. Keep global layout and
+   interactions, terminal colours, and success/error indicators unchanged. */
+.study-room {
+  --study-panel: #1b0d11;
+  --study-panel-raised: #32151d;
+  --study-button: #54222c;
+  --study-button-hover: #702c38;
+}
+.study-room :is([class~="bg-[#0c0914]"], [class~="bg-[#0d0914]"], [class~="bg-[#0c0a12]"], [class~="bg-[#090610]"]) {
+  background-color: var(--study-panel);
+}
+.study-room [class~="bg-[#0a0714]/85"] { background-color: #1b0d11d9; }
+.study-room [class~="bg-[#0b0817]/90"] { background-color: #1b0d11e6; }
+.study-room :is([class~="bg-[#140e24]"], [class~="bg-[#151024]"], [class~="bg-[#1a132e]"], [class~="bg-[#211538]"], [class~="bg-[#21150a]"], [class~="bg-[#1a0e08]"], [class~="bg-[#140b07]"]) {
+  background-color: var(--study-panel-raised);
+}
+.study-room [class~="bg-[#151024]/70"] { background-color: #32151db3; }
+.study-room [class~="bg-[#1c1221]/50"] { background-color: #32151d80; }
+.study-room :is([class~="bg-[#050308]"], [class~="bg-[#120a06]"]) { background-color: #12080b; }
+.study-room :is([class~="bg-[#2b1f47]"], [class~="bg-[#211a3b]"], [class~="bg-[#3d2011]"], [class~="bg-[#2e1507]"]) {
+  background-color: var(--study-button);
+}
+.study-room [class~="bg-[#1f120a]/80"] { background-color: #32151dcc; }
+.study-room [class~="bg-[#8f7bff]"] { background-color: var(--study-brass); }
+.study-room [class~="bg-[#ff7a1a]/15"] { background-color: #ad885426; }
+.study-room [class~="bg-[#8f7bff]/20"] { background-color: #ad885433; }
+.study-room :is([class~="hover:bg-[#201836]"], [class~="hover:bg-[#3b2a59]"], [class~="hover:bg-[#331d0b]"], [class~="hover:bg-[#382310]"], [class~="hover:bg-[#522b17]"]):hover {
+  background-color: var(--study-button-hover);
+}
+.study-room :is([class~="border-[#3b2a59]"], [class~="border-[#433066]"], [class~="border-[#2f224a]"], [class~="border-[#34244d]"], [class~="border-[#382645]"], [class~="border-[#523d78]"], [class~="border-[#533b82]"]) {
+  border-color: #75503a;
+}
+.study-room :is([class~="border-[#8f7bff]"], [class~="border-[#f59e0b]"]) { border-color: var(--study-brass); }
+.study-room :is([class~="border-[#8f7bff]/30"], [class~="border-purple-500/30"], [class~="border-[#ff7a1a]/30"], [class~="border-[#78441d]/30"]) { border-color: #ad88544d; }
+.study-room :is([class~="border-[#8f7bff]/50"], [class~="border-[#78441d]/50"]) { border-color: #ad885480; }
+.study-room :is([class~="border-[#78441d]/70"], [class~="border-[#854d0e]/70"]) { border-color: #ad8854b3; }
+.study-room [class~="border-[#78441d]/60"] { border-color: #ad885499; }
+.study-room [class~="border-[#78441d]/20"] { border-color: #ad885433; }
+.study-room :is([class~="border-[#78441d]/40"], [class~="border-[#8a4b22]/40"], [class~="border-[#ff9d54]/40"], [class~="border-[#fbbf24]/40"]) { border-color: #ad885466; }
+.study-room :is([class~="hover:border-[#8f7bff]"], [class~="hover:border-[#6b4fa0]"]):hover { border-color: var(--study-brass); }
+.study-room [class~="hover:border-[#ff9d54]/50"]:hover { border-color: #ad885480; }
+.study-room :is([class~="text-[#e8e0ff]"], [class~="text-[#d6cded]"], [class~="text-[#cdbfff]"], [class~="text-purple-200"], [class~="text-[#ffdfba]"], [class~="text-[#ffd3a8]"], [class~="text-[#ffd699]"], [class~="text-[#dec3ab]"]) {
+  color: var(--study-ink);
+}
+.study-room :is([class~="text-[#a292cc]"], [class~="text-[#c29b7f]"]) { color: var(--study-muted); }
+.study-room :is([class~="text-[#8f7bff]"], [class~="text-[#a78bfa]"], [class~="text-[#ff9d54]"]) { color: #d1ad77; }
+.study-room [class~="accent-[#8f7bff]"] { accent-color: var(--study-brass); }
+.study-room [class~="hover:shadow-[#8f7bff]/15"]:hover {
+  --tw-shadow-color: #ad885426;
+  --tw-shadow: var(--tw-shadow-colored);
+}
+.study-room :is([class~="shadow-[0_0_12px_rgba(143,123,255,0.2)]"], [class~="shadow-[0_0_8px_rgba(255,122,26,0.15)]"], [class~="shadow-[0_0_35px_rgba(255,122,26,0.15)]"], [class~="shadow-[0_0_20px_rgba(245,158,11,0.25)]"]) {
+  box-shadow: 0 0 20px #7c283c33;
+}
 /* Room 2's scripted camera sequence keeps its recovery prompt above the canvas. */
 .study-room--cinematic .study-room__hud,.study-room--cinematic .study-room__notification{visibility:hidden;pointer-events:none;}
 .study-room__cinematic-caption{position:absolute;z-index:70;left:50%;bottom:9%;transform:translateX(-50%);width:min(90vw,38rem);text-align:center;color:#d8c6ab;font-family:Georgia,serif;font-size:1.1rem;text-shadow:0 2px 7px #000;}

@@ -495,7 +495,7 @@ export default function Room2Study({
         </div>
       )}
 
-      {/* Shared tournament HUD and modals retain their global behavior and appearance. */}
+      {/* Shared tournament UI; study.css supplies only the Room 2 colour palette. */}
       <BasketModal
         isOpen={isBasketOpen}
         onClose={() => {
