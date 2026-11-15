@@ -148,15 +148,37 @@ def _photo_pieces(content, solved_ids):
     )
 
 
+
+def _next_fragment(content, room, collected):
+    """Return only the next recoverable scrap, using the same prerequisites as search."""
+    all_evidence = [ev for r in content.get("rooms", []) for ev in r.get("evidence", [])]
+    for ev in room.get("evidence", []):
+        if ev["id"] in collected:
+            continue
+        needed = set(ev.get("requires", {}).get("fragments", []))
+        if ev.get("chain") and ev.get("seq") is not None:
+            needed.update(prev["id"] for prev in all_evidence if prev.get("chain") == ev["chain"]
+                          and prev.get("seq") is not None and prev["seq"] < ev["seq"])
+        if needed.issubset(collected):
+            return ev
+    return None
+
+
+def _search_lead(content, room, collected):
+    ev = _next_fragment(content, room, collected)
+    if not ev:
+        return None
+    object_id = ev.get("hiding", {}).get("object_id")
+    obj = next((o for o in room.get("objects", []) if o["id"] == object_id), {})
+    return {"object_id": object_id, "target_id": ev["id"], "label": obj.get("label") or object_id.replace("_", " ")}
+
 def get_room_state(team_id, content):
     room = _room(content)
     with _transaction(team_id) as cur:
         _require_access(cur, team_id, room)
-        collected = {
-            f["fragment_id"]
-            for f in _fragments(cur, team_id)
-            if f["room_id"] == ROOM_ID
-        }
+        fragments = _fragments(cur, team_id)
+        all_collected = {f["fragment_id"] for f in fragments}
+        collected = {f["fragment_id"] for f in fragments if f["room_id"] == ROOM_ID}
         basket_unlocked = _unlock_basket(cur, team_id, room, collected)
         # Repair progress left incomplete by the former all-solved rule.
         _update_room_completion(
@@ -241,6 +263,7 @@ def get_room_state(team_id, content):
             evidence.append(
                 {
                     "id": ev["id"],
+                    "source_object_id": ev.get("hiding", {}).get("object_id"),
                     "clue_id": ev.get("clue_id"),
                     "part": ev.get("part"),
                     "is_wrapped": False,
@@ -257,6 +280,7 @@ def get_room_state(team_id, content):
             evidence.append(
                 {
                     "id": ev["id"],
+                    "source_object_id": ev.get("hiding", {}).get("object_id"),
                     "is_wrapped": True,
                     "display": {
                         "title": "Wrapped Fragment",
@@ -286,6 +310,7 @@ def get_room_state(team_id, content):
         "collected_fragment_ids": [
             ev["id"] for ev in room.get("evidence", []) if ev["id"] in collected
         ],
+        "investigation": {"next_search": _search_lead(content, room, all_collected)},
         "total_fragments_in_room": len(room.get("evidence", [])),
         "basket_unlocked": basket_unlocked,
         "is_completed": bool(status and status["is_completed"]),
@@ -344,7 +369,11 @@ def search_object(team_id, content, object_id):
             return {
                 "found": False,
                 "locked": True,
-                "message": "Locked for now. Follow the investigation trail in order.",
+                "message": "Follow the investigation trail in order: " + (
+                    "examine the " + lead["label"] + " next." if (lead := _search_lead(content, room, collected))
+                    else "check the Bedroom for any missing earlier records, then return to the Study."
+                ),
+                "next_search": lead,
             }
         cur.execute(
             """INSERT INTO team_fragments (team_id, room_id, fragment_id, is_wrapped)

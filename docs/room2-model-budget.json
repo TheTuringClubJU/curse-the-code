@@ -1,0 +1,294 @@
+{
+  "original_baseline_bytes": 27612756,
+  "before_bytes": 18321984,
+  "after_bytes": 18147616,
+  "files": [
+    {
+      "file": "12_old_books.glb",
+      "bytes": 274348,
+      "before_bytes": 274348,
+      "triangles": 168,
+      "before_triangles": 168
+    },
+    {
+      "file": "arming_sword_gothic_fanart.glb",
+      "bytes": 52816,
+      "before_bytes": 52816,
+      "triangles": 2293,
+      "before_triangles": 2293
+    },
+    {
+      "file": "big_gothic_window.glb",
+      "bytes": 3952272,
+      "before_bytes": 3952272,
+      "triangles": 11784,
+      "before_triangles": 11784
+    },
+    {
+      "file": "binder_notebook.glb",
+      "bytes": 89876,
+      "before_bytes": 89876,
+      "triangles": 3614,
+      "before_triangles": 3614
+    },
+    {
+      "file": "body_under_cloth.glb",
+      "bytes": 213488,
+      "before_bytes": 213488,
+      "triangles": 15763,
+      "before_triangles": 15763
+    },
+    {
+      "file": "candles.glb",
+      "bytes": 156244,
+      "before_bytes": 156244,
+      "triangles": 7905,
+      "before_triangles": 7905
+    },
+    {
+      "file": "cc0_-_coat_hanger.glb",
+      "bytes": 232960,
+      "before_bytes": 232960,
+      "triangles": 1960,
+      "before_triangles": 1960
+    },
+    {
+      "file": "Chandelier_03.glb",
+      "bytes": 241196,
+      "before_bytes": 241196,
+      "triangles": 17843,
+      "before_triangles": 17843
+    },
+    {
+      "file": "cobwebs.glb",
+      "bytes": 305572,
+      "before_bytes": 305572,
+      "triangles": 163,
+      "before_triangles": 163
+    },
+    {
+      "file": "corkboard.glb",
+      "bytes": 83052,
+      "before_bytes": 83052,
+      "triangles": 28,
+      "before_triangles": 28
+    },
+    {
+      "file": "distant_castle.glb",
+      "bytes": 1229092,
+      "before_bytes": 1229092,
+      "triangles": 21586,
+      "before_triangles": 21586
+    },
+    {
+      "file": "GothicCabinet_01.glb",
+      "bytes": 286480,
+      "before_bytes": 286480,
+      "triangles": 3651,
+      "before_triangles": 3651
+    },
+    {
+      "file": "gothic_chair.glb",
+      "bytes": 877860,
+      "before_bytes": 877860,
+      "triangles": 28768,
+      "before_triangles": 28768
+    },
+    {
+      "file": "gothic_coffee_table.glb",
+      "bytes": 211448,
+      "before_bytes": 211448,
+      "triangles": 4290,
+      "before_triangles": 4290
+    },
+    {
+      "file": "gothic_door.glb",
+      "bytes": 1225748,
+      "before_bytes": 1225748,
+      "triangles": 9407,
+      "before_triangles": 9407
+    },
+    {
+      "file": "horror_ghost_character_-_blood_stained_spirit.glb",
+      "bytes": 996780,
+      "before_bytes": 996780,
+      "triangles": 128612,
+      "before_triangles": 128612
+    },
+    {
+      "file": "iron_radiator.glb",
+      "bytes": 36552,
+      "before_bytes": 36552,
+      "triangles": 2688,
+      "before_triangles": 2688
+    },
+    {
+      "file": "library_bookcase.glb",
+      "bytes": 1192620,
+      "before_bytes": 1192620,
+      "triangles": 15382,
+      "before_triangles": 15382
+    },
+    {
+      "file": "library_desk.glb",
+      "bytes": 194332,
+      "before_bytes": 194332,
+      "triangles": 5078,
+      "before_triangles": 5078
+    },
+    {
+      "file": "library_table.glb",
+      "bytes": 239532,
+      "before_bytes": 239532,
+      "triangles": 7290,
+      "before_triangles": 7290
+    },
+    {
+      "file": "lying_figure_-_silent_hill.glb",
+      "bytes": 226980,
+      "before_bytes": 226980,
+      "triangles": 5166,
+      "before_triangles": 5166
+    },
+    {
+      "file": "metal_trash_can.glb",
+      "bytes": 164316,
+      "before_bytes": 164316,
+      "triangles": 1938,
+      "before_triangles": 1938
+    },
+    {
+      "file": "modular_electric_cables.glb",
+      "bytes": 91188,
+      "before_bytes": 91188,
+      "triangles": 118,
+      "before_triangles": 118
+    },
+    {
+      "file": "museum_side_chair.glb",
+      "bytes": 1640260,
+      "before_bytes": 1640260,
+      "triangles": 59994,
+      "before_triangles": 59994
+    },
+    {
+      "file": "paintings.glb",
+      "bytes": 270084,
+      "before_bytes": 270084,
+      "triangles": 782,
+      "before_triangles": 782
+    },
+    {
+      "file": "player_flashlight.glb",
+      "bytes": 246428,
+      "before_bytes": 246428,
+      "triangles": 3935,
+      "before_triangles": 3935
+    },
+    {
+      "file": "ps1_horror_hospital_gurney.glb",
+      "bytes": 41208,
+      "before_bytes": 41208,
+      "triangles": 1704,
+      "before_triangles": 1704
+    },
+    {
+      "file": "retro_ibm_pc.glb",
+      "bytes": 108724,
+      "before_bytes": 108724,
+      "triangles": 2484,
+      "before_triangles": 2484
+    },
+    {
+      "file": "retro_matrix_printer.glb",
+      "bytes": 47092,
+      "before_bytes": 47092,
+      "triangles": 530,
+      "before_triangles": 530
+    },
+    {
+      "file": "Rockingchair_01.glb",
+      "bytes": 121412,
+      "before_bytes": 121412,
+      "triangles": 4745,
+      "before_triangles": 4745
+    },
+    {
+      "file": "roman-catholic_cathedral_gothic_decorations.glb",
+      "bytes": 265520,
+      "before_bytes": 265520,
+      "triangles": 22121,
+      "before_triangles": 22121
+    },
+    {
+      "file": "skull.glb",
+      "bytes": 10180,
+      "before_bytes": 10180,
+      "triangles": 344,
+      "before_triangles": 344
+    },
+    {
+      "file": "spider_-_resident_evil_4.glb",
+      "bytes": 26468,
+      "before_bytes": 26468,
+      "triangles": 456,
+      "before_triangles": 456
+    },
+    {
+      "file": "terrifying_hooded_horror_woman.glb",
+      "bytes": 429744,
+      "before_bytes": 429744,
+      "triangles": 25990,
+      "before_triangles": 25990
+    },
+    {
+      "file": "tree_small_02.glb",
+      "bytes": 567620,
+      "before_bytes": 682416,
+      "triangles": 34724,
+      "before_triangles": 34724
+    },
+    {
+      "file": "tree_small_02_far.glb",
+      "bytes": 159748,
+      "before_bytes": 219320,
+      "triangles": 7520,
+      "before_triangles": 7520
+    },
+    {
+      "file": "victorian_antique_wooden_table__game_ready.glb",
+      "bytes": 241368,
+      "before_bytes": 241368,
+      "triangles": 5826,
+      "before_triangles": 5826
+    },
+    {
+      "file": "vintage_oil_lamp.glb",
+      "bytes": 144652,
+      "before_bytes": 144652,
+      "triangles": 7140,
+      "before_triangles": 7140
+    },
+    {
+      "file": "vintage_tape_recorder.glb",
+      "bytes": 408428,
+      "before_bytes": 408428,
+      "triangles": 10822,
+      "before_triangles": 10822
+    },
+    {
+      "file": "white_ghost-like_figure_with_bloodstain.glb",
+      "bytes": 664712,
+      "before_bytes": 664712,
+      "triangles": 54204,
+      "before_triangles": 54204
+    },
+    {
+      "file": "world_map_color_3d_scan.glb",
+      "bytes": 179216,
+      "before_bytes": 179216,
+      "triangles": 22446,
+      "before_triangles": 22446
+    }
+  ]
+}

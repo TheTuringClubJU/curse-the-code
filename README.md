@@ -4,6 +4,8 @@ The Turing Club's team escape-room game. React and Three.js render the rooms;
 FastAPI verifies actions and stores team progress in PostgreSQL.
 
 - [Project and collaboration guide](docs/PROJECT_GUIDE.md): start here if you are new to the project.
+- [Room 2 frontend review and delivery](docs/ROOM2_RELEASE_REVIEW.md): gameplay, assets, validation and integration scope.
+- [Room 2 local preview](docs/ROOM2_LOCAL_PREVIEW.md): reopen the Study during development.
 - [Room 2 backend handoff](docs/ROOM2_HANDOFF.md): API contract, rules, tests and frontend integration work.
 - [Team assignments and task list](TODO.md)
 - [Existing deployment configuration](DEPLOYMENT.md)
@@ -36,8 +38,9 @@ npm.cmd run dev
 ```
 
 Open `http://localhost:5173`. Vite forwards `/api` requests to the local API.
-`http://127.0.0.1:8000/docs` shows the API explorer. Currently the participant
-app mounts Room 1; the Room 2 frontend is a separate assigned task.
+`http://127.0.0.1:8000/docs` shows the API explorer. The participant app resumes
+room progression from server state. During development, `/study` (alias `/room2`)
+opens Room 2 directly after normal sign-in and backend access checks.
 
 **Existing startup behavior:** importing the authentication service seeds demo
 teams and resets their sessions. This needs review before event deployment;

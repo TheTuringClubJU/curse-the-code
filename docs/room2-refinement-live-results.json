@@ -1,0 +1,871 @@
+{
+  "elapsed": 516.460299999997,
+  "events": [
+    {
+      "at": 0.1438999999910593,
+      "key": "crying",
+      "channel": "crying",
+      "busy": false,
+      "existing": []
+    },
+    {
+      "at": 19.91379999999702,
+      "key": "well",
+      "channel": "unease",
+      "limit": 4.5,
+      "busy": false,
+      "existing": []
+    },
+    {
+      "at": 24.45839999999106,
+      "key": "crying",
+      "channel": "crying",
+      "busy": false,
+      "existing": []
+    },
+    {
+      "at": 48.450399999991056,
+      "key": "buzz",
+      "duration": 0.35
+    },
+    {
+      "at": 48.45329999999702,
+      "key": "pass",
+      "channel": "pass",
+      "busy": true,
+      "existing": [
+        "buzz"
+      ]
+    },
+    {
+      "at": 50.46270000000298,
+      "key": "buzz",
+      "duration": 4.5
+    },
+    {
+      "at": 55.00670000000298,
+      "key": "crying",
+      "channel": "crying",
+      "busy": false,
+      "existing": []
+    },
+    {
+      "at": 91.28839999999106,
+      "key": "paranormal",
+      "channel": "unease",
+      "limit": 4.5,
+      "busy": false,
+      "existing": []
+    },
+    {
+      "at": 95.8265,
+      "key": "crying",
+      "channel": "crying",
+      "busy": false,
+      "existing": []
+    },
+    {
+      "at": 150.40109999999405,
+      "key": "buzz",
+      "duration": 0.35
+    },
+    {
+      "at": 150.40429999999702,
+      "key": "pass",
+      "channel": "pass",
+      "busy": true,
+      "existing": [
+        "buzz"
+      ]
+    },
+    {
+      "at": 152.409799999997,
+      "key": "buzz",
+      "duration": 4.5
+    },
+    {
+      "at": 156.95979999999702,
+      "key": "crying",
+      "channel": "crying",
+      "busy": false,
+      "existing": []
+    },
+    {
+      "at": 180.952,
+      "key": "lurking",
+      "channel": "unease",
+      "limit": 4.5,
+      "busy": false,
+      "existing": []
+    },
+    {
+      "at": 185.49209999999405,
+      "key": "crying",
+      "channel": "crying",
+      "busy": false,
+      "existing": []
+    },
+    {
+      "at": 251.7655,
+      "key": "buzz",
+      "duration": 0.35
+    },
+    {
+      "at": 251.76889999999105,
+      "key": "pass",
+      "channel": "pass",
+      "busy": true,
+      "existing": [
+        "buzz"
+      ]
+    },
+    {
+      "at": 253.76420000000297,
+      "key": "buzz",
+      "duration": 4.5
+    },
+    {
+      "at": 258.298299999997,
+      "key": "crying",
+      "channel": "crying",
+      "busy": false,
+      "existing": []
+    },
+    {
+      "at": 282.31009999999407,
+      "key": "uneaseB",
+      "channel": "unease",
+      "limit": 4.5,
+      "busy": false,
+      "existing": []
+    },
+    {
+      "at": 286.860099999994,
+      "key": "crying",
+      "channel": "crying",
+      "busy": false,
+      "existing": []
+    },
+    {
+      "at": 357.603,
+      "key": "uneaseA",
+      "channel": "unease",
+      "limit": 4.5,
+      "busy": false,
+      "existing": []
+    },
+    {
+      "at": 362.125299999997,
+      "key": "crying",
+      "channel": "crying",
+      "busy": false,
+      "existing": []
+    },
+    {
+      "at": 386.127,
+      "key": "buzz",
+      "duration": 0.35
+    },
+    {
+      "at": 386.130799999997,
+      "key": "pass",
+      "channel": "pass",
+      "busy": true,
+      "existing": [
+        "buzz"
+      ]
+    },
+    {
+      "at": 388.12809999999405,
+      "key": "buzz",
+      "duration": 4.5
+    },
+    {
+      "at": 392.677,
+      "key": "crying",
+      "channel": "crying",
+      "busy": false,
+      "existing": []
+    },
+    {
+      "at": 437.78829999999704,
+      "key": "paranormal",
+      "channel": "unease",
+      "limit": 4.5,
+      "busy": false,
+      "existing": []
+    },
+    {
+      "at": 442.32509999999405,
+      "key": "crying",
+      "channel": "crying",
+      "busy": false,
+      "existing": []
+    },
+    {
+      "at": 511.850299999997,
+      "key": "lurking",
+      "channel": "unease",
+      "limit": 4.5,
+      "busy": false,
+      "existing": []
+    },
+    {
+      "at": 516.401200000003,
+      "key": "crying",
+      "channel": "crying",
+      "busy": false,
+      "existing": []
+    }
+  ],
+  "samples": [
+    {
+      "at": 19.95089999999106,
+      "scale": 0.5,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 23.87029999999702,
+      "scale": 0.5602696183294344,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 23.940399999991058,
+      "scale": 0.6002646014664635,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 24.018399999991058,
+      "scale": 0.6773381711457614,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 24.080899999991058,
+      "scale": 0.757177694568495,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 24.1585,
+      "scale": 0.8456026282886182,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 24.22370000000298,
+      "scale": 0.8862821289999845,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 24.29309999999404,
+      "scale": 0.9513822886297378,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 24.36039999999106,
+      "scale": 0.990561921023322,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 50.478,
+      "scale": 0.5,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 54.39039999999106,
+      "scale": 0.5391046265276994,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 54.4735,
+      "scale": 0.5972944424519141,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 54.533,
+      "scale": 0.6466588695947738,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 54.611,
+      "scale": 0.7234730407930139,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 54.67470000000298,
+      "scale": 0.8058281249999989,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 54.751299999997016,
+      "scale": 0.8850905532828194,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 54.81229999999702,
+      "scale": 0.9278144588192411,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 54.880399999991056,
+      "scale": 0.9804885666705614,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 91.36429999999702,
+      "scale": 0.5,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 95.20929999999701,
+      "scale": 0.5362863490845453,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 95.29109999999405,
+      "scale": 0.5905978857113761,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 95.34509999999403,
+      "scale": 0.6441023962478312,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 95.41509999999404,
+      "scale": 0.7212353210174995,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 95.493,
+      "scale": 0.8023670685481177,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 95.55020000000297,
+      "scale": 0.8617507477172133,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 95.62179999999702,
+      "scale": 0.9284375319621134,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 95.69239999999105,
+      "scale": 0.9624655156705542,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 95.761,
+      "scale": 0.9947432433440262,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 152.465200000003,
+      "scale": 0.5,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 156.33120000000298,
+      "scale": 0.5329902473090121,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 156.38409999999405,
+      "scale": 0.5673348660990907,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 156.456,
+      "scale": 0.636796415999989,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 156.52870000000297,
+      "scale": 0.6929157555480934,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 156.59659999999403,
+      "scale": 0.7741806321399174,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 156.66379999999702,
+      "scale": 0.8324932982886182,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 156.7345,
+      "scale": 0.9120167725947529,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 156.80479999999702,
+      "scale": 0.9675740262478072,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 156.87529999999703,
+      "scale": 0.9886840740029113,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 180.95509999999405,
+      "scale": 0.5,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 184.87389999999107,
+      "scale": 0.5360506559766762,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 184.944299999997,
+      "scale": 0.5901743348804466,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 185.0175,
+      "scale": 0.6425351397580286,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 185.08179999999703,
+      "scale": 0.7214483503294336,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 185.15329999999702,
+      "scale": 0.8043609829999754,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 185.22839999999107,
+      "scale": 0.8571713498542268,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 185.2975,
+      "scale": 0.928126251344041,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 185.3685,
+      "scale": 0.9789820761661809,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 185.50120000000297,
+      "scale": 1,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 253.82329999999703,
+      "scale": 0.5,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 257.67570000000296,
+      "scale": 0.5233472479766892,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 257.74029999999703,
+      "scale": 0.5700137827317896,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 257.81139999999107,
+      "scale": 0.6387344759417392,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 257.88109999999403,
+      "scale": 0.6855124073236301,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 257.95629999999704,
+      "scale": 0.773860526043785,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 258.020200000003,
+      "scale": 0.8534396749621143,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 258.09739999999107,
+      "scale": 0.920342708772626,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 258.171799999997,
+      "scale": 0.9725650506559786,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 258.23820000000296,
+      "scale": 0.9953347020174961,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 282.31439999999105,
+      "scale": 0.5,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 286.23409999999404,
+      "scale": 0.5289153216705473,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 286.312099999994,
+      "scale": 0.5853129723848295,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 286.37489999999104,
+      "scale": 0.6529013957784364,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 286.45,
+      "scale": 0.7280608312682201,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 286.51509999999405,
+      "scale": 0.7871628449212689,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 286.5945,
+      "scale": 0.8652303209999876,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 286.656,
+      "scale": 0.9285152720000169,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 286.72129999999703,
+      "scale": 0.9644772470000128,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 286.7995,
+      "scale": 0.9980877544518967,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 357.644,
+      "scale": 0.5,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 361.551200000003,
+      "scale": 0.5491526159999918,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 361.621799999997,
+      "scale": 0.615093114425645,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 361.69489999999104,
+      "scale": 0.6668962655072639,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 361.775,
+      "scale": 0.7433578376909477,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 361.83289999999107,
+      "scale": 0.8332054256559752,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 361.90259999999404,
+      "scale": 0.8796340098396491,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 361.977299999997,
+      "scale": 0.949973053384815,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 362.046,
+      "scale": 0.9789356381807409,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 362.12509999999406,
+      "scale": 1,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 388.15759999999403,
+      "scale": 0.5,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 392.078299999997,
+      "scale": 0.5418235608600577,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 392.14379999999704,
+      "scale": 0.6058470933644095,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 392.21659999999406,
+      "scale": 0.6699533395888966,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 392.284700000003,
+      "scale": 0.7414300641399404,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 392.3543999999911,
+      "scale": 0.8230737919212584,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 392.428299999997,
+      "scale": 0.8785146610000429,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 392.4965,
+      "scale": 0.9479314102070129,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 392.56439999999105,
+      "scale": 0.978515625,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 392.63229999999703,
+      "scale": 0.9997649255743477,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 437.85779999999704,
+      "scale": 0.5,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 441.70720000000296,
+      "scale": 0.533959150017507,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 441.772,
+      "scale": 0.5724197208396877,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 441.841,
+      "scale": 0.6359267734723268,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 441.91739999999106,
+      "scale": 0.7187868719767267,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 442.004,
+      "scale": 0.8025771026705791,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 442.055,
+      "scale": 0.8597096687581088,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 442.129599999994,
+      "scale": 0.9316747904518955,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 442.194099999994,
+      "scale": 0.9643016500991802,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 442.2785,
+      "scale": 0.9991796782069972,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 511.91139999999103,
+      "scale": 0.5,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 515.765599999994,
+      "scale": 0.5328770557580176,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 515.836700000003,
+      "scale": 0.5665012411050268,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 515.9073999999911,
+      "scale": 0.6346733805948419,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 515.9705999999941,
+      "scale": 0.6860320881254373,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 516.0505,
+      "scale": 0.7775927885948013,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 516.1143999999911,
+      "scale": 0.8567797505073794,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 516.191799999997,
+      "scale": 0.9302944029359137,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 516.258200000003,
+      "scale": 0.9667260385073151,
+      "paused": false,
+      "runner": false
+    },
+    {
+      "at": 516.323,
+      "scale": 0.9974108159620991,
+      "paused": false,
+      "runner": false
+    }
+  ]
+}

@@ -1,10 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { createEngine } from './engine/engine.js';
 import studyConfig from './rooms/study.js';
-import { GameAudio } from './engine/audio.js';
-import HUD from './components/HUD.jsx';
-import BasketModal from './components/BasketModal.jsx';
-import CaseFilesModal from './components/CaseFilesModal.jsx';
+import { StudyAudio } from './engine/studyAudio.js';
+import {isStudyLowDetail,studyQualityUrl,rememberStudyQuality} from './engine/studyPerformance.js';
+import HUD from './components/study/StudyHUD.jsx';
+import BasketModal from './components/study/StudyEvidenceTable.jsx';
+import CaseFilesModal from './components/study/StudyCaseFiles.jsx';
+import {studyObjective,studyPropName} from './components/study/studyGuide.js';
 import PhotoPuzzleModal from './components/PhotoPuzzleModal.jsx';
 import TabletPasscodeModal from './components/study/TabletPasscodeModal.jsx';
 import CrtEmailModal from './components/study/CrtEmailModal.jsx';
@@ -12,8 +14,9 @@ import CrashDumpModal from './components/study/CrashDumpModal.jsx';
 import LinePrinterModal from './components/study/LinePrinterModal.jsx';
 import StudyCompleteModal from './components/study/StudyCompleteModal.jsx';
 import Round1DossierModal from './components/Round1DossierModal.jsx';
-import HintModal from './components/HintModal.jsx';
+import HintModal from './components/study/StudyHints.jsx';
 import './game.css';
+import './study.css';
 
 export default function Room2Study({
   team,
@@ -27,6 +30,11 @@ export default function Room2Study({
   const roomDataRef = useRef(null);
   const handleInteractRef = useRef(null);
   const activeTargetRef = useRef(null);
+
+  const stateRef = useRef({ paused: true, started: false, modal: null });
+  const mountedRef = useRef(false);
+  const notificationTimerRef = useRef(null);
+  const searchBusyRef = useRef(false);
 
   // Game state
   const [roomData, setRoomData] = useState(null);
@@ -43,7 +51,33 @@ export default function Room2Study({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [systemNotification, setSystemNotification] = useState(null);
   const [audioMuted, setAudioMuted] = useState(false);
-  const [crtFlicker, setCrtFlicker] = useState(false);
+  const [loadError, setLoadError] = useState(null);
+  const [assetProgress, setAssetProgress] = useState(null);
+  const [audioPreparing,setAudioPreparing]=useState(false);
+  const [isExitScarePlaying, setIsExitScarePlaying] = useState(false);
+  const [cinematic,setCinematic]=useState(null);
+  const cinematicLocked=Boolean(cinematic?.locked);
+  const [lowDetail]=useState(isStudyLowDetail);
+  const assetsPending = audioPreparing || Boolean(assetProgress && assetProgress.loaded + assetProgress.failed < assetProgress.total);
+  const isAnyModalOpen = Boolean(activeClueModal || isBasketOpen || isCaseFilesOpen ||
+    isPhotoPuzzleOpen || isStudyCompleteModalOpen || isDossierOpen || isHintOpen);
+  stateRef.current = {
+    started: isStarted,
+    paused: !isStarted || loading || Boolean(loadError) || isAnyModalOpen || isSubmitting || isExitScarePlaying || cinematicLocked,
+    cinematic:cinematicLocked,
+    modal: cinematicLocked?'cinematic':isExitScarePlaying ? 'finale' : activeClueModal ? 'clue' : isBasketOpen ? 'b' : isCaseFilesOpen ? 'c' :
+      isPhotoPuzzleOpen ? 'p' : isDossierOpen ? 'r' : isHintOpen ? 'h' :
+      isStudyCompleteModalOpen ? 'complete' : null
+  };
+  useEffect(() => {
+    engineRef.current?.setStudyState?.({ started: isStarted, paused: stateRef.current.paused, ...(cinematicLocked?{cinematic:true}:{}), ...(isExitScarePlaying ? {exitScare:true} : {}) });
+  }, [isStarted, loading, loadError, isAnyModalOpen, isSubmitting, isExitScarePlaying,cinematicLocked]);
+
+  const pauseForModal = () => {
+    stateRef.current.paused = true;
+    engineRef.current?.setStudyState?.({ started: true, paused: true });
+    engineRef.current?.unlock();
+  };
 
   // Fetch initial room data from backend
   const fetchRoomState = async () => {
@@ -54,10 +88,18 @@ export default function Room2Study({
           'x-session-token': localStorage.getItem('ctc_token') || ''
         }
       });
+      if (!res.ok) {
+        throw new Error(res.status === 401 ? 'Your session has expired. Sign in again to continue.' :
+          res.status === 403 ? 'The Study is locked. Complete the previous room before entering.' :
+          'The Study could not connect to the server. Please try again.');
+      }
       if (res.ok) {
         const data = await res.json();
+        if (!mountedRef.current) return;
+        setLoadError(null);
         setRoomData(data);
         roomDataRef.current = data;
+        engineRef.current?.setStudyProgress?.({basketUnlocked: Boolean(data.basket_unlocked), completed: Boolean(data.is_completed), collected: data.collected_fragment_ids?.length || 0, total: data.total_fragments_in_room || 16, clues: data.clues?.map(c => ({id: c.id, is_locked: c.is_locked}))});
 
         // If room is completed, animate blast door open
         if (data.is_completed && engineRef.current) {
@@ -65,9 +107,9 @@ export default function Room2Study({
         }
       }
     } catch (err) {
-      console.error('Failed to load study room state:', err);
+      if (mountedRef.current) setLoadError(err.message || 'The Study could not connect to the server. Please try again.');
     } finally {
-      setLoading(false);
+      if (mountedRef.current) setLoading(false);
     }
   };
 
@@ -79,75 +121,37 @@ export default function Room2Study({
         return;
       }
 
-      // E Key - Interact
-      if (e.key === 'e' || e.key === 'E' || e.code === 'KeyE') {
-        const target = activeTargetRef.current;
-        if (target) {
-          e.preventDefault();
-          e.stopPropagation();
-          handleInteractRef.current?.(target);
-          return;
-        }
+      if (e.repeat || !stateRef.current.started || !roomDataRef.current) return;
+      const key = (e.key || '').toLowerCase() || e.code?.replace('Key', '').toLowerCase();
+      if(stateRef.current.cinematic){
+        if(key==='q')engineRef.current?.standUpStudy?.();
+        if(key!=='escape'){e.preventDefault();e.stopImmediatePropagation();}return;
       }
-
-      // B Key - Toggle Basket
-      if (e.key === 'b' || e.key === 'B' || e.code === 'KeyB') {
+      if(key==='escape' && stateRef.current.modal && !['b','finale'].includes(stateRef.current.modal)) {
+        const close={c:setIsCaseFilesOpen,h:setIsHintOpen,p:setIsPhotoPuzzleOpen,r:setIsDossierOpen,clue:setActiveClueModal,complete:setIsStudyCompleteModalOpen};
+        close[stateRef.current.modal]?.(stateRef.current.modal==='clue'?null:false);
+        e.preventDefault();e.stopImmediatePropagation();engineRef.current?.lock();return;
+      }
+      if (key === 'e') {
+        if (stateRef.current.paused || !activeTargetRef.current) return;
         e.preventDefault();
-        setIsBasketOpen((prev) => {
-          const next = !prev;
-          if (next) engineRef.current?.unlock();
-          else engineRef.current?.lock();
-          return next;
-        });
+        // The engine also listens on window: stop this key being dispatched twice.
+        e.stopImmediatePropagation();
+        handleInteractRef.current?.(activeTargetRef.current);
         return;
       }
-
-      // C Key - Toggle Case Files / Clues
-      if (e.key === 'c' || e.key === 'C' || e.code === 'KeyC') {
-        e.preventDefault();
-        setIsCaseFilesOpen((prev) => {
-          const next = !prev;
-          if (next) engineRef.current?.unlock();
-          else engineRef.current?.lock();
-          return next;
-        });
-        return;
-      }
-
-      // P Key - Toggle Photo Puzzle
-      if (e.key === 'p' || e.key === 'P' || e.code === 'KeyP') {
-        e.preventDefault();
-        setIsPhotoPuzzleOpen((prev) => {
-          const next = !prev;
-          if (next) engineRef.current?.unlock();
-          else engineRef.current?.lock();
-          return next;
-        });
-        return;
-      }
-
-      // R Key - Toggle Field Dossier & Round 1 Rules
-      if (e.key === 'r' || e.key === 'R' || e.code === 'KeyR') {
-        e.preventDefault();
-        setIsDossierOpen((prev) => {
-          const next = !prev;
-          if (next) engineRef.current?.unlock();
-          else engineRef.current?.lock();
-          return next;
-        });
-        return;
-      }
-
-      // H Key - Toggle Hints & Investigation Guidance
-      if (e.key === 'h' || e.key === 'H' || e.code === 'KeyH') {
-        e.preventDefault();
-        setIsHintOpen((prev) => {
-          const next = !prev;
-          if (next) engineRef.current?.unlock();
-          else engineRef.current?.lock();
-          return next;
-        });
-        return;
+      const setters = { b: setIsBasketOpen, c: setIsCaseFilesOpen,
+        p: setIsPhotoPuzzleOpen, r: setIsDossierOpen, h: setIsHintOpen };
+      if (!setters[key]) return;
+      if (stateRef.current.paused && stateRef.current.modal !== key) return;
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      if (stateRef.current.modal === key) {
+        setters[key](false);
+        engineRef.current?.lock();
+      } else {
+        pauseForModal();
+        setters[key](true);
       }
     };
 
@@ -155,64 +159,55 @@ export default function Room2Study({
     return () => window.removeEventListener('keydown', handleGlobalKey, true);
   }, []);
 
-  // CRT Glitch Flicker Interval (respects reduced motion)
-  useEffect(() => {
-    const prefersReduced = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
-    if (prefersReduced) return;
-
-    const flickerInterval = setInterval(() => {
-      setCrtFlicker(true);
-      setTimeout(() => setCrtFlicker(false), 150);
-    }, 12000 + Math.random() * 8000);
-
-    return () => clearInterval(flickerInterval);
-  }, []);
-
-  // Random binaural whisper interval
-  useEffect(() => {
-    const whisperInterval = setInterval(() => {
-      if (audioRef.current && !audioMuted) {
-        audioRef.current.whisper?.('whisper_study', (Math.random() - 0.5) * 4, (Math.random() - 0.5) * 4);
-      }
-    }, 25000 + Math.random() * 15000);
-
-    return () => clearInterval(whisperInterval);
-  }, [audioMuted]);
-
   // Notification helper
   const showNotification = (msg) => {
+    if (!mountedRef.current) return;
+    clearTimeout(notificationTimerRef.current);
     setSystemNotification(msg);
-    setTimeout(() => {
+    notificationTimerRef.current = setTimeout(() => {
       setSystemNotification((curr) => (curr === msg ? null : curr));
     }, 4500);
   };
 
   // Main interaction handler
   const handleInteract = async (objectId) => {
+    if (stateRef.current.paused || searchBusyRef.current) return;
     const currentData = roomDataRef.current;
+    if (!currentData) return;
 
-// No return door to Room 1 (Room 2 only exits forward to Room 3)
+    if (objectId === 'study_door_back') {
+      const held=engineRef.current?.canLeaveStudy?.();if(held?.blocked){showNotification(held.message);return;}
+      onTransitionToRoom1?.();
+      return;
+    }
 
     // 2. Check if this is the Basement Exit Door
     if (objectId === 'study_door_exit' || objectId === 'exit_door') {
       if (currentData?.is_completed) {
+        const held=engineRef.current?.tryStudyExit?.();if(held?.blocked){if(held.message)showNotification(held.message);return;}
         if (onTransitionToRoom3) {
           onTransitionToRoom3();
         } else {
           setIsStudyCompleteModalOpen(true);
-          engineRef.current?.unlock();
+          pauseForModal();
         }
       } else {
-        const solvedCount = currentData?.clues?.filter((c) => c.solved)?.length || 0;
+        const objective=studyObjective(currentData);
+        const resolvedCount = currentData?.clues?.filter((c) => c.solved || c.exhausted || (c.attempts_max !== null && c.attempts >= (c.attempts_max ?? 3)))?.length || 0;
         showNotification(
-          `The heavy steel blast door is deadbolted with pneumatic locks. Solve all 4 study clues to unlatch it (${solvedCount}/4 solved).`
+          `The Basement needs four resolved case files (${resolvedCount}/4 resolved). ${objective.title}. ${objective.detail} A case is resolved when solved or its attempts are exhausted.`
         );
       }
       return;
     }
 
+    if (objectId === 'tablet_drawer' || objectId === 'desk') {
+      engineRef.current?.notifyStudyEvent?.({ type: 'inspect', objectId });
+    }
+
     // 3. Search for evidence fragment
     let searchResult = null;
+    searchBusyRef.current = true;
     try {
       const res = await fetch('/api/game/room/study/search', {
         method: 'POST',
@@ -226,17 +221,24 @@ export default function Room2Study({
 
       if (res.ok) {
         searchResult = await res.json();
-        if (searchResult && searchResult.message) {
-          showNotification(searchResult.message);
+        if (!mountedRef.current) return;
+        if (searchResult?.message && (searchResult.found || !currentData.clues?.some(c=>c.object_id===objectId))) {
+          const lead=searchResult.next_search||currentData.investigation?.next_search;
+          showNotification(searchResult.locked && lead ? `An earlier record is missing. Current lead: ${studyPropName(lead.object_id)}. Follow the objective in your field notes.` : searchResult.message);
         }
         if (searchResult.found) {
-          fetchRoomState();
+          engineRef.current?.notifyStudyEvent?.({ type: 'fragment', objectId });
+          await fetchRoomState();
           return;
         }
       }
     } catch (err) {
-      console.error('Study search request failed:', err);
+      showNotification('The search could not be completed. Please try again.');
+      return;
+    } finally {
+      searchBusyRef.current = false;
     }
+    if (!mountedRef.current || stateRef.current.paused) return;
 
     // 4. Check if this is a clue entry prop
     const matchingClue = currentData?.clues?.find((c) => c.object_id === objectId);
@@ -249,12 +251,13 @@ export default function Room2Study({
       }
       if (matchingClue.is_locked) {
         showNotification(
-          matchingClue.lock_reason || "This clue is sealed. Complete the preceding clue in sequence first."
+          `This case follows an earlier file. ${studyObjective(currentData).title}. Open Case Files (C) to see the sequence.`
         );
         return;
       }
+      pauseForModal();
+      engineRef.current?.notifyStudyEvent?.({ type: 'clue', objectId });
       setActiveClueModal(matchingClue.id);
-      engineRef.current?.unlock();
     }
   };
   handleInteractRef.current = handleInteract;
@@ -279,6 +282,7 @@ export default function Room2Study({
 
         // Check if this submission completed the room
         if (data.room_completed || data.is_completed) {
+          setActiveClueModal(null);
           engineRef.current?.openDoor?.();
           audioRef.current?.slam?.(0, -3);
           setIsStudyCompleteModalOpen(true);
@@ -302,15 +306,25 @@ export default function Room2Study({
 
   // Initialize Three.js Engine and Audio
   useEffect(() => {
+    mountedRef.current = true;
     fetchRoomState();
 
     if (!mountRef.current) return;
 
-    const audio = new GameAudio();
+    const audio = new StudyAudio();
     audioRef.current = audio;
+    const preparation=audio.prepare?.();
+    if(preparation){setAudioPreparing(true);preparation.catch(()=>{}).finally(()=>{if(mountedRef.current)setAudioPreparing(false);});}
 
     const engine = createEngine(mountRef.current, studyConfig, {
       audio: audioRef.current,
+      isPaused: () => stateRef.current.paused,
+      studyStorageKey: 'ctc.study.horror.v2.' + (team?.id || team?.name || 'local'),
+      onStudyFinale: (active) => { if (mountedRef.current) setIsExitScarePlaying(active); },
+      onStudyCinematic: (event) => {if(mountedRef.current)setCinematic(event);},
+      onStudyAssets: (progress) => {
+        if (mountedRef.current) setAssetProgress(progress);
+      },
       onInteract: (targetId) => {
         handleInteractRef.current?.(targetId);
       },
@@ -322,7 +336,11 @@ export default function Room2Study({
         }
 
         const data = roomDataRef.current;
-        if (targetId === 'study_door_exit') {
+        if (targetId === 'study_door_back') {
+          setActiveHoverPrompt("Return to Lena's Bedroom [E]");
+          return;
+        }
+        if (targetId === 'study_door_exit' || targetId === 'exit_door') {
           if (data?.is_completed) {
             setActiveHoverPrompt('Step into Subterranean Bunker / Enter Room 3 [E]');
           } else {
@@ -341,14 +359,19 @@ export default function Room2Study({
     });
 
     engineRef.current = engine;
+    engine.setStudyState?.({ started: stateRef.current.started, paused: stateRef.current.paused });
 
     return () => {
+      mountedRef.current = false;
+      clearTimeout(notificationTimerRef.current);
+      engineRef.current = null;
       engine.dispose();
       audio.dispose();
     };
   }, []);
 
   const handleStartGame = () => {
+    if (loading || assetsPending || loadError || !roomDataRef.current) return;
     setIsStarted(true);
     audioRef.current?.start?.({
       crtHum: true,
@@ -372,24 +395,14 @@ export default function Room2Study({
   const cluesSolvedCount = cluesList.filter((c) => c.solved).length;
   const totalCluesCount = cluesList.length || 4;
 
-  const isAnyModalOpen = Boolean(
-    activeClueModal ||
-    isBasketOpen ||
-    isCaseFilesOpen ||
-    isPhotoPuzzleOpen ||
-    isStudyCompleteModalOpen ||
-    isDossierOpen ||
-    isHintOpen
-  );
-
   return (
-    <div className="relative w-full h-screen overflow-hidden bg-[#04120b] select-none">
+    <div className={`study-room ${isExitScarePlaying ? 'study-room--finale' : ''} ${cinematicLocked?'study-room--cinematic':''} relative w-full h-screen overflow-hidden bg-[#04120b] select-none`}>
       
       {/* 3D Canvas Mount Point */}
       <div 
         ref={mountRef} 
         onClick={() => {
-          if (isStarted && engineRef.current && !isAnyModalOpen) {
+          if (isStarted && engineRef.current && !isAnyModalOpen&&!cinematicLocked) {
             engineRef.current.lock();
           }
         }}
@@ -402,37 +415,59 @@ export default function Room2Study({
         className="pointer-events-none fixed inset-0 z-40 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%)] bg-[length:100%_4px] opacity-[0.06]" 
       />
 
-      {/* Random CRT Glitch Flicker Overlay */}
-      {crtFlicker && (
-        <div className="pointer-events-none fixed inset-0 z-40 bg-[#3dff8b]/5 mix-blend-screen" />
-      )}
+      <div className="study-room__vignette" aria-hidden="true" />
+      {cinematicLocked&&cinematic?.caption&&<div className="study-room__cinematic-caption" role="status">
+        <p>{cinematic.caption}</p>
+        {cinematic.phase==='prone'&&<button onClick={()=>engineRef.current?.standUpStudy?.()}>Stand up <kbd>Q</kbd></button>}
+      </div>}
 
-      {/* Start Game / Click to Enter Overlay */}
-      {!isStarted && (
-        <div className="absolute inset-0 z-50 bg-black/85 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center font-mono">
-          <div className="max-w-md p-8 bg-[#04120b] border-2 border-[#1c4a2e] rounded-2xl shadow-[0_0_60px_rgba(61,255,139,0.25)] space-y-6">
-            <h1 className="text-3xl font-black text-[#b6ffd1] tracking-widest uppercase">
-              DANIEL'S STUDY
-            </h1>
-            <p className="text-xs text-[#7dffb0] leading-relaxed">
-              Green CRT phosphors illuminate cold mahogany and tangled ribbon cables. Search the hacker's sanctuary, recover all 16 evidence scraps, and breach the subterranean blast door.
-            </p>
-            <button
-              onClick={handleStartGame}
-              className="w-full py-3.5 bg-gradient-to-r from-[#174728] to-[#2b6641] hover:from-[#206037] hover:to-[#3dff8b] text-[#b6ffd1] hover:text-[#04120b] rounded-xl font-bold text-sm tracking-widest uppercase transition shadow-lg shadow-[#3dff8b]/20 border border-[#3dff8b]/50"
-            >
-              CLICK TO ENTER ROOM
-            </button>
-            <div className="text-[11px] text-[#428059]">
-              WASD: Move • Mouse: Look • E: Search / Inspect • B: Basket • C: Clues • P: Photo
+      {(!isStarted || loadError) && (
+        <section className="study-room__intro" aria-label="Enter Daniel's Study">
+          <div className="study-room__chapter" aria-hidden="true">II</div>
+          <div className="study-room__intro-content">
+            <p className="study-room__eyebrow"><span /> CURSE THE CODE / ROOM 02</p>
+            <p className="study-room__chapter-label">THE INVESTIGATION CONTINUES</p>
+            <h1>DANIEL'S<br /><em>STUDY</em></h1>
+            <div className="study-room__rule" />
+            <p className="study-room__description">The screen is still warm.<br />Someone left in a hurry.</p>
+            <p className="study-room__brief">Follow the field notes to recover sixteen sealed fragments. Open your Basket to read them, then resolve four case files in order to unlock the Basement.</p>
+            <div className="study-room__objectives">
+              <span><b>16</b> EVIDENCE FRAGMENTS</span>
+              <span><b>04</b> CASE FILES</span>
             </div>
+            {loadError ? (
+              <div className="study-room__error" role="alert">
+                <p>{loadError}</p>
+                <button onClick={() => { setLoading(true); setLoadError(null); fetchRoomState(); }} disabled={loading}>Try again</button>
+                <button onClick={onLogout}>Return to sign in</button>
+              </div>
+            ) : (
+              <button onClick={handleStartGame} disabled={loading || assetsPending} className="study-room__enter">
+                <span>{loading ? 'CONNECTING TO THE STUDY' : assetsPending ? 'PREPARING THE STUDY' : 'CLICK TO ENTER ROOM'}</span><span aria-hidden="true">&rarr;</span>
+              </button>
+            )}
+            <p className="study-room__asset-status" role="status">
+              {assetProgress && assetProgress.loaded + assetProgress.failed < assetProgress.total
+                ? `Preparing the room / ${assetProgress.loaded} / ${assetProgress.total}`
+                : 'Headphones recommended / Contains sudden sounds and horror imagery'}
+            </p>
+            <nav className="study-room__quality" aria-label="Visual detail">
+              <span>Visual detail</span>
+              <a href={studyQualityUrl(false)} onClick={()=>rememberStudyQuality(false)} aria-current={!lowDetail?'true':undefined}>Balanced</a>
+              <a href={studyQualityUrl(true)} onClick={()=>rememberStudyQuality(true)} aria-current={lowDetail?'true':undefined}>Low (older PCs)</a>
+            </nav>
           </div>
-        </div>
+          <footer className="study-room__intro-footer">
+            <span>WASD <i>MOVE</i> &nbsp; MOUSE <i>LOOK</i> &nbsp; E <i>INSPECT</i> &nbsp; F <i>TORCH</i></span>
+            <span>THE TURING CLUB <span aria-hidden="true">/</span> FIELD INVESTIGATION</span>
+          </footer>
+        </section>
       )}
 
       {/* In-Game HUD */}
       {isStarted && (
-        <HUD
+        <div className="study-room__hud"><HUD
+          objective={studyObjective(roomData||{})}
           roomTitle={roomData?.title || "Daniel's Study"}
           collectedCount={roomData?.collected_fragment_ids?.length || 0}
           totalFragments={roomData?.total_fragments_in_room || 16}
@@ -445,45 +480,47 @@ export default function Room2Study({
           team={team}
           onOpenBasket={() => {
             setIsBasketOpen(true);
-            engineRef.current?.unlock();
+            pauseForModal();
           }}
           onOpenCaseFiles={() => {
             setIsCaseFilesOpen(true);
-            engineRef.current?.unlock();
+            pauseForModal();
           }}
           onOpenPhotoPuzzle={() => {
             setIsPhotoPuzzleOpen(true);
-            engineRef.current?.unlock();
+            pauseForModal();
           }}
           onOpenRules={() => {
             setIsDossierOpen(true);
-            engineRef.current?.unlock();
+            pauseForModal();
           }}
           onOpenHints={() => {
             setIsHintOpen(true);
-            engineRef.current?.unlock();
+            pauseForModal();
           }}
           onLogout={onLogout}
           audioMuted={audioMuted}
           onToggleAudio={toggleAudio}
-          activeHoverPrompt={activeHoverPrompt}
-        />
+          activeHoverPrompt={isAnyModalOpen ? null : activeHoverPrompt}
+        /></div>
       )}
 
       {/* System Toast Notifications */}
       {systemNotification && (
-        <div className="fixed bottom-24 left-1/2 transform -translate-x-1/2 z-50 px-6 py-3 bg-[#04120b]/95 border border-[#3dff8b] text-[#b6ffd1] rounded-xl font-mono text-xs shadow-2xl tracking-wide max-w-lg text-center backdrop-blur-md">
+        <div role="status" className="study-room__notification">
           {systemNotification}
         </div>
       )}
 
-      {/* Modals */}
+      {/* Modals use a room-scoped gothic shell. */}
+      <div className="study-modal-theme">
       <BasketModal
         isOpen={isBasketOpen}
         onClose={() => {
           setIsBasketOpen(false);
           engineRef.current?.lock();
         }}
+        onOpenCaseFiles={()=>{setIsBasketOpen(false);setIsCaseFilesOpen(true);pauseForModal();}}
         evidence={roomData?.evidence || []}
         collectedIds={roomData?.collected_fragment_ids || []}
         basketUnlocked={Boolean(roomData?.basket_unlocked)}
@@ -497,6 +534,8 @@ export default function Room2Study({
           setIsCaseFilesOpen(false);
           engineRef.current?.lock();
         }}
+        collectedCount={roomData?.collected_fragment_ids?.length||0}
+        totalFragments={roomData?.total_fragments_in_room||16}
         clues={roomData?.clues || []}
         basketUnlocked={Boolean(roomData?.basket_unlocked)}
         onOpenClue={(clue) => {
@@ -507,12 +546,13 @@ export default function Room2Study({
           }
           if (clue.is_locked) {
             showNotification(
-              clue.lock_reason || "This clue is locked. Complete the preceding clue in sequence first."
+              `This case follows an earlier file. ${studyObjective(roomData).title}. Open Case Files (C) to see the sequence.`
             );
             return;
           }
+          pauseForModal();
+          engineRef.current?.notifyStudyEvent?.({ type: 'clue', objectId: clue.object_id });
           setActiveClueModal(clue.id);
-          engineRef.current?.unlock();
         }}
       />
 
@@ -590,8 +630,8 @@ export default function Room2Study({
           setIsStudyCompleteModalOpen(false);
           engineRef.current?.lock();
         }}
-        solvedCount={roomData?.clues?.filter((c) => c.solved)?.length || 4}
-        photoCount={roomData?.photo_pieces_collected || (roomData?.photo_piece_ids?.length || 8)}
+        solvedCount={roomData?.clues?.filter((c) => c.solved)?.length || 0}
+        photoCount={roomData?.photo_pieces_collected || (roomData?.photo_piece_ids?.length || 0)}
         onProceedToDoor={() => {
           setIsStudyCompleteModalOpen(false);
           engineRef.current?.lock();
@@ -612,9 +652,9 @@ export default function Room2Study({
           setIsHintOpen(false);
           engineRef.current?.lock();
         }}
-        roomId="study"
-        roomTitle="Daniel's Study"
+        roomData={roomData}
       />
+      </div>
     </div>
   );
 }

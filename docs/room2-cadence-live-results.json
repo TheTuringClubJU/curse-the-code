@@ -1,0 +1,164 @@
+{
+  "durationSeconds": 240,
+  "completedRoom": true,
+  "events": [
+    {
+      "key": "pass",
+      "at": 12.618,
+      "channel": "pass",
+      "accepted": true,
+      "priorBusy": false,
+      "started": true,
+      "context": "running",
+      "peakRms": 0.15174572160709657
+    },
+    {
+      "key": "paranormal",
+      "at": 28.125,
+      "channel": "unease",
+      "accepted": true,
+      "priorBusy": false,
+      "started": true,
+      "context": "running",
+      "peakRms": 0.049224129406405165
+    },
+    {
+      "key": "pass",
+      "at": 51.671,
+      "channel": "pass",
+      "accepted": true,
+      "priorBusy": false,
+      "started": true,
+      "context": "running",
+      "peakRms": 0.15169257569648475
+    },
+    {
+      "key": "lurking",
+      "at": 68.71969999999553,
+      "channel": "unease",
+      "accepted": true,
+      "priorBusy": false,
+      "started": true,
+      "context": "running",
+      "peakRms": 0.1012051679253778
+    },
+    {
+      "key": "pass",
+      "at": 96.96480000000447,
+      "channel": "pass",
+      "accepted": true,
+      "priorBusy": false,
+      "started": true,
+      "context": "running",
+      "peakRms": 0.16556862327769642
+    },
+    {
+      "key": "well",
+      "at": 112.30380000000447,
+      "channel": "unease",
+      "accepted": true,
+      "priorBusy": false,
+      "started": true,
+      "context": "running",
+      "peakRms": 0.07729549483398211
+    },
+    {
+      "key": "pass",
+      "at": 138.41830000000448,
+      "channel": "pass",
+      "accepted": true,
+      "priorBusy": false,
+      "started": true,
+      "context": "running",
+      "peakRms": 0.14270492040875618
+    },
+    {
+      "key": "uneaseB",
+      "at": 155.2478999999985,
+      "channel": "unease",
+      "accepted": true,
+      "priorBusy": false,
+      "started": true,
+      "context": "running",
+      "peakRms": 0.07087402080803862
+    },
+    {
+      "key": "uneaseA",
+      "at": 196.03830000000448,
+      "channel": "unease",
+      "accepted": true,
+      "priorBusy": false,
+      "started": true,
+      "context": "running",
+      "peakRms": 0.07768329852537721
+    }
+  ],
+  "window": [
+    {
+      "visible": true,
+      "at": 0.6566000000014901,
+      "z": 0.6
+    },
+    {
+      "visible": false,
+      "at": 6.03010000000149,
+      "z": 4
+    },
+    {
+      "visible": true,
+      "at": 36.21370000000298,
+      "z": 3.9813294460502324
+    },
+    {
+      "visible": false,
+      "at": 46.70920000000298,
+      "z": 4
+    },
+    {
+      "visible": true,
+      "at": 81.51530000000447,
+      "z": 3.9986419975747696
+    },
+    {
+      "visible": false,
+      "at": 92.10530000000448,
+      "z": 4
+    },
+    {
+      "visible": true,
+      "at": 117.40639999999851,
+      "z": 3.9878539016210643
+    },
+    {
+      "visible": false,
+      "at": 127.91519999999554,
+      "z": 4
+    },
+    {
+      "visible": true,
+      "at": 162.8048999999985,
+      "z": 3.978741670146087
+    },
+    {
+      "visible": false,
+      "at": 173.30880000000448,
+      "z": 4
+    },
+    {
+      "visible": true,
+      "at": 203.80310000000148,
+      "z": 3.9896724388314784
+    },
+    {
+      "visible": false,
+      "at": 214.3023999999985,
+      "z": 4
+    },
+    {
+      "visible": true,
+      "at": 239.82769999999553,
+      "z": 3.970320512989081
+    }
+  ],
+  "ambientPeak": 0.020689642665294765
+}
