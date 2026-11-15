@@ -17,9 +17,9 @@ All nine files are decoded before the room's Enter button becomes available. Ran
 
 Publication URLs/license receipts were not supplied; no license is inferred from a filename. Preserve original author/source receipts with the event credits.
 
-Latest lighting/movement adjustment: after the scream ends the HUD and normal movement resume immediately, while the piano finishes. Actual room lights, torch and emissive sources remain at 50% until seven seconds; exposure is preserved. The door still waits for the seven-second event to finish. See `docs/ROOM2_WINDOW_GHOST_REVIEW.md` for current validation.
+Latest lighting/movement adjustment: after the scream ends the HUD and normal movement resume immediately, while the piano finishes. Actual room lights, torch and emissive sources remain at 50% until seven seconds; exposure is preserved. The door still waits for the seven-second event to finish.
 
-Latest cadence adjustment: the first three random clips are lurking, well and paranormal in shuffled order, then the older pair, before cycling all five. Events use timers plus newly crossed evidence checkpoints; they also run during completed-room previews until the exit finale is cleared. Crossing caps reset each visit. Quiet gaps and exclusive foreground channels remain. See `docs/ROOM2_SCARE_CADENCE_REVIEW.md` for a real four-minute timing/output log.
+Latest cadence adjustment: the first three random clips are lurking, well and paranormal in shuffled order, then the older pair, before cycling all five. Events use timers plus newly crossed evidence checkpoints; they also run during completed-room previews until the exit finale is cleared. Crossing caps reset each visit. Quiet gaps and exclusive foreground channels remain.
 
 
 The one-time procession also ships these supplied recordings: `universfield-door-knock-291150.mp3`, `audiopapkin-old-creaking-wooden-door-003-raw-recording-508598.mp3`, `oxidvideos-creaking-wooden-floor-footsteps-410804.mp3`, and `freesound_community-fuzzy-jumpscare-80560.mp3`. They are loaded before entering alongside the original room recordings. The cinematic uses intentional footsteps/music layers, reserves the ordinary scare channel, fades the aftermath audio, and restores ambient sound on recovery or disposal. The same source-receipt limitation above applies.

@@ -4,8 +4,6 @@ The Turing Club's team escape-room game. React and Three.js render the rooms;
 FastAPI verifies actions and stores team progress in PostgreSQL.
 
 - [Project and collaboration guide](docs/PROJECT_GUIDE.md): start here if you are new to the project.
-- [Room 2 frontend review and delivery](docs/ROOM2_RELEASE_REVIEW.md): gameplay, assets, validation and integration scope.
-- [Room 2 local preview](docs/ROOM2_LOCAL_PREVIEW.md): reopen the Study during development.
 - [Room 2 backend handoff](docs/ROOM2_HANDOFF.md): API contract, rules, tests and frontend integration work.
 - [Team assignments and task list](TODO.md)
 - [Existing deployment configuration](DEPLOYMENT.md)
