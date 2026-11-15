@@ -1,0 +1,24 @@
+{
+  "samples": {
+    "ambience": "ambience.m4a",
+    "ambience_hell": "ambience_hell.mp3",
+    "woman_crying": "woman_crying.mp3",
+    "blood_drip": "blood_drip.mp3",
+    "bonecrack": "bonecrack.mp3",
+    "breath_scared": "breath_scared.mp3",
+    "whisper": "whisper.mp3",
+    "machine_hum": "machine_hum.mp3",
+    "machine_loop": "Evil_Machine_Loop_00.mp3",
+    "gate_open": "Gate_Open_00.mp3",
+    "crows": "Ambience_MurderofCrows_00.mp3",
+    "laugh_evil": "Laugh_Evil_00.mp3",
+    "chains": "chains.mp3",
+    "scream": "scream.mp3",
+    "monster": "monster.mp3",
+    "monster_2": "Monster_02.mp3",
+    "monster_5": "Monster_05.mp3",
+    "blackout": "blackout.mp3",
+    "stab": "stab.mp3",
+    "door_creak": "door_creak.m4a"
+  }
+}

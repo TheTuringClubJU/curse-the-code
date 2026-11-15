@@ -19,6 +19,7 @@ export function setupControls({
 }) {
   const [W, H, D] = roomSize;
   let px = spawn[0], pz = spawn[2] ?? spawn[1], yaw = spawn[3] ?? 0, pitch = 0;
+  let sensitivity = 1.0;
   let walk = 0, lastStep = 0;
   let currentTarget = null;
   const activeKeys = new Set();
@@ -125,20 +126,37 @@ export function setupControls({
 
   // Mouse Look: Continuous 360 rotation
   let prevClientX = null, prevClientY = null;
+  let downClientX = null, downClientY = null;
   let isPointerDown = false;
+  let dragMoved = false;
 
   const onMouseDown = (e) => {
     if (e.button === 0) {
       isPointerDown = true;
+      dragMoved = false;
+      downClientX = e.clientX;
+      downClientY = e.clientY;
       prevClientX = e.clientX;
       prevClientY = e.clientY;
     }
   };
 
-  const onMouseUp = () => {
+  const onMouseUp = (e) => {
+    if (e.button === 2) {
+      const onCanvas = checkPointerLocked() || e.target === canvas || canvas?.contains?.(e.target);
+      const t = currentTarget;
+      if (onCanvas && t) {
+        e.preventDefault?.();
+        e.stopPropagation?.();
+        onInteract?.(t);
+      }
+      return;
+    }
     isPointerDown = false;
     prevClientX = null;
     prevClientY = null;
+    downClientX = null;
+    downClientY = null;
   };
 
   const onMouseMove = (e) => {
@@ -153,6 +171,9 @@ export function setupControls({
       if (e.clientX !== undefined && prevClientX !== null) {
         mx = e.clientX - prevClientX;
         my = e.clientY - prevClientY;
+        if (isPointerDown && downClientX !== null && Math.hypot(e.clientX - downClientX, e.clientY - downClientY) > 5) {
+          dragMoved = true;
+        }
       }
       prevClientX = e.clientX;
       prevClientY = e.clientY;
@@ -160,8 +181,9 @@ export function setupControls({
 
     if (mx !== 0 || my !== 0) {
       // Invert sign of delta for smooth camera yaw
-      yaw -= mx * 0.0035;
-      pitch = Math.max(-1.45, Math.min(1.45, pitch - my * 0.0035));
+      const scale = 0.0035 * sensitivity;
+      yaw -= mx * scale;
+      pitch = Math.max(-1.45, Math.min(1.45, pitch - my * scale));
     }
   };
 
@@ -173,7 +195,7 @@ export function setupControls({
     }
     const isE = e.code === 'KeyE' || e.key === 'e' || e.key === 'E';
     if (isE && !e.repeat) {
-      const t = currentTarget || window.__lastAimTarget;
+      const t = currentTarget;
       if (t) {
         e.preventDefault();
         e.stopPropagation();
@@ -222,11 +244,22 @@ export function setupControls({
       e.target?.tagName === 'CANVAS';
 
     if (isGameTarget) {
-      requestLock();
-      const t = currentTarget || window.__lastAimTarget;
-      if (t) {
+      if (!checkPointerLocked()) {
+        requestLock();
+        dragMoved = false;
+        return;
+      }
+      const t = currentTarget;
+      if (t && !dragMoved) {
         onInteract?.(t);
       }
+    }
+    dragMoved = false;
+  };
+
+  const onContextMenu = (e) => {
+    if (checkPointerLocked() || e.target === canvas || canvas?.contains?.(e.target)) {
+      e.preventDefault();
     }
   };
 
@@ -234,9 +267,10 @@ export function setupControls({
   window.addEventListener('keydown', onKeyDown, { capture: true, passive: false });
   window.addEventListener('keyup', onKeyUp, { capture: true, passive: true });
   window.addEventListener('mousedown', onMouseDown, { passive: true });
-  window.addEventListener('mouseup', onMouseUp, { passive: true });
+  window.addEventListener('mouseup', onMouseUp, { passive: false });
   window.addEventListener('mousemove', onMouseMove, { passive: true });
   window.addEventListener('click', onWindowClick, { passive: true });
+  window.addEventListener('contextmenu', onContextMenu);
   window.addEventListener('blur', onWindowBlur);
   document.addEventListener('pointerlockchange', onPointerLockChange);
   document.addEventListener('visibilitychange', onVisibilityChange);
@@ -295,18 +329,21 @@ export function setupControls({
   const setTarget = (id) => {
     if (id !== currentTarget) {
       currentTarget = id;
-      if (id) window.__lastAimTarget = id;
+      window.__lastAimTarget = id || null;
       onTargetChange?.(id);
     }
   };
 
   const dispose = () => {
+    currentTarget = null;
+    window.__lastAimTarget = null;
     window.removeEventListener('keydown', onKeyDown, { capture: true });
     window.removeEventListener('keyup', onKeyUp, { capture: true });
     window.removeEventListener('mousedown', onMouseDown);
     window.removeEventListener('mouseup', onMouseUp);
     window.removeEventListener('mousemove', onMouseMove);
     window.removeEventListener('click', onWindowClick);
+    window.removeEventListener('contextmenu', onContextMenu);
     window.removeEventListener('blur', onWindowBlur);
     document.removeEventListener('pointerlockchange', onPointerLockChange);
     document.removeEventListener('visibilitychange', onVisibilityChange);
@@ -321,6 +358,7 @@ export function setupControls({
     unlock,
     isLocked: checkPointerLocked,
     setView: (x, z, y, p = 0) => { px = x; pz = z; yaw = y; pitch = p; },
+    setSensitivity: (s) => { sensitivity = Math.max(0.3, Math.min(2.5, Number(s) || 1.0)); },
     getPos: () => ({ x: px, z: pz, yaw, pitch }),
     dispose
   };

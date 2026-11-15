@@ -4,7 +4,16 @@ import { Trophy, Unlock, ArrowRight, Sparkles, CheckCircle2 } from 'lucide-react
 export default function RoomCompleteModal({
   isOpen,
   onClose,
-  onProceedToDoor
+  onProceedToDoor,
+  roomLabel = 'ROOM 1 CLEARED',
+  title = "Lena's Bedroom Completed!",
+  description = 'All 4 case files in this room have been solved. The heavy iron deadbolts locking the bedroom door have disengaged. The corridor to Room 2 (The Study) is now open!',
+  rewards = [
+    '✓ 4 / 4 Case Files Solved',
+    '✓ 4 Photo Pieces Recovered (P01 - P04)',
+    '✓ Bedroom Exit Door Unlocked'
+  ],
+  actionLabel = 'Enter Room 2 (The Study)'
 }) {
   if (!isOpen) return null;
 
@@ -25,30 +34,35 @@ export default function RoomCompleteModal({
         <div className="space-y-2">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#18261e] border border-[#22543d] text-[#86efac] text-xs font-mono font-bold tracking-wider uppercase">
             <Sparkles className="w-3.5 h-3.5" />
-            ROOM 1 CLEARED
+            {roomLabel}
           </div>
           <h2 className="text-2xl font-black text-[#e8e0ff] font-serif tracking-wide">
-            Lena's Bedroom Completed!
+            {title}
           </h2>
           <p className="text-xs text-[#cdbfff] font-mono max-w-md mx-auto leading-relaxed">
-            All 4 case files in this room have been solved. The heavy iron deadbolts locking the bedroom door have disengaged. The corridor to Room 2 (The Study) is now open!
+            {description}
           </p>
         </div>
 
         {/* Rewards Recap */}
         <div className="p-4 rounded-xl bg-black/50 border border-white/10 text-xs font-mono text-gray-300 space-y-2 text-left">
-          <div className="flex items-center justify-between text-[#86efac]">
-            <span>✓ 4 / 4 Case Files Solved</span>
-            <CheckCircle2 className="w-4 h-4" />
-          </div>
-          <div className="flex items-center justify-between text-[#ffcf8a]">
-            <span>✓ 4 Photo Pieces Recovered (P01 - P04)</span>
-            <Trophy className="w-4 h-4" />
-          </div>
-          <div className="flex items-center justify-between text-[#cdbfff]">
-            <span>✓ Bedroom Exit Door Unlocked</span>
-            <Unlock className="w-4 h-4" />
-          </div>
+          {rewards.map((item, idx) => (
+            <div
+              key={idx}
+              className={`flex items-center justify-between ${
+                idx === 0 ? 'text-[#86efac]' : idx === 1 ? 'text-[#ffcf8a]' : 'text-[#cdbfff]'
+              }`}
+            >
+              <span>{item}</span>
+              {idx === 0 ? (
+                <CheckCircle2 className="w-4 h-4" />
+              ) : idx === 1 ? (
+                <Trophy className="w-4 h-4" />
+              ) : (
+                <Unlock className="w-4 h-4" />
+              )}
+            </div>
+          ))}
         </div>
 
         {/* Action Button */}
@@ -61,7 +75,7 @@ export default function RoomCompleteModal({
             }}
             className="w-full py-3 rounded-xl bg-gradient-to-r from-[#8f7bff] to-[#a696ff] hover:from-[#a696ff] hover:to-[#cdbfff] text-black font-black font-mono text-sm tracking-wider uppercase transition shadow-lg shadow-[#8f7bff]/30 flex items-center justify-center gap-2"
           >
-            <span>Enter Room 2 (The Study)</span>
+            <span>{actionLabel}</span>
             <ArrowRight className="w-4 h-4" />
           </button>
         </div>

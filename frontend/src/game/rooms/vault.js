@@ -1,0 +1,41 @@
+// Room 6: The Anointing Vault — Grand Gothic Castle Cathedral & Underground Containment Sanctum
+export default {
+  id: 'vault',
+  title: 'The Anointing Vault',
+  size: [36, 9.2, 34],
+  spawn: [0, 1.6, 13.8, 0], // 6A Narthex Descent looking north (-Z) down the 9.2m vaulted nave
+  haunted: true,
+  noFlashlight: true,
+  theme: {
+    bg: '#0a070c',
+    wall: '#322b2f',
+    floor: '#1c171b',
+    ceil: '#120e14',
+    accent: '#c82333',
+    glow: '#ff3b4e',
+    amber: '#e09820',
+    lamp: '#b81d2c',
+    fog: 0.021,
+  },
+  audio: {
+    pulseIntervalMs: 1400,
+    creakCooldown: [14, 28],
+    tickCooldown: 1000,
+  },
+  interact: {
+    core_glass: 'Inspect Cracked Ballistic Glass',
+    countdown_timer: 'Read Split-Flap Containment Clock',
+    manual_terminal: 'Examine Cast-Iron Scriptorium Terminal',
+    failsafe_panel: 'Operate East Crypt Failsafe Switchboard',
+    central_console: 'Engage Central Containment Altar',
+    narthex_registry: 'Inspect Narthex Admission Ledger',
+    cell_manifest: 'Read Cell 01 Restraint & Extraction Log',
+    autopsy_gurney: 'Examine Anointing Gurney Notes',
+    specimen_locker: 'Inspect Cryo-Reliquary Specimen Cabinet',
+    sarcophagus_se: 'Read Sealed Ossuary Plaque',
+    weeping_statue: 'Inspect Weeping Seraph Inscription',
+    scriptorium_books: 'Browse Scriptorium Marginalia & Scrolls',
+    switchgear_log: 'Read Relay Bench Calibration Log',
+  },
+  boxes: [],
+};
