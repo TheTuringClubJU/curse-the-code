@@ -36,6 +36,10 @@ export default {
     weeping_statue: 'Inspect Weeping Seraph Inscription',
     scriptorium_books: 'Browse Scriptorium Marginalia & Scrolls',
     switchgear_log: 'Read Relay Bench Calibration Log',
+    door_west_scriptorium: 'Open Scriptorium Double Doors',
+    door_north_chapel: 'Open Reliquary Chapel Door',
+    door_south_cellar: 'Open Quarantine Cell Door',
+    door_east_gate: 'Open East Crypt Iron Gate',
   },
   boxes: [],
 };

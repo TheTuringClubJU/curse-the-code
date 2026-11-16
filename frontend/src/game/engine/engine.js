@@ -349,6 +349,12 @@ export function createEngine(el,room,h){
     ref.countdownBoard?.setText?.(text, restored);
   },
   restoreContainment(){ ref.restoreContainment?.(); },
+  openZoneDoor(key, silent = false){
+    ref.openZoneDoor?.(key, silent);
+  },
+  isDoorOpened(key){
+    return Boolean(ref.doors?.[key]?.opened);
+  },
   setResolutionMode(mode){
     const tier = (mode === 'low' || mode === 'eco') ? 'low' : (mode === 'high' || mode === 'crisp') ? 'high' : 'med';
     const ratio = tier === 'low' ? Math.min(devicePixelRatio, 0.7) : tier === 'high' ? Math.min(devicePixelRatio, 1.45) : Math.min(devicePixelRatio, 1.1);

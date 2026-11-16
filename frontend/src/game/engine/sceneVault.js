@@ -161,18 +161,14 @@ export function buildVaultScene(E) {
     solid(-1.25, 1.25, -6.15, -3.65); // core_glass Gothic reliquary shrine
     solid(-1.55, 1.55, -2.95, -1.05); // central_console containment altar
     solid(-1.45, 1.45, -8.85, -7.25); // North Apse High Altar under clock
-    // 6B West Pew Bank (5 rows facing Altar, matching pews at z = 5.4, 3.8, 2.2, 0.6, -1.0)
-    solid(-4.2, -2.0, 4.7, 5.9); // west pew 0
-    solid(-4.2, -2.0, 3.1, 4.3); // west pew 1
-    solid(-4.2, -2.0, 1.5, 2.7); // west pew 2
-    solid(-4.2, -2.0, -0.1, 1.1); // west pew 3
-    solid(-4.2, -2.0, -1.7, -0.5); // west pew 4
-    // 6B East Pew Bank (5 rows facing Altar, matching pews at z = 5.4, 3.8, 2.2, 0.6, -1.0)
-    solid(2.0, 4.2, 4.7, 5.9); // east pew 0
-    solid(2.0, 4.2, 3.1, 4.3); // east pew 1
-    solid(2.0, 4.2, 1.5, 2.7); // east pew 2
-    solid(2.0, 4.2, -0.1, 1.1); // east pew 3
-    solid(2.0, 4.2, -1.7, -0.5); // east pew 4
+    // 6B West Pew Bank (3 tight rows facing Altar at z = 5.2, 4.05, 2.9)
+    solid(-4.2, -1.9, 4.65, 5.75); // west pew row 0
+    solid(-4.2, -1.9, 3.5, 4.6);  // west pew row 1
+    solid(-4.2, -1.9, 2.35, 3.45); // west pew row 2
+    // 6B East Pew Bank (3 tight rows facing Altar at z = 5.2, 4.05, 2.9)
+    solid(1.9, 4.2, 4.65, 5.75);  // east pew row 0
+    solid(1.9, 4.2, 3.5, 4.6);   // east pew row 1
+    solid(1.9, 4.2, 2.35, 3.45);  // east pew row 2
     solid(5.8, 7.8, 1.1, 2.9); // autopsy table & corpse in East transept alcove
     solid(-7.7, -6.1, -9.05, -7.65); // NW Nave bookcase
     solid(6.1, 7.7, -9.05, -7.65); // NE Nave bookcase
@@ -254,11 +250,9 @@ export function buildVaultScene(E) {
 
   // Warm localized Nave aisle & chandelier fill lights so pews, bookcases, and stonework never crush pitch-black
   const naveSouthLight = registerLight(new THREE.PointLight(0xffb870, 3.2, 16.5, 1.45));
-  naveSouthLight.position.set(0, 4.35, 4.0);
-  const naveWestLight = registerLight(new THREE.PointLight(0xeea860, 2.8, 15.0, 1.45));
-  naveWestLight.position.set(-3.6, 3.6, 2.6);
-  const naveEastLight = registerLight(new THREE.PointLight(0xeea860, 2.8, 15.0, 1.45));
-  naveEastLight.position.set(3.6, 3.6, 2.6);
+  naveSouthLight.position.set(0, 4.35, 4.2);
+  const naveCenterLight = registerLight(new THREE.PointLight(0xffb26a, 3.2, 16.0, 1.45));
+  naveCenterLight.position.set(0, 4.0, 2.6);
 
   // Flame sprites & animated torches
   const flameSprites = [];
@@ -275,7 +269,8 @@ export function buildVaultScene(E) {
     sp.position.set(x, y, z);
     sp.scale.set(scale, scale * 1.35, scale);
     parent.add(sp);
-    flameSprites.push({ sp, baseY: y, baseScale: scale, phase: Math.random() * 6.28 });
+    const phase = Math.random() * 6.28;
+    flameSprites.push({ sp, baseY: y, baseScale: scale, phase, cosP: Math.cos(phase), sinP: Math.sin(phase) });
     return sp;
   };
 
@@ -315,7 +310,7 @@ export function buildVaultScene(E) {
     } = {}
   ) =>
     arch.track(
-      loadGLB(`${VAULT_MODEL_BASE}/${relPath}`)
+      arch.loadCached(relPath, { psx: relPath.includes('/glb/'), npAll: true, albedoLift })
         .then((gltf) => {
           if (!gltf?.scene) return null;
           const root = gltf.scene.clone();
@@ -369,7 +364,13 @@ export function buildVaultScene(E) {
   ) => {
     registerHitProxy(id, hitPos || [pos[0], pos[1] + (targetHeight || 1.2) * 0.5, pos[2]], hitSize);
     return arch.track(
-      loadGLB(`${VAULT_MODEL_BASE}/${relPath}`)
+      arch.loadCached(relPath, {
+        crtMap: screenTex,
+        screenNames: screenTex ? ['screen', 'crt', 'monitor', 'display', 'phosphor'] : [],
+        psx: relPath.includes('/glb/'),
+        npAll: false,
+        albedoLift,
+      })
         .then((gltf) => {
           if (!gltf?.scene) return null;
           const root = gltf.scene.clone();
@@ -791,51 +792,50 @@ export function buildVaultScene(E) {
   placePropGLB('temple/glb/banner_hell.glb', { pos: [-4.9, 4.1, -4.85], ry: Math.PI / 2, playClip: true });
   placePropGLB('temple/glb/banner_hell.glb', { pos: [4.9, 4.1, -4.85], ry: -Math.PI / 2, playClip: true });
   // ── True Gothic Cathedral Pew Rows (West Bank & East Bank) ──
-  // Perfectly aligned, parallel rows facing the high altar (ry = Math.PI), using church_pew.glb
-  const pewZRows = [5.4, 3.8, 2.2, 0.6, -1.0];
+  // Tight, authentic cathedral rows (ry = Math.PI), leaving a wide 3.6m cross-transept to 6C/6D
+  const pewZRows = [5.2, 4.05, 2.9];
   pewZRows.forEach((pz) => {
     // West Bank (left of central aisle)
-    placePropGLB('church_pew.glb', { pos: [-3.1, 0, pz], ry: Math.PI, targetHeight: 1.05, albedoLift: 0.42 });
+    placePropGLB('church_pew.glb', { pos: [-3.05, 0, pz], ry: Math.PI, targetHeight: 1.05, albedoLift: 0.42 });
     // East Bank (right of central aisle)
-    placePropGLB('church_pew.glb', { pos: [3.1, 0, pz], ry: Math.PI, targetHeight: 1.05, albedoLift: 0.42 });
+    placePropGLB('church_pew.glb', { pos: [3.05, 0, pz], ry: Math.PI, targetHeight: 1.05, albedoLift: 0.42 });
   });
 
-  // Standing Processional Candelabras Framing the Center Aisle
+  // Standing Processional Candelabras Framing the Center Aisle & Pew Block
   placePropGLB('temple/glb/candelabra.glb', {
-    pos: [-1.85, 0, 5.8],
+    pos: [-1.85, 0, 5.5],
     targetHeight: 1.75,
     flameOffsets: [[-0.29, 1.67, 0], [0, 1.76, 0], [0.29, 1.67, 0]],
     flameScale: 0.24,
   });
   placePropGLB('temple/glb/candelabra.glb', {
-    pos: [1.85, 0, 5.8],
+    pos: [1.85, 0, 5.5],
     targetHeight: 1.75,
     flameOffsets: [[-0.29, 1.67, 0], [0, 1.76, 0], [0.29, 1.67, 0]],
     flameScale: 0.24,
   });
   placePropGLB('temple/glb/candelabra.glb', {
-    pos: [-1.85, 0, -0.3],
+    pos: [-1.85, 0, 2.5],
     targetHeight: 1.75,
     flameOffsets: [[-0.29, 1.67, 0], [0, 1.76, 0], [0.29, 1.67, 0]],
     flameScale: 0.24,
   });
   placePropGLB('temple/glb/candelabra.glb', {
-    pos: [1.85, 0, -0.3],
+    pos: [1.85, 0, 2.5],
     targetHeight: 1.75,
     flameOffsets: [[-0.29, 1.67, 0], [0, 1.76, 0], [0.29, 1.67, 0]],
     flameScale: 0.24,
   });
 
-  // West Outer Flank Props (Crates, Chests, Cabinets)
+  // West Outer Flank Props (Crates, Chests, Cabinets) — tucked away from transept passage
   placePropGLB('industrial/SM_Crate.glb', { pos: [-6.4, 0, 4.6], ry: 0.25, targetHeight: 0.85, albedoLift: 0.38 });
   placePropGLB('industrial/SM_Crate.glb', { pos: [-6.4, 0.82, 4.6], ry: -0.18, targetHeight: 0.82, albedoLift: 0.38 });
   placePropGLB('industrial/SM_Crate.glb', { pos: [-5.6, 0, 5.4], ry: 0.38, targetHeight: 0.8, albedoLift: 0.38 });
-  placePropGLB('dungeon/glb/chest_wood.glb', { pos: [-6.2, 0, 2.0], ry: 0.35, targetHeight: 0.65 });
-  placePropGLB('crate_medical.glb', { pos: [-5.2, 0, 0.8], ry: 0.2, targetHeight: 0.45, albedoLift: 0.4 });
+  placePropGLB('dungeon/glb/chest_wood.glb', { pos: [-6.2, 0, 3.4], ry: 0.35, targetHeight: 0.65 });
   placePropGLB('gothic_cabinet.glb', { pos: [-6.9, 0, 6.0], ry: 0, targetHeight: 2.3, albedoLift: 0.42 });
 
   // East Outer Flank Props (Medical Supplies, Barrels, Commode, Totem)
-  placePropGLB('crate_medical.glb', { pos: [5.0, 0, 0.8], ry: -0.22, targetHeight: 0.45, albedoLift: 0.4 });
+  placePropGLB('crate_medical.glb', { pos: [6.4, 0, 3.4], ry: -0.22, targetHeight: 0.45, albedoLift: 0.4 });
   placePropGLB('industrial/SM_Crate.glb', { pos: [6.4, 0, 4.2], ry: -0.3, targetHeight: 0.85, albedoLift: 0.38 });
   placePropGLB('industrial/SM_Crate.glb', { pos: [6.4, 0.82, 4.2], ry: 0.15, targetHeight: 0.82, albedoLift: 0.38 });
   placePropGLB('industrial/SM_Barrel.glb', { pos: [6.6, 0, 5.3], ry: 0.12, targetHeight: 0.94, albedoLift: 0.38 });
@@ -1278,34 +1278,45 @@ export function buildVaultScene(E) {
     audio?.stopCorePulse?.();
   };
 
+  // Interactive Threshold Doors: registered as interactive targets so player aims and presses [E] to open
+  const doorWestProxy = registerHitProxy('door_west_scriptorium', [-8.45, 1.45, 0], [0.65, 2.8, 2.5]);
+  const doorNorthProxy = registerHitProxy('door_north_chapel', [-13.3, 1.45, -6.05], [2.2, 2.8, 0.65]);
+  const doorSouthProxy = registerHitProxy('door_south_cellar', [12.9, 1.45, 6.08], [2.2, 2.8, 0.65]);
+  const doorEastProxy = registerHitProxy('door_east_gate', [8.45, 1.45, 0], [0.65, 3.2, 2.6]);
+
+  ref.doorProxies = {
+    west_scriptorium: doorWestProxy,
+    north_chapel: doorNorthProxy,
+    south_cellar: doorSouthProxy,
+    east_gate: doorEastProxy,
+  };
+
   ref.setQualityMode = (tier) => {
     if (!E.R) return;
     const dpr = window.devicePixelRatio || 1;
     if (tier === 'low') {
-      E.R.setPixelRatio(0.75);
+      E.R.setPixelRatio(Math.min(dpr, 0.72));
       E.R.toneMappingExposure = 1.46;
       if (S.fog) S.fog.density = 0.024;
+      cellarLight.intensity = 1.2;
+      reliquaryLight.intensity = 1.4;
     } else if (tier === 'high') {
       E.R.setPixelRatio(Math.min(dpr, 1.35));
       E.R.toneMappingExposure = 1.52;
       if (S.fog) S.fog.density = 0.019;
+      cellarLight.intensity = 2.05;
+      reliquaryLight.intensity = 2.35;
     } else {
-      E.R.setPixelRatio(Math.min(dpr, 1.05));
+      E.R.setPixelRatio(Math.min(dpr, 1.0));
       E.R.toneMappingExposure = 1.49;
       if (S.fog) S.fog.density = 0.021;
+      cellarLight.intensity = 2.05;
+      reliquaryLight.intensity = 2.35;
     }
   };
   ref.setQualityMode('medium');
 
-  // Auto-unlatch threshold doors as the player approaches them + core pulse + lamp sway
-  const thresholdChecks = [
-    { key: 'nave_threshold', x: 0, z: 8.38, radius: 2.9 },
-    { key: 'west_scriptorium', x: -8.45, z: 0, radius: 2.9 },
-    { key: 'north_chapel', x: -13.3, z: -6.05, radius: 2.7 },
-    { key: 'south_cellar', x: 12.9, z: 6.08, radius: 2.7 },
-    { key: 'east_gate', x: 8.45, z: 0, radius: 2.8 },
-  ];
-
+  let flameTick = 0;
   anim((t) => {
     const px = E.px?.() ?? 0;
     const pz = E.pz?.() ?? 13.8;
@@ -1314,20 +1325,19 @@ export function buildVaultScene(E) {
       window.__vaultPose = { x: px, z: pz, yaw };
     }
 
-    for (let i = 0; i < thresholdChecks.length; i++) {
-      const td = thresholdChecks[i];
-      const door = arch.doors[td.key];
-      if (door && !door.opened && Math.hypot(px - td.x, pz - td.z) < td.radius) {
-        door.open(false);
+    // Flame & brazier ember pulse (throttled to every 2nd frame with pre-computed phases for potato PCs)
+    flameTick = (flameTick + 1) % 2;
+    if (flameTick === 0) {
+      const w1 = t * 9.3;
+      const s1 = Math.sin(w1);
+      const c1 = Math.cos(w1);
+      const s2 = Math.sin(t * 17.1);
+      const len = flameSprites.length;
+      for (let i = 0; i < len; i++) {
+        const f = flameSprites[i];
+        const flick = 1 + 0.14 * (s1 * f.cosP + c1 * f.sinP) + 0.06 * s2;
+        f.sp.scale.set(f.baseScale * flick, f.baseScale * 1.35 * flick, 1);
       }
-    }
-
-    // Flame & brazier ember pulse
-    for (let i = 0; i < flameSprites.length; i++) {
-      const f = flameSprites[i];
-      const flick = 1 + 0.14 * Math.sin(t * 9.3 + f.phase) + 0.06 * Math.sin(t * 17.1 + f.phase);
-      f.sp.scale.set(f.baseScale * flick, f.baseScale * 1.35 * flick, 1);
-      f.sp.position.y = f.baseY + 0.012 * Math.sin(t * 8.1 + f.phase);
     }
 
     // 1.4s Anointing Core biological pulse

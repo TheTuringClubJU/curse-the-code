@@ -649,11 +649,13 @@ export function createVaultArchitecture(E, { matLancet, pushStatic }) {
       z: 6.08,
       ry: 0,
       scale: [1.55, 1.18, 1.2],
+      colliderBounds: [11.8, 14.0, 5.9, 6.25],
       swingLeafName: 'door_cell_leaf',
       swingTargetY: 1.48,
     });
 
-    // 6) East Breach Iron Gate (`x = 8.45, z = 0`) — seated inside East breach threshold, ajar on spawn
+    // 6) East Breach Iron Gate (`x = 8.45, z = 0`) — seated inside East breach threshold, manual unlatch
+    const gateCollider = solid(8.25, 8.65, -1.25, 1.25);
     loadGLB(`${VAULT_MODEL_BASE}/iron_gate.glb`).then((gltf) => {
       const raw = gltf?.scene;
       if (!raw) return;
@@ -677,29 +679,33 @@ export function createVaultArchitecture(E, { matLancet, pushStatic }) {
       const leftLeaf = wrapHinge(gate.getObjectByName('large_iron_gate_left_door'), -1.43);
       const rightLeaf = wrapHinge(gate.getObjectByName('large_iron_gate_right_door'), 1.43);
       const bolt = gate.getObjectByName('large_iron_gate_bolt');
-      // Pre-ajar slightly so the breach hallway reads unmistakably from 6B!
-      if (leftLeaf) leftLeaf.rotation.y = -0.78;
-      if (rightLeaf) rightLeaf.rotation.y = 0.78;
+      if (leftLeaf) leftLeaf.rotation.y = 0;
+      if (rightLeaf) rightLeaf.rotation.y = 0;
 
       const openGate = (silent = false) => {
         if (doors.east_gate?.opened) return;
         doors.east_gate.opened = true;
+        if (gateCollider) removeSolid(gateCollider);
         if (bolt) animateScalar(() => bolt.position.x, (v) => { bolt.position.x = v; }, bolt.position.x + 0.35, 4.0);
         if (leftLeaf) animateScalar(() => leftLeaf.rotation.y, (v) => { leftLeaf.rotation.y = v; }, -1.52, 2.2);
         if (rightLeaf) animateScalar(() => rightLeaf.rotation.y, (v) => { rightLeaf.rotation.y = v; }, 1.52, 2.2);
         if (!silent) audio?.playGateOpen?.(0.75);
       };
 
-      doors.east_gate = { root: pivot, opened: false, pos: new THREE.Vector3(8.45, 0, 0), open: openGate };
+      doors.east_gate = { root: pivot, collider: gateCollider, opened: false, pos: new THREE.Vector3(8.45, 0, 0), open: openGate };
       if (!ref.openFailsafeDoor) ref.openFailsafeDoor = () => openGate(false);
     });
   };
 
   const openZoneDoor = (key, silent = false) => {
     doors[key]?.open?.(silent);
+    if (ref.doorProxies?.[key]) {
+      ref.doorProxies[key].position.set(0, -999, 0);
+    }
   };
 
   ref.openZoneDoor = openZoneDoor;
+  ref.doors = doors;
 
   return {
     loadCached,

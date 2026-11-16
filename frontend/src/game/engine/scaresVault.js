@@ -520,8 +520,8 @@ export function createVaultScares(E, h = {}) {
     if (
       !fired.has('nave_pew_ambush') &&
       leftNarthex &&
-      pz < 3.4 &&
-      pz > 0.4 &&
+      pz < 3.2 &&
+      pz > 1.2 &&
       Math.abs(px) < 1.45 &&
       lookingAt(0, -4.9, 0.5)
     ) {

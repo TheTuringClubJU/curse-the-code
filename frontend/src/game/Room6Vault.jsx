@@ -220,6 +220,13 @@ export default function Room6Vault({ team, onLogout }) {
 
   const handleInteract = useCallback(
     (objectId) => {
+      if (objectId && objectId.startsWith('door_')) {
+        const doorKey = objectId.replace('door_', '');
+        engineRef.current?.openZoneDoor?.(doorKey);
+        audioRef.current?.ensureActive?.();
+        return;
+      }
+
       if (objectId === 'core_glass') {
         audioRef.current?.ensureActive?.();
         const fired = engineRef.current?.triggerScare?.('core_glass');
@@ -314,6 +321,13 @@ export default function Room6Vault({ team, onLogout }) {
         },
         onInteract: (objId) => handleInteract(objId),
         onTarget: (targetId) => {
+          if (targetId && targetId.startsWith('door_')) {
+            const doorKey = targetId.replace('door_', '');
+            if (engineRef.current?.isDoorOpened?.(doorKey)) {
+              setActiveHoverPrompt('');
+              return;
+            }
+          }
           const entry = targetId ? vaultConfig.interact?.[targetId] : null;
           const label =
             typeof entry === 'string'
