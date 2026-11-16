@@ -629,15 +629,60 @@ export function buildVaultScene(E) {
   placePropGLB('temple/glb/pillar_gothic.glb', { pos: [-3.65, 0, -4.9], targetHeight: 4.8, albedoLift: 0.25 });
   placePropGLB('temple/glb/pillar_gothic.glb', { pos: [3.65, 0, -4.9], targetHeight: 4.8, albedoLift: 0.25 });
 
-  // 5C. central_console (0, 0, -2.05): Anointing Containment Altar R2-10
-  placeInteractiveGLB('central_console.glb', 'central_console', {
+  // 5C. central_console (0, 0, -2.05): Occult Gothic Ritual Altar (R2-10 Containment Convergence)
+  // Replaces the sci-fi yellow/grey terminal desk with a carved occult ritual high altar table
+  placeInteractiveGLB('temple/glb/altar_high.glb', 'central_console', {
     pos: [0, 0, -2.05],
     ry: 0,
-    targetHeight: 1.12,
-    albedoLift: 0.3,
-    hitPos: [0, 0.85, -2.05],
-    hitSize: [2.75, 1.65, 1.85],
+    targetHeight: 1.08,
+    albedoLift: 0.38,
+    hitPos: [0, 1.05, -2.05],
+    hitSize: [2.8, 1.65, 1.9],
   });
+  // Open ancient grimoire / ritual tome on the center of the altar table
+  placePropGLB('binder_notebook.glb', {
+    pos: [0, 1.08, -2.05],
+    ry: 0,
+    targetHeight: 0.16,
+    albedoLift: 0.48,
+  });
+  // Flanking candelabras with dripping tallow candles & flickering flames
+  placePropGLB('candleholders.glb', {
+    pos: [-0.85, 1.08, -2.05],
+    ry: 0,
+    targetHeight: 0.52,
+    flameOffsets: [[-0.1, 0.48, 0], [0, 0.52, 0], [0.1, 0.48, 0]],
+    flameScale: 0.18,
+  });
+  placePropGLB('candleholders.glb', {
+    pos: [0.85, 1.08, -2.05],
+    ry: 0,
+    targetHeight: 0.52,
+    flameOffsets: [[-0.1, 0.48, 0], [0, 0.52, 0], [0.1, 0.48, 0]],
+    flameScale: 0.18,
+  });
+  // Weathered human skulls flanking the ritual altar corners
+  placePropGLB('temple/glb/skull_totem.glb', {
+    pos: [-0.62, 1.08, -1.92],
+    ry: 0.4,
+    targetHeight: 0.45,
+  });
+  placePropGLB('temple/glb/skull_totem.glb', {
+    pos: [0.62, 1.08, -1.92],
+    ry: -0.4,
+    targetHeight: 0.45,
+  });
+  // Transmutation rune circle inscribed onto the dark stone altar surface
+  const matAltarSigil = new THREE.MeshBasicMaterial({
+    map: sigilTex,
+    transparent: true,
+    opacity: 0.88,
+    depthWrite: false,
+    polygonOffset: true,
+    polygonOffsetFactor: -2,
+    polygonOffsetUnits: -2,
+  });
+  pushStatic(new THREE.PlaneGeometry(1.85, 0.95), matAltarSigil, 0, 1.082, -2.05, -Math.PI / 2, 0, 0);
 
   // 5D. countdown_timer: Overhead Split-Flap Board + Apse High Altar Switch
   const flapBoardMat = new THREE.MeshStandardMaterial({
@@ -834,6 +879,14 @@ export function buildVaultScene(E) {
   placePropGLB('dungeon/glb/chest_wood.glb', { pos: [-6.2, 0, 3.4], ry: 0.35, targetHeight: 0.65 });
   placePropGLB('gothic_cabinet.glb', { pos: [-6.9, 0, 6.0], ry: 0, targetHeight: 2.3, albedoLift: 0.42 });
 
+  // North-West Flank Props (dressing the empty floor corner towards West transept)
+  placePropGLB('industrial/SM_Crate.glb', { pos: [-7.2, 0, -3.2], ry: -0.28, targetHeight: 0.85, albedoLift: 0.38 });
+  placePropGLB('industrial/SM_Crate.glb', { pos: [-7.2, 0.82, -3.2], ry: 0.2, targetHeight: 0.8, albedoLift: 0.38 });
+  placePropGLB('dungeon/glb/chest_wood.glb', { pos: [-6.8, 0, -4.2], ry: 0.35, targetHeight: 0.65 });
+  placePropGLB('dungeon/glb/skeleton_chained.glb', { pos: [-8.1, 0.4, -3.6], ry: Math.PI / 2, targetHeight: 1.6 });
+  placePropGLB('temple/glb/brazier_hell.glb', { pos: [-6.5, 0, -2.4], targetHeight: 1.25, flameOffset: [0, 1.15, 0], flameScale: 0.28 });
+  placePropGLB('church_pew.glb', { pos: [-7.3, 0, -5.2], ry: Math.PI / 2, targetHeight: 1.05, albedoLift: 0.4 });
+
   // East Outer Flank Props (Medical Supplies, Barrels, Commode, Totem)
   placePropGLB('crate_medical.glb', { pos: [6.4, 0, 3.4], ry: -0.22, targetHeight: 0.45, albedoLift: 0.4 });
   placePropGLB('industrial/SM_Crate.glb', { pos: [6.4, 0, 4.2], ry: -0.3, targetHeight: 0.85, albedoLift: 0.38 });
@@ -842,6 +895,14 @@ export function buildVaultScene(E) {
   placePropGLB('industrial/SM_Barrel.glb', { pos: [7.1, 0, 4.9], ry: -0.4, targetHeight: 0.92, albedoLift: 0.38 });
   placePropGLB('gothic_commode.glb', { pos: [6.85, 0, 6.2], ry: Math.PI, targetHeight: 1.08, albedoLift: 0.42 });
   placePropGLB('temple/glb/skull_totem.glb', { pos: [5.6, 0, 5.8], ry: -0.45, targetHeight: 1.85, albedoLift: 0.38 });
+
+  // North-East Flank Props (dressing the empty floor corner towards East breach gate)
+  placePropGLB('industrial/SM_Crate.glb', { pos: [7.2, 0, -3.2], ry: 0.32, targetHeight: 0.85, albedoLift: 0.38 });
+  placePropGLB('industrial/SM_Crate.glb', { pos: [7.2, 0.82, -3.2], ry: -0.15, targetHeight: 0.8, albedoLift: 0.38 });
+  placePropGLB('dungeon/glb/chest_wood.glb', { pos: [6.8, 0, -4.2], ry: -0.25, targetHeight: 0.65 });
+  placePropGLB('dungeon/glb/skeleton_chained.glb', { pos: [8.1, 0.4, -3.6], ry: -Math.PI / 2, targetHeight: 1.6 });
+  placePropGLB('temple/glb/brazier_hell.glb', { pos: [6.6, 0, -2.4], targetHeight: 1.25, flameOffset: [0, 1.15, 0], flameScale: 0.28 });
+  placePropGLB('church_pew.glb', { pos: [7.3, 0, -5.2], ry: -Math.PI / 2, targetHeight: 1.05, albedoLift: 0.4 });
 
   // North Apse Dressing (Bookcases, High Statues, Candelabras)
   placePropGLB('gothic_cabinet.glb', { pos: [-6.9, 0, -8.4], ry: 0, targetHeight: 2.3, albedoLift: 0.42 });
@@ -902,6 +963,30 @@ export function buildVaultScene(E) {
     hitPos: [-15.05, 1.05, 0],
     hitSize: [1.75, 1.75, 1.75],
   });
+
+  // 6C Gothic Chandelier suspended above the West Scriptorium archivist stone desk
+  placePropGLB('chandelier/Chandelier_02_1k.gltf', {
+    pos: [-15.15, 3.45, 0],
+    targetHeight: 1.35,
+    albedoLift: 0.38,
+    onReady: (root) => {
+      const chLight = new THREE.PointLight(0xffa844, 2.4, 7.5);
+      chLight.position.set(-15.15, 3.1, 0);
+      S.add(chLight);
+      // Subtle chandelier sway and flickering candlelight
+      anim((t) => {
+        root.rotation.z = Math.sin(t * 1.1) * 0.025;
+        root.rotation.x = Math.cos(t * 0.95) * 0.02;
+        chLight.intensity = 2.4 + Math.sin(t * 7.3) * 0.28 + Math.cos(t * 13.1) * 0.15;
+      });
+      // Dark iron suspension chain anchor up to ceiling
+      const chainGeo = new THREE.CylinderGeometry(0.022, 0.022, 1.45, 6);
+      const chainMesh = new THREE.Mesh(chainGeo, matDarkIron);
+      chainMesh.position.set(-15.15, 4.15, 0);
+      S.add(chainMesh);
+    },
+  });
+
   // Slumped victim beside the 6C archivist desk (echoes RE study carnage in warm lamp light)
   placePropGLB('dead_body.glb', { pos: [-14.55, 0, 1.48], ry: -0.85, targetHeight: 0.32, albedoLift: 0.42 });
   placePropGLB('barrel_stove.glb', { pos: [-15.95, 0, -2.35], ry: 0.5, targetHeight: 0.95, albedoLift: 0.38, flameOffset: [0, 0.86, 0], flameScale: 0.26 });
@@ -1010,12 +1095,22 @@ export function buildVaultScene(E) {
     },
   });
   placePropGLB('temple/glb/skull_totem.glb', { pos: [-15.1, 0, -9.9], ry: 0.4, targetHeight: 2.15 });
+  placePropGLB('temple/glb/skull_totem.glb', { pos: [-11.5, 0, -9.9], ry: -0.4, targetHeight: 2.15 });
   placePropGLB('temple/glb/candelabra.glb', {
     pos: [-14.8, 0, -7.8],
     targetHeight: 1.68,
     flameOffsets: [[-0.28, 1.61, 0], [0, 1.69, 0], [0.28, 1.61, 0]],
     flameScale: 0.24,
   });
+  placePropGLB('temple/glb/brazier_hell.glb', { pos: [-15.2, 0, -8.6], targetHeight: 1.28, flameOffset: [0, 1.15, 0], flameScale: 0.3 });
+  placePropGLB('temple/glb/brazier_hell.glb', { pos: [-11.4, 0, -8.6], targetHeight: 1.28, flameOffset: [0, 1.15, 0], flameScale: 0.3 });
+  placePropGLB('dungeon/glb/skeleton_chained.glb', { pos: [-13.3, 0.4, -10.8], ry: 0, targetHeight: 1.65 });
+  placePropGLB('gothic_commode.glb', { pos: [-15.4, 0, -9.3], ry: Math.PI / 2, targetHeight: 1.05 });
+  placePropGLB('candleholders.glb', { pos: [-15.4, 1.05, -9.3], targetHeight: 0.42, flameOffset: [0.15, 0.42, 0], flameScale: 0.2 });
+  placePropGLB('dungeon/glb/chest_wood.glb', { pos: [-11.3, 0, -9.2], ry: -0.75, targetHeight: 0.58 });
+  placePropGLB('dungeon/glb/banner_red.glb', { pos: [-15.8, 2.4, -9.5], ry: Math.PI / 2, playClip: true });
+  placePropGLB('dungeon/glb/banner_red.glb', { pos: [-10.8, 2.4, -9.5], ry: -Math.PI / 2, playClip: true });
+  pushStatic(new THREE.PlaneGeometry(2.4, 2.4), matBloodDecal, -13.3, 0.021, -9.2, -Math.PI / 2, 0, 0.6);
 
   // Zone 6D: East Switchgear & Gothic Relay Sanctuary (failsafe_panel R2-09 + switchgear_log)
   // Carved dark stone & forged-iron pedestal ensures full unclipped failsafe_panel clearance

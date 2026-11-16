@@ -582,7 +582,10 @@ export function createVaultArchitecture(E, { matLancet, pushStatic }) {
       const openFn = (silent = false) => {
         if (doors[key]?.opened) return;
         if (doors[key]) doors[key].opened = true;
-        if (collider) removeSolid(collider);
+        if (doors[key]?.collider) {
+          removeSolid(doors[key].collider);
+          doors[key].collider = null;
+        }
         if (swingLeaf) {
           animateScalar(() => swingLeaf.rotation.y, (v) => { swingLeaf.rotation.y = v; }, swingTargetY, 2.2);
         } else if (action) {
@@ -591,11 +594,45 @@ export function createVaultArchitecture(E, { matLancet, pushStatic }) {
           animateScalar(() => root.rotation.y, (v) => { root.rotation.y = v; }, ry + swingTargetY, 2.2);
         }
         if (!silent) audio?.playGateOpen?.(0.66);
+        if (ref.doorProxies?.[key]) {
+          ref.doorProxies[key].position.set(0, -999, 0);
+        }
       };
 
-      doors[key] = { root, collider, opened: false, open: openFn, pos: new THREE.Vector3(x, y, z) };
+      const closeFn = (silent = false) => {
+        if (!doors[key]?.opened) return;
+        if (doors[key]) doors[key].opened = false;
+        if (colliderBounds && !doors[key]?.collider) {
+          doors[key].collider = solid(...colliderBounds);
+        }
+        if (swingLeaf) {
+          animateScalar(() => swingLeaf.rotation.y, (v) => { swingLeaf.rotation.y = v; }, 0, 3.8);
+        } else if (action) {
+          action.stop();
+        } else {
+          animateScalar(() => root.rotation.y, (v) => { root.rotation.y = v; }, ry, 3.8);
+        }
+        if (!silent) {
+          audio?.playGateOpen?.(0.9);
+          audio?.triggerOneShot?.('blackout', 0.5);
+          E.shake?.(0.35, 0.2);
+        }
+        if (ref.doorProxies?.[key] && originalProxyPositions[key]) {
+          ref.doorProxies[key].position.set(...originalProxyPositions[key]);
+        }
+      };
+
+      doors[key] = { root, collider, opened: false, open: openFn, close: closeFn, pos: new THREE.Vector3(x, y, z) };
       if (startOpen) openFn(true);
     });
+  };
+
+  const originalProxyPositions = {
+    nave_threshold: [0, 1.65, 7.48],
+    west_scriptorium: [-8.45, 1.45, 0],
+    north_chapel: [-13.3, 1.45, -6.05],
+    south_cellar: [12.14, 1.45, 6.08],
+    east_gate: [8.45, 1.45, 0],
   };
 
   // Interactive Door Placements Across Vault Thresholds
@@ -612,7 +649,7 @@ export function createVaultArchitecture(E, { matLancet, pushStatic }) {
     });
 
     // 2) Narthex -> Sanctuary Starting Castle Doors (z = 7.48, seated inside wall_doorway_temple)
-    const thresholdCollider = solid(-1.5, 1.5, 7.25, 7.7);
+    let thresholdCollider = solid(-1.5, 1.5, 7.25, 7.7);
     loadCached('castle_door.glb', { psx: true, npAll: true, albedoLift: 0.32 }).then((gltf) => {
       const raw = gltf?.scene;
       if (!raw) return;
@@ -631,11 +668,35 @@ export function createVaultArchitecture(E, { matLancet, pushStatic }) {
       const openDoors = (silent = false) => {
         if (doors.nave_threshold?.opened) return;
         doors.nave_threshold.opened = true;
-        if (thresholdCollider) removeSolid(thresholdCollider);
+        if (doors.nave_threshold.collider) {
+          removeSolid(doors.nave_threshold.collider);
+          doors.nave_threshold.collider = null;
+        }
         if (leftLeaf) animateScalar(() => leftLeaf.rotation.y, (v) => { leftLeaf.rotation.y = v; }, -1.55, 1.9);
         if (rightLeaf) animateScalar(() => rightLeaf.rotation.y, (v) => { rightLeaf.rotation.y = v; }, 1.55, 1.9);
         if (!silent) audio?.playGateOpen?.(0.8);
         ref?.onStartingDoorOpen?.();
+        if (ref.doorProxies?.nave_threshold) {
+          ref.doorProxies.nave_threshold.position.set(0, -999, 0);
+        }
+      };
+
+      const closeDoors = (silent = false) => {
+        if (!doors.nave_threshold?.opened) return;
+        doors.nave_threshold.opened = false;
+        if (!doors.nave_threshold.collider) {
+          doors.nave_threshold.collider = solid(-1.5, 1.5, 7.25, 7.7);
+        }
+        if (leftLeaf) animateScalar(() => leftLeaf.rotation.y, (v) => { leftLeaf.rotation.y = v; }, 0, 3.8);
+        if (rightLeaf) animateScalar(() => rightLeaf.rotation.y, (v) => { rightLeaf.rotation.y = v; }, 0, 3.8);
+        if (!silent) {
+          audio?.playGateOpen?.(0.95);
+          audio?.triggerOneShot?.('blackout', 0.6);
+          E.shake?.(0.35, 0.2);
+        }
+        if (ref.doorProxies?.nave_threshold) {
+          ref.doorProxies.nave_threshold.position.set(0, 1.65, 7.48);
+        }
       };
 
       doors.nave_threshold = {
@@ -644,6 +705,7 @@ export function createVaultArchitecture(E, { matLancet, pushStatic }) {
         opened: false,
         pos: new THREE.Vector3(0, 0, 7.48),
         open: openDoors,
+        close: closeDoors,
       };
     });
 
@@ -657,9 +719,9 @@ export function createVaultArchitecture(E, { matLancet, pushStatic }) {
       colliderBounds: [-8.65, -8.25, -1.25, 1.25],
     });
 
-    // 4) North Reliquary Dungeon Door (`x = -13.95..-12.65, z = -6.05`)
+    // 4) North Reliquary Dungeon Door (`x = -13.3, z = -6.05` seated cleanly inside wall_doorway_stone)
     setupClipDoor('north_chapel', 'dungeon/glb/door_dungeon.glb', {
-      x: -13.95,
+      x: -13.3,
       y: 0,
       z: -6.05,
       ry: 0,
@@ -682,7 +744,7 @@ export function createVaultArchitecture(E, { matLancet, pushStatic }) {
     });
 
     // 6) East Breach Iron Gate (`x = 8.45, z = 0`) — seated inside East breach threshold, manual unlatch
-    const gateCollider = solid(8.25, 8.65, -1.25, 1.25);
+    let gateCollider = solid(8.25, 8.65, -1.25, 1.25);
     loadGLB(`${VAULT_MODEL_BASE}/iron_gate.glb`).then((gltf) => {
       const raw = gltf?.scene;
       if (!raw) return;
@@ -708,21 +770,78 @@ export function createVaultArchitecture(E, { matLancet, pushStatic }) {
       const bolt = gate.getObjectByName('large_iron_gate_bolt');
       if (leftLeaf) leftLeaf.rotation.y = 0;
       if (rightLeaf) rightLeaf.rotation.y = 0;
+      if (bolt && rightLeaf) {
+        rightLeaf.add(bolt);
+        bolt.position.set(-1.43, 0, 0);
+      }
 
       const openGate = (silent = false) => {
         if (doors.east_gate?.opened) return;
         doors.east_gate.opened = true;
-        if (gateCollider) removeSolid(gateCollider);
-        if (bolt) animateScalar(() => bolt.position.x, (v) => { bolt.position.x = v; }, bolt.position.x + 0.35, 4.0);
+        if (doors.east_gate.collider) {
+          removeSolid(doors.east_gate.collider);
+          doors.east_gate.collider = null;
+        }
+        if (bolt) animateScalar(() => bolt.position.x, (v) => { bolt.position.x = v; }, -1.08, 1.2);
         if (leftLeaf) animateScalar(() => leftLeaf.rotation.y, (v) => { leftLeaf.rotation.y = v; }, -1.52, 2.2);
         if (rightLeaf) animateScalar(() => rightLeaf.rotation.y, (v) => { rightLeaf.rotation.y = v; }, 1.52, 2.2);
         if (!silent) audio?.playGateOpen?.(0.75);
+        if (ref.doorProxies?.east_gate) {
+          ref.doorProxies.east_gate.position.set(0, -999, 0);
+        }
       };
 
-      doors.east_gate = { root: pivot, collider: gateCollider, opened: false, pos: new THREE.Vector3(8.45, 0, 0), open: openGate };
+      const closeGate = (silent = false) => {
+        if (!doors.east_gate?.opened) return;
+        doors.east_gate.opened = false;
+        if (!doors.east_gate.collider) {
+          doors.east_gate.collider = solid(8.25, 8.65, -1.25, 1.25);
+        }
+        if (leftLeaf) animateScalar(() => leftLeaf.rotation.y, (v) => { leftLeaf.rotation.y = v; }, 0, 3.8);
+        if (rightLeaf) animateScalar(() => rightLeaf.rotation.y, (v) => { rightLeaf.rotation.y = v; }, 0, 3.8);
+        if (bolt) animateScalar(() => bolt.position.x, (v) => { bolt.position.x = v; }, -1.43, 3.8);
+        if (!silent) {
+          audio?.playGateOpen?.(0.95);
+          audio?.triggerOneShot?.('bonecrack', 0.8);
+          E.shake?.(0.35, 0.2);
+        }
+        if (ref.doorProxies?.east_gate) {
+          ref.doorProxies.east_gate.position.set(8.45, 1.45, 0);
+        }
+      };
+
+      doors.east_gate = {
+        root: pivot,
+        collider: gateCollider,
+        opened: false,
+        pos: new THREE.Vector3(8.45, 0, 0),
+        open: openGate,
+        close: closeGate,
+      };
       if (!ref.openFailsafeDoor) ref.openFailsafeDoor = () => openGate(false);
     });
   };
+
+  // Horror Auto-Closing Door Sensor System:
+  // When player traverses into a room, the threshold door slams shut behind them with a frightening thud.
+  const autoCloseTriggers = {
+    nave_threshold: { triggered: false, test: (p) => p.z < 5.8 },
+    west_scriptorium: { triggered: false, test: (p) => p.x < -10.5 },
+    north_chapel: { triggered: false, test: (p) => p.z < -7.6 },
+    east_gate: { triggered: false, test: (p) => p.x > 10.5 },
+    south_cellar: { triggered: false, test: (p) => p.z > 7.6 },
+  };
+
+  anim(() => {
+    if (!ref.playerPos) return;
+    const p = ref.playerPos;
+    for (const [key, trig] of Object.entries(autoCloseTriggers)) {
+      if (doors[key]?.opened && !trig.triggered && trig.test(p)) {
+        trig.triggered = true;
+        doors[key]?.close?.(false);
+      }
+    }
+  });
 
   const openZoneDoor = (key, silent = false) => {
     doors[key]?.open?.(silent);
@@ -731,7 +850,12 @@ export function createVaultArchitecture(E, { matLancet, pushStatic }) {
     }
   };
 
+  const closeZoneDoor = (key, silent = false) => {
+    doors[key]?.close?.(silent);
+  };
+
   ref.openZoneDoor = openZoneDoor;
+  ref.closeZoneDoor = closeZoneDoor;
   ref.doors = doors;
 
   return {

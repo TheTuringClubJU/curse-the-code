@@ -29,3 +29,5 @@ Room-6_GLB/
 .DS_Store
 *.dmg
 .neon
+.agents/
+.vite/

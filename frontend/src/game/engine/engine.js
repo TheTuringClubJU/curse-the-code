@@ -352,6 +352,9 @@ export function createEngine(el,room,h){
   openZoneDoor(key, silent = false){
     ref.openZoneDoor?.(key, silent);
   },
+  closeZoneDoor(key, silent = false){
+    ref.closeZoneDoor?.(key, silent);
+  },
   isDoorOpened(key){
     return Boolean(ref.doors?.[key]?.opened);
   },

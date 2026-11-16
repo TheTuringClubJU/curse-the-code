@@ -1045,13 +1045,13 @@ Every interactive prop must remain a **real visible 3D mesh** tagged with `E.int
 ### 5.3 Room 6: The Anointing Vault (`vault`)
 
 #### Detailed Tasks for Frontend (Room 6)
-- [ ] **FE-R6-01** Create `frontend/src/game/rooms/vault.js`: circular domed stone chamber, suspended rusted iron cage with chains, pulsing biological organism (vertex displacement shader, crimson emissive cycling at 1.4s), cracked bulletproof glass with internal handprints, mechanical split-flap countdown display with `CLACK-SNAP` audio.
-- [ ] **FE-R6-02** Create `frontend/src/game/Room6Vault.jsx` with automatic flashlight battery cutoff upon entering.
-- [ ] **FE-R6-03** Build `ManualDiffModal.jsx` for `R2-08`: side-by-side procedure document comparison, amber diff highlights on tampered clauses, clipboard copy utility.
-- [ ] **FE-R6-04** Build `FailsafeCircuitModal.jsx` for `R2-09`: 8 heavy knife switches with physical throw animations and metallic `CLANG` audio, hand-drawn logic gate schematic diagram, 4 amber filament output lamps.
-- [ ] **FE-R6-05** Build `FinalConsoleModal.jsx` for `R2-10`: full-viewport black terminal, 3 cast-iron input slots, mechanical hammer keystroke sounds, incorrect response screen tear, and multi-stage victory sequence (heartbeat stop, room blackout, emergency amber switch, `CONTAINMENT RESTORED` split-flap, narrative bridge lines, and final empty cage reveal).
-- [ ] **FE-R6-06** Implement core proximity horror: approaching within 2m causes organism to press against glass, pulse accelerates to 140 BPM, new procedural fractures form.
-- [ ] **FE-R6-07** Implement JS-08 vault entry sequence: door slams shut, human scratching and muffled pleading from the outside, then sudden silence.
+- [x] **FE-R6-01** Create `frontend/src/game/rooms/vault.js`: circular domed stone chamber, suspended rusted iron cage with chains, pulsing biological organism (vertex displacement shader, crimson emissive cycling at 1.4s), cracked bulletproof glass with internal handprints, mechanical split-flap countdown display with `CLACK-SNAP` audio.
+- [x] **FE-R6-02** Create `frontend/src/game/Room6Vault.jsx` with automatic flashlight battery cutoff upon entering.
+- [x] **FE-R6-03** Build `ManualDiffModal.jsx` for `R2-08`: side-by-side procedure document comparison, amber diff highlights on tampered clauses, clipboard copy utility.
+- [x] **FE-R6-04** Build `FailsafeCircuitModal.jsx` for `R2-09`: 8 heavy knife switches with physical throw animations and metallic `CLANG` audio, hand-drawn logic gate schematic diagram, 4 amber filament output lamps.
+- [x] **FE-R6-05** Build `FinalConsoleModal.jsx` for `R2-10`: full-viewport black terminal, 3 cast-iron input slots, mechanical hammer keystroke sounds, incorrect response screen tear, and multi-stage victory sequence (heartbeat stop, room blackout, emergency amber switch, `CONTAINMENT RESTORED` split-flap, narrative bridge lines, and final empty cage reveal).
+- [x] **FE-R6-06** Implement core proximity horror: approaching within 2m causes organism to press against glass, pulse accelerates to 140 BPM, new procedural fractures form.
+- [x] **FE-R6-07** Implement JS-08 vault entry sequence: door slams shut, human scratching and muffled pleading from the outside, then sudden silence.
 
 #### Detailed Tasks for Backend (Room 6)
 - [x] **BE-R6-01** Create `GET /api/game/room/vault/state` (no fragment checking).
@@ -1083,24 +1083,24 @@ Every interactive prop must remain a **real visible 3D mesh** tagged with `E.int
 
 ##### Exact Object IDs (from `content.test.json`)
 Every interactive prop must be a real visible 3D mesh tagged with `E.interact(obj, '<exact_id>')`.
-- [ ] `core_glass` (`decor` — special horror trigger: bulletproof cracked glass panel on the suspended iron cage with inner handprints & scratches)
-- [ ] `countdown_timer` (`decor` — mechanical split-flap board on east wall synced strictly to `GET /api/game/time`, sharp clack-snap per second)
-- [ ] `manual_terminal` (`clue_entry`, `R2-08` — heavy cast-iron workstation on west wall facing the cage)
-- [ ] `failsafe_panel` (`clue_entry`, `R2-09` — copper & brass switchboard with 8 large knife-switch levers on north wall)
-- [ ] `central_console` (`clue_entry`, `R2-10` — monolithic control altar directly facing the cage; requires all 3 Round 2 outputs)
+- [x] `core_glass` (`decor` — special horror trigger: bulletproof cracked glass panel on the suspended iron cage with inner handprints & scratches)
+- [x] `countdown_timer` (`decor` — mechanical split-flap board on east wall synced strictly to `GET /api/game/time`, sharp clack-snap per second)
+- [x] `manual_terminal` (`clue_entry`, `R2-08` — heavy cast-iron workstation on west wall facing the cage)
+- [x] `failsafe_panel` (`clue_entry`, `R2-09` — copper & brass switchboard with 8 large knife-switch levers on north wall)
+- [x] `central_console` (`clue_entry`, `R2-10` — monolithic control altar directly facing the cage; requires all 3 Round 2 outputs)
 
 ##### Build Checklist
 ###### Assets & Optimization
-- [ ] Source/build & compress Meshopt+WebP GLBs for: concrete dome shell, spherical iron cage + chains, pulsing flesh core, split-flap board, cast-iron terminal, 8-lever knife-switch panel, central altar console.
-- [ ] All GLBs within budgets (`≤ 1.5 MB` single / `≤ 8 MB` room total, `< 250` draw calls, Eco-mode compatible).
-- [ ] Source audio (`amb_vault`, `core_pulse`, `steel_creak`, split-flap `clack-snap`, stingers).
-- [ ] Keep track of model and audio sources (author, licence, file sizes).
+- [x] Source/build & compress Meshopt+WebP GLBs for: concrete dome shell, spherical iron cage + chains, pulsing flesh core, split-flap board, cast-iron terminal, 8-lever knife-switch panel, central altar console.
+- [x] All GLBs within budgets (`≤ 1.5 MB` single / `≤ 8 MB` room total, `< 250` draw calls, Eco-mode compatible).
+- [x] Source audio (`amb_vault`, `core_pulse`, `steel_creak`, split-flap `clack-snap`, stingers).
+- [x] Keep track of model and audio sources (author, licence, file sizes).
 
 ###### Integration, UI & Horror
-- [ ] Implement `Room6Vault.jsx` + `R2-08`, `R2-09`, `R2-10` clue modals + `[C]` `ControlDossierModal` / `CaseDossierModal` integration.
-- [ ] Disable torch on threshold (`setFlashlight(false)`); drive 1.4s crimson bioluminescence pulse.
-- [ ] Implement situation-based horror events (`core_glass` inspection scare, split-flap countdown tension, final containment victory/ending sequence).
-- [ ] Ensure `npm test`, `npm run build`, and Room 6 automated test suite pass; test full Round 2 flow (`records` → Fork 1 → `control` → Fork 2 → `vault`).
+- [x] Implement `Room6Vault.jsx` + `R2-08`, `R2-09`, `R2-10` clue modals + `[C]` `ControlDossierModal` / `CaseDossierModal` integration.
+- [x] Disable torch on threshold (`setFlashlight(false)`); drive 1.4s crimson bioluminescence pulse.
+- [x] Implement situation-based horror events (`core_glass` inspection scare, split-flap countdown tension, final containment victory/ending sequence).
+- [x] Ensure `npm test`, `npm run build`, and Room 6 automated test suite pass; test full Round 2 flow (`records` → Fork 1 → `control` → Fork 2 → `vault`).
 
 ---
 
@@ -1206,9 +1206,9 @@ Total Round 2 QA Target: 300 Tests
 ---
 
 #### Room 6: The Anointing Vault (100 Tests: `QA-R6-*`)
-- [ ] `QA-R6-E2E-01` **`e2e_vault_complete_containment_victory_journey`** (Full walkthrough: enter vault -> flashlight cut -> R2-08 manual diff -> R2-09 logic gate circuit throw -> R2-10 triple-field containment console -> victory sequence -> leaderboard lock).
+- [x] `QA-R6-E2E-01` **`e2e_vault_complete_containment_victory_journey`** (Full walkthrough: enter vault -> flashlight cut -> R2-08 manual diff -> R2-09 logic gate circuit throw -> R2-10 triple-field containment console -> victory sequence -> leaderboard lock).
 - [x] `QA-R6-BE-01` to `QA-R6-BE-49` Backend validation: R2-08 diff verification, R2-09 logic circuit truth table, R2-10 atomic 3-field compound validation (Clean Steps + Auth Code + Badge ID), tournament completion timestamp recording, leaderboard tie-breaker calculation.
-- [ ] `QA-R6-FE-01` to `QA-R6-FE-50` Frontend validation: organic core pulsing shader, cracked glass dome shaders, `ManualDiffModal` copy utility, `FailsafeCircuitModal` knife-switch throw animations, `FinalConsoleModal` typewriter sound and victory sequence, split-flap countdown display animation.
+- [x] `QA-R6-FE-01` to `QA-R6-FE-50` Frontend validation: organic core pulsing shader, cracked glass dome shaders, `ManualDiffModal` copy utility, `FailsafeCircuitModal` knife-switch throw animations, `FinalConsoleModal` typewriter sound and victory sequence, split-flap countdown display animation.
 
 
 ## 6. Admin Panel, Authentication & Infrastructure (Completed Milestones)

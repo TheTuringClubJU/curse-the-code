@@ -157,7 +157,7 @@ export class GameAudioVault {
               src.buffer = decoded;
               src.loop = true;
               const g = this.ctx.createGain();
-              g.gain.value = 0.34;
+              g.gain.value = 0.45;
               src.connect(g);
               g.connect(this.master);
               src.start();
@@ -167,6 +167,17 @@ export class GameAudioVault {
               if (this.droneNodes?.gDrone?.gain) {
                 this.droneNodes.gDrone.gain.value = 0.025;
               }
+            } else if (key === 'ambience_hell' && !this.hellAmbienceSrc && this.master) {
+              const hsrc = this.ctx.createBufferSource();
+              hsrc.buffer = decoded;
+              hsrc.loop = true;
+              const hg = this.ctx.createGain();
+              hg.gain.value = 0.22;
+              hsrc.connect(hg);
+              hg.connect(this.master);
+              hsrc.start();
+              this.hellAmbienceSrc = hsrc;
+              this.loopSources.push(hsrc);
             } else if ((key === 'blood_drip' || key === 'machine_hum') && this.master) {
               const lsrc = this.ctx.createBufferSource();
               lsrc.buffer = decoded;
@@ -321,9 +332,21 @@ export class GameAudioVault {
   _scheduleCreak() {
     if (this.creakTimer) clearTimeout(this.creakTimer);
     if (!this.ctx) return;
-    const delay = rnd(11000, 22000);
+    const delay = rnd(8000, 16000);
     this.creakTimer = setTimeout(() => {
-      if (!this.restored) this.creak();
+      if (!this.restored && !this.muted) {
+        const pool = [
+          () => this.creak(),
+          () => this._playSample('bonecrack_1', 0.45) || this._playSample('bonecrack', 0.45),
+          () => this._playSample('breath_scared', 0.52),
+          () => this._playSample('whisper', 0.42),
+          () => this._playSample('chains', 0.48),
+          () => this._playSample('monster_3', 0.22) || this._playSample('monster_0', 0.22),
+          () => this._playSample('laugh_evil_1', 0.18),
+        ];
+        const fn = pool[Math.floor(Math.random() * pool.length)];
+        fn();
+      }
       this._scheduleCreak();
     }, delay);
   }
@@ -982,6 +1005,7 @@ export class GameAudioVault {
     if (this.motifTimer) clearTimeout(this.motifTimer);
     try {
       this.ambienceSrc?.stop?.();
+      this.hellAmbienceSrc?.stop?.();
       this.stopMachineLoop();
       this.loopSources?.forEach((s) => s?.stop?.());
       Object.keys(this.activeOneShots || {}).forEach((k) => this.stopSample(k));
