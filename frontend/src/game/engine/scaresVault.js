@@ -1,3 +1,5 @@
+import * as THREE from 'three';
+
 // Choreographed, Telegraphed Horror Director for Room 6: The Anointing Vault
 // Game-dev polish pass: multi-stage builds, FOV-kick curves, crimson vignette blooms,
 // environmental echo loops, staggered whisper builds, and camera-tilt trauma effects.
@@ -13,6 +15,9 @@ export function createVaultScares(E, h = {}) {
   let pendingStatueTurn = false;
   let pendingWestBreach = false;
   let pendingEastBlackout = false;
+
+  // ── Poppy Playtime camera-locked in-your-face jumpscare state ──
+  let faceJumpscare = null;
 
   // ── Lunge animation state ──
   let lungeT = -1;
@@ -186,15 +191,68 @@ export function createVaultScares(E, h = {}) {
   };
 
   // ═══════════════════════════════════════════════════════════════════
+  // POPPY PLAYTIME / FNAF IN-YOUR-FACE JUMPSCARE ENGINE
+  // Locks directly to the camera viewport lens at 0.42m point-blank,
+  // fills 95%+ of the screen with Agatha's screaming face and thrashing
+  // claws, shakes violently with per-frame head tremors and jaw spasms,
+  // casts blood-red spotlight, punches FOV, and blasts horrific audio.
+  // ═══════════════════════════════════════════════════════════════════
+  const startFaceJumpscare = ({
+    duration = 1.35,
+    animIndex = 0,
+    animSpeed = 1.65,
+    initialDist = 3.0,
+    faceDist = 0.42,
+    headOffset = 1.58,
+    screamVol = 1.0,
+    scareId = 'face_jumpscare',
+    scareNotice = null,
+    preferStalker = false,
+  } = {}) => {
+    if (E.ref.vaultRestored) return;
+
+    // 1. Overwhelming, ear-splitting layered horror audio blast
+    E.audio?.playHorrificJumpscare?.(screamVol);
+    E.audio?.setTension?.(2.8);
+
+    // 2. Select entity (Agatha or stalker)
+    const entity = (preferStalker && E.ref.stalker) || E.ref.ghost || E.ref.stalker;
+    if (!entity) return;
+
+    // 3. Play rapid frantically screaming animation
+    playAgathaAnim(animIndex, animSpeed);
+    entity.visible = true;
+
+    // 4. Set face jumpscare state
+    faceJumpscare = {
+      elapsed: 0,
+      duration,
+      initialDist,
+      faceDist,
+      headOffset,
+      entity,
+      animIndex,
+    };
+
+    // 5. Massive camera trauma shake + blood vignette + visor crack
+    E.shake?.(3.6, 0.95);
+    addTrauma(1.0);
+    h.onGlassCrack?.();
+    h.onFlash?.('#80000e', 0.88, 380);
+    h.onNightmarePulse?.(Math.round(duration * 1000));
+    if (scareNotice) {
+      h.onScare?.(scareId, scareNotice);
+    }
+  };
+
+  // ═══════════════════════════════════════════════════════════════════
   // PHANTOM LUNGE — The core apex scare. 3-beat build: environment
-  // goes ice-cold, dim flicker telegraphs, then she SURGES toward you.
+  // goes ice-cold, dim flicker telegraphs, then she EXPLODES into your face.
   // ═══════════════════════════════════════════════════════════════════
   const triggerPhantomLunge = (reasonMsg = null, preferStalker = false) => {
     if (E.ref.vaultRestored) return;
     scriptedBusyUntil = Math.max(scriptedBusyUntil, elapsed + 3.8);
     setThreat(null, '');
-
-    const { px, pz, fx, fz } = getPlayerPose();
 
     // Beat 1 — sudden silence + cold flicker at 0ms
     setGlobalLightScale(0.14);
@@ -205,37 +263,28 @@ export function createVaultScares(E, h = {}) {
     schedule(() => {
       if (E.ref.vaultRestored) return;
       E.audio?.whisper?.();
-      setGlobalLightScale(0.06);
+      setGlobalLightScale(0.04);
     }, 220);
 
-    // Beat 3 — the full lunge erupts at 320ms
+    // Beat 3 — Poppy Playtime face jumpscare erupts at 320ms
     schedule(() => {
       if (E.ref.vaultRestored) return;
-      lungeT = 0;
-      lungeStartDist = 4.2;
-      lungeEndDist = 1.55;
-      lungeDuration = 0.42;
-      lungeEntity = (preferStalker && E.ref.stalker) || E.ref.ghost || E.ref.stalker;
-
-      const tilt = (Math.random() < 0.5 ? -1 : 1) * 0.08;
-      const [gx, gz] = clampNaveSpot(px + fx * lungeStartDist, pz + fz * lungeStartDist);
-      placeEntity(lungeEntity, gx, gz, px, pz, 4.2, tilt);
-      playAgathaAnim(3, 1.5);
-
-      E.audio?.playAgathaScream?.(0.98);
-      E.shake?.(2.6, 0.72);
-      addTrauma(0.9);
-      kickCamera(-20, 0.06, 700);
-      flashBlood('#5c000a', 0.68, 260);
-      h.onGlassCrack?.();
-      h.onScare?.('phantom_lunge', reasonMsg);
+      startFaceJumpscare({
+        duration: 1.4,
+        animIndex: 3,
+        animSpeed: 1.7,
+        initialDist: 3.2,
+        faceDist: 0.42,
+        scareId: 'phantom_lunge',
+        scareNotice: reasonMsg,
+        preferStalker,
+      });
     }, 320);
   };
 
   // ═══════════════════════════════════════════════════════════════════
   // CORE GLASS SLAM — Inspection milestone. Agatha erupts OUT of the
-  // reliquary glass at point-blank range. 4-beat choreography:
-  // dread→blackout→slam→aftermath.
+  // reliquary glass directly onto your face!
   // ═══════════════════════════════════════════════════════════════════
   const triggerCoreGlassScare = () => {
     if (fired.has('core_glass_slam')) return false;
@@ -245,7 +294,7 @@ export function createVaultScares(E, h = {}) {
 
     // Beat 1 — distant rumble, lights die to almost nothing
     E.audio?.chainsRattle?.();
-    rampLight(0.9, 0.08, 500);
+    rampLight(0.9, 0.08, 480);
 
     schedule(() => {
       if (E.ref.vaultRestored) return;
@@ -256,36 +305,28 @@ export function createVaultScares(E, h = {}) {
 
       schedule(() => {
         if (E.ref.vaultRestored) return;
-        const { px: curPx, pz: curPz, fx, fz } = getPlayerPose();
 
-        // Beat 3 — she SLAMS through the glass at 1.2m
-        const agathaX = curPx + fx * 1.2;
-        const agathaZ = curPz + fz * 1.2;
-        placeGhost(agathaX, agathaZ, curPx, curPz, 5.8, -0.07);
-        playAgathaAnim(0, 1.3);
+        startFaceJumpscare({
+          duration: 1.45,
+          animIndex: 1,
+          animSpeed: 1.65,
+          initialDist: 2.6,
+          faceDist: 0.40,
+          scareId: 'core_glass_slam',
+          scareNotice: 'Agatha erupts from within the broken reliquary!',
+        });
 
-        E.audio?.playAgathaScream?.(1.0);
-        E.audio?.setTension?.(2.4);
-        E.shake?.(2.8, 0.85);
-        addTrauma(1.0);
-        kickCamera(-22, 0.08, 800);
-        h.onGlassCrack?.();
-        h.onFlash?.('#72000e', 0.76, 340);
-        h.onNightmarePulse?.(820);
-        h.onScare?.('core_glass_slam', 'Agatha erupts from within the broken reliquary!');
-
-        if (E.ref.coreLight) E.ref.coreLight.intensity = 14.0;
+        if (E.ref.coreLight) E.ref.coreLight.intensity = 16.0;
 
         // Beat 4 — aftermath: lights strobe back up, blood-red tint lingers
-        [280, 480, 700].forEach((ms) => {
+        [280, 520, 760].forEach((ms) => {
           schedule(() => {
             if (E.ref.vaultRestored) return;
-            h.onFlash?.('#500008', 0.22, 120);
+            h.onFlash?.('#5c000a', 0.26, 130);
           }, ms);
         });
 
         schedule(() => {
-          hideGhost();
           rampLight(0.0, 1.0, 600);
           setThreat(null, '');
           if (E.ref.coreLight) E.ref.coreLight.intensity = 1.4;
@@ -294,9 +335,8 @@ export function createVaultScares(E, h = {}) {
         schedule(() => {
           E.audio?.setTension?.(1.2);
         }, 3200);
-      }, 420); // tight gap = no time to breathe
-
-    }, 480);
+      }, 420);
+    }, 460);
 
     return true;
   };
@@ -340,7 +380,7 @@ export function createVaultScares(E, h = {}) {
 
   // ═══════════════════════════════════════════════════════════════════
   // NAVE AISLE AMBUSH — She bursts from the pews as you walk the aisle.
-  // Extended 3-beat: creak→silence→thrash eruption.
+  // Extended 3-beat: creak→silence→IN-YOUR-FACE Poppy Playtime eruption!
   // ═══════════════════════════════════════════════════════════════════
   const triggerNaveAisleScare = () => {
     if (fired.has('nave_pew_ambush') || E.ref.vaultRestored) return;
@@ -350,59 +390,45 @@ export function createVaultScares(E, h = {}) {
 
     // Beat 1 — single pew creak; freeze the music
     E.audio?.creak?.();
-    rampLight(0.9, 0.18, 350);
+    rampLight(0.9, 0.16, 320);
 
     schedule(() => {
       if (E.ref.vaultRestored) return;
 
       // Beat 2 — bonecrack, lights snuff
       E.audio?.playBonecrack?.(0.98);
-      setGlobalLightScale(0.04);
+      setGlobalLightScale(0.02);
 
       schedule(() => {
         if (E.ref.vaultRestored) return;
-        const { px, pz, fx, fz } = getPlayerPose();
 
-        // Beat 3 — burst from BETWEEN the pews directly into center view and lunge forward
-        const spawnDist = 2.6;
-        const ambushX = px + fx * spawnDist;
-        const ambushZ = pz + fz * spawnDist;
-        placeGhost(ambushX, ambushZ, px, pz, 5.2, 0.08);
-        playAgathaAnim(2, 1.45);
-
-        // Dynamic lunge snap toward the player lens
-        lungeT = 0;
-        lungeStartDist = 2.6;
-        lungeEndDist = 1.65;
-        lungeDuration = 0.42;
-        lungeEntity = E.ref.ghost;
-
-        E.audio?.playAgathaScream?.(1.0);
-        E.audio?.playBreathScared?.(0.88);
-        E.shake?.(2.6, 0.75);
-        addTrauma(0.95);
-        kickCamera(-18, 0.07, 700);
-        h.onFlash?.('#68000c', 0.72, 320);
-        h.onNightmarePulse?.(680);
-        h.onScare?.('nave_pew_ambush', 'A ghastly Victorian form tears through the pews!');
+        // Beat 3 — burst into player's face with Poppy Playtime jumpscare!
+        startFaceJumpscare({
+          duration: 1.4,
+          animIndex: 0,
+          animSpeed: 1.65,
+          initialDist: 2.8,
+          faceDist: 0.42,
+          scareId: 'nave_pew_ambush',
+          scareNotice: 'A ghastly Victorian form tears through the pews!',
+        });
 
         // Staggered blood-flash aftershocks
-        [300, 560].forEach((ms) => {
-          schedule(() => { h.onFlash?.('#3c0006', 0.18, 110); }, ms);
+        [320, 620].forEach((ms) => {
+          schedule(() => { h.onFlash?.('#4c0008', 0.24, 120); }, ms);
         });
 
         schedule(() => {
-          hideGhost();
           rampLight(0.0, 1.0, 500);
           setThreat(null, '');
-        }, 1400);
-      }, 280);
-    }, 320);
+        }, 1500);
+      }, 260);
+    }, 300);
   };
 
   // ═══════════════════════════════════════════════════════════════════
   // ENTRY CELL VANISH — Looking into Cell 01: crying stops dead,
-  // chains rattle, then she SLAMS the bars from inside.
+  // chains rattle, then she SLAMS the bars and rushes into your face!
   // ═══════════════════════════════════════════════════════════════════
   const triggerEntryCellVanish = () => {
     if (fired.has('entry_cell_peek') || E.ref.vaultRestored) return;
@@ -419,43 +445,40 @@ export function createVaultScares(E, h = {}) {
 
       // Beat 2 — chains rattle & single lamp flicker
       E.audio?.chainsRattle?.();
-      E.shake?.(0.55, 0.38);
-      triggerFlicker(0.12, 0.85, 4, 55);
+      E.shake?.(0.65, 0.4);
+      triggerFlicker(0.10, 0.85, 4, 55);
 
       schedule(() => {
         if (E.ref.vaultRestored) return;
-        const { px, pz } = getPlayerPose();
+
         const prevCellIntensity = E.ref.cellLight?.intensity ?? 1.3;
+        if (E.ref.cellLight) E.ref.cellLight.intensity = 14.0;
 
-        // Beat 3 — she smashes the bars with a screaming lunge
-        placeGhost(-3.75, 10.9, px, pz, 6.0, 0.09);
-        playAgathaAnim(1, 1.4);
-        if (E.ref.cellLight) E.ref.cellLight.intensity = 11.0;
-
-        E.audio?.playBonecrack?.(0.95);
-        E.audio?.playAgathaScream?.(0.98);
-        E.shake?.(1.6, 0.58);
-        addTrauma(0.75);
-        kickCamera(-14, 0.05, 580);
-        h.onFlash?.('#64000b', 0.58, 260);
-        h.onNightmarePulse?.(500);
-        h.onScare?.('entry_cell_peek', 'She slams against the bars from within!');
+        // Beat 3 — she smashes the bars and surges into your face!
+        startFaceJumpscare({
+          duration: 1.35,
+          animIndex: 2,
+          animSpeed: 1.6,
+          initialDist: 2.2,
+          faceDist: 0.42,
+          scareId: 'entry_cell_peek',
+          scareNotice: 'She slams against the bars from within!',
+        });
 
         // Cell light strobe — 5 rapid flickers
         [130, 290, 480, 660, 850].forEach((ms, i) => {
           schedule(() => {
             if (E.ref.vaultRestored) return;
-            if (E.ref.cellLight) E.ref.cellLight.intensity = i % 2 === 0 ? 0.2 : 10.0;
+            if (E.ref.cellLight) E.ref.cellLight.intensity = i % 2 === 0 ? 0.2 : 12.0;
           }, ms);
         });
 
         schedule(() => {
-          hideGhost();
           if (E.ref.cellLight) E.ref.cellLight.intensity = prevCellIntensity;
           setThreat(null, '');
-        }, 1350);
-      }, 580);
-    }, 350);
+        }, 1500);
+      }, 540);
+    }, 320);
   };
 
   // ═══════════════════════════════════════════════════════════════════
@@ -632,24 +655,26 @@ export function createVaultScares(E, h = {}) {
       E.audio?.playBreathScared?.(0.72);
     }, 1600);
 
-    // Beat 5 — FULL SCREAM 500ms after partial reveal
+    // Beat 5 — FULL POPPY PLAYTIME FACE JUMPSCARE 500ms after partial reveal
     schedule(() => {
       if (E.ref.vaultRestored) {
         hideGhost(); setGlobalLightScale(1.0); setThreat(null, ''); return;
       }
-      E.audio?.playAgathaScream?.(1.0);
-      E.shake?.(1.8, 0.65);
-      addTrauma(0.85);
-      kickCamera(-16, 0.06, 680);
-      h.onFlash?.('#6c000d', 0.65, 280);
-      h.onNightmarePulse?.(550);
+      startFaceJumpscare({
+        duration: 1.4,
+        animIndex: 0,
+        animSpeed: 1.7,
+        initialDist: 2.8,
+        faceDist: 0.42,
+        scareId: 'blackout_ambush',
+        scareNotice: 'RELAY OVERLOAD — SHE STRIKES IN THE DARK',
+      });
 
       schedule(() => {
-        hideGhost();
-        rampLight(0.0, 1.0, 900);
+        rampLight(0.0, 1.0, 800);
         setThreat(null, '');
         if (!E.ref.vaultRestored) E.audio?.setTension?.(1.2);
-      }, 1700);
+      }, 1600);
     }, 2100);
   };
 
@@ -730,30 +755,119 @@ export function createVaultScares(E, h = {}) {
   };
 
   const triggerConsoleReject = () => {
-    triggerPhantomLunge('CONTAINMENT REJECTED — SHE IS FREE', false);
-    E.audio?.setTension?.(2.4);
+    scriptedBusyUntil = Math.max(scriptedBusyUntil, elapsed + 4.2);
+    setThreat('surge', 'CONTAINMENT REJECTED // CRITICAL BREACH');
+    setGlobalLightScale(0.04);
+    E.audio?.voltageBuzz?.();
+    h.onFlash?.('#4e0008', 0.45, 180);
+
     schedule(() => {
-      if (!E.ref.vaultRestored) E.audio?.setTension?.(1.2);
-    }, 3600);
+      if (E.ref.vaultRestored) return;
+      startFaceJumpscare({
+        duration: 1.45,
+        animIndex: 3,
+        animSpeed: 1.7,
+        initialDist: 2.8,
+        faceDist: 0.40,
+        scareId: 'console_reject',
+        scareNotice: 'CONTAINMENT REJECTED — SHE IS FREE',
+      });
+      E.audio?.setTension?.(2.8);
+      schedule(() => {
+        if (!E.ref.vaultRestored) E.audio?.setTension?.(1.2);
+      }, 3600);
+    }, 240);
   };
 
   // ═══════════════════════════════════════════════════════════════════
-  // TICK — per-frame update: lunge interpolation, trauma decay,
-  // organic whisper cadence, and all zone trigger checks.
+  // TICK — per-frame update: Poppy Playtime face jumpscare,
+  // trauma decay, organic whisper cadence, and all zone trigger checks.
   // ═══════════════════════════════════════════════════════════════════
   const tick = (dt) => {
-    // ── Lunge animation: smooth eased surge from start to end distance ──
+    // ── Poppy Playtime Camera-Locked In-Your-Face Jumpscare Update ──
+    if (faceJumpscare) {
+      faceJumpscare.elapsed += dt;
+      const { elapsed: fElapsed, duration: fDur, initialDist, faceDist, headOffset, entity } = faceJumpscare;
+
+      if (fElapsed >= fDur) {
+        faceJumpscare = null;
+        hideGhost();
+        setGlobalLightScale(1.0);
+        if (E.cam?.isPerspectiveCamera && E.cam.fov !== baseFov) {
+          E.cam.fov = baseFov;
+          E.cam.updateProjectionMatrix?.();
+        }
+      } else {
+        // Explosive surge in first 0.16s down to 0.42m point-blank
+        const surgeK = Math.min(1.0, fElapsed / 0.16);
+        const easeSurge = 1 - Math.pow(1 - surgeK, 4);
+        const curDist = initialDist - (initialDist - faceDist) * easeSurge;
+
+        // Violent Poppy Playtime jitter (lateral tremor, jaw vibration, violent head twitches)
+        const jitIntensity = fElapsed < 0.16 ? 0.025 : 0.052;
+        const jitX = (Math.random() - 0.5) * jitIntensity * 2;
+        const jitY = (Math.random() - 0.5) * jitIntensity * 1.5;
+        const jitRotZ = (Math.random() - 0.5) * 0.18;
+
+        if (E.cam) {
+          const camPos = E.cam.position?.clone ? E.cam.position.clone() : new THREE.Vector3(E.px?.() ?? 0, 1.6, E.pz?.() ?? 0);
+          const camDir = new THREE.Vector3();
+          if (E.cam.getWorldDirection) {
+            E.cam.getWorldDirection(camDir);
+          } else {
+            const yaw = E.yaw?.() ?? 0;
+            camDir.set(-Math.sin(yaw), 0, -Math.cos(yaw));
+          }
+          camDir.normalize();
+
+          const camUp = new THREE.Vector3(0, 1, 0).applyQuaternion(E.cam.quaternion || new THREE.Quaternion()).normalize();
+          const camRight = new THREE.Vector3(1, 0, 0).applyQuaternion(E.cam.quaternion || new THREE.Quaternion()).normalize();
+
+          const agathaPos = camPos.clone()
+            .addScaledVector(camDir, curDist)
+            .addScaledVector(camRight, jitX)
+            .addScaledVector(camUp, -headOffset + jitY);
+
+          entity.position.copy(agathaPos);
+
+          const dx = camPos.x - agathaPos.x;
+          const dz = camPos.z - agathaPos.z;
+          entity.rotation.y = Math.atan2(dx, dz);
+          if (E.cam.rotation) {
+            entity.rotation.x = -E.cam.rotation.x;
+          }
+          entity.rotation.z = jitRotZ;
+          entity.visible = true;
+
+          // Piercing crimson face spotlight right on Agatha's screaming jaws
+          if (E.ref.ghostLight) {
+            E.ref.ghostLight.position.copy(camPos).addScaledVector(camDir, curDist * 0.5);
+            E.ref.ghostLight.position.y = camPos.y;
+            E.ref.ghostLight.color.setHex(0xff1212);
+            E.ref.ghostLight.intensity = 16.0;
+            E.ref.ghostLight.distance = 5.0;
+          }
+
+          // Camera FOV punch: zoom in hard from 72 down to 44
+          if (E.cam.isPerspectiveCamera) {
+            const fovProg = Math.sin(Math.min(1.0, fElapsed / fDur) * Math.PI);
+            E.cam.fov = baseFov - 28 * Math.pow(fovProg, 0.4);
+            E.cam.updateProjectionMatrix?.();
+          }
+        }
+      }
+    }
+
+    // ── Lunge animation fallback (if any external system sets lungeT) ──
     if (lungeT >= 0) {
       lungeT += dt;
       const rawK = Math.min(1, lungeT / lungeDuration);
-      // Ease-out quart for snappy surge that decelerates into your face
       const k = 1 - Math.pow(1 - rawK, 4);
       const { px, pz, fx, fz } = getPlayerPose();
       const dist = lungeStartDist - (lungeStartDist - lungeEndDist) * k;
       const [gx, gz] = clampNaveSpot(px + fx * dist, pz + fz * dist);
       placeEntity(lungeEntity || E.ref.ghost, gx, gz, px, pz, 2.6, lungeEntity?.rotation?.z || 0);
 
-      // FOV kick during lunge: narrows then snaps back
       if (E.cam?.isPerspectiveCamera) {
         const fovK = Math.sin(Math.min(1, lungeT / (lungeDuration * 1.4)) * Math.PI);
         E.cam.fov = baseFov - 20 * fovK;
@@ -979,6 +1093,7 @@ export function createVaultScares(E, h = {}) {
     onCoreGlassInspect: triggerCoreGlassScare,
     onConsoleReject: triggerConsoleReject,
     dispose: () => {
+      faceJumpscare = null;
       hideGhost();
       setThreat(null, '');
       E.audio?.stopMachineLoop?.();

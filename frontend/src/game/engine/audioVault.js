@@ -874,14 +874,98 @@ export class GameAudioVault {
   }
 
   // Terrifying layered jumpscare banshee scream with sub-bass slam & monster roar
-  playAgathaScream(vol = 0.95) {
+  playAgathaScream(vol = 1.0) {
+    this.playHorrificJumpscare(vol);
+  }
+
+  // Overwhelming, ear-splitting Poppy Playtime-style jumpscare audio blast
+  playHorrificJumpscare(vol = 1.0) {
     this.ensureActive();
     if (!this.ctx || this.muted || !this.master) return;
+    const c = this.ctx;
+    const t = c.currentTime;
+
+    // 1. Layer all horror monster & victim samples simultaneously
     this._playSample('scream', vol);
-    this._playSample('monster_5', vol * 0.9);
-    this._playSample('stab', vol * 0.8);
-    this._playSample('bonecrack', vol * 0.75);
-    this.screamStinger();
+    this._playSample('monster_5', vol * 0.98);
+    this._playSample('monster_0', vol * 0.92);
+    this._playSample('monster_2', vol * 0.88);
+    this._playSample('monster_4', vol * 0.85);
+    this._playSample('monster', vol * 0.90);
+    this._playSample('scream_male', vol * 0.78);
+    this._playSample('stab', vol * 0.98);
+    this._playSample('bonecrack', vol * 0.95);
+
+    // 2. Synthesized Sub-Bass Earthquake Shockwave (165Hz -> 22Hz)
+    try {
+      const sub = c.createOscillator();
+      const subGain = c.createGain();
+      sub.type = 'sawtooth';
+      sub.frequency.setValueAtTime(165, t);
+      sub.frequency.exponentialRampToValueAtTime(22, t + 0.85);
+
+      const subLpf = c.createBiquadFilter();
+      subLpf.type = 'lowpass';
+      subLpf.frequency.setValueAtTime(320, t);
+      subLpf.frequency.exponentialRampToValueAtTime(70, t + 0.85);
+
+      subGain.gain.setValueAtTime(0.001, t);
+      subGain.gain.linearRampToValueAtTime(0.95 * vol, t + 0.012);
+      subGain.gain.exponentialRampToValueAtTime(0.001, t + 0.92);
+
+      sub.connect(subLpf);
+      subLpf.connect(subGain);
+      subGain.connect(this.master);
+      sub.start(t);
+      sub.stop(t + 0.95);
+
+      // 3. Piercing Tritone Dissonant Screech Sweep with Waveshaper Distortion Overdrive
+      let distNode = null;
+      try {
+        distNode = c.createWaveShaper();
+        const curve = new Float32Array(256);
+        for (let i = 0; i < 256; i++) {
+          const x = (i * 2) / 256 - 1;
+          curve[i] = Math.tanh(x * 3.4);
+        }
+        distNode.curve = curve;
+        distNode.oversample = '2x';
+        distNode.connect(this.master);
+      } catch (_) {
+        distNode = this.master;
+      }
+
+      [780, 1140, 1680, 2400].forEach((freq, idx) => {
+        const osc = c.createOscillator();
+        const g = c.createGain();
+        osc.type = idx % 2 === 1 ? 'square' : 'sawtooth';
+        osc.frequency.setValueAtTime(freq, t);
+        osc.frequency.exponentialRampToValueAtTime(freq * 0.36, t + 0.75);
+
+        g.gain.setValueAtTime(0.001, t);
+        g.gain.linearRampToValueAtTime(0.38 * vol, t + 0.010);
+        g.gain.exponentialRampToValueAtTime(0.001, t + 0.78);
+
+        osc.connect(g);
+        g.connect(distNode);
+        osc.start(t);
+        osc.stop(t + 0.82);
+      });
+
+      // 4. White noise burst slam (violent rushing wind/impact)
+      const len = Math.floor(c.sampleRate * 0.48);
+      const buf = c.createBuffer(1, len, c.sampleRate);
+      const d = buf.getChannelData(0);
+      for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.exp(-i / (c.sampleRate * 0.15));
+      const nSrc = c.createBufferSource();
+      nSrc.buffer = buf;
+      const ng = c.createGain();
+      ng.gain.setValueAtTime(0.55 * vol, t);
+      ng.gain.exponentialRampToValueAtTime(0.001, t + 0.48);
+      nSrc.connect(ng);
+      ng.connect(this.master);
+      nSrc.start(t);
+    } catch (_) {}
   }
 
   playTensionStab(vol = 0.85) {
