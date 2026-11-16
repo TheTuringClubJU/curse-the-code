@@ -873,6 +873,25 @@ export class GameAudioVault {
     o.stop(t + 0.78);
   }
 
+  // Terrifying layered jumpscare banshee scream with sub-bass slam & monster roar
+  playAgathaScream(vol = 0.95) {
+    this.ensureActive();
+    if (!this.ctx || this.muted || !this.master) return;
+    this._playSample('scream', vol);
+    this._playSample('monster_5', vol * 0.9);
+    this._playSample('stab', vol * 0.8);
+    this._playSample('bonecrack', vol * 0.75);
+    this.screamStinger();
+  }
+
+  playTensionStab(vol = 0.85) {
+    this.ensureActive();
+    if (!this.ctx || this.muted || !this.master) return;
+    this._playSample('stab', vol);
+    this._playSample('breath_scared', vol * 0.8);
+    this.scareHit();
+  }
+
   dispose() {
     if (this.pulseTimer) clearTimeout(this.pulseTimer);
     if (this.creakTimer) clearTimeout(this.creakTimer);

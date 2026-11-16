@@ -90,6 +90,21 @@ export function createVaultScares(E, h = {}) {
     if (E.ref.ghostLight) E.ref.ghostLight.intensity = 0;
   };
 
+  const playAgathaAnim = (animIndex = 0, speed = 1.0) => {
+    if (!E.ref?.agathaMixer || !E.ref?.agathaActions) return;
+    try {
+      E.ref.agathaMixer.stopAllAction();
+      const act = E.ref.agathaActions[animIndex] || E.ref.agathaActions[0];
+      if (act) {
+        act.reset();
+        act.setLoop(1, 1);
+        act.clampWhenFinished = true;
+        act.timeScale = speed;
+        act.play();
+      }
+    } catch (_) {}
+  };
+
   const setGlobalLightScale = (val) => {
     if (E.sc) E.sc.v = val;
   };
@@ -106,19 +121,18 @@ export function createVaultScares(E, h = {}) {
     setGlobalLightScale(0.18);
     const [gx, gz] = clampNaveSpot(px + fx * 3.8, pz + fz * 3.8);
     const tilt = (Math.random() < 0.5 ? -1 : 1) * 0.06;
-    placeEntity(lungeEntity, gx, gz, px, pz, 2.8, tilt);
+    placeEntity(lungeEntity, gx, gz, px, pz, 3.8, tilt);
+    playAgathaAnim(3, 1.35); // jumpscare4: violent snap lunge
 
-    E.audio?.playStab?.(0.95);
-    E.audio?.playMonster?.(0.92);
-    E.audio?.screamStinger?.();
-    E.shake?.(1.85, 0.65);
+    E.audio?.playAgathaScream?.(0.95);
+    E.shake?.(2.1, 0.65);
     h.onFlash?.('#5c000a', 0.56, 220);
     h.onNightmarePulse?.(520);
     h.onGlassCrack?.();
     h.onScare?.('phantom_lunge', reasonMsg);
   };
 
-  // Milestone 1: Inspecting core_glass — entity slams from behind/inside the shrine cage in crimson surge
+  // Milestone 1: Inspecting core_glass — Agatha screams directly in front of the broken reliquary
   const triggerCoreGlassScare = () => {
     if (fired.has('core_glass_slam')) return false;
     fired.add('core_glass_slam');
@@ -126,36 +140,94 @@ export function createVaultScares(E, h = {}) {
     setThreat('surge', 'RELIQUARY SEAL FRACTURING');
 
     const { px, pz } = getPlayerPose();
-    // Appear on the far/shadowed side of core_glass looking directly through/beside the cage
-    const shrineZ = pz > -4.9 ? -5.85 : -3.95;
-
-    E.audio?.playMonster?.(0.95);
-    E.audio?.screamStinger?.();
-    E.audio?.setTension?.(2.0);
-    E.shake?.(1.65, 0.65);
-    h.onGlassCrack?.();
-    h.onFlash?.('#68000c', 0.52, 240);
-    h.onNightmarePulse?.(520);
-    h.onScare?.('core_glass_slam', null);
-
-    setGlobalLightScale(0.2);
-    if (E.ref.coreLight) E.ref.coreLight.intensity = 10.5;
-    placeGhost(0, shrineZ, px, pz, 2.9, -0.05);
+    setGlobalLightScale(0.04);
 
     schedule(() => {
-      hideGhost();
-      setGlobalLightScale(1.0);
-      setThreat(null, '');
-    }, 1050);
+      if (E.ref.vaultRestored) return;
+      const { px: curPx, pz: curPz, fx, fz } = getPlayerPose();
+      const agathaX = curPx + fx * 1.4;
+      const agathaZ = curPz + fz * 1.4;
 
-    schedule(() => {
-      E.audio?.setTension?.(1.2);
-    }, 2600);
+      placeGhost(agathaX, agathaZ, curPx, curPz, 5.2, -0.05);
+      playAgathaAnim(0, 1.2); // jumpscare1: violent double-handed screaming claw grab
+
+      E.audio?.playAgathaScream?.(1.0);
+      E.audio?.setTension?.(2.2);
+      E.shake?.(2.4, 0.75);
+      h.onGlassCrack?.();
+      h.onFlash?.('#72000e', 0.64, 300);
+      h.onNightmarePulse?.(720);
+      h.onScare?.('core_glass_slam', 'Agatha shrieks from within the broken reliquary!');
+
+      if (E.cam && E.cam.isPerspectiveCamera) {
+        E.cam.fov = baseFov - 16;
+        E.cam.updateProjectionMatrix();
+      }
+
+      if (E.ref.coreLight) E.ref.coreLight.intensity = 12.0;
+
+      schedule(() => {
+        hideGhost();
+        setGlobalLightScale(1.0);
+        setThreat(null, '');
+        if (E.cam && E.cam.isPerspectiveCamera) {
+          E.cam.fov = baseFov;
+          E.cam.updateProjectionMatrix();
+        }
+      }, 1400);
+
+      schedule(() => {
+        E.audio?.setTension?.(1.2);
+      }, 2800);
+    }, 280);
 
     return true;
   };
 
-  // Milestone 2: 6A Holding Cell 01 bars — crying cuts dead -> chain warning -> lit wraith lurches against bars
+  // NEW Agatha Jumpscare Condition: Nave Church Pew Ambush
+  const triggerNaveAisleScare = () => {
+    if (fired.has('nave_pew_ambush') || E.ref.vaultRestored) return;
+    fired.add('nave_pew_ambush');
+    scriptedBusyUntil = Math.max(scriptedBusyUntil, elapsed + 4.2);
+    setThreat('surge', 'SANCTUARY BREACH // AGATHA AWAKENS');
+
+    E.audio?.playBonecrack?.(0.95);
+    E.audio?.playBreathScared?.(0.92);
+    setGlobalLightScale(0.12);
+
+    schedule(() => {
+      if (E.ref.vaultRestored) return;
+      const { px, pz } = getPlayerPose();
+      // Burst out from behind the front pew bank into the aisle in front of the player
+      const ambushX = px <= 0 ? -1.8 : 1.8;
+      const ambushZ = pz - 1.8;
+      placeGhost(ambushX, ambushZ, px, pz, 4.8, 0.08);
+      playAgathaAnim(2, 1.35); // jumpscare3: terrifying thrashing lunge
+
+      E.audio?.playAgathaScream?.(1.0);
+      E.shake?.(2.1, 0.65);
+      h.onFlash?.('#68000c', 0.58, 260);
+      h.onNightmarePulse?.(600);
+      h.onScare?.('nave_pew_ambush', 'A ghastly Victorian form lunges from the pews!');
+
+      if (E.cam && E.cam.isPerspectiveCamera) {
+        E.cam.fov = baseFov - 14;
+        E.cam.updateProjectionMatrix();
+      }
+
+      schedule(() => {
+        hideGhost();
+        setGlobalLightScale(1.0);
+        setThreat(null, '');
+        if (E.cam && E.cam.isPerspectiveCamera) {
+          E.cam.fov = baseFov;
+          E.cam.updateProjectionMatrix();
+        }
+      }, 1250);
+    }, 260);
+  };
+
+  // Milestone 2: 6A Holding Cell 01 bars — crying cuts dead -> chain warning -> Agatha strikes bars
   const triggerEntryCellVanish = () => {
     if (fired.has('entry_cell_peek') || E.ref.vaultRestored) return;
     fired.add('entry_cell_peek');
@@ -164,19 +236,20 @@ export function createVaultScares(E, h = {}) {
 
     E.audio?.stopWomanCrying?.();
     E.audio?.chainsRattle?.();
-    E.audio?.playBreathScared?.(0.85);
-    E.shake?.(0.45, 0.3);
+    E.audio?.playBreathScared?.(0.92);
+    E.shake?.(0.5, 0.35);
 
     schedule(() => {
       if (E.ref.vaultRestored) return;
       const { px, pz } = getPlayerPose();
       const prevCellIntensity = E.ref.cellLight?.intensity ?? 1.3;
-      placeGhost(-3.75, 10.9, px, pz, 5.2, 0.08);
-      if (E.ref.cellLight) E.ref.cellLight.intensity = 8.8;
-      E.audio?.playBonecrack?.(0.86);
-      E.audio?.playMonster?.(0.68);
-      E.shake?.(0.95, 0.42);
-      h.onFlash?.('#540008', 0.36, 180);
+      placeGhost(-3.75, 10.9, px, pz, 5.5, 0.08);
+      playAgathaAnim(1, 1.35); // jumpscare2: vicious strike against cell bars
+      if (E.ref.cellLight) E.ref.cellLight.intensity = 9.8;
+      E.audio?.playBonecrack?.(0.92);
+      E.audio?.playAgathaScream?.(0.95);
+      E.shake?.(1.4, 0.5);
+      h.onFlash?.('#64000b', 0.44, 220);
       h.onScare?.('entry_cell_peek', null);
 
       [140, 310, 520, 740].forEach((ms, i) => {
@@ -190,8 +263,8 @@ export function createVaultScares(E, h = {}) {
         hideGhost();
         if (E.ref.cellLight) E.ref.cellLight.intensity = prevCellIntensity;
         setThreat(null, '');
-      }, 1150);
-    }, 850);
+      }, 1250);
+    }, 750);
   };
 
   // Milestone 3: 6D East Crypt Entry — lamp swings violently for 1.5s telegraph, then Stalker watches across 6E doorway
@@ -266,11 +339,12 @@ export function createVaultScares(E, h = {}) {
       }
       const { px, pz } = getPlayerPose();
       // Manifest grounded inside the West doorway corridor (~6-7m away) instead of teleporting in front of camera
-      placeGhost(-8.1, 0, px, pz, 2.8, 0.06);
-      E.audio?.playEvilLaugh?.(0.32);
-      E.shake?.(0.65, 0.35);
-      h.onFlash?.('#520008', 0.36, 180);
-      h.onScare?.('west_seal_vengeance', 'Seal I fractured — something crossed into the Nave!');
+      placeGhost(-8.1, 0, px, pz, 3.8, 0.06);
+      playAgathaAnim(2, 1.2); // jumpscare3: menacing lunge
+      E.audio?.playAgathaScream?.(0.92);
+      E.shake?.(0.85, 0.4);
+      h.onFlash?.('#5e000a', 0.45, 200);
+      h.onScare?.('west_seal_vengeance', 'Seal I fractured — Agatha stalks the West corridor!');
 
       schedule(() => {
         hideGhost();
@@ -306,11 +380,11 @@ export function createVaultScares(E, h = {}) {
       }
       const { px, pz } = getPlayerPose();
       setGlobalLightScale(0.28);
-      placeGhost(8.1, 0, px, pz, 2.9, -0.05);
-      E.audio?.playStab?.(0.82);
-      E.audio?.playMonster?.(0.75);
-      E.shake?.(1.1, 0.45);
-      h.onFlash?.('#5e000b', 0.48, 200);
+      placeGhost(8.1, 0, px, pz, 4.4, -0.05);
+      playAgathaAnim(0, 1.25); // jumpscare1: thrashing screaming rush
+      E.audio?.playAgathaScream?.(0.98);
+      E.shake?.(1.5, 0.55);
+      h.onFlash?.('#6c000d', 0.55, 240);
 
       schedule(() => {
         hideGhost();
@@ -440,6 +514,18 @@ export function createVaultScares(E, h = {}) {
       px < -1.8 && pz > 9.0 && pz < 13.0 && lookingAt(-4.8, 10.9, 0.6)
     ) {
       triggerEntryCellVanish();
+    }
+
+    // Beat 1.5: Nave Church Pew Ambush (Agatha bursts from between church pews when advancing down center aisle towards Altar)
+    if (
+      !fired.has('nave_pew_ambush') &&
+      leftNarthex &&
+      pz < 3.4 &&
+      pz > 0.4 &&
+      Math.abs(px) < 1.45 &&
+      lookingAt(0, -4.9, 0.5)
+    ) {
+      triggerNaveAisleScare();
     }
 
     // Beat 2 & 3: Wing First Entries (environmental visual teases, never in-camera jumps)

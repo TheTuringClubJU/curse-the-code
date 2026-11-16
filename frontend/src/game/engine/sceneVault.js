@@ -161,18 +161,19 @@ export function buildVaultScene(E) {
     solid(-1.25, 1.25, -6.15, -3.65); // core_glass Gothic reliquary shrine
     solid(-1.55, 1.55, -2.95, -1.05); // central_console containment altar
     solid(-1.45, 1.45, -8.85, -7.25); // North Apse High Altar under clock
-    // 6B West Pew Bank
-    solid(-4.2, -2.0, 4.4, 5.6); // west pew 0
-    solid(-4.2, -2.0, 2.8, 4.0); // west pew 1
-    solid(-4.2, -2.0, 1.2, 2.4); // west pew 2
-    solid(-4.2, -2.0, -0.2, 1.0); // west pew 3
-    solid(-6.75, -5.2, 2.7, 4.1); // west flank pew
-    // 6B East Pew Bank
-    solid(2.0, 4.2, 4.4, 5.6); // east pew 0
-    solid(2.0, 4.2, 2.8, 4.0); // east pew 1
-    solid(2.0, 4.2, 1.2, 2.4); // east pew 2
-    solid(2.0, 4.2, -0.2, 1.0); // east pew 3
-    solid(4.4, 6.2, 1.3, 3.1); // autopsy table & corpse
+    // 6B West Pew Bank (5 rows facing Altar, matching pews at z = 5.4, 3.8, 2.2, 0.6, -1.0)
+    solid(-4.2, -2.0, 4.7, 5.9); // west pew 0
+    solid(-4.2, -2.0, 3.1, 4.3); // west pew 1
+    solid(-4.2, -2.0, 1.5, 2.7); // west pew 2
+    solid(-4.2, -2.0, -0.1, 1.1); // west pew 3
+    solid(-4.2, -2.0, -1.7, -0.5); // west pew 4
+    // 6B East Pew Bank (5 rows facing Altar, matching pews at z = 5.4, 3.8, 2.2, 0.6, -1.0)
+    solid(2.0, 4.2, 4.7, 5.9); // east pew 0
+    solid(2.0, 4.2, 3.1, 4.3); // east pew 1
+    solid(2.0, 4.2, 1.5, 2.7); // east pew 2
+    solid(2.0, 4.2, -0.1, 1.1); // east pew 3
+    solid(2.0, 4.2, -1.7, -0.5); // east pew 4
+    solid(5.8, 7.8, 1.1, 2.9); // autopsy table & corpse in East transept alcove
     solid(-7.7, -6.1, -9.05, -7.65); // NW Nave bookcase
     solid(6.1, 7.7, -9.05, -7.65); // NE Nave bookcase
     solid(-3.2, -2.0, -6.7, -5.5); // NW sanctuary statue
@@ -417,56 +418,23 @@ export function buildVaultScene(E) {
   let manualSolved = false;
   let failsafeSolved = false;
 
-  const matWestCable = new THREE.MeshStandardMaterial({
-    color: 0x382026,
-    emissive: new THREE.Color(0x9b222e),
-    emissiveIntensity: 0.72,
-    roughness: 0.4,
-  });
-  const matEastCable = new THREE.MeshStandardMaterial({
-    color: 0x382026,
-    emissive: new THREE.Color(0x9b222e),
-    emissiveIntensity: 0.72,
-    roughness: 0.4,
-  });
-  const matAltarBeacon = new THREE.MeshStandardMaterial({
-    color: 0x451218,
-    emissive: new THREE.Color(0xc82333),
-    emissiveIntensity: 1.35,
-    roughness: 0.2,
-  });
-
-  // Cathedral Crimson Velvet Carpet Runner + Gold Trim Ribbons + Cross-Aisle Runner
+  // Cathedral Crimson Velvet Carpet Runner down Center Nave Aisle & Cross-Transept
   const velvetMaps = createWovenFabricTextures();
   const matCarpetRunner = new THREE.MeshStandardMaterial({
     map: velvetMaps.map,
     bumpMap: velvetMaps.bumpMap,
     bumpScale: 0.025,
-    color: 0x9e2d36,
-    roughness: 0.86,
+    color: 0x8a242c,
+    roughness: 0.88,
     metalness: 0.02,
     polygonOffset: true,
     polygonOffsetFactor: -2,
     polygonOffsetUnits: -2,
   });
   // Main Nave center runner leading cleanly from 6A archway up to central_console
-  pushStatic(new THREE.PlaneGeometry(2.45, 9.2), matCarpetRunner, 0, 0.017, 2.8, -Math.PI / 2, 0, 0);
+  pushStatic(new THREE.PlaneGeometry(2.45, 9.4), matCarpetRunner, 0, 0.017, 2.7, -Math.PI / 2, 0, 0);
   // Cross-transept runner linking 6C West door to 6D East breach
   pushStatic(new THREE.PlaneGeometry(16.4, 2.05), matCarpetRunner, 0, 0.016, 0, -Math.PI / 2, 0, 0);
-
-  // Tarnished Gold Border Ribbons Framing the Ceremonial Carpet
-  const matCarpetGoldTrim = new THREE.MeshStandardMaterial({
-    color: 0xcca04a,
-    roughness: 0.38,
-    metalness: 0.62,
-    polygonOffset: true,
-    polygonOffsetFactor: -3,
-    polygonOffsetUnits: -3,
-  });
-  pushStatic(new THREE.PlaneGeometry(0.08, 9.2), matCarpetGoldTrim, -1.2, 0.019, 2.8, -Math.PI / 2, 0, 0);
-  pushStatic(new THREE.PlaneGeometry(0.08, 9.2), matCarpetGoldTrim, 1.2, 0.019, 2.8, -Math.PI / 2, 0, 0);
-  pushStatic(new THREE.PlaneGeometry(16.4, 0.08), matCarpetGoldTrim, 0, 0.018, -1.0, -Math.PI / 2, 0, 0);
-  pushStatic(new THREE.PlaneGeometry(16.4, 0.08), matCarpetGoldTrim, 0, 0.018, 1.0, -Math.PI / 2, 0, 0);
 
   // Atmospheric Floor Decals: Dried Arterial Stains & Scattered Ancient Parchment Pages
   const texBloodGrime = createBloodGrimeTexture();
@@ -530,39 +498,8 @@ export function buildVaultScene(E) {
     S.add(chand);
   });
 
-  // Ground armored diegetic conduits cleanly flanking the center carpet runner
-  pushStatic(new THREE.BoxGeometry(7.9, 0.04, 0.14), matDarkIron, -4.45, 0.024, -0.95);
-  pushStatic(new THREE.BoxGeometry(0.14, 0.04, 1.15), matDarkIron, -0.55, 0.024, -1.48);
-  pushStatic(new THREE.BoxGeometry(7.8, 0.018, 0.035), matWestCable, -4.45, 0.048, -0.95);
-  pushStatic(new THREE.BoxGeometry(0.035, 0.018, 1.1), matWestCable, -0.55, 0.048, -1.48);
-
-  pushStatic(new THREE.BoxGeometry(7.9, 0.04, 0.14), matDarkIron, 4.45, 0.024, 0.95);
-  pushStatic(new THREE.BoxGeometry(0.14, 0.04, 3.05), matDarkIron, 0.55, 0.024, -0.55);
-  pushStatic(new THREE.BoxGeometry(7.8, 0.018, 0.035), matEastCable, 4.45, 0.048, 0.95);
-  pushStatic(new THREE.BoxGeometry(0.035, 0.018, 3.0), matEastCable, 0.55, 0.048, -0.55);
-
-  // Relay status lamps & central interlock beacon grounded on iron stands flanking central_console
-  pushStatic(new THREE.CylinderGeometry(0.055, 0.08, 1.02, 10), matDarkIron, -1.08, 0.51, -2.05);
-  pushStatic(new THREE.CylinderGeometry(0.055, 0.08, 1.02, 10), matDarkIron, 1.08, 0.51, -2.05);
-  pushStatic(new THREE.CylinderGeometry(0.06, 0.09, 0.94, 10), matDarkIron, 0, 0.47, -2.42);
-  const westRelayLamp = pushStatic(new THREE.SphereGeometry(0.075, 12, 10), matWestCable, -1.08, 1.08, -2.05);
-  const eastRelayLamp = pushStatic(new THREE.SphereGeometry(0.075, 12, 10), matEastCable, 1.08, 1.08, -2.05);
-  const altarBeaconMesh = pushStatic(new THREE.OctahedronGeometry(0.11, 0), matAltarBeacon, 0, 1.02, -2.42);
-
   const syncConduitVisuals = () => {
-    const updateMat = (mat, active) => {
-      mat.emissive.setHex(active ? 0x26d882 : 0xa32430);
-      mat.emissiveIntensity = active ? 1.45 : 0.72;
-    };
-    updateMat(matWestCable, manualSolved);
-    updateMat(matEastCable, failsafeSolved);
-    if (manualSolved && failsafeSolved) {
-      matAltarBeacon.emissive.setHex(0x34d399);
-      matAltarBeacon.emissiveIntensity = 1.65;
-    } else if (manualSolved || failsafeSolved) {
-      matAltarBeacon.emissive.setHex(0xe09820);
-      matAltarBeacon.emissiveIntensity = 1.45;
-    }
+    // Pure diegetic state sync - no cyber neon guide lights
   };
 
   // 5B. core_glass (0, 0, -4.9): Gothic Suspended Reliquary Cage + Skinned flesh_blob.glb
@@ -853,42 +790,37 @@ export function buildVaultScene(E) {
   });
   placePropGLB('temple/glb/banner_hell.glb', { pos: [-4.9, 4.1, -4.85], ry: Math.PI / 2, playClip: true });
   placePropGLB('temple/glb/banner_hell.glb', { pos: [4.9, 4.1, -4.85], ry: -Math.PI / 2, playClip: true });
-  // ── Symmetrical Cathedral Pews Flanking the Center Aisle (Left Bank & Right Bank) ──
-  // West Pew Bank (x = -3.1)
-  placePropGLB('church_pew.glb', { pos: [-3.1, 0, 5.0], ry: Math.PI, targetHeight: 1.05, albedoLift: 0.4 });
-  placePropGLB('temple/glb/pew.glb', { pos: [-3.1, 0, 3.4], ry: Math.PI + 0.04, targetHeight: 1.05, albedoLift: 0.38 });
-  placePropGLB('church_pew.glb', { pos: [-3.1, 0, 1.8], ry: Math.PI, targetHeight: 1.05, albedoLift: 0.4 });
-  placePropGLB('temple/glb/pew.glb', { pos: [-3.1, 0, 0.4], ry: Math.PI - 0.06, targetHeight: 1.05, albedoLift: 0.38 });
-  placePropGLB('temple/glb/pew.glb', { pos: [-5.8, 0, 3.4], ry: Math.PI / 2, targetHeight: 1.05, albedoLift: 0.38 }); // West outer aisle pew
-
-  // East Pew Bank (x = +3.1 — eliminates the barren empty floor in the screenshot!)
-  placePropGLB('church_pew.glb', { pos: [3.1, 0, 5.0], ry: Math.PI, targetHeight: 1.05, albedoLift: 0.4 });
-  placePropGLB('temple/glb/pew.glb', { pos: [3.1, 0, 3.4], ry: Math.PI - 0.04, targetHeight: 1.05, albedoLift: 0.38 });
-  placePropGLB('church_pew.glb', { pos: [3.1, 0, 1.8], ry: Math.PI, targetHeight: 1.05, albedoLift: 0.4 });
-  placePropGLB('temple/glb/pew.glb', { pos: [3.1, 0, 0.4], ry: Math.PI + 0.06, targetHeight: 1.05, albedoLift: 0.38 });
-  placePropGLB('temple/glb/pew.glb', { pos: [5.8, 0, 4.0], ry: -Math.PI / 2, targetHeight: 1.05, albedoLift: 0.38 }); // East outer aisle pew
+  // ── True Gothic Cathedral Pew Rows (West Bank & East Bank) ──
+  // Perfectly aligned, parallel rows facing the high altar (ry = Math.PI), using church_pew.glb
+  const pewZRows = [5.4, 3.8, 2.2, 0.6, -1.0];
+  pewZRows.forEach((pz) => {
+    // West Bank (left of central aisle)
+    placePropGLB('church_pew.glb', { pos: [-3.1, 0, pz], ry: Math.PI, targetHeight: 1.05, albedoLift: 0.42 });
+    // East Bank (right of central aisle)
+    placePropGLB('church_pew.glb', { pos: [3.1, 0, pz], ry: Math.PI, targetHeight: 1.05, albedoLift: 0.42 });
+  });
 
   // Standing Processional Candelabras Framing the Center Aisle
   placePropGLB('temple/glb/candelabra.glb', {
-    pos: [-1.75, 0, 5.7],
+    pos: [-1.85, 0, 5.8],
     targetHeight: 1.75,
     flameOffsets: [[-0.29, 1.67, 0], [0, 1.76, 0], [0.29, 1.67, 0]],
     flameScale: 0.24,
   });
   placePropGLB('temple/glb/candelabra.glb', {
-    pos: [1.75, 0, 5.7],
+    pos: [1.85, 0, 5.8],
     targetHeight: 1.75,
     flameOffsets: [[-0.29, 1.67, 0], [0, 1.76, 0], [0.29, 1.67, 0]],
     flameScale: 0.24,
   });
   placePropGLB('temple/glb/candelabra.glb', {
-    pos: [-1.75, 0, -0.3],
+    pos: [-1.85, 0, -0.3],
     targetHeight: 1.75,
     flameOffsets: [[-0.29, 1.67, 0], [0, 1.76, 0], [0.29, 1.67, 0]],
     flameScale: 0.24,
   });
   placePropGLB('temple/glb/candelabra.glb', {
-    pos: [1.75, 0, -0.3],
+    pos: [1.85, 0, -0.3],
     targetHeight: 1.75,
     flameOffsets: [[-0.29, 1.67, 0], [0, 1.76, 0], [0.29, 1.67, 0]],
     flameScale: 0.24,
@@ -935,18 +867,18 @@ export function buildVaultScene(E) {
   placePropGLB('wall_sconce.glb', { pos: [-8.28, 2.0, 5.2], ry: Math.PI / 2, targetHeight: 0.44, albedoLift: 0.4, flameOffset: [0, 0.28, 0.14], flameScale: 0.2 });
   placePropGLB('wall_sconce.glb', { pos: [8.28, 2.0, 5.2], ry: -Math.PI / 2, targetHeight: 0.44, albedoLift: 0.4, flameOffset: [0, 0.28, 0.14], flameScale: 0.2 });
 
-  // Interactable #3 (Lore 6B): autopsy_gurney
+  // Interactable #3 (Lore 6B): autopsy_gurney moved to East outer transept alcove
   placeInteractiveGLB('gothic_table.glb', 'autopsy_gurney', {
-    pos: [5.2, 0, 2.2],
+    pos: [6.8, 0, 2.0],
     ry: Math.PI / 2,
     targetHeight: 0.86,
     albedoLift: 0.38,
-    hitPos: [5.2, 0.9, 2.2],
+    hitPos: [6.8, 0.9, 2.0],
     hitSize: [2.1, 1.2, 2.1],
   });
-  placePropGLB('dead_body.glb', { pos: [5.2, 0.86, 2.2], ry: Math.PI / 2, targetHeight: 0.23, albedoLift: 0.38 });
-  placePropGLB('handsaw.glb', { pos: [5.98, 0.862, 2.25], rx: 0, rz: Math.PI / 2, ry: 0.28, targetHeight: 0.04 });
-  placePropGLB('tool_cart.glb', { pos: [6.15, 0, 2.95], ry: -0.4, targetHeight: 0.95, albedoLift: 0.36 });
+  placePropGLB('dead_body.glb', { pos: [6.8, 0.86, 2.0], ry: Math.PI / 2, targetHeight: 0.23, albedoLift: 0.38 });
+  placePropGLB('handsaw.glb', { pos: [7.4, 0.862, 2.05], rx: 0, rz: Math.PI / 2, ry: 0.28, targetHeight: 0.04 });
+  placePropGLB('tool_cart.glb', { pos: [7.2, 0, 2.95], ry: -0.4, targetHeight: 0.95, albedoLift: 0.36 });
 
   // Zone 6C: West Scriptorium Study (RE-inspired warm mahogany desk + terminal + slumped body)
   placePropGLB('gothic_table.glb', {
@@ -1248,17 +1180,27 @@ export function buildVaultScene(E) {
   };
 
   arch.track(
-    loadGLB(`${VAULT_MODEL_BASE}/manthing.glb`)
+    loadGLB(`${VAULT_MODEL_BASE}/agatha.glb`)
       .then((gltf) => {
         if (!gltf?.scene) return;
-        const gPivot = fitAndPivotSkinnedModel(gltf, 2.02, { anchor: 'bottom' });
-        normalizeModelMaterials(gPivot, { npAll: true, albedoLift: 0.0 });
-        enhanceEntityVisibility(gPivot);
-        gPivot.visible = false;
-        S.add(gPivot);
-        ref.ghost = gPivot;
-        const ctrl = mountClipAnimation(gPivot, gltf.animations, 0, { speed: 1.25 });
-        ref.ghostMixer = ctrl?.mixer || null;
+        const aPivot = fitAndPivotSkinnedModel(gltf, 1.88, { anchor: 'bottom' });
+        normalizeModelMaterials(aPivot, { npAll: false, albedoLift: 0.14 });
+        aPivot.visible = false;
+        S.add(aPivot);
+        ref.agatha = aPivot;
+        ref.ghost = aPivot;
+        const mixer = new THREE.AnimationMixer(aPivot);
+        const actions = (gltf.animations || []).map((clip) => {
+          const act = mixer.clipAction(clip);
+          act.setLoop(THREE.LoopOnce, 1);
+          act.clampWhenFinished = true;
+          return act;
+        });
+        arch.activeMixers.push(mixer);
+        ref.agathaMixer = mixer;
+        ref.agathaActions = actions;
+        ref.agathaAnimations = gltf.animations;
+        ref.ghostMixer = mixer;
       })
       .catch(() => null)
   );
