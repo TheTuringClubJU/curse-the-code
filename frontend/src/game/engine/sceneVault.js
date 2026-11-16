@@ -1279,12 +1279,14 @@ export function buildVaultScene(E) {
   };
 
   // Interactive Threshold Doors: registered as interactive targets so player aims and presses [E] to open
+  const doorNaveProxy = registerHitProxy('door_nave_threshold', [0, 1.65, 7.48], [2.8, 3.4, 0.65]);
   const doorWestProxy = registerHitProxy('door_west_scriptorium', [-8.45, 1.45, 0], [0.65, 2.8, 2.5]);
   const doorNorthProxy = registerHitProxy('door_north_chapel', [-13.3, 1.45, -6.05], [2.2, 2.8, 0.65]);
   const doorSouthProxy = registerHitProxy('door_south_cellar', [12.9, 1.45, 6.08], [2.2, 2.8, 0.65]);
   const doorEastProxy = registerHitProxy('door_east_gate', [8.45, 1.45, 0], [0.65, 3.2, 2.6]);
 
   ref.doorProxies = {
+    nave_threshold: doorNaveProxy,
     west_scriptorium: doorWestProxy,
     north_chapel: doorNorthProxy,
     south_cellar: doorSouthProxy,

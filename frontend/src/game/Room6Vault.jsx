@@ -105,10 +105,10 @@ export default function Room6Vault({ team, onLogout }) {
     tearTimerRef.current = setTimeout(() => setScanTear(false), 380);
   }, []);
 
-  const triggerNightmarePulse = useCallback((ms = 340) => {
-    setNightmarePulse(true);
+  const triggerNightmarePulse = useCallback((ms = 540) => {
+    setNightmarePulse(ms); // store actual duration for CSS custom property
     if (nightmareTimerRef.current) clearTimeout(nightmareTimerRef.current);
-    nightmareTimerRef.current = setTimeout(() => setNightmarePulse(false), ms);
+    nightmareTimerRef.current = setTimeout(() => setNightmarePulse(false), ms + 80);
   }, []);
 
   const triggerVisorCrack = useCallback((ms = 1900) => {
@@ -339,7 +339,7 @@ export default function Room6Vault({ team, onLogout }) {
           if (msg) showNotice(msg, 3600);
         },
         onThreatState: (st) => setThreatState(st),
-        onFlash: () => triggerScanTear(),
+        onFlash: (_color, _opacity, _durationMs) => triggerScanTear(),
         onNightmarePulse: (ms) => triggerNightmarePulse(ms),
         onGlassCrack: () => triggerVisorCrack(),
       });
@@ -595,8 +595,13 @@ export default function Room6Vault({ team, onLogout }) {
       {/* Atmospheric Vault Vignette & Scanlines */}
       <div className={`vault-vig ${vaultRestored ? 'vault-vig-restored' : ''}`} />
       <div className="vault-scanlines" />
-      {scanTear && <div className="vault-scan-tear" data-testid="vault-scan-tear" />}
-      {nightmarePulse && <div className="fixed inset-0 z-30 pointer-events-none jumpscare-nightmare-fx" />}
+      {scanTear && <div className="fixed inset-0 z-30 pointer-events-none vault-scan-tear" data-testid="vault-scan-tear" />}
+      {nightmarePulse && (
+        <div
+          className="fixed inset-0 z-30 pointer-events-none jumpscare-nightmare-fx"
+          style={{ '--nightmare-dur': `${nightmarePulse}ms` }}
+        />
+      )}
       {visorCrack && <div className="vault-visor-crack" aria-hidden="true" />}
 
       {/* Resident Evil Atmospheric Loading Screen */}
@@ -782,11 +787,10 @@ export default function Room6Vault({ team, onLogout }) {
       {submitFeedback && activeClue && (
         <div
           role="alert"
-          className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] px-5 py-2 rounded-[2px] border border-l-2 font-mono text-xs ${
-            submitFeedback.ok
+          className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-[60] px-5 py-2 rounded-[2px] border border-l-2 font-mono text-xs ${submitFeedback.ok
               ? 'border-emerald-500/70 border-l-emerald-400 bg-[#091711]/95 text-emerald-200'
               : 'border-rose-500/70 border-l-rose-400 bg-[#1c090c]/95 text-rose-200'
-          }`}
+            }`}
         >
           {submitFeedback.message}
         </div>

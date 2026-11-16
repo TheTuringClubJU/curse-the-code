@@ -1,6 +1,6 @@
 // Choreographed, Telegraphed Horror Director for Room 6: The Anointing Vault
-// Replaces aimless random popups with clear atmospheric buildups, milestone-driven
-// set-piece scares (6A Cell, 6B Reliquary, 6C Seal I, 6D Seal II), and a playable Stalker patrol.
+// Game-dev polish pass: multi-stage builds, FOV-kick curves, crimson vignette blooms,
+// environmental echo loops, staggered whisper builds, and camera-tilt trauma effects.
 
 export function createVaultScares(E, h = {}) {
   const fired = new Set();
@@ -14,10 +14,25 @@ export function createVaultScares(E, h = {}) {
   let pendingWestBreach = false;
   let pendingEastBlackout = false;
 
-  // Active 3D lunge closeup animation
+  // ── Lunge animation state ──
   let lungeT = -1;
   let lungeEntity = null;
+  let lungeStartDist = 3.8;
+  let lungeEndDist = 1.65;
+  let lungeDuration = 0.44;
   const baseFov = E.cam?.fov || 72;
+
+  // ── Trauma / camera shake accumulator ──
+  let traumaAcc = 0;        // 0..1 decaying trauma
+  let traumaDecayRate = 2.4;
+
+  // ── Persistent dread ambient whisper cadence ──
+  let whisperCooldown = 0;
+  const WHISPER_MIN_INTERVAL = 14.0;
+
+  // ── Atmospheric light flicker state ──
+  let flickerActive = false;
+  let flickerTimer = null;
 
   const schedule = (fn, ms) => {
     const id = setTimeout(fn, ms);
@@ -58,7 +73,6 @@ export function createVaultScares(E, h = {}) {
     entity.rotation.z = tiltZ;
     entity.visible = true;
     if (E.ref.ghostLight) {
-      // Low side-angled crimson-amber rim light so apparitions keep chilling shadow contours (never studio-bleached white)
       const dist = Math.hypot(dx, dz) || 1;
       const nx = dx / dist;
       const nz = dz / dist;
@@ -102,388 +116,691 @@ export function createVaultScares(E, h = {}) {
         act.timeScale = speed;
         act.play();
       }
-    } catch (_) {}
+    } catch (_) { }
   };
 
   const setGlobalLightScale = (val) => {
     if (E.sc) E.sc.v = val;
   };
 
-  // High-impact telegraphed rush scare (surges forward from 3.8m to 1.8m in shadowed crimson rim light)
+  // ── Smooth light ramp helper (eases light to target over durationMs) ──
+  const rampLight = (from, to, durationMs, stepMs = 40) => {
+    const steps = Math.max(2, Math.round(durationMs / stepMs));
+    for (let i = 0; i <= steps; i++) {
+      const t = i / steps;
+      const ease = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t; // ease-in-out
+      const val = from + (to - from) * ease;
+      schedule(() => setGlobalLightScale(val), i * stepMs);
+    }
+  };
+
+  // ── Rapid staccato light flicker (3–6 pulses, irregular cadence) ──
+  const triggerFlicker = (onScale = 0.08, offScale = 0.9, pulses = 5, basePulseMs = 60) => {
+    if (flickerActive) return;
+    flickerActive = true;
+    let t = 0;
+    for (let i = 0; i < pulses * 2; i++) {
+      const jitter = basePulseMs * (0.6 + Math.random() * 0.9);
+      t += jitter;
+      const val = i % 2 === 0 ? onScale : offScale;
+      schedule(() => { if (!E.ref.vaultRestored) setGlobalLightScale(val); }, t);
+    }
+    schedule(() => { flickerActive = false; }, t + 80);
+  };
+
+  // ── Add trauma so the tick system shakes the camera organically ──
+  const addTrauma = (amount) => {
+    traumaAcc = Math.min(1.0, traumaAcc + amount);
+  };
+
+  // ── Full-featured jumpscare camera-kick: FOV surge + tilt + recovery ──
+  const kickCamera = (fovDelta = -18, tiltRad = 0.04, durationMs = 650) => {
+    if (!E.cam?.isPerspectiveCamera) return;
+    const targetFov = baseFov + fovDelta;
+    schedule(() => {
+      if (E.cam) {
+        E.cam.fov = targetFov;
+        if (E.cam.rotation) E.cam.rotation.z = (Math.random() < 0.5 ? -1 : 1) * tiltRad;
+        E.cam.updateProjectionMatrix?.();
+      }
+    }, 0);
+    // Smooth recovery
+    const steps = 8;
+    for (let i = 1; i <= steps; i++) {
+      const p = i / steps;
+      const ease = 1 - Math.pow(1 - p, 3); // ease-out cubic
+      schedule(() => {
+        if (E.cam?.isPerspectiveCamera) {
+          E.cam.fov = targetFov + (baseFov - targetFov) * ease;
+          if (E.cam.rotation) E.cam.rotation.z *= (1 - ease);
+          E.cam.updateProjectionMatrix?.();
+        }
+      }, (durationMs * p));
+    }
+  };
+
+  // ── Color-graded crimson vignette flash (more immersive than a plain overlay) ──
+  const flashBlood = (hexColor = '#6e000d', opacity = 0.6, durationMs = 280) => {
+    h.onFlash?.(hexColor, opacity, durationMs);
+    h.onNightmarePulse?.(Math.round(durationMs * 1.4));
+  };
+
+  // ═══════════════════════════════════════════════════════════════════
+  // PHANTOM LUNGE — The core apex scare. 3-beat build: environment
+  // goes ice-cold, dim flicker telegraphs, then she SURGES toward you.
+  // ═══════════════════════════════════════════════════════════════════
   const triggerPhantomLunge = (reasonMsg = null, preferStalker = false) => {
     if (E.ref.vaultRestored) return;
-    lungeT = 0;
-    lungeEntity = (preferStalker && E.ref.stalker) || E.ref.ghost || E.ref.stalker;
-    scriptedBusyUntil = Math.max(scriptedBusyUntil, elapsed + 3.0);
+    scriptedBusyUntil = Math.max(scriptedBusyUntil, elapsed + 3.8);
     setThreat(null, '');
 
     const { px, pz, fx, fz } = getPlayerPose();
-    setGlobalLightScale(0.18);
-    const [gx, gz] = clampNaveSpot(px + fx * 3.8, pz + fz * 3.8);
-    const tilt = (Math.random() < 0.5 ? -1 : 1) * 0.06;
-    placeEntity(lungeEntity, gx, gz, px, pz, 3.8, tilt);
-    playAgathaAnim(3, 1.35); // jumpscare4: violent snap lunge
 
-    E.audio?.playAgathaScream?.(0.95);
-    E.shake?.(2.1, 0.65);
-    h.onFlash?.('#5c000a', 0.56, 220);
-    h.onNightmarePulse?.(520);
-    h.onGlassCrack?.();
-    h.onScare?.('phantom_lunge', reasonMsg);
+    // Beat 1 — sudden silence + cold flicker at 0ms
+    setGlobalLightScale(0.14);
+    E.audio?.playBreathScared?.(0.72);
+    h.onFlash?.('#1a000a', 0.28, 180);
+
+    // Beat 2 — a whisper-close breath at 220ms
+    schedule(() => {
+      if (E.ref.vaultRestored) return;
+      E.audio?.whisper?.();
+      setGlobalLightScale(0.06);
+    }, 220);
+
+    // Beat 3 — the full lunge erupts at 320ms
+    schedule(() => {
+      if (E.ref.vaultRestored) return;
+      lungeT = 0;
+      lungeStartDist = 4.2;
+      lungeEndDist = 1.55;
+      lungeDuration = 0.42;
+      lungeEntity = (preferStalker && E.ref.stalker) || E.ref.ghost || E.ref.stalker;
+
+      const tilt = (Math.random() < 0.5 ? -1 : 1) * 0.08;
+      const [gx, gz] = clampNaveSpot(px + fx * lungeStartDist, pz + fz * lungeStartDist);
+      placeEntity(lungeEntity, gx, gz, px, pz, 4.2, tilt);
+      playAgathaAnim(3, 1.5);
+
+      E.audio?.playAgathaScream?.(0.98);
+      E.shake?.(2.6, 0.72);
+      addTrauma(0.9);
+      kickCamera(-20, 0.06, 700);
+      flashBlood('#5c000a', 0.68, 260);
+      h.onGlassCrack?.();
+      h.onScare?.('phantom_lunge', reasonMsg);
+    }, 320);
   };
 
-  // Milestone 1: Inspecting core_glass — Agatha screams directly in front of the broken reliquary
+  // ═══════════════════════════════════════════════════════════════════
+  // CORE GLASS SLAM — Inspection milestone. Agatha erupts OUT of the
+  // reliquary glass at point-blank range. 4-beat choreography:
+  // dread→blackout→slam→aftermath.
+  // ═══════════════════════════════════════════════════════════════════
   const triggerCoreGlassScare = () => {
     if (fired.has('core_glass_slam')) return false;
     fired.add('core_glass_slam');
-    scriptedBusyUntil = Math.max(scriptedBusyUntil, elapsed + 4.5);
+    scriptedBusyUntil = Math.max(scriptedBusyUntil, elapsed + 5.2);
     setThreat('surge', 'RELIQUARY SEAL FRACTURING');
 
-    const { px, pz } = getPlayerPose();
-    setGlobalLightScale(0.04);
+    // Beat 1 — distant rumble, lights die to almost nothing
+    E.audio?.chainsRattle?.();
+    rampLight(0.9, 0.08, 500);
 
     schedule(() => {
       if (E.ref.vaultRestored) return;
-      const { px: curPx, pz: curPz, fx, fz } = getPlayerPose();
-      const agathaX = curPx + fx * 1.4;
-      const agathaZ = curPz + fz * 1.4;
 
-      placeGhost(agathaX, agathaZ, curPx, curPz, 5.2, -0.05);
-      playAgathaAnim(0, 1.2); // jumpscare1: violent double-handed screaming claw grab
-
-      E.audio?.playAgathaScream?.(1.0);
-      E.audio?.setTension?.(2.2);
-      E.shake?.(2.4, 0.75);
-      h.onGlassCrack?.();
-      h.onFlash?.('#72000e', 0.64, 300);
-      h.onNightmarePulse?.(720);
-      h.onScare?.('core_glass_slam', 'Agatha shrieks from within the broken reliquary!');
-
-      if (E.cam && E.cam.isPerspectiveCamera) {
-        E.cam.fov = baseFov - 16;
-        E.cam.updateProjectionMatrix();
-      }
-
-      if (E.ref.coreLight) E.ref.coreLight.intensity = 12.0;
+      // Beat 2 — single heartbeat thud, dead silence
+      E.audio?.heartbeat?.();
+      setGlobalLightScale(0.02);
 
       schedule(() => {
-        hideGhost();
-        setGlobalLightScale(1.0);
-        setThreat(null, '');
-        if (E.cam && E.cam.isPerspectiveCamera) {
-          E.cam.fov = baseFov;
-          E.cam.updateProjectionMatrix();
-        }
-      }, 1400);
+        if (E.ref.vaultRestored) return;
+        const { px: curPx, pz: curPz, fx, fz } = getPlayerPose();
 
-      schedule(() => {
-        E.audio?.setTension?.(1.2);
-      }, 2800);
-    }, 280);
+        // Beat 3 — she SLAMS through the glass at 1.2m
+        const agathaX = curPx + fx * 1.2;
+        const agathaZ = curPz + fz * 1.2;
+        placeGhost(agathaX, agathaZ, curPx, curPz, 5.8, -0.07);
+        playAgathaAnim(0, 1.3);
+
+        E.audio?.playAgathaScream?.(1.0);
+        E.audio?.setTension?.(2.4);
+        E.shake?.(2.8, 0.85);
+        addTrauma(1.0);
+        kickCamera(-22, 0.08, 800);
+        h.onGlassCrack?.();
+        h.onFlash?.('#72000e', 0.76, 340);
+        h.onNightmarePulse?.(820);
+        h.onScare?.('core_glass_slam', 'Agatha erupts from within the broken reliquary!');
+
+        if (E.ref.coreLight) E.ref.coreLight.intensity = 14.0;
+
+        // Beat 4 — aftermath: lights strobe back up, blood-red tint lingers
+        [280, 480, 700].forEach((ms) => {
+          schedule(() => {
+            if (E.ref.vaultRestored) return;
+            h.onFlash?.('#500008', 0.22, 120);
+          }, ms);
+        });
+
+        schedule(() => {
+          hideGhost();
+          rampLight(0.0, 1.0, 600);
+          setThreat(null, '');
+          if (E.ref.coreLight) E.ref.coreLight.intensity = 1.4;
+        }, 1600);
+
+        schedule(() => {
+          E.audio?.setTension?.(1.2);
+        }, 3200);
+      }, 420); // tight gap = no time to breathe
+
+    }, 480);
 
     return true;
   };
 
-  // NEW Agatha Jumpscare Condition: Nave Church Pew Ambush
-  const triggerNaveAisleScare = () => {
-    if (fired.has('nave_pew_ambush') || E.ref.vaultRestored) return;
-    fired.add('nave_pew_ambush');
-    scriptedBusyUntil = Math.max(scriptedBusyUntil, elapsed + 4.2);
-    setThreat('surge', 'SANCTUARY BREACH // AGATHA AWAKENS');
+  // ═══════════════════════════════════════════════════════════════════
+  // SANCTUARY STARTING DOOR REVEAL — As the grand castle doors swing open,
+  // Agatha's tall silhouette stands in the distance of the candlelit nave,
+  // head twitching, staring right back through the opening doors.
+  // ═══════════════════════════════════════════════════════════════════
+  const triggerSanctuaryRevealTease = () => {
+    if (fired.has('sanctuary_reveal_tease') || E.ref.vaultRestored) return;
+    fired.add('sanctuary_reveal_tease');
 
-    E.audio?.playBonecrack?.(0.95);
-    E.audio?.playBreathScared?.(0.92);
-    setGlobalLightScale(0.12);
+    // Deep sub-bass swell and eerie string stinger
+    E.audio?.playTensionStab?.(0.75);
+    E.audio?.setTension?.(1.6);
+    h.onFlash?.('#2a0006', 0.35, 200);
 
+    // Right as the doors swing open wide enough to see down the nave (420ms):
     schedule(() => {
       if (E.ref.vaultRestored) return;
-      const { px, pz } = getPlayerPose();
-      // Burst out from behind the front pew bank into the aisle in front of the player
-      const ambushX = px <= 0 ? -1.8 : 1.8;
-      const ambushZ = pz - 1.8;
-      placeGhost(ambushX, ambushZ, px, pz, 4.8, 0.08);
-      playAgathaAnim(2, 1.35); // jumpscare3: terrifying thrashing lunge
+      // Manifest Agatha down the nave center aisle (z = 2.4, x = 0)
+      placeGhost(0, 2.4, 0, 7.48, 3.4, 0.04);
+      playAgathaAnim(0, 0.75); // eerie slow twitching posture facing the doorway
+      setGlobalLightScale(0.3);
 
-      E.audio?.playAgathaScream?.(1.0);
-      E.shake?.(2.1, 0.65);
-      h.onFlash?.('#68000c', 0.58, 260);
-      h.onNightmarePulse?.(600);
-      h.onScare?.('nave_pew_ambush', 'A ghastly Victorian form lunges from the pews!');
+      kickCamera(-6, 0.04, 700);
+      addTrauma(0.5);
+      h.onScare?.('sanctuary_reveal_tease', 'Something watches from the depths of the nave…');
 
-      if (E.cam && E.cam.isPerspectiveCamera) {
-        E.cam.fov = baseFov - 14;
-        E.cam.updateProjectionMatrix();
-      }
-
+      // After 850ms, she jerks violently and vanishes into the gloom between the pews
       schedule(() => {
         hideGhost();
         setGlobalLightScale(1.0);
-        setThreat(null, '');
-        if (E.cam && E.cam.isPerspectiveCamera) {
-          E.cam.fov = baseFov;
-          E.cam.updateProjectionMatrix();
-        }
-      }, 1250);
-    }, 260);
+        E.audio?.playBreathScared?.(0.72);
+      }, 850);
+    }, 420);
   };
 
-  // Milestone 2: 6A Holding Cell 01 bars — crying cuts dead -> chain warning -> Agatha strikes bars
-  const triggerEntryCellVanish = () => {
-    if (fired.has('entry_cell_peek') || E.ref.vaultRestored) return;
-    fired.add('entry_cell_peek');
-    scriptedBusyUntil = Math.max(scriptedBusyUntil, elapsed + 4.0);
-    setThreat('warning', 'CELL 01 // RESTRAINTS SHIFTING');
+  E.ref.onStartingDoorOpen = triggerSanctuaryRevealTease;
 
-    E.audio?.stopWomanCrying?.();
-    E.audio?.chainsRattle?.();
-    E.audio?.playBreathScared?.(0.92);
-    E.shake?.(0.5, 0.35);
+  // ═══════════════════════════════════════════════════════════════════
+  // NAVE AISLE AMBUSH — She bursts from the pews as you walk the aisle.
+  // Extended 3-beat: creak→silence→thrash eruption.
+  // ═══════════════════════════════════════════════════════════════════
+  const triggerNaveAisleScare = () => {
+    if (fired.has('nave_pew_ambush') || E.ref.vaultRestored) return;
+    fired.add('nave_pew_ambush');
+    scriptedBusyUntil = Math.max(scriptedBusyUntil, elapsed + 4.8);
+    setThreat('surge', 'SANCTUARY BREACH // AGATHA AWAKENS');
+
+    // Beat 1 — single pew creak; freeze the music
+    E.audio?.creak?.();
+    rampLight(0.9, 0.18, 350);
 
     schedule(() => {
       if (E.ref.vaultRestored) return;
-      const { px, pz } = getPlayerPose();
-      const prevCellIntensity = E.ref.cellLight?.intensity ?? 1.3;
-      placeGhost(-3.75, 10.9, px, pz, 5.5, 0.08);
-      playAgathaAnim(1, 1.35); // jumpscare2: vicious strike against cell bars
-      if (E.ref.cellLight) E.ref.cellLight.intensity = 9.8;
-      E.audio?.playBonecrack?.(0.92);
-      E.audio?.playAgathaScream?.(0.95);
-      E.shake?.(1.4, 0.5);
-      h.onFlash?.('#64000b', 0.44, 220);
-      h.onScare?.('entry_cell_peek', null);
 
-      [140, 310, 520, 740].forEach((ms, i) => {
-        schedule(() => {
-          if (E.ref.vaultRestored) return;
-          if (E.ref.cellLight) E.ref.cellLight.intensity = i % 2 === 0 ? 0.3 : 9.0;
-        }, ms);
-      });
+      // Beat 2 — bonecrack, lights snuff
+      E.audio?.playBonecrack?.(0.98);
+      setGlobalLightScale(0.04);
 
       schedule(() => {
-        hideGhost();
-        if (E.ref.cellLight) E.ref.cellLight.intensity = prevCellIntensity;
-        setThreat(null, '');
-      }, 1250);
-    }, 750);
+        if (E.ref.vaultRestored) return;
+        const { px, pz, fx, fz } = getPlayerPose();
+
+        // Beat 3 — burst from BETWEEN the pews directly into center view and lunge forward
+        const spawnDist = 2.6;
+        const ambushX = px + fx * spawnDist;
+        const ambushZ = pz + fz * spawnDist;
+        placeGhost(ambushX, ambushZ, px, pz, 5.2, 0.08);
+        playAgathaAnim(2, 1.45);
+
+        // Dynamic lunge snap toward the player lens
+        lungeT = 0;
+        lungeStartDist = 2.6;
+        lungeEndDist = 1.65;
+        lungeDuration = 0.42;
+        lungeEntity = E.ref.ghost;
+
+        E.audio?.playAgathaScream?.(1.0);
+        E.audio?.playBreathScared?.(0.88);
+        E.shake?.(2.6, 0.75);
+        addTrauma(0.95);
+        kickCamera(-18, 0.07, 700);
+        h.onFlash?.('#68000c', 0.72, 320);
+        h.onNightmarePulse?.(680);
+        h.onScare?.('nave_pew_ambush', 'A ghastly Victorian form tears through the pews!');
+
+        // Staggered blood-flash aftershocks
+        [300, 560].forEach((ms) => {
+          schedule(() => { h.onFlash?.('#3c0006', 0.18, 110); }, ms);
+        });
+
+        schedule(() => {
+          hideGhost();
+          rampLight(0.0, 1.0, 500);
+          setThreat(null, '');
+        }, 1400);
+      }, 280);
+    }, 320);
   };
 
-  // Milestone 3: 6D East Crypt Entry — lamp swings violently for 1.5s telegraph, then Stalker watches across 6E doorway
+  // ═══════════════════════════════════════════════════════════════════
+  // ENTRY CELL VANISH — Looking into Cell 01: crying stops dead,
+  // chains rattle, then she SLAMS the bars from inside.
+  // ═══════════════════════════════════════════════════════════════════
+  const triggerEntryCellVanish = () => {
+    if (fired.has('entry_cell_peek') || E.ref.vaultRestored) return;
+    fired.add('entry_cell_peek');
+    scriptedBusyUntil = Math.max(scriptedBusyUntil, elapsed + 5.0);
+    setThreat('warning', 'CELL 01 // RESTRAINTS SHIFTING');
+
+    // Beat 1 — crying cuts out instantly, silence
+    E.audio?.stopWomanCrying?.();
+    E.audio?.playBreathScared?.(0.78);
+
+    schedule(() => {
+      if (E.ref.vaultRestored) return;
+
+      // Beat 2 — chains rattle & single lamp flicker
+      E.audio?.chainsRattle?.();
+      E.shake?.(0.55, 0.38);
+      triggerFlicker(0.12, 0.85, 4, 55);
+
+      schedule(() => {
+        if (E.ref.vaultRestored) return;
+        const { px, pz } = getPlayerPose();
+        const prevCellIntensity = E.ref.cellLight?.intensity ?? 1.3;
+
+        // Beat 3 — she smashes the bars with a screaming lunge
+        placeGhost(-3.75, 10.9, px, pz, 6.0, 0.09);
+        playAgathaAnim(1, 1.4);
+        if (E.ref.cellLight) E.ref.cellLight.intensity = 11.0;
+
+        E.audio?.playBonecrack?.(0.95);
+        E.audio?.playAgathaScream?.(0.98);
+        E.shake?.(1.6, 0.58);
+        addTrauma(0.75);
+        kickCamera(-14, 0.05, 580);
+        h.onFlash?.('#64000b', 0.58, 260);
+        h.onNightmarePulse?.(500);
+        h.onScare?.('entry_cell_peek', 'She slams against the bars from within!');
+
+        // Cell light strobe — 5 rapid flickers
+        [130, 290, 480, 660, 850].forEach((ms, i) => {
+          schedule(() => {
+            if (E.ref.vaultRestored) return;
+            if (E.ref.cellLight) E.ref.cellLight.intensity = i % 2 === 0 ? 0.2 : 10.0;
+          }, ms);
+        });
+
+        schedule(() => {
+          hideGhost();
+          if (E.ref.cellLight) E.ref.cellLight.intensity = prevCellIntensity;
+          setThreat(null, '');
+        }, 1350);
+      }, 580);
+    }, 350);
+  };
+
+  // ═══════════════════════════════════════════════════════════════════
+  // EAST BAY PEEK — Voltage surge telegraphs the Stalker who
+  // materialises in the doorway across 6E — distant, watching, still.
+  // ═══════════════════════════════════════════════════════════════════
   const triggerEastBayPeek = () => {
     if (fired.has('east_stalker_flicker') || E.ref.vaultRestored) return;
     fired.add('east_stalker_flicker');
-    scriptedBusyUntil = Math.max(scriptedBusyUntil, elapsed + 4.4);
+    scriptedBusyUntil = Math.max(scriptedBusyUntil, elapsed + 5.0);
     setThreat('warning', '6D EAST BAY // ANOMALOUS CURRENT');
 
+    // Beat 1 — voltage crackle + lamp agitation
     E.ref.eastLampAgitated = true;
-    E.audio?.creak?.();
     E.audio?.voltageBuzz?.();
-    E.shake?.(0.55, 0.32);
+    E.shake?.(0.6, 0.35);
 
-    const { px, pz } = getPlayerPose();
-    placeStalker(12.9, 5.65, px, pz, 4.2, -0.06);
-    h.onScare?.('east_stalker_flicker', null);
-
-    [220, 520, 880, 1280].forEach((ms, i) => {
+    // Beat 2 — irregular flicker sequence mimicking electrical fault
+    const flickerSeq = [0, 160, 310, 500, 720, 1020, 1380];
+    flickerSeq.forEach((ms, i) => {
       schedule(() => {
         if (E.ref.vaultRestored) return;
-        setGlobalLightScale(i % 2 === 0 ? 0.16 : 0.92);
+        setGlobalLightScale(i % 2 === 0 ? 0.12 : 0.88);
       }, ms);
     });
 
+    // Beat 3 — she's THERE in the doorway. No screaming. Just staring.
+    schedule(() => {
+      if (E.ref.vaultRestored) return;
+      const { px, pz } = getPlayerPose();
+      placeStalker(12.9, 5.65, px, pz, 4.6, -0.07);
+      E.audio?.playBreathScared?.(0.68);
+      h.onScare?.('east_stalker_flicker', 'Something watches from the eastern doorway…');
+    }, 1100);
+
+    // Beat 4 — snap reveal strobe then she vanishes
     schedule(() => {
       setGlobalLightScale(1.0);
-      E.audio?.playStab?.(0.8);
-      h.onFlash?.('#540008', 0.28, 150);
+      E.audio?.playStab?.(0.78);
+      h.onFlash?.('#540008', 0.34, 160);
+
       schedule(() => {
         hideGhost();
         E.ref.eastLampAgitated = false;
         setThreat(null, '');
-      }, 520);
-    }, 1680);
+      }, 480);
+    }, 1900);
   };
 
-  // Milestone 4: 6C West Scriptorium Entry — cold dip & Seraph statue shifts
+  // ═══════════════════════════════════════════════════════════════════
+  // WEST CRYPT CHILL — The Seraph statue rotates in the dark.
+  // A cold temperature drop + sub-bass moan precedes the stone scrape.
+  // ═══════════════════════════════════════════════════════════════════
   const triggerWestCryptChill = () => {
     if (fired.has('west_crypt_chill') || E.ref.vaultRestored) return;
     fired.add('west_crypt_chill');
-    scriptedBusyUntil = Math.max(scriptedBusyUntil, elapsed + 3.2);
-    E.audio?.statueScrape?.();
-    E.audio?.playBreathScared?.(0.74);
-    E.shake?.(0.5, 0.32);
+    scriptedBusyUntil = Math.max(scriptedBusyUntil, elapsed + 3.8);
 
-    setGlobalLightScale(0.08);
-    if (E.ref.westStatue) E.ref.westStatue.rotation.y += Math.PI;
-    h.onScare?.('west_crypt_chill', null);
+    // Beat 1 — breath + deep chill drop
+    E.audio?.playBreathScared?.(0.78);
+    rampLight(0.9, 0.06, 420);
 
     schedule(() => {
-      setGlobalLightScale(1.0);
-    }, 950);
+      if (E.ref.vaultRestored) return;
+
+      // Beat 2 — statue rotates with stone grind
+      E.audio?.statueScrape?.();
+      E.shake?.(0.55, 0.35);
+      if (E.ref.westStatue) E.ref.westStatue.rotation.y += Math.PI;
+      h.onFlash?.('#1a0004', 0.24, 200);
+      h.onScare?.('west_crypt_chill', 'The Seraph has turned its face toward you.');
+
+      // Beat 3 — lights recover slowly, unsettling
+      schedule(() => { rampLight(0.06, 1.0, 900); }, 320);
+    }, 440);
   };
 
-  // Progression Vengeance I (after solving R2-08 in 6C): Seal-I Wraith emerges into the West Nave archway
+  // ═══════════════════════════════════════════════════════════════════
+  // WEST SEAL VENGEANCE — Seal I breaks; Agatha stalks the corridor.
+  // 4-beat: chains → phantom steps → manifest → surge.
+  // ═══════════════════════════════════════════════════════════════════
   const triggerWestSealVengeance = () => {
     if (fired.has('west_seal_vengeance') || E.ref.vaultRestored) return;
     fired.add('west_seal_vengeance');
-    scriptedBusyUntil = Math.max(scriptedBusyUntil, elapsed + 4.8);
+    scriptedBusyUntil = Math.max(scriptedBusyUntil, elapsed + 5.5);
     setThreat('warning', 'SEAL I BROKEN // SOMETHING IN THE WEST ARCH');
 
+    // Beat 1 — distant chains + cold dip
     E.audio?.chainsRattle?.();
-    E.audio?.phantomSteps?.();
-    setGlobalLightScale(0.32);
+    rampLight(0.9, 0.28, 600);
 
+    // Beat 2 — slow phantom footsteps approaching
+    schedule(() => {
+      if (E.ref.vaultRestored) return;
+      E.audio?.phantomSteps?.();
+    }, 500);
+
+    // Beat 3 — she manifests in the West arch (~6-7m away)
     schedule(() => {
       if (E.ref.vaultRestored || E.isModalOpen?.()) {
-        setGlobalLightScale(1.0);
+        rampLight(0.28, 1.0, 400);
         setThreat(null, '');
         return;
       }
       const { px, pz } = getPlayerPose();
-      // Manifest grounded inside the West doorway corridor (~6-7m away) instead of teleporting in front of camera
-      placeGhost(-8.1, 0, px, pz, 3.8, 0.06);
-      playAgathaAnim(2, 1.2); // jumpscare3: menacing lunge
-      E.audio?.playAgathaScream?.(0.92);
-      E.shake?.(0.85, 0.4);
-      h.onFlash?.('#5e000a', 0.45, 200);
+      placeGhost(-8.1, 0, px, pz, 4.0, 0.07);
+      playAgathaAnim(2, 1.25);
+      E.audio?.playBreathScared?.(0.82);
+      setGlobalLightScale(0.14);
+      h.onFlash?.('#3e0008', 0.32, 200);
+    }, 1200);
+
+    // Beat 4 — she surges with a scream 600ms later
+    schedule(() => {
+      if (E.ref.vaultRestored) {
+        hideGhost(); rampLight(0.14, 1.0, 400); setThreat(null, ''); return;
+      }
+      E.audio?.playAgathaScream?.(0.94);
+      E.shake?.(1.0, 0.48);
+      addTrauma(0.6);
+      kickCamera(-12, 0.04, 550);
+      h.onFlash?.('#5e000a', 0.52, 240);
       h.onScare?.('west_seal_vengeance', 'Seal I fractured — Agatha stalks the West corridor!');
 
       schedule(() => {
         hideGhost();
-        setGlobalLightScale(1.0);
+        rampLight(0.14, 1.0, 700);
         setThreat(null, '');
-      }, 1900);
-    }, 1150);
+      }, 2000);
+    }, 1800);
   };
 
-  // Progression Vengeance II (after solving R2-09 in 6D): Breaker overload -> dark corridor silhouette across East breach
+  // ═══════════════════════════════════════════════════════════════════
+  // BLACKOUT AMBUSH — Breaker overload. Total darkness. Footsteps
+  // close in. Then she erupts from the dark — Alien: Isolation style.
+  // ═══════════════════════════════════════════════════════════════════
   const triggerBlackoutAmbush = () => {
     if (fired.has('blackout_ambush') || E.ref.vaultRestored) return;
     fired.add('blackout_ambush');
-    scriptedBusyUntil = Math.max(scriptedBusyUntil, elapsed + 4.8);
+    scriptedBusyUntil = Math.max(scriptedBusyUntil, elapsed + 5.5);
     setThreat('surge', 'BREAKER OVERLOAD // DEAD DARK');
 
-    setGlobalLightScale(0.04);
+    // Beat 1 — power-down whine + instant blackout
     E.audio?.powerOut?.();
     E.audio?.voltageBuzz?.();
-    E.audio?.playBreathScared?.(0.9);
-    E.audio?.setTension?.(2.1);
-    h.onScare?.('blackout_ambush', 'RELAY OVERLOAD — LIGHTS OUT');
+    setGlobalLightScale(0.02);
+    h.onScare?.('blackout_ambush', 'RELAY OVERLOAD — ALL LIGHTS OUT');
 
+    // Beat 2 — footsteps in the dark, getting closer
+    schedule(() => {
+      if (!E.ref.vaultRestored) {
+        E.audio?.phantomSteps?.();
+        E.audio?.playBreathScared?.(0.88);
+        E.audio?.setTension?.(2.4);
+      }
+    }, 460);
+
+    // Beat 3 — a second set of steps even closer
     schedule(() => {
       if (!E.ref.vaultRestored) E.audio?.phantomSteps?.();
-    }, 550);
+    }, 1050);
 
+    // Beat 4 — partial light recovery: just enough to see her silhouette
     schedule(() => {
       if (E.ref.vaultRestored) {
         setGlobalLightScale(1.0);
         setThreat(null, '');
         return;
       }
+      setGlobalLightScale(0.22);
       const { px, pz } = getPlayerPose();
-      setGlobalLightScale(0.28);
-      placeGhost(8.1, 0, px, pz, 4.4, -0.05);
-      playAgathaAnim(0, 1.25); // jumpscare1: thrashing screaming rush
-      E.audio?.playAgathaScream?.(0.98);
-      E.shake?.(1.5, 0.55);
-      h.onFlash?.('#6c000d', 0.55, 240);
+      placeGhost(8.1, 0, px, pz, 4.8, -0.06);
+      playAgathaAnim(0, 1.3);
+      E.audio?.playBreathScared?.(0.72);
+    }, 1600);
+
+    // Beat 5 — FULL SCREAM 500ms after partial reveal
+    schedule(() => {
+      if (E.ref.vaultRestored) {
+        hideGhost(); setGlobalLightScale(1.0); setThreat(null, ''); return;
+      }
+      E.audio?.playAgathaScream?.(1.0);
+      E.shake?.(1.8, 0.65);
+      addTrauma(0.85);
+      kickCamera(-16, 0.06, 680);
+      h.onFlash?.('#6c000d', 0.65, 280);
+      h.onNightmarePulse?.(550);
 
       schedule(() => {
         hideGhost();
-        setGlobalLightScale(1.0);
+        rampLight(0.0, 1.0, 900);
         setThreat(null, '');
         if (!E.ref.vaultRestored) E.audio?.setTension?.(1.2);
-      }, 1550);
-    }, 1450);
+      }, 1700);
+    }, 2100);
   };
 
-  // Optional Horror Wings (6F Reliquary Chapel & 6E Cellar)
+  // ═══════════════════════════════════════════════════════════════════
+  // CHAPEL RELIQUARY — Optional 6F wing. Crow shriek + distant
+  // laughter + cold ghost silhouette in peripheral vision.
+  // ═══════════════════════════════════════════════════════════════════
   const triggerChapelReliquaryScare = () => {
     if (fired.has('chapel_reliquary') || E.ref.vaultRestored) return;
     fired.add('chapel_reliquary');
-    scriptedBusyUntil = Math.max(scriptedBusyUntil, elapsed + 3.4);
-    setThreat('warning', '6F CHAPEL // COLD DRAFT');
-    const { px, pz } = getPlayerPose();
-    E.audio?.playCrows?.(0.36);
-    E.audio?.playEvilLaugh?.(0.32);
-    placeGhost(-13.3, -9.2, px, pz, 2.7, -0.06);
-    E.shake?.(0.75, 0.32);
-    h.onFlash?.('#540008', 0.32, 160);
+    scriptedBusyUntil = Math.max(scriptedBusyUntil, elapsed + 3.8);
+    setThreat('warning', '6F CHAPEL // COLD DRAFT DETECTED');
+
+    E.audio?.playCrows?.(0.42);
+    rampLight(0.9, 0.18, 300);
 
     schedule(() => {
-      E.audio?.stopWomanCrying?.();
-      hideGhost();
-      setThreat(null, '');
-    }, 1350);
+      if (E.ref.vaultRestored) return;
+      E.audio?.playEvilLaugh?.(0.38);
+      E.audio?.playBreathScared?.(0.68);
+      const { px, pz } = getPlayerPose();
+      placeGhost(-13.3, -9.2, px, pz, 2.8, -0.07);
+      E.shake?.(0.8, 0.35);
+      h.onFlash?.('#540008', 0.38, 190);
+      h.onScare?.('chapel_reliquary', 'Laughter echoes through the reliquary chapel…');
+
+      schedule(() => {
+        hideGhost();
+        rampLight(0.18, 1.0, 600);
+        setThreat(null, '');
+      }, 1550);
+    }, 320);
   };
 
+  // ═══════════════════════════════════════════════════════════════════
+  // CELLAR TRAP — Optional 6E shackle room. Bone-crack + monster
+  // growl + chains. Ghost in the corner at close range.
+  // ═══════════════════════════════════════════════════════════════════
   const triggerCellarTrapScare = () => {
     if (fired.has('cellar_ambush') || E.ref.vaultRestored) return;
     fired.add('cellar_ambush');
-    scriptedBusyUntil = Math.max(scriptedBusyUntil, elapsed + 3.4);
+    scriptedBusyUntil = Math.max(scriptedBusyUntil, elapsed + 4.0);
     setThreat('warning', '6E CELLAR // SHACKLES MOVING');
-    const { px, pz } = getPlayerPose();
-    placeGhost(12.9, 10.25, px, pz, 4.6, -0.09);
-    E.audio?.playBonecrack?.(0.92);
-    E.audio?.playMonster?.(0.84);
+
+    // Beat 1 — shackle rattle
     E.audio?.chainsRattle?.();
-    E.shake?.(1.15, 0.45);
-    h.onFlash?.('#60000b', 0.48, 190);
-    h.onScare?.('cellar_ambush', null);
+    rampLight(0.9, 0.12, 280);
+
     schedule(() => {
-      hideGhost();
-      setThreat(null, '');
-    }, 980);
+      if (E.ref.vaultRestored) return;
+
+      // Beat 2 — bonecrack + monster sound
+      E.audio?.playBonecrack?.(0.95);
+      E.audio?.playMonster?.(0.88);
+      E.shake?.(0.7, 0.4);
+
+      schedule(() => {
+        if (E.ref.vaultRestored) return;
+        const { px, pz } = getPlayerPose();
+
+        // Beat 3 — she's in the corner, contorted
+        placeGhost(12.9, 10.25, px, pz, 5.0, -0.11);
+        playAgathaAnim(1, 1.3);
+        E.shake?.(1.3, 0.52);
+        addTrauma(0.65);
+        kickCamera(-11, 0.04, 500);
+        h.onFlash?.('#60000b', 0.56, 220);
+        h.onNightmarePulse?.(420);
+        h.onScare?.('cellar_ambush', 'The shackles are empty. Something else is here.');
+
+        schedule(() => {
+          hideGhost();
+          rampLight(0.12, 1.0, 700);
+          setThreat(null, '');
+        }, 1100);
+      }, 320);
+    }, 300);
   };
 
   const triggerConsoleReject = () => {
-    triggerPhantomLunge('CONTAINMENT REJECTED', false);
-    E.audio?.setTension?.(2.2);
+    triggerPhantomLunge('CONTAINMENT REJECTED — SHE IS FREE', false);
+    E.audio?.setTension?.(2.4);
     schedule(() => {
       if (!E.ref.vaultRestored) E.audio?.setTension?.(1.2);
-    }, 3200);
+    }, 3600);
   };
 
+  // ═══════════════════════════════════════════════════════════════════
+  // TICK — per-frame update: lunge interpolation, trauma decay,
+  // organic whisper cadence, and all zone trigger checks.
+  // ═══════════════════════════════════════════════════════════════════
   const tick = (dt) => {
-    // Dynamic shadow rush scare: entity surges from 3.8m to 1.8m then dissolves before camera clipping
+    // ── Lunge animation: smooth eased surge from start to end distance ──
     if (lungeT >= 0) {
       lungeT += dt;
-      const k = Math.min(1, lungeT / 0.42);
+      const rawK = Math.min(1, lungeT / lungeDuration);
+      // Ease-out quart for snappy surge that decelerates into your face
+      const k = 1 - Math.pow(1 - rawK, 4);
       const { px, pz, fx, fz } = getPlayerPose();
-      const dist = 3.8 - 2.0 * k;
+      const dist = lungeStartDist - (lungeStartDist - lungeEndDist) * k;
       const [gx, gz] = clampNaveSpot(px + fx * dist, pz + fz * dist);
-      placeEntity(lungeEntity || E.ref.ghost, gx, gz, px, pz, 2.8, lungeEntity?.rotation?.z || 0);
-      if (E.cam && E.cam.isPerspectiveCamera) {
-        E.cam.fov = baseFov - 12 * Math.sin(Math.min(1, lungeT / 0.65) * Math.PI);
-        E.cam.updateProjectionMatrix();
+      placeEntity(lungeEntity || E.ref.ghost, gx, gz, px, pz, 2.6, lungeEntity?.rotation?.z || 0);
+
+      // FOV kick during lunge: narrows then snaps back
+      if (E.cam?.isPerspectiveCamera) {
+        const fovK = Math.sin(Math.min(1, lungeT / (lungeDuration * 1.4)) * Math.PI);
+        E.cam.fov = baseFov - 20 * fovK;
+        E.cam.updateProjectionMatrix?.();
       }
-      if (lungeT >= 0.68) {
+
+      if (lungeT >= lungeDuration + 0.26) {
         lungeT = -1;
         lungeEntity = null;
         hideGhost();
         setGlobalLightScale(1.0);
-        if (E.cam && E.cam.isPerspectiveCamera && E.cam.fov !== baseFov) {
+        if (E.cam?.isPerspectiveCamera && E.cam.fov !== baseFov) {
           E.cam.fov = baseFov;
-          E.cam.updateProjectionMatrix();
+          E.cam.updateProjectionMatrix?.();
         }
+      }
+    }
+
+    // ── Trauma decay: organic micro-shake ──
+    if (traumaAcc > 0.005) {
+      traumaAcc = Math.max(0, traumaAcc - traumaDecayRate * dt);
+      // Inject a small shake derived from trauma so it feels physically grounded
+      if (traumaAcc > 0.08 && E.shake) {
+        const traumaShake = traumaAcc * traumaAcc * 0.9; // squared for non-linear feel
+        E.shake?.(traumaShake, 0.08);
       }
     }
 
     if (E.isModalOpen?.()) return;
 
     elapsed += dt;
+    whisperCooldown = Math.max(0, whisperCooldown - dt);
+
     if (E.ref.vaultRestored) {
       hideGhost();
       setThreat(null, '');
       E.audio?.stopMachineLoop?.();
       E.ref._lightsOverridden = false;
       setGlobalLightScale(1.0);
-      if (E.cam && E.cam.isPerspectiveCamera && E.cam.fov !== baseFov) {
+      if (E.cam?.isPerspectiveCamera && E.cam.fov !== baseFov) {
         E.cam.fov = baseFov;
-        E.cam.updateProjectionMatrix();
+        E.cam.updateProjectionMatrix?.();
       }
       return;
     }
 
-    // Fire post-puzzle progression scares cleanly right after the player exits the modal!
+    // ── Fire post-puzzle scares after modal exit ──
     if (pendingWestBreach && elapsed >= scriptedBusyUntil) {
       pendingWestBreach = false;
       triggerWestSealVengeance();
@@ -496,19 +813,38 @@ export function createVaultScares(E, h = {}) {
     const { px, pz, fx, fz } = getPlayerPose();
     if (pz < 7.6) leftNarthex = true;
 
-    // 6C Weeping Seraph Statue turns silently when you look away
+    // ── Passive ambient dread: random whispers in long silences ──
+    if (
+      whisperCooldown <= 0 &&
+      elapsed > 12.0 &&
+      !fired.has('entry_cell_peek') &&
+      elapsed < scriptedBusyUntil + 2.0 === false &&
+      Math.random() < 0.012 // ~1.2% per frame at 60fps ≈ every ~15s
+    ) {
+      whisperCooldown = WHISPER_MIN_INTERVAL + Math.random() * 8.0;
+      E.audio?.whisper?.();
+      // Very faint light dip
+      setGlobalLightScale(0.72);
+      schedule(() => setGlobalLightScale(1.0), 420);
+    }
+
+    // ── 6C Seraph Statue silent turn when you look away ──
     if (pendingStatueTurn && E.ref.westStatue && !lookingAt(-11.8, -3.6, -0.34)) {
       pendingStatueTurn = false;
       E.ref.westStatue.rotation.y += Math.PI;
       E.audio?.statueScrape?.();
+      // Brief light dip when the statue turns
+      setGlobalLightScale(0.55);
+      schedule(() => setGlobalLightScale(1.0), 480);
     }
 
-    // Beat 1: 6A Entry Cell 01 — ambient crying when in Narthex
+    // ── Beat 1: Sobbing ambience on entering Narthex ──
     if (!fired.has('cell_sobbing') && pz > 9.0 && pz < 15.5 && px < 1.0) {
       fired.add('cell_sobbing');
-      E.audio?.playWomanCrying?.(0.32);
+      E.audio?.playWomanCrying?.(0.34);
     }
-    // Only lunge against bars when player deliberately walks UP TO the cell bars and looks into the cell!
+
+    // ── Beat 1A: Cell bars lunge on deliberate approach ──
     if (
       !fired.has('entry_cell_peek') &&
       px < -1.8 && pz > 9.0 && pz < 13.0 && lookingAt(-4.8, 10.9, 0.6)
@@ -516,19 +852,18 @@ export function createVaultScares(E, h = {}) {
       triggerEntryCellVanish();
     }
 
-    // Beat 1.5: Nave Church Pew Ambush (Agatha bursts from between church pews when advancing down center aisle towards Altar)
+    // ── Beat 1.5: Nave pew burst on advancing toward altar ──
     if (
       !fired.has('nave_pew_ambush') &&
       leftNarthex &&
-      pz < 3.2 &&
-      pz > 1.2 &&
+      pz < 3.2 && pz > 1.2 &&
       Math.abs(px) < 1.45 &&
       lookingAt(0, -4.9, 0.5)
     ) {
       triggerNaveAisleScare();
     }
 
-    // Beat 2 & 3: Wing First Entries (environmental visual teases, never in-camera jumps)
+    // ── Beat 2 & 3: Wing first entries ──
     if (elapsed > 3 && px > 9.4) {
       visitedSideWing = true;
       if (!fired.has('east_stalker_flicker')) triggerEastBayPeek();
@@ -538,7 +873,7 @@ export function createVaultScares(E, h = {}) {
       if (!fired.has('west_crypt_chill')) triggerWestCryptChill();
     }
 
-    // Optional Side Chambers (6E / 6F)
+    // ── Optional Side Chambers ──
     if (px > 10.4 && pz > 6.8 && !fired.has('cellar_ambush')) {
       triggerCellarTrapScare();
     }
@@ -547,6 +882,10 @@ export function createVaultScares(E, h = {}) {
     }
   };
 
+  // ═══════════════════════════════════════════════════════════════════
+  // LORE INSPECT REACTIONS — Each interactable has a contextual micro-scare
+  // scaled to what the player is touching (never the same twice).
+  // ═══════════════════════════════════════════════════════════════════
   const handleLoreInspect = (id) => {
     E.ref.triggerInteractAnim?.(id);
     const key = `lore_react_${id}`;
@@ -556,37 +895,51 @@ export function createVaultScares(E, h = {}) {
     if (id === 'narthex_registry' || id === 'scriptorium_books') {
       E.audio?.creak?.();
       if (id === 'narthex_registry') {
-        // Place shadowed entity at the 6A->6B archway threshold watching from afar rather than in front of the desk
+        // Ghost watches from the arch threshold — not in your face
         const { px, pz } = getPlayerPose();
-        placeGhost(0, 7.35, px, pz, 2.7, -0.04);
-        E.audio?.playBreathScared?.(0.85);
-        E.audio?.playStab?.(0.62);
-        E.shake?.(0.65, 0.35);
-        h.onFlash?.('#4e0008', 0.34, 180);
-        schedule(() => {
-          hideGhost();
-        }, 900);
+        placeGhost(0, 7.35, px, pz, 2.8, -0.04);
+        E.audio?.playBreathScared?.(0.88);
+        E.audio?.playStab?.(0.65);
+        E.shake?.(0.72, 0.38);
+        h.onFlash?.('#4e0008', 0.38, 200);
+        // Whisper accompanies the sighting
+        schedule(() => { E.audio?.whisper?.(); }, 180);
+        schedule(() => { hideGhost(); }, 1000);
         return true;
       }
     } else if (id === 'cell_manifest') {
       if (!fired.has('entry_cell_peek')) triggerEntryCellVanish();
     } else if (id === 'autopsy_gurney') {
-      setGlobalLightScale(0.12);
-      E.audio?.playBonecrack?.(0.9);
-      E.audio?.playStab?.(0.68);
-      E.shake?.(0.7, 0.35);
-      h.onFlash?.('#4e0008', 0.35, 180);
-      schedule(() => setGlobalLightScale(1.0), 380);
+      // Cold snap + blood tint + bone crunch
+      setGlobalLightScale(0.08);
+      E.audio?.playBonecrack?.(0.92);
+      E.audio?.playStab?.(0.72);
+      E.shake?.(0.78, 0.4);
+      addTrauma(0.35);
+      h.onFlash?.('#540009', 0.44, 220);
+      h.onNightmarePulse?.(360);
+      schedule(() => rampLight(0.08, 1.0, 500), 160);
     } else if (id === 'specimen_locker') {
-      E.audio?.playBreathScared?.(0.55);
-      E.audio?.playCrows?.(0.24);
+      // A single wheeze + distant crow
+      E.audio?.playBreathScared?.(0.6);
+      E.audio?.playCrows?.(0.28);
+      setGlobalLightScale(0.72);
+      schedule(() => setGlobalLightScale(1.0), 380);
     } else if (id === 'weeping_statue') {
+      // Schedule the statue turn for when player looks away
       E.audio?.statueScrape?.();
       pendingStatueTurn = true;
     } else if (id === 'sarcophagus_se') {
+      // Chains + sub-bass + ghost light flare
       E.audio?.chainsRattle?.();
+      E.shake?.(0.6, 0.35);
+      h.onFlash?.('#3c0007', 0.28, 180);
+      triggerFlicker(0.2, 0.9, 3, 70);
     } else if (id === 'switchgear_log') {
+      // Electrical crackle + voltage buzz + momentary strobe
       E.audio?.voltageBuzz?.();
+      triggerFlicker(0.1, 0.85, 4, 50);
+      E.shake?.(0.45, 0.3);
     }
     return false;
   };
@@ -631,9 +984,11 @@ export function createVaultScares(E, h = {}) {
       E.audio?.stopMachineLoop?.();
       E.ref._lightsOverridden = false;
       setGlobalLightScale(1.0);
-      if (E.cam && E.cam.isPerspectiveCamera && E.cam.fov !== baseFov) {
+      traumaAcc = 0;
+      if (flickerTimer) { clearTimeout(flickerTimer); flickerTimer = null; }
+      if (E.cam?.isPerspectiveCamera && E.cam.fov !== baseFov) {
         E.cam.fov = baseFov;
-        E.cam.updateProjectionMatrix();
+        E.cam.updateProjectionMatrix?.();
       }
       timers.forEach((id) => clearTimeout(id));
       timers.length = 0;

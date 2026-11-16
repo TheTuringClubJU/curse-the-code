@@ -611,14 +611,41 @@ export function createVaultArchitecture(E, { matLancet, pushStatic }) {
       S.add(pivot);
     });
 
-    // 2) Narthex -> Sanctuary open Gothic archway threshold (z = 7.48, wall_doorway_temple)
-    // The archway is an open stone portal providing a clean cathedral vista down the Nave aisle
-    doors.nave_threshold = {
-      root: null,
-      opened: true,
-      pos: new THREE.Vector3(0, 0, 7.48),
-      open: () => {},
-    };
+    // 2) Narthex -> Sanctuary Starting Castle Doors (z = 7.48, seated inside wall_doorway_temple)
+    const thresholdCollider = solid(-1.5, 1.5, 7.25, 7.7);
+    loadCached('castle_door.glb', { psx: true, npAll: true, albedoLift: 0.32 }).then((gltf) => {
+      const raw = gltf?.scene;
+      if (!raw) return;
+      const door = raw.clone();
+      const pivot = fitAndPivotModel(door, 3.85);
+      pivot.scale.x = 1.38; // snug fit inside 2.9m archway opening
+      pivot.position.set(0, 0, 7.48);
+      pivot.rotation.y = 0; // facing south towards player spawn in 6A
+      S.add(pivot);
+
+      const leftLeaf = door.getObjectByName('large_castle_door_left');
+      const rightLeaf = door.getObjectByName('large_castle_door_right');
+      if (leftLeaf) leftLeaf.rotation.y = 0;
+      if (rightLeaf) rightLeaf.rotation.y = 0;
+
+      const openDoors = (silent = false) => {
+        if (doors.nave_threshold?.opened) return;
+        doors.nave_threshold.opened = true;
+        if (thresholdCollider) removeSolid(thresholdCollider);
+        if (leftLeaf) animateScalar(() => leftLeaf.rotation.y, (v) => { leftLeaf.rotation.y = v; }, -1.55, 1.9);
+        if (rightLeaf) animateScalar(() => rightLeaf.rotation.y, (v) => { rightLeaf.rotation.y = v; }, 1.55, 1.9);
+        if (!silent) audio?.playGateOpen?.(0.8);
+        ref?.onStartingDoorOpen?.();
+      };
+
+      doors.nave_threshold = {
+        root: pivot,
+        collider: thresholdCollider,
+        opened: false,
+        pos: new THREE.Vector3(0, 0, 7.48),
+        open: openDoors,
+      };
+    });
 
     // 3) West Scriptorium Temple Double Doors (`x = -8.45, z = 0` — seated cleanly inside West Nave archway)
     setupClipDoor('west_scriptorium', 'temple/glb/door_temple.glb', {
