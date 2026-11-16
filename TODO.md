@@ -13,7 +13,7 @@
 | **Room 3: The Basement** | Industrial Containment Bunker | **Krishnapriya** | **Darsh** | `R1-09`, `R1-10`, `R1-FIN` (3 clues) | 5 pieces (3 real + 2 decoys) | **Completed** |
 | **Room 4: The Rotting Archive** | Flooded Sub-Basement / Decay | **Darsh** | **Darsh** | `R2-02`, `R2-03`, `R2-04`, `R2-07` (4 clues) | 12 pieces (`ER01`–`ER10`, `XR01`, `XR02`) | **Completed (Round 2 Reference)** |
 | **Room 5: The Surveillance Morgue** | CRT Bunker / Quarantine Plastic | **Swapnil** | **Hari Priya** | `R2-01`, `R2-05`, `R2-06` (3 clues) | 10 pieces (`EC01`–`EC08`, `XC01`, `XC02`) | **Assigned** |
-| **Room 6: The Anointing Vault** | Occult Containment Tomb / Flesh Core | **Swapnil** | **Hari Priya** | `R2-08`, `R2-09`, `R2-10` (3 clues) | Master Case Dossier Convergence | **Assigned** |
+| **Room 6: The Anointing Vault** | Occult Containment Tomb / Flesh Core | **Swapnil** | **Hari Priya** | `R2-08`, `R2-09`, `R2-10` (3 clues) | Master Case Dossier Convergence | **Completed & Polished** |
 
 ### Active Visual Upgrade & Developer Assignments (Round 1 & Round 2)
 
@@ -24,7 +24,7 @@
 | **Room 3: The Basement** | **Krishnapriya** | `visual/room3-basement` | 3D Visual Upgrade & Containment Bunker |
 | **Room 4: The Rotting Archive** | **Ishan** | `visual/room4-records` | 3D Visual Upgrade & Archive Shelves |
 | **Room 5: The Surveillance Morgue** | **Swapnil** | `feat/room-5-frontend` | Completed (PR #25 in Review) |
-| **Room 6: The Anointing Vault** | **Swapnil** | `feat/room-6-vault` | Build & Clue Modals |
+| **Room 6: The Anointing Vault** | **Swapnil** | `feat/room-6-frontend` | Completed & Polished |
 
 ### Round 1 Master Test Target
 - **Total Tests for Round 1:** Exactly **300 Automated Tests**
@@ -897,7 +897,7 @@ Each room has a dedicated suite of **100 tests**:
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | **Room 4: The Rotting Archive** (`records`) | Flooded sub-basement archive. Buckled concrete, dripping ceiling, flickering tubes. | **Darsh** | **Darsh** | `R2-02`, `R2-03`, `R2-04`, `R2-07` (4 clues) | 12 pieces (`ER01`–`ER10`, `XR01`, `XR02` decoys) | **Completed (Round 2 Reference)** |
 | **Room 5: The Surveillance Morgue** (`control`) | Narrow observation bunker. 9 cracked CRTs, plastic quarantine sheeting. | **Swapnil** | **Hari Priya** | `R2-01`, `R2-05`, `R2-06` (3 clues) | 10 pieces (`EC01`–`EC08`, `XC01`, `XC02` decoys) | **Assigned** |
-| **Room 6: The Anointing Vault** (`vault`) | Occult containment tomb. Suspended rusted iron cage, pulsing flesh organism. | **Swapnil** | **Hari Priya** | `R2-08`, `R2-09`, `R2-10` (3 clues) | None (Master Case Dossier convergence) | **Assigned** |
+| **Room 6: The Anointing Vault** (`vault`) | Occult containment tomb. Suspended rusted iron cage, pulsing flesh organism. | **Swapnil** | **Hari Priya** | `R2-08`, `R2-09`, `R2-10` (3 clues) | None (Master Case Dossier convergence) | **Completed & Polished** |
 
 ### Round 2 Master Test Target
 - **Total Tests for Round 2:** Exactly **300 Automated Tests**
