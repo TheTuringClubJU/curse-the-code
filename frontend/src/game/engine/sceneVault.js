@@ -1339,12 +1339,7 @@ export function buildVaultScene(E) {
       }
       if (!ref._lightsOverridden) {
         coreLight.intensity = 2.9 + beat * 1.6;
-        westRelayLamp.rotation.y = t * 0.7;
-        eastRelayLamp.rotation.y = -t * 0.7;
-        altarBeaconMesh.rotation.y = t * 0.9;
       }
-    } else {
-      altarBeaconMesh.rotation.y = t * 0.5;
     }
 
     // Swinging east lamp in 6D when agitated
