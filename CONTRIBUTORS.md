@@ -28,8 +28,7 @@ One bullet per contribution/PR, most recent contribution added to the bottom of 
 - R Hari priya ([@Haripriya24071](https://github.com/Haripriya24071)) — Tech Co-Lead
   - Implemented Room 5 backend, Fork 2 Core Airlock routes, Case Dossier system, and 49 tests ([#16](https://github.com/TheTuringClubJU/curse-the-code/pull/16))
   - Implemented Room 6 backend engine, Grand Finale validation, tournament victory state, and 49 tests ([#18](https://github.com/TheTuringClubJU/curse-the-code/pull/18))
-
 - Shahan Samar ([@shxhxn](https://github.com/shxhxn))
-  - Implemented Daniel's Study (Room 2) backend, including ordered fragment collection, evidence gates, answer verification, transactional progress and scoring, backend regression tests, and frontend integration documentation ([#7](https://github.com/TheTuringClubJU/curse-the-code/pull/7)).
-  - Corrected solved-or-exhausted room progression, preserved rewards for correct solves only, and added progression, recovery, concurrency, and rollback regressions ([#8](https://github.com/TheTuringClubJU/curse-the-code/pull/8)).
-  - Built the Room 2 gothic Study frontend, asset optimization, investigation guidance, hint integration, scripted horror events, and frontend/backend regression coverage.
+  - Implemented Room 2 (Daniel's Study) backend: evidence collection, clue validation, transactional progress and scoring, room completion, and regression tests ([#7](https://github.com/TheTuringClubJU/curse-the-code/pull/7))
+  - Developed Room 2's 3D frontend, gothic environment, interactive props, horror sequences, audio, performance optimizations, and regression tests ([#30](https://github.com/TheTuringClubJU/curse-the-code/pull/30), under review)
+
