@@ -531,6 +531,87 @@ export function createVaultArchitecture(E, { matLancet, pushStatic }) {
   const animatedTweens = [];
   const doors = {};
 
+  const getPX = () => (typeof E.px === 'function' ? E.px() : (E.cam?.position?.x ?? 0));
+  const getPZ = () => (typeof E.pz === 'function' ? E.pz() : (E.cam?.position?.z ?? 0));
+
+  const autoCloseTriggers = {
+    nave_threshold: {
+      armed: false,
+      armTime: 0,
+      fromSide: 'south',
+      arm(px, pz) {
+        this.armed = true;
+        this.armTime = performance.now();
+        this.fromSide = pz > 7.48 ? 'south' : 'north';
+      },
+      shouldClose(px, pz) {
+        if (this.fromSide === 'south') return pz < 6.4;
+        if (this.fromSide === 'north') return pz > 8.5;
+        return false;
+      },
+    },
+    west_scriptorium: {
+      armed: false,
+      armTime: 0,
+      fromSide: 'east',
+      arm(px, pz) {
+        this.armed = true;
+        this.armTime = performance.now();
+        this.fromSide = px > -8.45 ? 'east' : 'west';
+      },
+      shouldClose(px, pz) {
+        if (this.fromSide === 'east') return px < -9.8;
+        if (this.fromSide === 'west') return px > -7.0;
+        return false;
+      },
+    },
+    north_chapel: {
+      armed: false,
+      armTime: 0,
+      fromSide: 'south',
+      arm(px, pz) {
+        this.armed = true;
+        this.armTime = performance.now();
+        this.fromSide = pz > -6.05 ? 'south' : 'north';
+      },
+      shouldClose(px, pz) {
+        if (this.fromSide === 'south') return pz < -7.4;
+        if (this.fromSide === 'north') return pz > -4.8;
+        return false;
+      },
+    },
+    east_gate: {
+      armed: false,
+      armTime: 0,
+      fromSide: 'west',
+      arm(px, pz) {
+        this.armed = true;
+        this.armTime = performance.now();
+        this.fromSide = px < 8.45 ? 'west' : 'east';
+      },
+      shouldClose(px, pz) {
+        if (this.fromSide === 'west') return px > 9.8;
+        if (this.fromSide === 'east') return px < 7.0;
+        return false;
+      },
+    },
+    south_cellar: {
+      armed: false,
+      armTime: 0,
+      fromSide: 'north',
+      arm(px, pz) {
+        this.armed = true;
+        this.armTime = performance.now();
+        this.fromSide = pz < 6.08 ? 'north' : 'south';
+      },
+      shouldClose(px, pz) {
+        if (this.fromSide === 'north') return pz > 7.4;
+        if (this.fromSide === 'south') return pz < 4.8;
+        return false;
+      },
+    },
+  };
+
   const animateScalar = (getVal, setVal, target, speed = 2.4) => {
     animatedTweens.push({ getVal, setVal, target, speed });
   };
@@ -548,6 +629,18 @@ export function createVaultArchitecture(E, { matLancet, pushStatic }) {
       if (Math.abs(next - tw.target) < 0.004) {
         tw.setVal(tw.target);
         animatedTweens.splice(i, 1);
+      }
+    }
+
+    const px = getPX();
+    const pz = getPZ();
+    const now = performance.now();
+    for (const [key, trig] of Object.entries(autoCloseTriggers)) {
+      if (doors[key]?.opened && trig.armed) {
+        if (now - trig.armTime >= 1800 && trig.shouldClose(px, pz)) {
+          trig.armed = false;
+          doors[key]?.close?.(false);
+        }
       }
     }
   });
@@ -614,13 +707,16 @@ export function createVaultArchitecture(E, { matLancet, pushStatic }) {
           ref.doorProxies[key].position.set(0, -999, 0);
         }
         if (autoCloseTriggers[key]) {
-          autoCloseTriggers[key].armed = true;
+          autoCloseTriggers[key].arm?.(getPX(), getPZ());
         }
       };
 
       const closeFn = (silent = false) => {
         if (!doors[key]?.opened) return;
         if (doors[key]) doors[key].opened = false;
+        if (autoCloseTriggers[key]) {
+          autoCloseTriggers[key].armed = false;
+        }
         if (colliderBounds && !doors[key]?.collider) {
           doors[key].collider = solid(...colliderBounds);
         }
@@ -702,13 +798,16 @@ export function createVaultArchitecture(E, { matLancet, pushStatic }) {
           ref.doorProxies.nave_threshold.position.set(0, -999, 0);
         }
         if (autoCloseTriggers.nave_threshold) {
-          autoCloseTriggers.nave_threshold.armed = true;
+          autoCloseTriggers.nave_threshold.arm?.(getPX(), getPZ());
         }
       };
 
       const closeDoors = (silent = false) => {
         if (!doors.nave_threshold?.opened) return;
         doors.nave_threshold.opened = false;
+        if (autoCloseTriggers.nave_threshold) {
+          autoCloseTriggers.nave_threshold.armed = false;
+        }
         if (!doors.nave_threshold.collider) {
           doors.nave_threshold.collider = solid(-1.5, 1.5, 7.25, 7.7);
         }
@@ -817,13 +916,16 @@ export function createVaultArchitecture(E, { matLancet, pushStatic }) {
           ref.doorProxies.east_gate.position.set(0, -999, 0);
         }
         if (autoCloseTriggers.east_gate) {
-          autoCloseTriggers.east_gate.armed = true;
+          autoCloseTriggers.east_gate.arm?.(getPX(), getPZ());
         }
       };
 
       const closeGate = (silent = false) => {
         if (!doors.east_gate?.opened) return;
         doors.east_gate.opened = false;
+        if (autoCloseTriggers.east_gate) {
+          autoCloseTriggers.east_gate.armed = false;
+        }
         if (!doors.east_gate.collider) {
           doors.east_gate.collider = solid(8.25, 8.65, -1.25, 1.25);
         }
@@ -851,52 +953,6 @@ export function createVaultArchitecture(E, { matLancet, pushStatic }) {
       if (!ref.openFailsafeDoor) ref.openFailsafeDoor = () => openGate(false);
     });
   };
-
-  // Horror Auto-Closing Door Sensor System:
-  // When player traverses into a room or exits back out, the threshold door slams shut behind them with a frightening thud.
-  const getPX = () => (typeof E.px === 'function' ? E.px() : (E.cam?.position?.x ?? 0));
-  const getPZ = () => (typeof E.pz === 'function' ? E.pz() : (E.cam?.position?.z ?? 0));
-
-  const autoCloseTriggers = {
-    nave_threshold: {
-      armed: false,
-      testIn: (px, pz) => pz < 6.2,
-      testOut: (px, pz) => pz > 8.5,
-    },
-    west_scriptorium: {
-      armed: false,
-      testIn: (px, pz) => px < -9.6,
-      testOut: (px, pz) => px > -7.2,
-    },
-    north_chapel: {
-      armed: false,
-      testIn: (px, pz) => pz < -7.2,
-      testOut: (px, pz) => pz > -4.8,
-    },
-    east_gate: {
-      armed: false,
-      testIn: (px, pz) => px > 9.6,
-      testOut: (px, pz) => px < 7.2,
-    },
-    south_cellar: {
-      armed: false,
-      testIn: (px, pz) => pz > 7.2,
-      testOut: (px, pz) => pz < 4.8,
-    },
-  };
-
-  anim(() => {
-    const px = getPX();
-    const pz = getPZ();
-    for (const [key, trig] of Object.entries(autoCloseTriggers)) {
-      if (doors[key]?.opened && trig.armed) {
-        if (trig.testIn(px, pz) || trig.testOut(px, pz)) {
-          trig.armed = false;
-          doors[key]?.close?.(false);
-        }
-      }
-    }
-  });
 
   const openZoneDoor = (key, silent = false) => {
     doors[key]?.open?.(silent);
