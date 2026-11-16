@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import {
+  createAgedBoneTextures,
   createBioFleshTextures,
   createBloodGrimeTexture,
   createCandleFlameTexture,
@@ -160,18 +161,24 @@ export function buildVaultScene(E) {
     solid(-1.25, 1.25, -6.15, -3.65); // core_glass Gothic reliquary shrine
     solid(-1.55, 1.55, -2.95, -1.05); // central_console containment altar
     solid(-1.45, 1.45, -8.85, -7.25); // North Apse High Altar under clock
-    solid(-4.75, -3.05, -0.1, 0.95); // west pew 0
-    solid(-4.75, -3.05, 1.45, 2.55); // west pew 1
-    solid(-4.75, -3.05, 3.55, 4.65); // west pew 2
-    solid(-6.75, -5.75, 2.35, 4.25); // west flank pew
-    solid(3.05, 4.75, 4.05, 5.15); // east pew 2
-    solid(3.35, 5.65, 1.15, 3.45); // autopsy table & corpse
+    // 6B West Pew Bank
+    solid(-4.2, -2.0, 4.4, 5.6); // west pew 0
+    solid(-4.2, -2.0, 2.8, 4.0); // west pew 1
+    solid(-4.2, -2.0, 1.2, 2.4); // west pew 2
+    solid(-4.2, -2.0, -0.2, 1.0); // west pew 3
+    solid(-6.75, -5.2, 2.7, 4.1); // west flank pew
+    // 6B East Pew Bank
+    solid(2.0, 4.2, 4.4, 5.6); // east pew 0
+    solid(2.0, 4.2, 2.8, 4.0); // east pew 1
+    solid(2.0, 4.2, 1.2, 2.4); // east pew 2
+    solid(2.0, 4.2, -0.2, 1.0); // east pew 3
+    solid(4.4, 6.2, 1.3, 3.1); // autopsy table & corpse
     solid(-7.7, -6.1, -9.05, -7.65); // NW Nave bookcase
     solid(6.1, 7.7, -9.05, -7.65); // NE Nave bookcase
     solid(-3.2, -2.0, -6.7, -5.5); // NW sanctuary statue
     solid(2.0, 3.2, -6.7, -5.5); // NE sanctuary statue
-    solid(-7.5, -6.2, 5.5, 6.85); // SW Nave commode
-    solid(6.2, 7.5, 5.5, 6.85); // SE Nave commode
+    solid(-7.5, -5.2, 4.2, 6.85); // SW Nave commode & crates
+    solid(5.2, 7.5, 4.2, 6.85); // SE Nave commode & barrels
 
     // 6C West Scriptorium walls & furniture (6F archway opening x = -14.2..-12.4)
     solid(-17.4, -16.6, -6.3, 6.3);
@@ -245,12 +252,12 @@ export function buildVaultScene(E) {
   reliquaryLight.position.set(-13.3, 3.1, -8.5);
 
   // Warm localized Nave aisle & chandelier fill lights so pews, bookcases, and stonework never crush pitch-black
-  const naveSouthLight = registerLight(new THREE.PointLight(0xffb468, 2.85, 15.0, 1.45));
-  naveSouthLight.position.set(0, 4.35, 4.4);
-  const naveWestLight = registerLight(new THREE.PointLight(0xeea458, 2.5, 14.0, 1.45));
-  naveWestLight.position.set(-5.1, 3.55, 1.8);
-  const naveEastLight = registerLight(new THREE.PointLight(0xeea458, 2.5, 14.0, 1.45));
-  naveEastLight.position.set(5.1, 3.55, 1.8);
+  const naveSouthLight = registerLight(new THREE.PointLight(0xffb870, 3.2, 16.5, 1.45));
+  naveSouthLight.position.set(0, 4.35, 4.0);
+  const naveWestLight = registerLight(new THREE.PointLight(0xeea860, 2.8, 15.0, 1.45));
+  naveWestLight.position.set(-3.6, 3.6, 2.6);
+  const naveEastLight = registerLight(new THREE.PointLight(0xeea860, 2.8, 15.0, 1.45));
+  naveEastLight.position.set(3.6, 3.6, 2.6);
 
   // Flame sprites & animated torches
   const flameSprites = [];
@@ -429,15 +436,15 @@ export function buildVaultScene(E) {
     roughness: 0.2,
   });
 
-  // Cathedral Crimson Velvet Carpet Runner + Cross-Aisle Runner + Wrought-Iron Chandeliers
+  // Cathedral Crimson Velvet Carpet Runner + Gold Trim Ribbons + Cross-Aisle Runner
   const velvetMaps = createWovenFabricTextures();
   const matCarpetRunner = new THREE.MeshStandardMaterial({
     map: velvetMaps.map,
     bumpMap: velvetMaps.bumpMap,
     bumpScale: 0.025,
-    color: 0x8a2c32,
-    roughness: 0.92,
-    metalness: 0.04,
+    color: 0x9e2d36,
+    roughness: 0.86,
+    metalness: 0.02,
     polygonOffset: true,
     polygonOffsetFactor: -2,
     polygonOffsetUnits: -2,
@@ -446,6 +453,57 @@ export function buildVaultScene(E) {
   pushStatic(new THREE.PlaneGeometry(2.45, 9.2), matCarpetRunner, 0, 0.017, 2.8, -Math.PI / 2, 0, 0);
   // Cross-transept runner linking 6C West door to 6D East breach
   pushStatic(new THREE.PlaneGeometry(16.4, 2.05), matCarpetRunner, 0, 0.016, 0, -Math.PI / 2, 0, 0);
+
+  // Tarnished Gold Border Ribbons Framing the Ceremonial Carpet
+  const matCarpetGoldTrim = new THREE.MeshStandardMaterial({
+    color: 0xcca04a,
+    roughness: 0.38,
+    metalness: 0.62,
+    polygonOffset: true,
+    polygonOffsetFactor: -3,
+    polygonOffsetUnits: -3,
+  });
+  pushStatic(new THREE.PlaneGeometry(0.08, 9.2), matCarpetGoldTrim, -1.2, 0.019, 2.8, -Math.PI / 2, 0, 0);
+  pushStatic(new THREE.PlaneGeometry(0.08, 9.2), matCarpetGoldTrim, 1.2, 0.019, 2.8, -Math.PI / 2, 0, 0);
+  pushStatic(new THREE.PlaneGeometry(16.4, 0.08), matCarpetGoldTrim, 0, 0.018, -1.0, -Math.PI / 2, 0, 0);
+  pushStatic(new THREE.PlaneGeometry(16.4, 0.08), matCarpetGoldTrim, 0, 0.018, 1.0, -Math.PI / 2, 0, 0);
+
+  // Atmospheric Floor Decals: Dried Arterial Stains & Scattered Ancient Parchment Pages
+  const texBloodGrime = createBloodGrimeTexture();
+  const matBloodDecal = new THREE.MeshStandardMaterial({
+    map: texBloodGrime,
+    transparent: true,
+    opacity: 0.82,
+    depthWrite: false,
+    polygonOffset: true,
+    polygonOffsetFactor: -3,
+    polygonOffsetUnits: -3,
+  });
+  pushStatic(new THREE.PlaneGeometry(1.6, 1.6), matBloodDecal, 5.2, 0.019, 2.4, -Math.PI / 2, 0, 0.35);
+  pushStatic(new THREE.PlaneGeometry(1.3, 1.3), matBloodDecal, -3.2, 0.019, 10.6, -Math.PI / 2, 0, -0.6);
+
+  const boneMaps = createAgedBoneTextures();
+  const matParchmentLeaf = new THREE.MeshStandardMaterial({
+    map: boneMaps.map,
+    bumpMap: boneMaps.bumpMap,
+    bumpScale: 0.02,
+    color: 0xd4c2a4,
+    roughness: 0.9,
+    polygonOffset: true,
+    polygonOffsetFactor: -3,
+    polygonOffsetUnits: -3,
+  });
+  [
+    [-1.55, 0.02, 4.2, 0.42],
+    [1.52, 0.02, 4.5, -0.55],
+    [-1.6, 0.02, 1.6, 0.78],
+    [1.55, 0.02, 1.9, -0.28],
+    [-0.65, 0.022, 5.2, 0.15],
+    [0.72, 0.022, 3.2, -0.74],
+    [-0.55, 0.022, 0.9, 0.32],
+  ].forEach(([px, py, pz, rotY]) => {
+    pushStatic(new THREE.PlaneGeometry(0.32, 0.45), matParchmentLeaf, px, py, pz, -Math.PI / 2, 0, rotY);
+  });
 
   // Two suspended wrought-iron candle chandeliers anchoring the Nave ceiling (y=9.2 -> y=4.85)
   [4.2, -1.6].forEach((cz) => {
@@ -795,23 +853,69 @@ export function buildVaultScene(E) {
   });
   placePropGLB('temple/glb/banner_hell.glb', { pos: [-4.9, 4.1, -4.85], ry: Math.PI / 2, playClip: true });
   placePropGLB('temple/glb/banner_hell.glb', { pos: [4.9, 4.1, -4.85], ry: -Math.PI / 2, playClip: true });
-  placePropGLB('church_pew.glb', { pos: [-3.9, 0, 0.45], ry: Math.PI - 0.05, targetHeight: 1.04, albedoLift: 0.4 });
-  placePropGLB('temple/glb/pew.glb', { pos: [-3.9, 0, 2.0], ry: Math.PI, targetHeight: 1.05, albedoLift: 0.38 });
-  placePropGLB('temple/glb/pew.glb', { pos: [-3.9, 0, 4.1], ry: Math.PI, targetHeight: 1.05, albedoLift: 0.38 });
-  placePropGLB('temple/glb/pew.glb', { pos: [-6.25, 0, 3.3], ry: Math.PI / 2, targetHeight: 1.05, albedoLift: 0.38 });
-  placePropGLB('church_pew.glb', { pos: [3.9, 0.04, 4.6], ry: Math.PI + 0.12, rz: -0.08, targetHeight: 1.02, albedoLift: 0.4 });
+  // ── Symmetrical Cathedral Pews Flanking the Center Aisle (Left Bank & Right Bank) ──
+  // West Pew Bank (x = -3.1)
+  placePropGLB('church_pew.glb', { pos: [-3.1, 0, 5.0], ry: Math.PI, targetHeight: 1.05, albedoLift: 0.4 });
+  placePropGLB('temple/glb/pew.glb', { pos: [-3.1, 0, 3.4], ry: Math.PI + 0.04, targetHeight: 1.05, albedoLift: 0.38 });
+  placePropGLB('church_pew.glb', { pos: [-3.1, 0, 1.8], ry: Math.PI, targetHeight: 1.05, albedoLift: 0.4 });
+  placePropGLB('temple/glb/pew.glb', { pos: [-3.1, 0, 0.4], ry: Math.PI - 0.06, targetHeight: 1.05, albedoLift: 0.38 });
+  placePropGLB('temple/glb/pew.glb', { pos: [-5.8, 0, 3.4], ry: Math.PI / 2, targetHeight: 1.05, albedoLift: 0.38 }); // West outer aisle pew
+
+  // East Pew Bank (x = +3.1 — eliminates the barren empty floor in the screenshot!)
+  placePropGLB('church_pew.glb', { pos: [3.1, 0, 5.0], ry: Math.PI, targetHeight: 1.05, albedoLift: 0.4 });
+  placePropGLB('temple/glb/pew.glb', { pos: [3.1, 0, 3.4], ry: Math.PI - 0.04, targetHeight: 1.05, albedoLift: 0.38 });
+  placePropGLB('church_pew.glb', { pos: [3.1, 0, 1.8], ry: Math.PI, targetHeight: 1.05, albedoLift: 0.4 });
+  placePropGLB('temple/glb/pew.glb', { pos: [3.1, 0, 0.4], ry: Math.PI + 0.06, targetHeight: 1.05, albedoLift: 0.38 });
+  placePropGLB('temple/glb/pew.glb', { pos: [5.8, 0, 4.0], ry: -Math.PI / 2, targetHeight: 1.05, albedoLift: 0.38 }); // East outer aisle pew
+
+  // Standing Processional Candelabras Framing the Center Aisle
+  placePropGLB('temple/glb/candelabra.glb', {
+    pos: [-1.75, 0, 5.7],
+    targetHeight: 1.75,
+    flameOffsets: [[-0.29, 1.67, 0], [0, 1.76, 0], [0.29, 1.67, 0]],
+    flameScale: 0.24,
+  });
+  placePropGLB('temple/glb/candelabra.glb', {
+    pos: [1.75, 0, 5.7],
+    targetHeight: 1.75,
+    flameOffsets: [[-0.29, 1.67, 0], [0, 1.76, 0], [0.29, 1.67, 0]],
+    flameScale: 0.24,
+  });
+  placePropGLB('temple/glb/candelabra.glb', {
+    pos: [-1.75, 0, -0.3],
+    targetHeight: 1.75,
+    flameOffsets: [[-0.29, 1.67, 0], [0, 1.76, 0], [0.29, 1.67, 0]],
+    flameScale: 0.24,
+  });
+  placePropGLB('temple/glb/candelabra.glb', {
+    pos: [1.75, 0, -0.3],
+    targetHeight: 1.75,
+    flameOffsets: [[-0.29, 1.67, 0], [0, 1.76, 0], [0.29, 1.67, 0]],
+    flameScale: 0.24,
+  });
+
+  // West Outer Flank Props (Crates, Chests, Cabinets)
+  placePropGLB('industrial/SM_Crate.glb', { pos: [-6.4, 0, 4.6], ry: 0.25, targetHeight: 0.85, albedoLift: 0.38 });
+  placePropGLB('industrial/SM_Crate.glb', { pos: [-6.4, 0.82, 4.6], ry: -0.18, targetHeight: 0.82, albedoLift: 0.38 });
+  placePropGLB('industrial/SM_Crate.glb', { pos: [-5.6, 0, 5.4], ry: 0.38, targetHeight: 0.8, albedoLift: 0.38 });
+  placePropGLB('dungeon/glb/chest_wood.glb', { pos: [-6.2, 0, 2.0], ry: 0.35, targetHeight: 0.65 });
+  placePropGLB('crate_medical.glb', { pos: [-5.2, 0, 0.8], ry: 0.2, targetHeight: 0.45, albedoLift: 0.4 });
+  placePropGLB('gothic_cabinet.glb', { pos: [-6.9, 0, 6.0], ry: 0, targetHeight: 2.3, albedoLift: 0.42 });
+
+  // East Outer Flank Props (Medical Supplies, Barrels, Commode, Totem)
+  placePropGLB('crate_medical.glb', { pos: [5.0, 0, 0.8], ry: -0.22, targetHeight: 0.45, albedoLift: 0.4 });
+  placePropGLB('industrial/SM_Crate.glb', { pos: [6.4, 0, 4.2], ry: -0.3, targetHeight: 0.85, albedoLift: 0.38 });
+  placePropGLB('industrial/SM_Crate.glb', { pos: [6.4, 0.82, 4.2], ry: 0.15, targetHeight: 0.82, albedoLift: 0.38 });
+  placePropGLB('industrial/SM_Barrel.glb', { pos: [6.6, 0, 5.3], ry: 0.12, targetHeight: 0.94, albedoLift: 0.38 });
+  placePropGLB('industrial/SM_Barrel.glb', { pos: [7.1, 0, 4.9], ry: -0.4, targetHeight: 0.92, albedoLift: 0.38 });
+  placePropGLB('gothic_commode.glb', { pos: [6.85, 0, 6.2], ry: Math.PI, targetHeight: 1.08, albedoLift: 0.42 });
+  placePropGLB('temple/glb/skull_totem.glb', { pos: [5.6, 0, 5.8], ry: -0.45, targetHeight: 1.85, albedoLift: 0.38 });
+
+  // North Apse Dressing (Bookcases, High Statues, Candelabras)
   placePropGLB('gothic_cabinet.glb', { pos: [-6.9, 0, -8.4], ry: 0, targetHeight: 2.3, albedoLift: 0.42 });
   placePropGLB('gothic_cabinet.glb', { pos: [6.9, 0, -8.4], ry: 0, targetHeight: 2.3, albedoLift: 0.42 });
-  placePropGLB('gothic_commode.glb', { pos: [-6.85, 0, 6.2], ry: Math.PI, targetHeight: 1.08, albedoLift: 0.42 });
-  placePropGLB('gothic_commode.glb', { pos: [6.85, 0, 6.2], ry: Math.PI, targetHeight: 1.08, albedoLift: 0.42 });
   placePropGLB('gothic_statue.glb', { pos: [-2.6, 0, -6.1], ry: 0.38, targetHeight: 2.15, albedoLift: 0.38 });
   placePropGLB('gothic_statue.glb', { pos: [2.6, 0, -6.1], ry: -0.38, targetHeight: 2.15, albedoLift: 0.38 });
-  placePropGLB('wall_sconce.glb', { pos: [-8.28, 2.0, -5.5], ry: Math.PI / 2, targetHeight: 0.44, albedoLift: 0.4, flameOffset: [0, 0.28, 0.14], flameScale: 0.2 });
-  placePropGLB('wall_sconce.glb', { pos: [8.28, 2.0, -5.5], ry: -Math.PI / 2, targetHeight: 0.44, albedoLift: 0.4, flameOffset: [0, 0.28, 0.14], flameScale: 0.2 });
-  placePropGLB('wall_sconce.glb', { pos: [-8.28, 2.0, 5.2], ry: Math.PI / 2, targetHeight: 0.44, albedoLift: 0.4, flameOffset: [0, 0.28, 0.14], flameScale: 0.2 });
-  placePropGLB('wall_sconce.glb', { pos: [8.28, 2.0, 5.2], ry: -Math.PI / 2, targetHeight: 0.44, albedoLift: 0.4, flameOffset: [0, 0.28, 0.14], flameScale: 0.2 });
-  placePropGLB('dungeon/glb/chest_wood.glb', { pos: [-6.8, 0, -7.9], ry: 0.4, targetHeight: 0.65 });
-  placePropGLB('dungeon/glb/chest_wood.glb', { pos: [6.8, 0, -7.9], ry: -0.4, targetHeight: 0.65 });
   placePropGLB('temple/glb/candelabra.glb', {
     pos: [-2.65, 0, -7.95],
     targetHeight: 1.75,
@@ -825,18 +929,24 @@ export function buildVaultScene(E) {
     flameScale: 0.24,
   });
 
+  // Wall Sconces
+  placePropGLB('wall_sconce.glb', { pos: [-8.28, 2.0, -5.5], ry: Math.PI / 2, targetHeight: 0.44, albedoLift: 0.4, flameOffset: [0, 0.28, 0.14], flameScale: 0.2 });
+  placePropGLB('wall_sconce.glb', { pos: [8.28, 2.0, -5.5], ry: -Math.PI / 2, targetHeight: 0.44, albedoLift: 0.4, flameOffset: [0, 0.28, 0.14], flameScale: 0.2 });
+  placePropGLB('wall_sconce.glb', { pos: [-8.28, 2.0, 5.2], ry: Math.PI / 2, targetHeight: 0.44, albedoLift: 0.4, flameOffset: [0, 0.28, 0.14], flameScale: 0.2 });
+  placePropGLB('wall_sconce.glb', { pos: [8.28, 2.0, 5.2], ry: -Math.PI / 2, targetHeight: 0.44, albedoLift: 0.4, flameOffset: [0, 0.28, 0.14], flameScale: 0.2 });
+
   // Interactable #3 (Lore 6B): autopsy_gurney
   placeInteractiveGLB('gothic_table.glb', 'autopsy_gurney', {
-    pos: [4.5, 0, 2.3],
+    pos: [5.2, 0, 2.2],
     ry: Math.PI / 2,
     targetHeight: 0.86,
     albedoLift: 0.38,
-    hitPos: [4.5, 0.9, 2.3],
+    hitPos: [5.2, 0.9, 2.2],
     hitSize: [2.1, 1.2, 2.1],
   });
-  placePropGLB('dead_body.glb', { pos: [4.5, 0.86, 2.3], ry: Math.PI / 2, targetHeight: 0.23, albedoLift: 0.38 });
-  placePropGLB('handsaw.glb', { pos: [5.28, 0.862, 2.35], rx: 0, rz: Math.PI / 2, ry: 0.28, targetHeight: 0.04 });
-  placePropGLB('tool_cart.glb', { pos: [5.95, 0, 2.95], ry: -0.4, targetHeight: 0.95, albedoLift: 0.36 });
+  placePropGLB('dead_body.glb', { pos: [5.2, 0.86, 2.2], ry: Math.PI / 2, targetHeight: 0.23, albedoLift: 0.38 });
+  placePropGLB('handsaw.glb', { pos: [5.98, 0.862, 2.25], rx: 0, rz: Math.PI / 2, ry: 0.28, targetHeight: 0.04 });
+  placePropGLB('tool_cart.glb', { pos: [6.15, 0, 2.95], ry: -0.4, targetHeight: 0.95, albedoLift: 0.36 });
 
   // Zone 6C: West Scriptorium Study (RE-inspired warm mahogany desk + terminal + slumped body)
   placePropGLB('gothic_table.glb', {

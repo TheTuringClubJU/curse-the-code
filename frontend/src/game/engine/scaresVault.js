@@ -10,18 +10,9 @@ export function createVaultScares(E, h = {}) {
   let visitedSideWing = false;
 
   let scriptedBusyUntil = 0;
-  // Patrol state machine: 'idle' | 'telegraph' | 'manifest' | 'rush'
-  let patrolState = 'idle';
-  let patrolTimer = 0;
-  let lookHoldTimer = 0;
-  let lookAwayTimer = 0;
-  let patrolEntity = null;
-  let nextPatrolAt = 14.0;
-
   let pendingStatueTurn = false;
   let pendingWestBreach = false;
   let pendingEastBlackout = false;
-  let behindWatch = null;
 
   // Active 3D lunge closeup animation
   let lungeT = -1;
@@ -109,8 +100,6 @@ export function createVaultScares(E, h = {}) {
     lungeT = 0;
     lungeEntity = (preferStalker && E.ref.stalker) || E.ref.ghost || E.ref.stalker;
     scriptedBusyUntil = Math.max(scriptedBusyUntil, elapsed + 3.0);
-    nextPatrolAt = Math.max(nextPatrolAt, elapsed + 38.0);
-    patrolState = 'idle';
     setThreat(null, '');
 
     const { px, pz, fx, fz } = getPlayerPose();
@@ -134,7 +123,6 @@ export function createVaultScares(E, h = {}) {
     if (fired.has('core_glass_slam')) return false;
     fired.add('core_glass_slam');
     scriptedBusyUntil = Math.max(scriptedBusyUntil, elapsed + 4.5);
-    patrolState = 'idle';
     setThreat('surge', 'RELIQUARY SEAL FRACTURING');
 
     const { px, pz } = getPlayerPose();
@@ -155,7 +143,7 @@ export function createVaultScares(E, h = {}) {
     placeGhost(0, shrineZ, px, pz, 2.9, -0.05);
 
     schedule(() => {
-      if (patrolState === 'idle') hideGhost();
+      hideGhost();
       setGlobalLightScale(1.0);
       setThreat(null, '');
     }, 1050);
@@ -199,7 +187,7 @@ export function createVaultScares(E, h = {}) {
       });
 
       schedule(() => {
-        if (patrolState === 'idle') hideGhost();
+        hideGhost();
         if (E.ref.cellLight) E.ref.cellLight.intensity = prevCellIntensity;
         setThreat(null, '');
       }, 1150);
@@ -211,7 +199,6 @@ export function createVaultScares(E, h = {}) {
     if (fired.has('east_stalker_flicker') || E.ref.vaultRestored) return;
     fired.add('east_stalker_flicker');
     scriptedBusyUntil = Math.max(scriptedBusyUntil, elapsed + 4.4);
-    nextPatrolAt = Math.max(nextPatrolAt, elapsed + 28.0);
     setThreat('warning', '6D EAST BAY // ANOMALOUS CURRENT');
 
     E.ref.eastLampAgitated = true;
@@ -235,7 +222,7 @@ export function createVaultScares(E, h = {}) {
       E.audio?.playStab?.(0.8);
       h.onFlash?.('#540008', 0.28, 150);
       schedule(() => {
-        if (patrolState === 'idle') hideGhost();
+        hideGhost();
         E.ref.eastLampAgitated = false;
         setThreat(null, '');
       }, 520);
@@ -286,7 +273,7 @@ export function createVaultScares(E, h = {}) {
       h.onScare?.('west_seal_vengeance', 'Seal I fractured — something crossed into the Nave!');
 
       schedule(() => {
-        if (patrolState === 'idle') hideGhost();
+        hideGhost();
         setGlobalLightScale(1.0);
         setThreat(null, '');
       }, 1900);
@@ -298,7 +285,6 @@ export function createVaultScares(E, h = {}) {
     if (fired.has('blackout_ambush') || E.ref.vaultRestored) return;
     fired.add('blackout_ambush');
     scriptedBusyUntil = Math.max(scriptedBusyUntil, elapsed + 4.8);
-    patrolState = 'idle';
     setThreat('surge', 'BREAKER OVERLOAD // DEAD DARK');
 
     setGlobalLightScale(0.04);
@@ -350,7 +336,7 @@ export function createVaultScares(E, h = {}) {
 
     schedule(() => {
       E.audio?.stopWomanCrying?.();
-      if (patrolState === 'idle') hideGhost();
+      hideGhost();
       setThreat(null, '');
     }, 1350);
   };
@@ -369,27 +355,9 @@ export function createVaultScares(E, h = {}) {
     h.onFlash?.('#60000b', 0.48, 190);
     h.onScare?.('cellar_ambush', null);
     schedule(() => {
-      if (patrolState === 'idle') hideGhost();
+      hideGhost();
       setThreat(null, '');
     }, 980);
-  };
-
-  // One-time Behind-You Neck Breath encounter when crossing back into the central nave
-  const triggerBehindYouWhisper = () => {
-    if (fired.has('behind_you_whisper') || E.ref.vaultRestored) return;
-    fired.add('behind_you_whisper');
-    const { px, pz, fx, fz } = getPlayerPose();
-    const [tx, tz] = clampNaveSpot(px - fx * 2.0, pz - fz * 2.0);
-    behindWatch = {
-      tx,
-      tz,
-      expiresAt: elapsed + 6.5,
-    };
-    setThreat('warning', 'FOOTSTEPS BEHIND YOU');
-    E.audio?.phantomSteps?.();
-    E.audio?.playBreathScared?.(0.86);
-    E.audio?.whisper?.();
-    h.onScare?.('behind_you_whisper', null);
   };
 
   const triggerConsoleReject = () => {
@@ -398,38 +366,6 @@ export function createVaultScares(E, h = {}) {
     schedule(() => {
       if (!E.ref.vaultRestored) E.audio?.setTension?.(1.2);
     }, 3200);
-  };
-
-  // Pick a visible threshold doorway / corridor anchor ahead or to the side of the player
-  const pickPatrolDoorway = (px, pz, fx, fz) => {
-    const spots = [
-      [-8.3, 0],
-      [8.3, 0],
-      [0, 6.9],
-      [0, -6.9],
-      [-5.2, -5.8],
-      [5.2, -5.8],
-      [-13.2, -5.8],
-      [12.9, 5.8],
-      [-12.8, 2.8],
-      [12.8, -2.6],
-    ];
-    let best = null;
-    let bestScore = -Infinity;
-    for (const [sx, sz] of spots) {
-      const dx = sx - px;
-      const dz = sz - pz;
-      const dist = Math.hypot(dx, dz);
-      if (dist < 4.5 || dist > 14.0) continue;
-      const dot = (dx / dist) * fx + (dz / dist) * fz;
-      // Strongly prefer corridors within the player's forward hemisphere so the manifestation is SEEN!
-      const score = dot * 10 - Math.abs(dist - 7.5);
-      if (score > bestScore) {
-        bestScore = score;
-        best = [sx, sz];
-      }
-    }
-    return best;
   };
 
   const tick = (dt) => {
@@ -493,19 +429,20 @@ export function createVaultScares(E, h = {}) {
       E.audio?.statueScrape?.();
     }
 
-    // Beat 1: 6A Entry Cell 01
-    if (!fired.has('cell_sobbing') && !fired.has('entry_cell_peek') && elapsed > 0.6 && pz > 9.5) {
+    // Beat 1: 6A Entry Cell 01 — ambient crying when in Narthex
+    if (!fired.has('cell_sobbing') && pz > 9.0 && pz < 15.5 && px < 1.0) {
       fired.add('cell_sobbing');
-      E.audio?.playWomanCrying?.(0.36);
+      E.audio?.playWomanCrying?.(0.32);
     }
+    // Only lunge against bars when player deliberately walks UP TO the cell bars and looks into the cell!
     if (
       !fired.has('entry_cell_peek') &&
-      ((elapsed > 1.2 && pz < 12.6) || (elapsed > 0.8 && pz > 8.8 && lookingAt(-4.5, 10.9, 0.58)))
+      px < -1.8 && pz > 9.0 && pz < 13.0 && lookingAt(-4.8, 10.9, 0.6)
     ) {
       triggerEntryCellVanish();
     }
 
-    // Beat 2 & 3: Wing First Entries
+    // Beat 2 & 3: Wing First Entries (environmental visual teases, never in-camera jumps)
     if (elapsed > 3 && px > 9.4) {
       visitedSideWing = true;
       if (!fired.has('east_stalker_flicker')) triggerEastBayPeek();
@@ -521,115 +458,6 @@ export function createVaultScares(E, h = {}) {
     }
     if (px < -10.4 && pz < -6.9 && !fired.has('chapel_reliquary')) {
       triggerChapelReliquaryScare();
-    }
-
-    // One-time Behind-You Nave encounter after exploring a side wing
-    if (visitedSideWing && Math.abs(px) < 4.5 && pz > -2.5 && pz < 6.0 && elapsed > 18 && !fired.has('behind_you_whisper')) {
-      triggerBehindYouWhisper();
-    }
-    if (behindWatch) {
-      if (elapsed > behindWatch.expiresAt) {
-        behindWatch = null;
-        if (patrolState === 'idle') setThreat(null, '');
-      } else if (lookingAt(behindWatch.tx, behindWatch.tz, 0.68)) {
-        const bw = behindWatch;
-        behindWatch = null;
-        scriptedBusyUntil = Math.max(scriptedBusyUntil, elapsed + 2.5);
-        placeGhost(bw.tx, bw.tz, px, pz, 5.8, -0.1);
-        E.audio?.playStab?.(0.92);
-        E.audio?.playMonster?.(0.86);
-        E.shake?.(1.45, 0.5);
-        h.onFlash?.('#5e000b', 0.52, 200);
-        h.onNightmarePulse?.(480);
-        h.onScare?.('behind_turn', null);
-        schedule(() => {
-          if (patrolState === 'idle') hideGhost();
-          setThreat(null, '');
-        }, 880);
-      }
-    }
-
-    // Logic-driven corridor vigil: only begins AFTER player investigates or disturbs at least one Wing (6C/6D), never randomly out of nowhere
-    if (leftNarthex && visitedSideWing && !behindWatch && elapsed >= scriptedBusyUntil && (E.ref.ghost || E.ref.stalker)) {
-      if (patrolState === 'idle' && elapsed >= nextPatrolAt) {
-        patrolState = 'telegraph';
-        patrolTimer = 0;
-        setThreat('warning', 'COLD PRESENCE NEARBY');
-        E.audio?.phantomSteps?.();
-        E.audio?.playBreathScared?.(0.75);
-        setGlobalLightScale(0.55);
-      } else if (patrolState === 'telegraph') {
-        patrolTimer += dt;
-        // Subtle bulb tension pulse during 2.8s telegraph
-        setGlobalLightScale(0.45 + 0.16 * Math.sin(patrolTimer * 11));
-        if (patrolTimer >= 2.8) {
-          const spot = pickPatrolDoorway(px, pz, fx, fz);
-          if (spot) {
-            patrolState = 'manifest';
-            patrolTimer = 0;
-            lookHoldTimer = 0;
-            lookAwayTimer = 0;
-            patrolEntity = E.ref.ghost || E.ref.stalker;
-            setGlobalLightScale(0.72);
-            placeEntity(patrolEntity, spot[0], spot[1], px, pz, 2.7, 0.06);
-            E.audio?.creak?.();
-            setThreat('surge', 'APPARITION IN DOORWAY // DO NOT APPROACH');
-          } else {
-            patrolState = 'idle';
-            setGlobalLightScale(1.0);
-            setThreat(null, '');
-            nextPatrolAt = elapsed + 28.0;
-          }
-        }
-      } else if (patrolState === 'manifest') {
-        patrolTimer += dt;
-        const active = patrolEntity || E.ref.ghost || E.ref.stalker;
-        const gx = active.position.x;
-        const gz = active.position.z;
-        const gDist = Math.hypot(px - gx, pz - gz);
-        active.rotation.y = Math.atan2(px - gx, pz - gz);
-
-        const isWatched = lookingAt(gx, gz, 0.65) && gDist < 14.0;
-        if (isWatched) {
-          lookHoldTimer += dt;
-          lookAwayTimer = 0;
-        } else {
-          lookAwayTimer += dt;
-        }
-
-        // Fair Horror Rule: It ONLY attacks if you actively walk straight toward it (< 3.4m) — never teleported into your face!
-        if (gDist < 3.4) {
-          patrolState = 'rush';
-          patrolTimer = 0;
-          E.audio?.playMonster?.(0.86);
-          E.audio?.phantomSteps?.();
-          if (E.ref.ghostLight) E.ref.ghostLight.intensity = 3.2;
-        } else if (lookAwayTimer >= 2.2 || gDist > 13.0 || patrolTimer >= 5.5) {
-          // Looking away or holding distance cleanly lets the doorway apparition vanish back into shadow
-          patrolState = 'idle';
-          hideGhost();
-          setGlobalLightScale(1.0);
-          setThreat(null, '');
-          E.audio?.chainsRattle?.();
-          nextPatrolAt = elapsed + 36.0;
-        }
-      } else if (patrolState === 'rush') {
-        patrolTimer += dt;
-        const active = patrolEntity || E.ref.ghost || E.ref.stalker;
-        const gx = active.position.x;
-        const gz = active.position.z;
-        const dx = px - gx;
-        const dz = pz - gz;
-        const gDist = Math.hypot(dx, dz) || 1;
-        const step = Math.min(gDist, 7.6 * dt);
-        placeEntity(active, gx + (dx / gDist) * step, gz + (dz / gDist) * step, px, pz, 2.9, 0.08);
-
-        if (gDist < 1.9 || patrolTimer > 1.3) {
-          patrolState = 'idle';
-          hideGhost();
-          triggerPhantomLunge('YOU WALKED INTO IT', false);
-        }
-      }
     }
   };
 
@@ -650,14 +478,19 @@ export function createVaultScares(E, h = {}) {
         E.shake?.(0.65, 0.35);
         h.onFlash?.('#4e0008', 0.34, 180);
         schedule(() => {
-          if (patrolState === 'idle') hideGhost();
+          hideGhost();
         }, 900);
         return true;
       }
+    } else if (id === 'cell_manifest') {
+      if (!fired.has('entry_cell_peek')) triggerEntryCellVanish();
     } else if (id === 'autopsy_gurney') {
       setGlobalLightScale(0.12);
-      E.audio?.playBonecrack?.(0.85);
-      schedule(() => setGlobalLightScale(1.0), 340);
+      E.audio?.playBonecrack?.(0.9);
+      E.audio?.playStab?.(0.68);
+      E.shake?.(0.7, 0.35);
+      h.onFlash?.('#4e0008', 0.35, 180);
+      schedule(() => setGlobalLightScale(1.0), 380);
     } else if (id === 'specimen_locker') {
       E.audio?.playBreathScared?.(0.55);
       E.audio?.playCrows?.(0.24);
