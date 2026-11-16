@@ -555,7 +555,18 @@ export function createVaultArchitecture(E, { matLancet, pushStatic }) {
   const setupClipDoor = (
     key,
     relPath,
-    { x, y, z, ry = 0, scale = [1, 1, 1], colliderBounds = null, startOpen = false, swingLeafName = null, swingTargetY = -1.45 }
+    {
+      x,
+      y,
+      z,
+      ry = 0,
+      scale = [1, 1, 1],
+      colliderBounds = null,
+      startOpen = false,
+      swingLeafName = null,
+      doubleLeafNames = null,
+      swingTargetY = -1.45,
+    }
   ) => {
     const collider = colliderBounds ? solid(...colliderBounds) : null;
     loadGLB(`${VAULT_MODEL_BASE}/${relPath}`).then((gltf) => {
@@ -568,9 +579,11 @@ export function createVaultArchitecture(E, { matLancet, pushStatic }) {
       S.add(root);
 
       const swingLeaf = swingLeafName ? root.getObjectByName(swingLeafName) : null;
+      const leafL = doubleLeafNames ? root.getObjectByName(doubleLeafNames[0]) : null;
+      const leafR = doubleLeafNames ? root.getObjectByName(doubleLeafNames[1]) : null;
       let mixer = null;
       let action = null;
-      if (!swingLeaf && gltf.animations && gltf.animations.length > 0) {
+      if (!swingLeaf && !leafL && gltf.animations && gltf.animations.length > 0) {
         mixer = new THREE.AnimationMixer(root);
         action = mixer.clipAction(gltf.animations[0]);
         action.setLoop(THREE.LoopOnce, 1);
@@ -586,7 +599,10 @@ export function createVaultArchitecture(E, { matLancet, pushStatic }) {
           removeSolid(doors[key].collider);
           doors[key].collider = null;
         }
-        if (swingLeaf) {
+        if (leafL && leafR) {
+          animateScalar(() => leafL.rotation.y, (v) => { leafL.rotation.y = v; }, -swingTargetY, 2.2);
+          animateScalar(() => leafR.rotation.y, (v) => { leafR.rotation.y = v; }, swingTargetY, 2.2);
+        } else if (swingLeaf) {
           animateScalar(() => swingLeaf.rotation.y, (v) => { swingLeaf.rotation.y = v; }, swingTargetY, 2.2);
         } else if (action) {
           action.reset().play();
@@ -597,6 +613,9 @@ export function createVaultArchitecture(E, { matLancet, pushStatic }) {
         if (ref.doorProxies?.[key]) {
           ref.doorProxies[key].position.set(0, -999, 0);
         }
+        if (autoCloseTriggers[key]) {
+          autoCloseTriggers[key].armed = true;
+        }
       };
 
       const closeFn = (silent = false) => {
@@ -605,7 +624,10 @@ export function createVaultArchitecture(E, { matLancet, pushStatic }) {
         if (colliderBounds && !doors[key]?.collider) {
           doors[key].collider = solid(...colliderBounds);
         }
-        if (swingLeaf) {
+        if (leafL && leafR) {
+          animateScalar(() => leafL.rotation.y, (v) => { leafL.rotation.y = v; }, 0, 3.8);
+          animateScalar(() => leafR.rotation.y, (v) => { leafR.rotation.y = v; }, 0, 3.8);
+        } else if (swingLeaf) {
           animateScalar(() => swingLeaf.rotation.y, (v) => { swingLeaf.rotation.y = v; }, 0, 3.8);
         } else if (action) {
           action.stop();
@@ -679,6 +701,9 @@ export function createVaultArchitecture(E, { matLancet, pushStatic }) {
         if (ref.doorProxies?.nave_threshold) {
           ref.doorProxies.nave_threshold.position.set(0, -999, 0);
         }
+        if (autoCloseTriggers.nave_threshold) {
+          autoCloseTriggers.nave_threshold.armed = true;
+        }
       };
 
       const closeDoors = (silent = false) => {
@@ -717,6 +742,8 @@ export function createVaultArchitecture(E, { matLancet, pushStatic }) {
       ry: Math.PI / 2,
       scale: [1.58, 1.24, 1.25],
       colliderBounds: [-8.65, -8.25, -1.25, 1.25],
+      doubleLeafNames: ['door_temple_l', 'door_temple_r'],
+      swingTargetY: 1.52,
     });
 
     // 4) North Reliquary Dungeon Door (`x = -13.3, z = -6.05` seated cleanly inside wall_doorway_stone)
@@ -789,6 +816,9 @@ export function createVaultArchitecture(E, { matLancet, pushStatic }) {
         if (ref.doorProxies?.east_gate) {
           ref.doorProxies.east_gate.position.set(0, -999, 0);
         }
+        if (autoCloseTriggers.east_gate) {
+          autoCloseTriggers.east_gate.armed = true;
+        }
       };
 
       const closeGate = (silent = false) => {
@@ -823,22 +853,47 @@ export function createVaultArchitecture(E, { matLancet, pushStatic }) {
   };
 
   // Horror Auto-Closing Door Sensor System:
-  // When player traverses into a room, the threshold door slams shut behind them with a frightening thud.
+  // When player traverses into a room or exits back out, the threshold door slams shut behind them with a frightening thud.
+  const getPX = () => (typeof E.px === 'function' ? E.px() : (E.cam?.position?.x ?? 0));
+  const getPZ = () => (typeof E.pz === 'function' ? E.pz() : (E.cam?.position?.z ?? 0));
+
   const autoCloseTriggers = {
-    nave_threshold: { triggered: false, test: (p) => p.z < 5.8 },
-    west_scriptorium: { triggered: false, test: (p) => p.x < -10.5 },
-    north_chapel: { triggered: false, test: (p) => p.z < -7.6 },
-    east_gate: { triggered: false, test: (p) => p.x > 10.5 },
-    south_cellar: { triggered: false, test: (p) => p.z > 7.6 },
+    nave_threshold: {
+      armed: false,
+      testIn: (px, pz) => pz < 6.2,
+      testOut: (px, pz) => pz > 8.5,
+    },
+    west_scriptorium: {
+      armed: false,
+      testIn: (px, pz) => px < -9.6,
+      testOut: (px, pz) => px > -7.2,
+    },
+    north_chapel: {
+      armed: false,
+      testIn: (px, pz) => pz < -7.2,
+      testOut: (px, pz) => pz > -4.8,
+    },
+    east_gate: {
+      armed: false,
+      testIn: (px, pz) => px > 9.6,
+      testOut: (px, pz) => px < 7.2,
+    },
+    south_cellar: {
+      armed: false,
+      testIn: (px, pz) => pz > 7.2,
+      testOut: (px, pz) => pz < 4.8,
+    },
   };
 
   anim(() => {
-    if (!ref.playerPos) return;
-    const p = ref.playerPos;
+    const px = getPX();
+    const pz = getPZ();
     for (const [key, trig] of Object.entries(autoCloseTriggers)) {
-      if (doors[key]?.opened && !trig.triggered && trig.test(p)) {
-        trig.triggered = true;
-        doors[key]?.close?.(false);
+      if (doors[key]?.opened && trig.armed) {
+        if (trig.testIn(px, pz) || trig.testOut(px, pz)) {
+          trig.armed = false;
+          doors[key]?.close?.(false);
+        }
       }
     }
   });

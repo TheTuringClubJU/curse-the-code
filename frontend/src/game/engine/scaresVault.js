@@ -198,12 +198,12 @@ export function createVaultScares(E, h = {}) {
   // casts blood-red spotlight, punches FOV, and blasts horrific audio.
   // ═══════════════════════════════════════════════════════════════════
   const startFaceJumpscare = ({
-    duration = 1.35,
+    duration = 1.45,
     animIndex = 0,
-    animSpeed = 1.65,
-    initialDist = 3.0,
-    faceDist = 0.42,
-    headOffset = 1.58,
+    animSpeed = 1.75,
+    initialDist = 3.2,
+    faceDist = 0.28,
+    headOffset = 1.52,
     screamVol = 1.0,
     scareId = 'face_jumpscare',
     scareNotice = null,
@@ -213,7 +213,7 @@ export function createVaultScares(E, h = {}) {
 
     // 1. Overwhelming, ear-splitting layered horror audio blast
     E.audio?.playHorrificJumpscare?.(screamVol);
-    E.audio?.setTension?.(2.8);
+    E.audio?.setTension?.(3.0);
 
     // 2. Select entity (Agatha or stalker)
     const entity = (preferStalker && E.ref.stalker) || E.ref.ghost || E.ref.stalker;
@@ -235,10 +235,10 @@ export function createVaultScares(E, h = {}) {
     };
 
     // 5. Massive camera trauma shake + blood vignette + visor crack
-    E.shake?.(3.6, 0.95);
+    E.shake?.(4.8, 1.25);
     addTrauma(1.0);
     h.onGlassCrack?.();
-    h.onFlash?.('#80000e', 0.88, 380);
+    h.onFlash?.('#80000e', 0.95, 420);
     h.onNightmarePulse?.(Math.round(duration * 1000));
     if (scareNotice) {
       h.onScare?.(scareId, scareNotice);
@@ -798,16 +798,16 @@ export function createVaultScares(E, h = {}) {
           E.cam.updateProjectionMatrix?.();
         }
       } else {
-        // Explosive surge in first 0.16s down to 0.42m point-blank
-        const surgeK = Math.min(1.0, fElapsed / 0.16);
+        // Explosive Poppy Playtime surge in first 0.12s down to point-blank face distance (0.28m)
+        const surgeK = Math.min(1.0, fElapsed / 0.12);
         const easeSurge = 1 - Math.pow(1 - surgeK, 4);
         const curDist = initialDist - (initialDist - faceDist) * easeSurge;
 
         // Violent Poppy Playtime jitter (lateral tremor, jaw vibration, violent head twitches)
-        const jitIntensity = fElapsed < 0.16 ? 0.025 : 0.052;
+        const jitIntensity = fElapsed < 0.12 ? 0.035 : 0.065;
         const jitX = (Math.random() - 0.5) * jitIntensity * 2;
         const jitY = (Math.random() - 0.5) * jitIntensity * 1.5;
-        const jitRotZ = (Math.random() - 0.5) * 0.18;
+        const jitRotZ = (Math.random() - 0.5) * 0.22;
 
         if (E.cam) {
           const camPos = E.cam.position?.clone ? E.cam.position.clone() : new THREE.Vector3(E.px?.() ?? 0, 1.6, E.pz?.() ?? 0);
@@ -843,15 +843,15 @@ export function createVaultScares(E, h = {}) {
           if (E.ref.ghostLight) {
             E.ref.ghostLight.position.copy(camPos).addScaledVector(camDir, curDist * 0.5);
             E.ref.ghostLight.position.y = camPos.y;
-            E.ref.ghostLight.color.setHex(0xff1212);
-            E.ref.ghostLight.intensity = 16.0;
+            E.ref.ghostLight.color.setHex(0xff0808);
+            E.ref.ghostLight.intensity = 22.0;
             E.ref.ghostLight.distance = 5.0;
           }
 
-          // Camera FOV punch: zoom in hard from 72 down to 44
+          // Camera FOV punch: zoom in hard from 72 down to 36 (extreme in-your-face claustrophobia)
           if (E.cam.isPerspectiveCamera) {
             const fovProg = Math.sin(Math.min(1.0, fElapsed / fDur) * Math.PI);
-            E.cam.fov = baseFov - 28 * Math.pow(fovProg, 0.4);
+            E.cam.fov = baseFov - 36 * Math.pow(fovProg, 0.4);
             E.cam.updateProjectionMatrix?.();
           }
         }

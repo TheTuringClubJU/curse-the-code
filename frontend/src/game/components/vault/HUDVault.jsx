@@ -42,18 +42,18 @@ function getRiddleObjective(clues, cluesSolved, totalClues) {
   const r10 = list.find((c) => c.id === 'R2-10')?.solved;
 
   if (r10 || cluesSolved >= totalClues) {
-    return 'All three seals aligned in phase. The Anointing Vessel rests unsealed.';
+    return 'The flesh is bound, the silence restored. The vault sleeps once more.';
   }
   if (r08 && r09) {
-    return 'Both wing relays awake: 6C Scripture purified, 6D Breakers active. Return to 6B Altar Console.';
+    return 'Twin veins thrum in silence. Approach the consecrated Altar before the vessel to speak the tri-fold rite.';
   }
   if (r08 && !r09) {
-    return 'West Scripture verified (6C). Proceed East to Crypt Relay Hall (6D) to balance knife switchboard.';
+    return 'The ancient ink is purified. Cross the nave to the eastern breach, where cold iron levers await the sacred spark.';
   }
   if (!r08 && r09) {
-    return 'East Breakers online (6D). Search West Scriptorium (6C) stone desk to transcribe ancient diff.';
+    return 'The lightning courseth through the crypt. Cross to the western scriptorium to decipher what was severed in the sacred script.';
   }
-  return 'Two wing conduits bind the Altar: Transcribe 6C West Scripture, then balance 6D East Breakers.';
+  return 'Two dormant veins nourish the slumbering Altar: one bound in cold ink in the western shadows, one sleeping in iron in the eastern crypt.';
 }
 
 export default function HUDVault({
