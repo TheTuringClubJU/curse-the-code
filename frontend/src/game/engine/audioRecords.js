@@ -44,18 +44,31 @@ export class GameAudioRecords {
     // Master Dynamics Compressor & Analyser
     this.master = c.createGain();
     this.master.gain.value = this.muted ? 0 : this.vol;
-    this.comp = c.createDynamicsCompressor();
-    this.comp.threshold.value = -12;
-    this.comp.knee.value = 8;
-    this.comp.ratio.value = 6;
-    this.comp.attack.value = 0.003;
-    this.comp.release.value = 0.25;
+    this.comp = c.createDynamicsCompressor ? c.createDynamicsCompressor() : null;
+    if (this.comp) {
+      if (this.comp.threshold) this.comp.threshold.value = -12;
+      if (this.comp.knee) this.comp.knee.value = 8;
+      if (this.comp.ratio) this.comp.ratio.value = 6;
+      if (this.comp.attack) this.comp.attack.value = 0.003;
+      if (this.comp.release) this.comp.release.value = 0.25;
+    }
 
-    this.an = c.createAnalyser();
-    this.an.fftSize = 256;
-    this.master.connect(this.comp);
-    this.comp.connect(this.an);
-    this.an.connect(c.destination);
+    this.an = c.createAnalyser ? c.createAnalyser() : null;
+    if (this.an) this.an.fftSize = 256;
+
+    if (this.comp && this.an) {
+      this.master.connect(this.comp);
+      this.comp.connect(this.an);
+      this.an.connect(c.destination);
+    } else if (this.comp) {
+      this.master.connect(this.comp);
+      this.comp.connect(c.destination);
+    } else if (this.an) {
+      this.master.connect(this.an);
+      this.an.connect(c.destination);
+    } else {
+      this.master.connect(c.destination);
+    }
 
     // Cavernous Industrial Vault Convolver Reverb (wet concrete impulse response)
     const irLen = c.sampleRate * 3.2;
@@ -95,6 +108,7 @@ export class GameAudioRecords {
 
     // 5. RANDOMIZED PARANORMAL AMBIENT EVENTS
     this.schedEvents();
+    this.loadScreamBuffer();
   }
 
   // 18.98 Hz sub-bass sine tone
@@ -204,16 +218,22 @@ export class GameAudioRecords {
     const g = c.createGain();
     g.gain.value = v / (1 + d * 0.45);
 
-    const p = c.createStereoPanner();
-    p.pan.value = pan * 0.95;
+    const p = c.createStereoPanner ? c.createStereoPanner() : null;
+    if (p) {
+      if (p.pan) p.pan.value = pan * 0.95;
+      g.connect(p);
+      p.connect(this.master);
+    } else {
+      g.connect(this.master);
+    }
 
-    g.connect(p);
-    p.connect(this.master);
-
-    const s = c.createGain();
-    s.gain.value = 0.45;
-    p.connect(s);
-    s.connect(this.verb);
+    if (this.verb) {
+      const s = c.createGain();
+      s.gain.value = 0.45;
+      if (p) p.connect(s);
+      else g.connect(s);
+      s.connect(this.verb);
+    }
     return g;
   }
 
@@ -247,7 +267,7 @@ export class GameAudioRecords {
     bp.Q.value = q;
     const t = c.currentTime;
     bp.frequency.setValueAtTime(f, t);
-    if (sweep) bp.frequency.linearRampToValueAtTime(sweep, t + dur);
+    if (sweep) bp.frequency.linearRampToValueAtTime?.(sweep, t + dur);
 
     const g = c.createGain();
     g.gain.setValueAtTime(0, t);
@@ -415,6 +435,58 @@ export class GameAudioRecords {
     this.burst(1100, 1.0, 1.2, 0.9, g, 150, 'lowpass');
   }
 
+  async loadScreamBuffer() {
+    if (typeof fetch === 'undefined') return;
+    try {
+      const res = await fetch('/assets/audio/basement/scream.mp3');
+      if (res.ok && this.ctx) {
+        const ab = await res.arrayBuffer();
+        this.screamBuffer = await this.ctx.decodeAudioData(ab);
+      }
+    } catch (_) {}
+  }
+
+  // JS-02B: Scream Audio (plays user-supplied /assets/audio/basement/scream.mp3)
+  hoarseScream(intensity = 1) {
+    this.ensureActive();
+    if (!this.ctx) return null;
+    const c = this.ctx;
+
+    if (this.screamBuffer) {
+      try {
+        const src = c.createBufferSource();
+        src.buffer = this.screamBuffer;
+        const g = c.createGain();
+        g.gain.value = 1.0 * intensity;
+        src.connect(g);
+        g.connect(this.master);
+        src.start(0);
+        return src;
+      } catch (_) {}
+    }
+
+    const g = c.createGain();
+    g.gain.value = 0.85 * intensity;
+    g.connect(this.master);
+    if (this.verb) g.connect(this.verb);
+
+    const w = this.dist(45);
+    w.connect(g);
+
+    // Guttural shredded vocal frequencies: multi-layered clustered sawtooth oscillators
+    [145, 290, 480, 820, 1250, 1750, 2850, 3700].forEach((freq, idx) => {
+      this.osc('sawtooth', freq, freq * (idx % 2 ? 1.22 : 0.82), 1.0, 0.45, w);
+    });
+
+    // Rasping breath & formant burst
+    this.burst(2800, 3.5, 1.0, 0.75, w, 500, 'bandpass');
+    this.burst(1200, 2.0, 0.9, 0.7, g, 350, 'lowpass');
+
+    // Heavy visceral sub shockwave
+    this.osc('sine', 80, 28, 0.8, 1.6, g);
+    return null;
+  }
+
   // JS-03: Sudden Blackout Surge (fluorescent pop + electrical spark + heart pounding)
   blackoutSurge() {
     this.ensureActive();
@@ -546,6 +618,19 @@ export class GameAudioRecords {
     this.burst(400, 1.5, 0.25, 0.45, this.master);
   }
 
+  playTrack(url, volume = 0.85) {
+    if (this.muted) return null;
+    try {
+      if (typeof Audio !== 'undefined') {
+        const sound = new Audio(url);
+        sound.volume = this.muted ? 0 : Math.min(1.0, this.vol * volume);
+        sound.play().catch(() => {});
+        return sound;
+      }
+    } catch (_) {}
+    return null;
+  }
+
   setMuted(m) {
     this.muted = m;
     if (this.master) this.master.gain.value = m ? 0 : this.vol;
@@ -560,7 +645,7 @@ export class GameAudioRecords {
     clearInterval(this.heartbeatTimer);
     clearTimeout(this.dripTimer);
     clearTimeout(this.eventTimer);
-    this.ctx?.close();
+    this.ctx?.close?.();
     this.ctx = null;
   }
 }

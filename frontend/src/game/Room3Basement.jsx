@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { createEngine } from './engine/engine.js';
 import basementConfig from './rooms/basement.js';
-import { GameAudio } from './engine/audio.js';
+import { GameAudioRecords as GameAudioBasement } from './engine/audioRecords.js';
 import HUD from './components/HUD.jsx';
 import BasketModal from './components/BasketModal.jsx';
 import CaseFilesModal from './components/CaseFilesModal.jsx';
@@ -10,22 +10,42 @@ import IntercomQrModal from './components/IntercomQrModal.jsx';
 import ServerRackNoteModal from './components/ServerRackNoteModal.jsx';
 import Round1VictoryModal from './components/Round1VictoryModal.jsx';
 import FinalContainmentTerminalModal from './components/FinalContainmentTerminalModal.jsx';
-import Round1DossierModal from './components/Round1DossierModal.jsx';
-import HintModal from './components/HintModal.jsx';
 import './game.css';
 
-export default function Room3Basement({ team, onLogout, onProceedToLobby, previewMode = false }) {
+const jumpscareVisual = '/assets/jumpscare_entity.jpg';
+
+const BASEMENT_EVIDENCE_IMAGES = {
+  EK04: '/evidence/basement/EK04.png',
+  EK05: '/evidence/basement/EK05.png',
+  EK06: '/evidence/basement/EK06.png',
+  XK01: '/evidence/basement/XK01.png',
+  XK02: '/evidence/basement/XK02.png',
+};
+
+function mapBasementEvidence(evidenceList) {
+  if (!Array.isArray(evidenceList)) return [];
+  return evidenceList.map(ev => ({
+    ...ev,
+    image_file: ev.image_file || BASEMENT_EVIDENCE_IMAGES[ev.id] || ''
+  }));
+}
+
+export default function Room3Basement({ team, onLogout, onProceedToLobby, onProceedToStudy, previewMode = false }) {
   const mountRef = useRef(null), engineRef = useRef(null), audioRef = useRef(null);
   const roomDataRef = useRef(null), activeTargetRef = useRef(null), handleInteractRef = useRef(null);
   const submittingRef = useRef(false), notificationTimerRef = useRef(null);
+  const screamAudioRef = useRef(null);
   const [roomData, setRoomData] = useState(null), [loading, setLoading] = useState(true);
   const [isStarted, setIsStarted] = useState(false), [activeClue, setActiveClue] = useState(null);
   const [isBasketOpen, setIsBasketOpen] = useState(false), [isCaseFilesOpen, setIsCaseFilesOpen] = useState(false);
   const [isPhotoPuzzleOpen, setIsPhotoPuzzleOpen] = useState(false), [isCompleteOpen, setIsCompleteOpen] = useState(false);
-  const [isDossierOpen, setIsDossierOpen] = useState(false);
-  const [isHintOpen, setIsHintOpen] = useState(false);
   const [hoverPrompt, setHoverPrompt] = useState(null), [notification, setNotification] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false), [audioMuted, setAudioMuted] = useState(false);
+  const [isJumpscareActive, setIsJumpscareActive] = useState(false);
+  const jumpscareTriggeredRef = useRef(false);
+  const wasOnStairsRef = useRef(true);
+  const jumpscareTimerRef = useRef(null);
+  const handlePlayerMoveRef = useRef(null);
 
   const previewRoomData = {
     title: 'The Basement',
@@ -55,7 +75,13 @@ export default function Room3Basement({ team, onLogout, onProceedToLobby, previe
     }
     try {
       const res = await fetch('/api/game/room/basement', { credentials:'include', headers:{'x-session-token':localStorage.getItem('ctc_token')||''} });
-      if(res.ok){ const data=await res.json(); setRoomData(data); roomDataRef.current=data; if(data.is_completed) engineRef.current?.openDoor?.(); }
+      if(res.ok){
+        const data=await res.json();
+        const mappedData = { ...data, evidence: mapBasementEvidence(data.evidence) };
+        setRoomData(mappedData);
+        roomDataRef.current=mappedData;
+        if(data.is_completed) engineRef.current?.openDoor?.();
+      }
       else if ([401,403,404,429,500].includes(res.status)) return;
     } catch(e){ console.error('Failed to load basement:', e); } finally { setLoading(false); }
   };
@@ -78,7 +104,8 @@ export default function Room3Basement({ team, onLogout, onProceedToLobby, previe
     }
     if(objectId==='room_door'){
       if(data?.is_completed){ setIsCompleteOpen(true); engineRef.current?.unlock(); }
-      else showNotification('The subterranean vault remains sealed. Disengage the containment terminal to unlock the exit.');
+      else if (onProceedToStudy) { onProceedToStudy(); }
+      else showNotification('The backward passage leads to the Study. The subterranean vault remains sealed.');
       return;
     }
     try {
@@ -88,8 +115,7 @@ export default function Room3Basement({ team, onLogout, onProceedToLobby, previe
     } catch(e){ console.error('Search failed:',e); }
     const clue=data?.clues?.find(c=>c.object_id===objectId);
     if(clue){
-      if(clue.is_locked){showNotification(clue.lock_reason || 'This clue is sealed. Previous clue must be solved first.');return;}
-      if(clue.id==='R1-FIN'){ const required=['R1-09','R1-10']; const ready=required.every(id=>data.clues.find(c=>c.id===id)?.solved); if(!ready){showNotification('Final terminal locked. Solve the prerequisite room clues first.');return;} }
+      if(clue.id==='R1-FIN'){ const required=['R1-09','R1-10']; const ready=required.every(id=>data.clues.find(c=>c.id===id)?.solved); if(!ready){showNotification('Final terminal locked. Solve R1-09 and R1-10 first.');return;} }
       if(!data?.basket_unlocked && clue.id!=='R1-FIN'){showNotification('The evidence lock is sealed. Recover all 5 basement fragments first.');return;}
       if(!clue.solved && (clue.attempts || 0) >= (clue.attempts_max || 3)){ showNotification('Maximum attempts exhausted for this clue.'); return; }
       setActiveClue(clue); engineRef.current?.unlock();
@@ -97,25 +123,174 @@ export default function Room3Basement({ team, onLogout, onProceedToLobby, previe
   };
   handleInteractRef.current=handleInteract;
 
+  const triggerJumpscare = () => {
+    if (jumpscareTriggeredRef.current) return;
+    jumpscareTriggeredRef.current = true;
+    setIsJumpscareActive(true);
+
+    // 1. Play scream from C:\Users\DELL\OneDrive\Desktop\git projects\Curse The Code\curse-the-code\frontend\public\assets\audio\basement\scream.mp3
+    try {
+      if (typeof Audio !== 'undefined') {
+        const scream = new Audio('/assets/audio/basement/scream.mp3');
+        scream.volume = 1.0;
+        screamAudioRef.current = scream;
+        scream.play().catch(() => {});
+      }
+    } catch (_) {}
+
+    // 2. Web Audio API playback
+    try {
+      audioRef.current?.hoarseScream?.(1.0);
+    } catch (_) {}
+
+    // 3. Violent camera trauma shake
+    try {
+      engineRef.current?.shake?.(2.5, 1.0);
+    } catch (_) {}
+
+    // 4. Exactly one second (1000ms) scare duration before disappearing
+    if (jumpscareTimerRef.current) clearTimeout(jumpscareTimerRef.current);
+    jumpscareTimerRef.current = setTimeout(() => {
+      setIsJumpscareActive(false);
+      try {
+        if (screamAudioRef.current) {
+          screamAudioRef.current.pause();
+          screamAudioRef.current.currentTime = 0;
+        }
+      } catch (_) {}
+    }, 1000);
+  };
+
+  const handlePlayerMove = ({ px }) => {
+    // Upper staircase landing (player spawns at px=19.5, top of stairs px>=18.56)
+    if (px >= 16.5) {
+      wasOnStairsRef.current = true;
+    }
+
+    // End of staircase transition (stairs end and meet the basement floor at px=15.0)
+    if (!jumpscareTriggeredRef.current && wasOnStairsRef.current && px <= 15.2) {
+      triggerJumpscare();
+    }
+  };
+  handlePlayerMoveRef.current = handlePlayerMove;
+
+  useEffect(() => {
+    // Preload jumpscare audio, ambient monster audio, and visual asset on mount
+    try {
+      const audioPreload = new Audio('/assets/audio/basement/scream.mp3');
+      audioPreload.preload = 'auto';
+      audioPreload.load();
+    } catch (_) {}
+    try {
+      const monsterPreload = new Audio('/assets/audio/basement/alesiadavina-halloween-horror-sound-lurking-monster-145070.mp3');
+      monsterPreload.preload = 'auto';
+      monsterPreload.load();
+    } catch (_) {}
+    try {
+      const fallingPreload = new Audio('/assets/audio/basement/universfield-heavy-object-falling-291096.mp3');
+      fallingPreload.preload = 'auto';
+      fallingPreload.load();
+    } catch (_) {}
+    try {
+      const imgPreload = new Image();
+      imgPreload.src = jumpscareVisual;
+    } catch (_) {}
+
+    if (typeof window !== 'undefined') {
+      window.__triggerBasementJumpscare = triggerJumpscare;
+    }
+    return () => {
+      if (typeof window !== 'undefined' && window.__triggerBasementJumpscare === triggerJumpscare) {
+        delete window.__triggerBasementJumpscare;
+      }
+    };
+  }, []);
+
+  // Ambient Horror Loop:
+  // 1. alesiadavina-halloween-horror-sound-lurking-monster-145070.mp3 plays once every 1 min and 15 sec (75s).
+  // 2. universfield-heavy-object-falling-291096.mp3 plays 40-45 seconds after the first, at random.
+  useEffect(() => {
+    if (!isStarted) return;
+
+    let isDisposed = false;
+    let monsterInterval = null;
+    let fallingTimeout = null;
+
+    const playSound = (url) => {
+      if (isDisposed || audioMuted) return null;
+      if (audioRef.current?.playTrack) {
+        return audioRef.current.playTrack(url, 0.85);
+      }
+      try {
+        if (typeof Audio !== 'undefined') {
+          const snd = new Audio(url);
+          snd.volume = audioMuted ? 0 : 0.85;
+          snd.play().catch(() => {});
+          return snd;
+        }
+      } catch (_) {}
+      return null;
+    };
+
+    const triggerLurkingCycle = () => {
+      if (isDisposed) return;
+      // Play Lurking Monster audio
+      playSound('/assets/audio/basement/alesiadavina-halloween-horror-sound-lurking-monster-145070.mp3');
+
+      // Play Heavy Object Falling audio 40-45 seconds after the first, at random
+      const delayMs = (40 + Math.random() * 5) * 1000;
+      if (fallingTimeout) clearTimeout(fallingTimeout);
+      fallingTimeout = setTimeout(() => {
+        if (isDisposed) return;
+        playSound('/assets/audio/basement/universfield-heavy-object-falling-291096.mp3');
+      }, delayMs);
+    };
+
+    if (typeof window !== 'undefined') {
+      window.__triggerBasementLurkingCycle = triggerLurkingCycle;
+    }
+
+    // Runs once every 1 min and 15 sec (75,000 ms)
+    const MONSTER_INTERVAL_MS = 75 * 1000;
+    monsterInterval = setInterval(triggerLurkingCycle, MONSTER_INTERVAL_MS);
+
+    return () => {
+      isDisposed = true;
+      if (monsterInterval) clearInterval(monsterInterval);
+      if (fallingTimeout) clearTimeout(fallingTimeout);
+      if (typeof window !== 'undefined' && window.__triggerBasementLurkingCycle === triggerLurkingCycle) {
+        delete window.__triggerBasementLurkingCycle;
+      }
+    };
+  }, [isStarted, audioMuted]);
+
   useEffect(()=>{fetchRoomState();},[]);
   useEffect(() => () => {
     if (notificationTimerRef.current) clearTimeout(notificationTimerRef.current);
+    if (jumpscareTimerRef.current) clearTimeout(jumpscareTimerRef.current);
   }, []);
   useEffect(()=>{
     const key=(e)=>{ const tag=(e.target?.tagName||'').toUpperCase(); if(['INPUT','TEXTAREA'].includes(tag)||e.target?.isContentEditable)return;
       if(e.key.toLowerCase()==='b'){e.preventDefault();setIsBasketOpen(v=>{const next=!v;if(next)engineRef.current?.unlock();else engineRef.current?.lock();return next;});}
       if(e.key.toLowerCase()==='c'){e.preventDefault();setIsCaseFilesOpen(v=>{const next=!v;if(next)engineRef.current?.unlock();else engineRef.current?.lock();return next;});}
       if(e.key.toLowerCase()==='p'){e.preventDefault();setIsPhotoPuzzleOpen(v=>{const next=!v;if(next)engineRef.current?.unlock();else engineRef.current?.lock();return next;});}
-      if(e.key.toLowerCase()==='r'){e.preventDefault();setIsDossierOpen(v=>{const next=!v;if(next)engineRef.current?.unlock();else engineRef.current?.lock();return next;});}
-      if(e.key.toLowerCase()==='h'){e.preventDefault();setIsHintOpen(v=>{const next=!v;if(next)engineRef.current?.unlock();else engineRef.current?.lock();return next;});}
     };
     window.addEventListener('keydown',key,true); return()=>window.removeEventListener('keydown',key,true);
   },[]);
 
   useEffect(()=>{
     if(!mountRef.current||engineRef.current)return;
-    audioRef.current=new GameAudio();
-    try{ engineRef.current=createEngine(mountRef.current,basementConfig,{audio:audioRef.current,onFlash:()=>{},onTarget:(id)=>{activeTargetRef.current=id;setHoverPrompt(id?`Inspect ${id.replaceAll('_',' ')}`:null);},onInteract:(id)=>handleInteractRef.current?.(id),onLock:()=>{}}); }
+    audioRef.current=new GameAudioBasement();
+    try{ 
+      engineRef.current=createEngine(mountRef.current,basementConfig,{
+        audio:audioRef.current,
+        onFlash:()=>{},
+        onTarget:(id)=>{activeTargetRef.current=id;setHoverPrompt(id?`Inspect ${id.replaceAll('_',' ')}`:null);},
+        onInteract:(id)=>handleInteractRef.current?.(id),
+        onLock:()=>{},
+        onPlayerMove:(pos)=>handlePlayerMoveRef.current?.(pos)
+      }); 
+    }
     catch(e){console.error('Basement initialization failed:',e);} return()=>{engineRef.current?.dispose?.();engineRef.current=null;audioRef.current?.dispose?.();};
   },[]);
 
@@ -131,19 +306,9 @@ export default function Room3Basement({ team, onLogout, onProceedToLobby, previe
     try{
       const res=await fetch(`/api/game/clue/${clueId}/submit`,{method:'POST',credentials:'include',headers:{'Content-Type':'application/json','x-session-token':localStorage.getItem('ctc_token')||''},body:JSON.stringify({answer}),signal:controller.signal});
       const data=await res.json().catch(()=>({detail:'Invalid server response'}));
-      if(res.ok){
-        await fetchRoomState();
-        if(data.room_completed){
-          engineRef.current?.openDoor?.();
-          engineRef.current?.shake?.(1.5, 0.8);
-          audioRef.current?.slam?.(3, 2.95);
-          setIsCompleteOpen(true);
-        }
-        return data;
-      }
+      if(res.ok){await fetchRoomState();if(data.room_completed){engineRef.current?.openDoor?.();setIsCompleteOpen(true);}return data;}
       if(res.status===429)return {correct:false,message:'Submission is temporarily rate limited.'};
-      if(res.status===401)return {correct:false,message:'Your session is no longer authorized.'};
-      if(res.status===403){const msg=typeof data.detail==='object'?(data.detail.message||JSON.stringify(data.detail)):(data.detail||'Access forbidden.');return {correct:false,message:msg};}
+      if([401,403].includes(res.status))return {correct:false,message:'Your session is no longer authorized.'};
       if(res.status===404)return {correct:false,message:'This clue is unavailable.'};
       if(res.status===500)return {correct:false,message:'The server could not process this submission.'};
       return {correct:false,message:data.detail||'Submission failed'};
@@ -192,29 +357,101 @@ export default function Room3Basement({ team, onLogout, onProceedToLobby, previe
     return () => { cancelled = true; clearTimeout(retryTimer); clearInterval(tickTimer); };
   }, []);
 
-  const isAnyModalOpen = Boolean(
-    isBasketOpen ||
-    isCaseFilesOpen ||
-    isPhotoPuzzleOpen ||
-    activeClue ||
-    isCompleteOpen ||
-    isDossierOpen ||
-    isHintOpen
-  );
+  return <div className="basement-room relative w-full h-screen overflow-hidden bg-[#14161a] select-none font-mono">
+    <div ref={mountRef} onClick={()=>isStarted&&engineRef.current?.lock()} className="absolute inset-0" />
+    {!isStarted && (
+      <div 
+        className="fixed inset-0 z-[100] bg-black select-none flex items-center justify-start p-8 sm:p-16 overflow-hidden bg-cover bg-right sm:bg-center"
+        style={{
+          backgroundImage: "url('/preview-basement.jpg')",
+          backgroundColor: '#060608'
+        }}
+      >
+        {/* Cinematic dark gradient vignette overlay on left for text legibility */}
+        <div className="absolute inset-0 bg-gradient-to-r from-black via-black/85 to-transparent pointer-events-none w-full sm:w-3/5" />
+        <div className="absolute inset-0 bg-black/25 pointer-events-none" />
 
-  return <div className="relative w-full h-screen overflow-hidden bg-[#14161a] select-none font-mono">
-    <div ref={mountRef} onClick={() => { if (isStarted && engineRef.current && !isAnyModalOpen) engineRef.current.lock(); }} className="absolute inset-0" />
-    {!isStarted&&<div className="ov"><h1>CURSE THE CODE</h1><h3>The Basement</h3><ul><li><b>WASD</b> move</li><li><b>Mouse</b> look</li><li><b>E</b> interact/search</li><li><b>B/C/P</b> basket/clues/photo</li></ul><button onClick={handleStart}>CLICK TO ENTER BASEMENT</button></div>}
-    {notification&&<div className="absolute top-20 left-1/2 -translate-x-1/2 z-[80] bg-red-950/95 border border-red-400/40 px-5 py-3 rounded text-xs text-red-100">{notification}</div>}
-    {isStarted&&<HUD roomTitle={roomData?.title||'The Basement'} totalFragments={5} collectedCount={roomData?.collected_fragment_ids?.length||0} basketUnlocked={Boolean(roomData?.basket_unlocked)} isRoomCompleted={Boolean(roomData?.is_completed)} photoCount={roomData?.photo_pieces_collected||0} cluesSolved={roomClues.filter(c=>c.solved).length} totalClues={2} onOpenBasket={()=>{setIsBasketOpen(true);engineRef.current?.unlock();}} onOpenCaseFiles={()=>{setIsCaseFilesOpen(true);engineRef.current?.unlock();}} onOpenPhotoPuzzle={()=>{setIsPhotoPuzzleOpen(true);engineRef.current?.unlock();}} onOpenRules={()=>{setIsDossierOpen(true);engineRef.current?.unlock();}} onOpenHints={()=>{setIsHintOpen(true);engineRef.current?.unlock();}} onLogout={onLogout} audioMuted={audioMuted} onToggleAudio={()=>{const v=!audioMuted;audioRef.current?.setMuted(v);setAudioMuted(v);}} activeHoverPrompt={hoverPrompt}/>} 
-    <BasketModal isOpen={isBasketOpen} onClose={()=>{setIsBasketOpen(false);engineRef.current?.lock();}} evidence={roomData?.evidence||[]} collectedIds={roomData?.collected_fragment_ids||[]} basketUnlocked={Boolean(roomData?.basket_unlocked)} totalInRoom={5} roomTitle="The Basement"/>
-    <CaseFilesModal isOpen={isCaseFilesOpen} onClose={()=>{setIsCaseFilesOpen(false);engineRef.current?.lock();}} clues={clues} basketUnlocked={Boolean(roomData?.basket_unlocked)} onOpenClue={clue=>{setIsCaseFilesOpen(false);if(clue.is_locked){showNotification(clue.lock_reason||'This clue is locked.');return;}if(clue.id==='R1-FIN'&&!clues.filter(c=>c.id==='R1-09'||c.id==='R1-10').every(c=>c.solved)){showNotification('Final terminal locked. Solve the prerequisite room clues first.');return;}setActiveClue(clue);engineRef.current?.unlock();}}/>
-    <PhotoPuzzleModal isOpen={isPhotoPuzzleOpen} onClose={()=>{setIsPhotoPuzzleOpen(false);engineRef.current?.lock();}} photoCount={roomData?.photo_pieces_collected||0} requiredPieces={10}/>
+        <div className="relative z-10 flex flex-col items-start max-w-lg pl-2 sm:pl-8">
+          {/* Main Title */}
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-serif font-black tracking-[0.2em] text-white uppercase drop-shadow-[0_4px_14px_rgba(0,0,0,0.9)]">
+            CURSE THE CODE
+          </h1>
+
+          {/* Room Pill Badge */}
+          <div className="mt-3 mb-8 px-4 py-1 rounded-full bg-white text-black font-mono font-bold text-xs sm:text-sm tracking-[0.35em] uppercase shadow-md inline-flex items-center justify-center">
+            r o o m &nbsp; 3
+          </div>
+
+          {/* Enter Room Button */}
+          <button
+            onClick={handleStart}
+            aria-label="CLICK TO ENTER BASEMENT"
+            className="group px-6 py-2.5 rounded border border-white/70 hover:border-white bg-black/50 hover:bg-white/10 text-white font-serif tracking-wider text-sm sm:text-base cursor-pointer transition-all duration-200 shadow-[0_0_15px_rgba(0,0,0,0.6)] hover:shadow-[0_0_20px_rgba(255,255,255,0.25)] active:scale-[0.98] flex items-center justify-center"
+          >
+            <span>Enter the Basement</span>
+            <span className="sr-only">CLICK TO ENTER BASEMENT</span>
+          </button>
+
+          {/* Controls List */}
+          <div className="mt-8 space-y-2.5 text-xs sm:text-sm font-mono text-stone-300/80">
+            <div className="flex items-center">
+              <span className="w-36 sm:w-44 text-stone-200">
+                <span className="text-white font-bold mr-1.5">•</span>Move &amp; Look
+              </span>
+              <span className="text-stone-400 font-mono">WASD &middot; Mouse</span>
+            </div>
+            <div className="flex items-center">
+              <span className="w-36 sm:w-44 pl-3.5 text-stone-300">
+                Interact
+              </span>
+              <span className="text-stone-400 font-mono">E &middot; Right-Click</span>
+            </div>
+            <div className="flex items-center">
+              <span className="w-36 sm:w-44 pl-3.5 text-stone-300">
+                Files
+              </span>
+              <span className="text-stone-400 font-mono">P &middot; B &middot; C</span>
+            </div>
+            <div className="flex items-center">
+              <span className="w-36 sm:w-44 pl-3.5 text-stone-300">
+                Cursor Release
+              </span>
+              <span className="text-stone-400 font-mono">ESC</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    )}
+    {notification&&<div className="absolute top-20 left-1/2 -translate-x-1/2 z-[80] bg-black/60 backdrop-blur-none border border-white/50 px-5 py-3 rounded-lg text-xs font-mono text-white shadow-none drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">{notification}</div>}
+    {isStarted&&<HUD roomTitle={roomData?.title||'The Basement'} totalFragments={5} collectedCount={roomData?.collected_fragment_ids?.length||0} basketUnlocked={Boolean(roomData?.basket_unlocked)} isRoomCompleted={Boolean(roomData?.is_completed)} completedMessage="ROOM 3 COMPLETE • BASEMENT SECTOR PURGED" photoCount={roomData?.photo_pieces_collected||0} cluesSolved={roomClues.filter(c=>c.solved).length} totalClues={2} onOpenBasket={()=>{setIsBasketOpen(true);engineRef.current?.unlock();}} onOpenCaseFiles={()=>{setIsCaseFilesOpen(true);engineRef.current?.unlock();}} onOpenPhotoPuzzle={()=>{setIsPhotoPuzzleOpen(true);engineRef.current?.unlock();}} onLogout={onLogout} audioMuted={audioMuted} onToggleAudio={()=>{const v=!audioMuted;audioRef.current?.setMuted(v);setAudioMuted(v);}} activeHoverPrompt={hoverPrompt} />}
+    <BasketModal isOpen={isBasketOpen} onClose={()=>{setIsBasketOpen(false);engineRef.current?.lock();}} evidence={roomData?.evidence||[]} collectedIds={roomData?.collected_fragment_ids||[]} basketUnlocked={Boolean(roomData?.basket_unlocked)} totalInRoom={5} roomTitle="The Basement" />
+    <CaseFilesModal isOpen={isCaseFilesOpen} onClose={()=>{setIsCaseFilesOpen(false);engineRef.current?.lock();}} clues={clues} basketUnlocked={Boolean(roomData?.basket_unlocked)} onOpenClue={clue=>{setIsCaseFilesOpen(false);if(clue.id==='R1-FIN'&&!clues.filter(c=>c.id==='R1-09'||c.id==='R1-10').every(c=>c.solved)){showNotification('Final terminal locked.');return;}setActiveClue(clue);engineRef.current?.unlock();}} />
+    <PhotoPuzzleModal isOpen={isPhotoPuzzleOpen} onClose={()=>{setIsPhotoPuzzleOpen(false);engineRef.current?.lock();}} photoCount={roomData?.photo_pieces_collected||0} requiredPieces={10} />
     <IntercomQrModal isOpen={Boolean(activeClue?.id==='R1-09')} {...clueModalProps}/>
     <ServerRackNoteModal isOpen={Boolean(activeClue?.id==='R1-10')} {...clueModalProps}/>
-    <FinalContainmentTerminalModal isOpen={Boolean(activeClue?.id==='R1-FIN')} {...clueModalProps} onOpenHints={() => setIsHintOpen(true)} />
+    <FinalContainmentTerminalModal isOpen={Boolean(activeClue?.id==='R1-FIN')} {...clueModalProps}/>
     <Round1VictoryModal isOpen={isCompleteOpen} onClose={()=>setIsCompleteOpen(false)} onProceed={()=>{setIsCompleteOpen(false);onProceedToLobby?.();showNotification('Round 1 complete. The subterranean vault seal is disengaged.');}} />
-    <Round1DossierModal isOpen={isDossierOpen} onClose={()=>{setIsDossierOpen(false);engineRef.current?.lock();}} />
-    <HintModal isOpen={isHintOpen} onClose={()=>{setIsHintOpen(false);engineRef.current?.lock();}} roomId="basement" roomTitle="The Basement" />
+
+    {/* Survival Horror Staircase Jumpscare Overlay */}
+    {isJumpscareActive && (
+      <div
+        className="jumpscare-overlay"
+        role="alert"
+        aria-live="assertive"
+        data-testid="basement-jumpscare-modal"
+      >
+        <img
+          src={jumpscareVisual || '/assets/jumpscare_entity.jpg'}
+          onError={(e) => {
+            if (e.target.src !== '/jumpscare_entity.jpg') {
+              e.target.src = '/jumpscare_entity.jpg';
+            }
+          }}
+          alt="Jumpscare Entity"
+          className="jumpscare-image"
+          data-testid="jumpscare-image"
+        />
+      </div>
+    )}
   </div>;
 }
