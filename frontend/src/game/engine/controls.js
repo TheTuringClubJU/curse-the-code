@@ -15,7 +15,8 @@ export function setupControls({
   getAudio,
   getSolids,
   roomSize,
-  spawn
+  spawn,
+  isInputBlocked = () => false
 }) {
   const [W, H, D] = roomSize;
   let px = spawn[0], pz = spawn[2] ?? spawn[1], yaw = spawn[3] ?? 0, pitch = 0;
@@ -31,6 +32,7 @@ export function setupControls({
   );
 
   const requestLock = () => {
+    if(isInputBlocked())return;
     try {
       const targetEl = canvas || document.body;
       if (targetEl && targetEl.requestPointerLock) {
@@ -128,6 +130,7 @@ export function setupControls({
   let isPointerDown = false;
 
   const onMouseDown = (e) => {
+    if(isInputBlocked())return;
     if (e.button === 0) {
       isPointerDown = true;
       prevClientX = e.clientX;
@@ -142,6 +145,7 @@ export function setupControls({
   };
 
   const onMouseMove = (e) => {
+    if(isInputBlocked()){prevClientX=prevClientY=null;return;}
     const locked = checkPointerLocked();
     let mx = 0, my = 0;
 
@@ -167,6 +171,7 @@ export function setupControls({
 
   // Key Listeners (WASD + E)
   const onKeyDown = (e) => {
+    if(isInputBlocked()){activeKeys.clear();return;}
     const tag = (e.target?.tagName || document.activeElement?.tagName || '').toUpperCase();
     if (tag === 'INPUT' || tag === 'TEXTAREA' || e.target?.isContentEditable) {
       return;
@@ -216,6 +221,7 @@ export function setupControls({
   };
 
   const onWindowClick = (e) => {
+    if(isInputBlocked())return;
     const isGameTarget = e.target === canvas || 
       canvas?.contains?.(e.target) || 
       canvas?.parentElement?.contains?.(e.target) ||
@@ -243,6 +249,7 @@ export function setupControls({
 
   // Per-frame physics
   const update = (dt) => {
+    if(isInputBlocked()){activeKeys.clear();return {px,pz,yaw,pitch,walk,isMoving:false};}
     const moveF = (activeKeys.has('KeyW') || activeKeys.has('w') || activeKeys.has('ArrowUp')) ? 1 : 0;
     const moveB = (activeKeys.has('KeyS') || activeKeys.has('s') || activeKeys.has('ArrowDown')) ? 1 : 0;
     const moveR = (activeKeys.has('KeyD') || activeKeys.has('d') || activeKeys.has('ArrowRight')) ? 1 : 0;
@@ -322,6 +329,7 @@ export function setupControls({
     isLocked: checkPointerLocked,
     setView: (x, z, y, p = 0) => { px = x; pz = z; yaw = y; pitch = p; },
     getPos: () => ({ x: px, z: pz, yaw, pitch }),
+    resetInput: onWindowBlur,
     dispose
   };
 }

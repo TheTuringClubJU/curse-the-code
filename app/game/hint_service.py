@@ -23,14 +23,14 @@ CLUE_PENALTY_SECONDS = 30
 ROOM_FRAGMENTS = {
     "bedroom": [
         "EB01", "EB02", "EB03", "EB04", "EB05", "EB06",
-        "EB07", "EB08", "EB09", "EB10", "EB11", "EB12", "EK01"
+        "EB07", "EB08", "EB09", "EB10", "EB11", "EB12", "EK01", "XB01", "XB02"
     ],
     "study": [
         "ES01", "ES02", "ES03", "ES04", "ES05", "ES06",
-        "ES07", "ES08", "ES09", "ES10", "ES11", "ES12", "EK02", "EK03"
+        "ES07", "ES08", "ES09", "ES10", "ES11", "ES12", "EK02", "EK03", "XS01", "XS02"
     ],
     "basement": [
-        "EK04", "EK05", "EK06"
+        "EK04", "EK05", "EK06", "XK01", "XK02"
     ]
 }
 
@@ -270,7 +270,11 @@ def request_hint(
                 (team_id, room_id),
             )
             collected_fragments = {r["fragment_id"] for r in cur.fetchall()}
-            expected_fragments = ROOM_FRAGMENTS[room_id]
+            content_room = next((r for r in content.get("rooms", []) if r.get("id") == room_id), None)
+            if content_room and content_room.get("evidence"):
+                expected_fragments = [ev["id"] for ev in content_room["evidence"] if ev.get("id")]
+            else:
+                expected_fragments = ROOM_FRAGMENTS.get(room_id, [])
             uncollected_fragments = [fid for fid in expected_fragments if fid not in collected_fragments]
 
             # 5. Check if basket is officially unlocked in team_rooms

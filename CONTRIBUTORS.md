@@ -31,3 +31,4 @@ One bullet per contribution/PR, most recent contribution added to the bottom of 
 - Shahan Samar ([@shxhxn](https://github.com/shxhxn))
   - Implemented Room 2 (Daniel's Study) backend: evidence collection, clue validation, transactional progress and scoring, room completion, and regression tests ([#7](https://github.com/TheTuringClubJU/curse-the-code/pull/7))
   - Developed Room 2's 3D frontend, gothic environment, interactive props, horror sequences, audio, performance optimizations, and regression tests ([#30](https://github.com/TheTuringClubJU/curse-the-code/pull/30), under review)
+
