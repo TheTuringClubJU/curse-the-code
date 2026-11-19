@@ -594,7 +594,7 @@ describe('Room 5 (The Surveillance Morgue) E2E 4-Tier Opaque-Box Suite', () => {
   // TIER 3: Pairwise Combinatorial Testing
   // ═══════════════════════════════════════════════════════════════════════════
   describe('Tier 3: Pairwise Combinatorial Testing', () => {
-    it('PAIR-01: Searching a prop displays fragment modal and Escape closes cleanly', async () => {
+    it('PAIR-01: Searching a prop shows toast notification without opening a modal', async () => {
       global.fetch = vi.fn()
         .mockResolvedValueOnce({ ok: true, json: async () => makeUnlockedState({ collected_fragment_ids: [], basket_unlocked: false }) })
         .mockResolvedValueOnce({ ok: true, json: async () => ({ found: true, fragment_id: 'EC01', total_collected: 1, total_in_room: 10, message: 'Fragment EC01 recovered.' }) })
@@ -607,9 +607,7 @@ describe('Room 5 (The Surveillance Morgue) E2E 4-Tier Opaque-Box Suite', () => {
       await act(async () => {
         await activeEngineInstance.callbacks.onInteract('relay_rack');
       });
-      expect(screen.getByText(/Personnel Record Header/i)).toBeInTheDocument();
-
-      fireEvent.keyDown(window, { key: 'Escape', code: 'Escape' });
+      expect(screen.getByText(/Fragment EC01 recovered\./i)).toBeInTheDocument();
       expect(screen.queryByText(/Personnel Record Header/i)).toBeNull();
     });
 
@@ -758,8 +756,7 @@ describe('Room 5 (The Surveillance Morgue) E2E 4-Tier Opaque-Box Suite', () => {
       await act(async () => {
         await activeEngineInstance.callbacks.onInteract('fuse_box');
       });
-      expect(screen.getByText('10/10 Logged')).toBeInTheDocument();
-      fireEvent.keyDown(window, { key: 'Escape', code: 'Escape' });
+      expect(screen.queryByText('10/10 Logged')).toBeNull();
 
       // Solve R2-01
       await act(async () => { await activeEngineInstance.callbacks.onInteract('staff_terminal'); });
@@ -1655,10 +1652,8 @@ describe('Room 5 (The Surveillance Morgue) E2E 4-Tier Opaque-Box Suite', () => {
       await act(async () => {
         await activeEngineInstance.callbacks.onInteract('relay_rack');
       });
-      expect(screen.getByText(/2 Records Recovered/i)).toBeInTheDocument();
-      expect(screen.getByText(/Transmission Log/i)).toBeInTheDocument();
-      expect(screen.getByText(/Equipment Requisition/i)).toBeInTheDocument();
-      fireEvent.keyDown(window, { key: 'Escape', code: 'Escape' });
+      expect(screen.getByText(/Recovered 2 evidence records!/i)).toBeInTheDocument();
+      expect(screen.queryByText(/2 Records Recovered/i)).toBeNull();
 
       // Outside Safe Bay 5B during hunt shows peripheral chase-panic-vignette via telemetry interval
       const origGetPos = activeEngineInstance.getPos;
