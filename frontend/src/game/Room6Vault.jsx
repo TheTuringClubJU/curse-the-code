@@ -236,11 +236,6 @@ export default function Room6Vault({ team, onLogout }) {
             : 'Reinforced lead-glass barrier. The suspended core pulses relentlessly at the center of the pit.'
         );
         markDocDiscovered('core_glass');
-        if (docDelayRef.current) clearTimeout(docDelayRef.current);
-        docDelayRef.current = setTimeout(() => {
-          setActiveDocumentId('core_glass');
-          engineRef.current?.unlock?.();
-        }, fired ? 1150 : 0);
         return;
       }
 
@@ -249,8 +244,6 @@ export default function Room6Vault({ team, onLogout }) {
         showNotice(`Split-flap containment clock: ${display} until automatic purge.`);
         audioRef.current?.flapClack?.();
         markDocDiscovered('countdown_timer');
-        setActiveDocumentId('countdown_timer');
-        engineRef.current?.unlock?.();
         return;
       }
 
@@ -267,19 +260,9 @@ export default function Room6Vault({ team, onLogout }) {
         const doc = VAULT_DOCUMENTS[objectId];
         audioRef.current?.ensureActive?.();
         audioRef.current?.click?.();
-        const inspectFired = engineRef.current?.triggerScare?.(`inspect_${objectId}`);
+        engineRef.current?.triggerScare?.(`inspect_${objectId}`);
         markDocDiscovered(objectId);
-        showNotice(`Examining manuscript: ${doc.title}`);
-        if (inspectFired) {
-          if (docDelayRef.current) clearTimeout(docDelayRef.current);
-          docDelayRef.current = setTimeout(() => {
-            setActiveDocumentId(objectId);
-            engineRef.current?.unlock?.();
-          }, 920);
-        } else {
-          setActiveDocumentId(objectId);
-          engineRef.current?.unlock?.();
-        }
+        showNotice(`Logged to Case Dossier [C]: ${doc.title}`);
       }
     },
     [markDocDiscovered, openClueByObjectId, showNotice]
