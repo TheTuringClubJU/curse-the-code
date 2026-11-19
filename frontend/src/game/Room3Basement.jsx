@@ -10,6 +10,8 @@ import IntercomQrModal from './components/IntercomQrModal.jsx';
 import ServerRackNoteModal from './components/ServerRackNoteModal.jsx';
 import Round1VictoryModal from './components/Round1VictoryModal.jsx';
 import FinalContainmentTerminalModal from './components/FinalContainmentTerminalModal.jsx';
+import Round1DossierModal from './components/Round1DossierModal.jsx';
+import HintModal from './components/HintModal.jsx';
 import './game.css';
 
 const jumpscareVisual = '/assets/jumpscare_entity.jpg';
@@ -39,6 +41,8 @@ export default function Room3Basement({ team, onLogout, onProceedToLobby, onProc
   const [isStarted, setIsStarted] = useState(false), [activeClue, setActiveClue] = useState(null);
   const [isBasketOpen, setIsBasketOpen] = useState(false), [isCaseFilesOpen, setIsCaseFilesOpen] = useState(false);
   const [isPhotoPuzzleOpen, setIsPhotoPuzzleOpen] = useState(false), [isCompleteOpen, setIsCompleteOpen] = useState(false);
+  const [isDossierOpen, setIsDossierOpen] = useState(false);
+  const [isHintOpen, setIsHintOpen] = useState(false);
   const [hoverPrompt, setHoverPrompt] = useState(null), [notification, setNotification] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false), [audioMuted, setAudioMuted] = useState(false);
   const [isJumpscareActive, setIsJumpscareActive] = useState(false);
@@ -128,7 +132,7 @@ export default function Room3Basement({ team, onLogout, onProceedToLobby, onProc
     jumpscareTriggeredRef.current = true;
     setIsJumpscareActive(true);
 
-    // 1. Play scream from C:\Users\DELL\OneDrive\Desktop\git projects\Curse The Code\curse-the-code\frontend\public\assets\audio\basement\scream.mp3
+    // 1. Play scream audio asset (/assets/audio/basement/scream.mp3)
     try {
       if (typeof Audio !== 'undefined') {
         const scream = new Audio('/assets/audio/basement/scream.mp3');
@@ -274,6 +278,8 @@ export default function Room3Basement({ team, onLogout, onProceedToLobby, onProc
       if(e.key.toLowerCase()==='b'){e.preventDefault();setIsBasketOpen(v=>{const next=!v;if(next)engineRef.current?.unlock();else engineRef.current?.lock();return next;});}
       if(e.key.toLowerCase()==='c'){e.preventDefault();setIsCaseFilesOpen(v=>{const next=!v;if(next)engineRef.current?.unlock();else engineRef.current?.lock();return next;});}
       if(e.key.toLowerCase()==='p'){e.preventDefault();setIsPhotoPuzzleOpen(v=>{const next=!v;if(next)engineRef.current?.unlock();else engineRef.current?.lock();return next;});}
+      if(e.key.toLowerCase()==='r'){e.preventDefault();setIsDossierOpen(v=>{const next=!v;if(next)engineRef.current?.unlock();else engineRef.current?.lock();return next;});}
+      if(e.key.toLowerCase()==='h'){e.preventDefault();setIsHintOpen(v=>{const next=!v;if(next)engineRef.current?.unlock();else engineRef.current?.lock();return next;});}
     };
     window.addEventListener('keydown',key,true); return()=>window.removeEventListener('keydown',key,true);
   },[]);
@@ -423,14 +429,16 @@ export default function Room3Basement({ team, onLogout, onProceedToLobby, onProc
       </div>
     )}
     {notification&&<div className="absolute top-20 left-1/2 -translate-x-1/2 z-[80] bg-black/60 backdrop-blur-none border border-white/50 px-5 py-3 rounded-lg text-xs font-mono text-white shadow-none drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">{notification}</div>}
-    {isStarted&&<HUD roomTitle={roomData?.title||'The Basement'} totalFragments={5} collectedCount={roomData?.collected_fragment_ids?.length||0} basketUnlocked={Boolean(roomData?.basket_unlocked)} isRoomCompleted={Boolean(roomData?.is_completed)} completedMessage="ROOM 3 COMPLETE • BASEMENT SECTOR PURGED" photoCount={roomData?.photo_pieces_collected||0} cluesSolved={roomClues.filter(c=>c.solved).length} totalClues={2} onOpenBasket={()=>{setIsBasketOpen(true);engineRef.current?.unlock();}} onOpenCaseFiles={()=>{setIsCaseFilesOpen(true);engineRef.current?.unlock();}} onOpenPhotoPuzzle={()=>{setIsPhotoPuzzleOpen(true);engineRef.current?.unlock();}} onLogout={onLogout} audioMuted={audioMuted} onToggleAudio={()=>{const v=!audioMuted;audioRef.current?.setMuted(v);setAudioMuted(v);}} activeHoverPrompt={hoverPrompt} />}
+    {isStarted&&<HUD roomTitle={roomData?.title||'The Basement'} totalFragments={5} collectedCount={roomData?.collected_fragment_ids?.length||0} basketUnlocked={Boolean(roomData?.basket_unlocked)} isRoomCompleted={Boolean(roomData?.is_completed)} completedMessage="ROOM 3 COMPLETE • BASEMENT SECTOR PURGED" photoCount={roomData?.photo_pieces_collected||0} cluesSolved={roomClues.filter(c=>c.solved).length} totalClues={2} onOpenBasket={()=>{setIsBasketOpen(true);engineRef.current?.unlock();}} onOpenCaseFiles={()=>{setIsCaseFilesOpen(true);engineRef.current?.unlock();}} onOpenPhotoPuzzle={()=>{setIsPhotoPuzzleOpen(true);engineRef.current?.unlock();}} onOpenRules={()=>{setIsDossierOpen(true);engineRef.current?.unlock();}} onOpenDossier={()=>{setIsDossierOpen(true);engineRef.current?.unlock();}} onOpenHints={()=>{setIsHintOpen(true);engineRef.current?.unlock();}} onLogout={onLogout} audioMuted={audioMuted} onToggleAudio={()=>{const v=!audioMuted;audioRef.current?.setMuted(v);setAudioMuted(v);}} activeHoverPrompt={hoverPrompt} />}
     <BasketModal isOpen={isBasketOpen} onClose={()=>{setIsBasketOpen(false);engineRef.current?.lock();}} evidence={roomData?.evidence||[]} collectedIds={roomData?.collected_fragment_ids||[]} basketUnlocked={Boolean(roomData?.basket_unlocked)} totalInRoom={5} roomTitle="The Basement" />
     <CaseFilesModal isOpen={isCaseFilesOpen} onClose={()=>{setIsCaseFilesOpen(false);engineRef.current?.lock();}} clues={clues} basketUnlocked={Boolean(roomData?.basket_unlocked)} onOpenClue={clue=>{setIsCaseFilesOpen(false);if(clue.id==='R1-FIN'&&!clues.filter(c=>c.id==='R1-09'||c.id==='R1-10').every(c=>c.solved)){showNotification('Final terminal locked.');return;}setActiveClue(clue);engineRef.current?.unlock();}} />
     <PhotoPuzzleModal isOpen={isPhotoPuzzleOpen} onClose={()=>{setIsPhotoPuzzleOpen(false);engineRef.current?.lock();}} photoCount={roomData?.photo_pieces_collected||0} requiredPieces={10} />
     <IntercomQrModal isOpen={Boolean(activeClue?.id==='R1-09')} {...clueModalProps}/>
     <ServerRackNoteModal isOpen={Boolean(activeClue?.id==='R1-10')} {...clueModalProps}/>
-    <FinalContainmentTerminalModal isOpen={Boolean(activeClue?.id==='R1-FIN')} {...clueModalProps}/>
+    <FinalContainmentTerminalModal isOpen={Boolean(activeClue?.id==='R1-FIN')} {...clueModalProps} onOpenHints={() => setIsHintOpen(true)} />
     <Round1VictoryModal isOpen={isCompleteOpen} onClose={()=>setIsCompleteOpen(false)} onProceed={()=>{setIsCompleteOpen(false);onProceedToLobby?.();showNotification('Round 1 complete. The subterranean vault seal is disengaged.');}} />
+    <Round1DossierModal isOpen={isDossierOpen} onClose={()=>{setIsDossierOpen(false);engineRef.current?.lock();}} />
+    <HintModal isOpen={isHintOpen} onClose={()=>{setIsHintOpen(false);engineRef.current?.lock();}} roomId="basement" roomTitle="The Basement" />
 
     {/* Survival Horror Staircase Jumpscare Overlay */}
     {isJumpscareActive && (
