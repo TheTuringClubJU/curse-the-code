@@ -24,23 +24,33 @@ ROOM_TO_ROUND = {
     "bedroom": 1,
     "study": 1,
     "basement": 1,
+    "records": 2,
     "control": 2,
 }
 
 ROOM_FRAGMENTS = {
     "bedroom": [
         "EB01", "EB02", "EB03", "EB04", "EB05", "EB06",
-        "EB07", "EB08", "EB09", "EB10", "EB11", "EB12", "EK01"
+        "EB07", "EB08", "EB09", "EB10", "EB11", "EB12", "EK01",
+        "XB01", "XB02"
     ],
     "study": [
         "ES01", "ES02", "ES03", "ES04", "ES05", "ES06",
-        "ES07", "ES08", "ES09", "ES10", "ES11", "ES12", "EK02", "EK03"
+        "ES07", "ES08", "ES09", "ES10", "ES11", "ES12", "EK02", "EK03",
+        "XS01", "XS02"
     ],
     "basement": [
-        "EK04", "EK05", "EK06"
+        "EK04", "EK05", "EK06",
+        "XK01", "XK02"
+    ],
+    "records": [
+        "ER01", "ER02", "ER03", "ER04", "ER05", "ER06",
+        "ER07", "ER08", "ER09", "ER10",
+        "XR01", "XR02"
     ],
     "control": [
-        "EC01", "EC02", "EC03", "EC04", "EC05", "EC06", "EC07", "EC08"
+        "EC01", "EC02", "EC03", "EC04", "EC05", "EC06", "EC07", "EC08",
+        "XC01", "XC02"
     ]
 }
 
@@ -48,6 +58,7 @@ ROOM_CLUES = {
     "bedroom": ["R1-01", "R1-02", "R1-03", "R1-04"],
     "study": ["R1-05", "R1-06", "R1-07", "R1-08"],
     "basement": ["R1-09", "R1-10", "R1-FIN"],
+    "records": ["R2-02", "R2-03", "R2-04", "R2-07"],
     "control": ["R2-01", "R2-05", "R2-06"]
 }
 
@@ -235,10 +246,15 @@ def request_hint(
                     room_id = "bedroom"
                 elif "study" not in completed:
                     room_id = "study"
-                else:
+                elif "basement" not in completed:
                     room_id = "basement"
+                elif "records" not in completed:
+                    room_id = "records"
+                else:
+                    room_id = "control"
 
-            if room_id not in ROOM_FRAGMENTS:
+            valid_rooms = set(ROOM_FRAGMENTS.keys()) | {r.get("id") for r in content.get("rooms", [])}
+            if room_id not in valid_rooms:
                 raise HTTPException(400, f"Invalid room_id '{room_id}'")
 
             round_num = ROOM_TO_ROUND.get(room_id, 1)
@@ -297,13 +313,20 @@ def request_hint(
                     },
                 )
 
-            # 4. Check fragment collection state for this room
+            # 4. Check fragment collection state for this room (real + decoy fragments)
             cur.execute(
                 "SELECT fragment_id FROM team_fragments WHERE team_id = %s AND room_id = %s",
                 (team_id, room_id),
             )
             collected_fragments = {r["fragment_id"] for r in cur.fetchall()}
-            expected_fragments = ROOM_FRAGMENTS[room_id]
+
+            # Dynamically lookup all expected fragments (real + decoys) from content definition
+            content_room = next((r for r in content.get("rooms", []) if r.get("id") == room_id), None)
+            if content_room and content_room.get("evidence"):
+                expected_fragments = [ev["id"] for ev in content_room["evidence"] if ev.get("id")]
+            else:
+                expected_fragments = ROOM_FRAGMENTS.get(room_id, [])
+
             uncollected_fragments = [fid for fid in expected_fragments if fid not in collected_fragments]
 
             # 5. Check if basket is officially unlocked in team_rooms
@@ -312,10 +335,26 @@ def request_hint(
                 (team_id, room_id),
             )
             basket_row = cur.fetchone()
-            is_basket_unlocked = bool(basket_row and basket_row["is_basket_unlocked"]) or (len(uncollected_fragments) == 0)
+
+            # Universal progression constraint:
+            # Basket is only unlocked if marked unlocked in team_rooms OR all expected fragments (real + decoys) are collected
+            is_basket_unlocked = bool(basket_row and basket_row["is_basket_unlocked"]) or (len(uncollected_fragments) == 0 and len(expected_fragments) > 0)
+
+            # Persist basket unlock if all room fragments have been collected
+            if len(uncollected_fragments) == 0 and len(expected_fragments) > 0 and not (basket_row and basket_row["is_basket_unlocked"]):
+                cur.execute(
+                    """INSERT INTO team_rooms (team_id, room_id, is_basket_unlocked)
+                       VALUES (%s, %s, TRUE)
+                       ON CONFLICT (team_id, room_id) DO UPDATE SET is_basket_unlocked = TRUE""",
+                    (team_id, room_id),
+                )
+                conn.commit()
+                is_basket_unlocked = True
 
             # ----------------------------------------------------
             # PHASE 1: Hunting Fragments (if fragments remain)
+            # Universal Rule: All decoys and fragments must be collected.
+            # Until all fragments are collected, hints cost strictly +10s.
             # ----------------------------------------------------
             if not is_basket_unlocked and uncollected_fragments:
                 next_fragment_id = uncollected_fragments[0]
@@ -399,7 +438,7 @@ def request_hint(
                 (team_id, round_num),
             )
             clues_prog = {r["clue_id"]: r for r in cur.fetchall()}
-            expected_clues = ROOM_CLUES[room_id]
+            expected_clues = ROOM_CLUES.get(room_id, [])
 
             # Find active clue in sequential order
             active_clue_id = None
