@@ -890,18 +890,17 @@ describe('Room 5 (The Surveillance Morgue) Frontend Test Suite', () => {
     await act(async () => {
       await activeEngineInstance.callbacks.onInteract('tape_deck_cart');
     });
-    expect(screen.getByText(/Compartment Sealed/i)).toBeInTheDocument();
+    expect(screen.getByText(/Locked for now\./i)).toBeInTheDocument();
+    expect(screen.queryByText(/Compartment Sealed/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/NEXT SEARCH STOP/i)).not.toBeInTheDocument();
-    fireEvent.click(screen.getByText('Continue Search'));
 
     // Collecting a wrapped fragment opens unmistakable Evidence Recovered confirmation
     await act(async () => {
       await activeEngineInstance.callbacks.onInteract('relay_rack');
     });
-    expect(screen.getByText(/EVIDENCE RECOVERED \/\/ PLACED IN BASKET \[B\]/i)).toBeInTheDocument();
-    expect(screen.getByText(/Tamper-Sealed Evidence #2/i)).toBeInTheDocument();
-    expect(screen.getByText('Relay Rack')).toBeInTheDocument();
-    fireEvent.click(screen.getByText('Continue'));
+    expect(screen.getByText(/You discovered a wrapped fragment inside the relay rack!/i)).toBeInTheDocument();
+    expect(screen.queryByText(/EVIDENCE RECOVERED \/\/ PLACED IN BASKET \[B\]/i)).not.toBeInTheDocument();
+    expect(screen.queryByText('Continue')).not.toBeInTheDocument();
 
     // Ambient prop opens readable inspection writing without firing a backend /search request
     const callsBeforeAmbient = global.fetch.mock.calls.length;
@@ -909,9 +908,9 @@ describe('Room 5 (The Surveillance Morgue) Frontend Test Suite', () => {
       await activeEngineInstance.callbacks.onInteract('autopsy_gurney');
     });
     expect(global.fetch.mock.calls.length).toBe(callsBeforeAmbient);
-    expect(screen.getByText(/Stainless Cryo Examination Gurney/i)).toBeInTheDocument();
-    expect(screen.getByText(/AMBIENT PROP/i)).toBeInTheDocument();
-    fireEvent.click(screen.getByText('Close'));
+    expect(screen.getByText(/contains no hidden compartments/i)).toBeInTheDocument();
+    expect(screen.queryByText(/AMBIENT PROP/i)).not.toBeInTheDocument();
+    expect(screen.queryByText('Close')).not.toBeInTheDocument();
 
     // CCTV Monitor opens tactical floorplan blueprint without sequence spoilers
     await act(async () => {
@@ -1050,7 +1049,6 @@ describe('Room 5 (The Surveillance Morgue) Frontend Test Suite', () => {
       await activeEngineInstance.callbacks.onInteract('relay_rack');
     });
     expect(activeEngineInstance.setFragmentCleared).not.toHaveBeenCalledWith('relay_rack');
-    fireEvent.click(screen.getByText('Continue'));
 
     // Second pickup on relay_rack (EC02) completes relay_rack and marks it cleared
     await act(async () => {

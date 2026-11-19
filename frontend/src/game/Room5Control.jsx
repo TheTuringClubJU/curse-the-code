@@ -16,7 +16,6 @@ import ControlBasketModal from './components/control/ControlBasketModal.jsx';
 import ControlDossierModal from './components/control/ControlDossierModal.jsx';
 import ControlRoomCompleteModal from './components/control/ControlRoomCompleteModal.jsx';
 import DevCalibratorOverlay from './components/control/DevCalibratorOverlay.jsx';
-import EvidencePickupModal from './components/control/EvidencePickupModal.jsx';
 import CCTVMonitorModal from './components/control/CCTVMonitorModal.jsx';
 import Fork2Modal from './components/control/Fork2Modal.jsx';
 import HintModal from './components/HintModal.jsx';
@@ -133,7 +132,6 @@ export default function Room5Control({ team, onLogout }) {
   const [isCCTVOpen, setIsCCTVOpen] = useState(false);
   const [isHintOpen, setIsHintOpen] = useState(false);
   const [activeClueModal, setActiveClueModal] = useState(null); // 'R2-01' | 'R2-05' | 'R2-06' | null
-  const [inspectModalData, setInspectModalData] = useState(null);
   const [propSnapshots, setPropSnapshots] = useState(() => {
     try {
       const saved = window.localStorage.getItem('ctc_room5_snapshots');
@@ -238,7 +236,6 @@ export default function Room5Control({ team, onLogout }) {
     setIsFork2Open(false);
     setIsCCTVOpen(false);
     setActiveClueModal(null);
-    setInspectModalData(null);
 
     engineRef.current?.shake?.(1.6, 0.72);
     engineRef.current?.setView?.(
@@ -473,8 +470,7 @@ export default function Room5Control({ team, onLogout }) {
           setIsHintOpen(false);
           setIsRoomCompleteModalOpen(false);
           setActiveClueModal(null);
-          setInspectModalData(null);
-          engineRef.current?.setPaused?.(false);
+                engineRef.current?.setPaused?.(false);
           engineRef.current?.lock?.();
         } else {
           engineRef.current?.unlock?.();
@@ -685,15 +681,6 @@ export default function Room5Control({ team, onLogout }) {
           if (snapUrl) setPropSnapshots((prev) => ({ ...prev, [objectId]: snapUrl }));
           audioRef.current?.bad?.();
           showNotification('This terminal is locked. Collect all evidence fragments first.');
-          setInspectModalData({
-            type: 'locked_terminal',
-            objectId,
-            snapshotUrl: snapUrl,
-            terminalName: matchingClue?.title || objectId.replace(/_/g, ' '),
-            collectedCount: collectedCountNow,
-            totalCount: totalFragmentsCount,
-          });
-          engineRef.current?.unlock?.();
           return;
         }
         if (resolvedClueId === 'R2-01') {
@@ -727,13 +714,9 @@ export default function Room5Control({ team, onLogout }) {
         } else {
           audioRef.current?.step?.(0.35);
         }
-        setInspectModalData({
-          ...baseNote,
-          objectId,
-          snapshotUrl: snapUrl,
-          lines: customLines,
-        });
-        engineRef.current?.unlock?.();
+        if (objectId !== 'wall_breaker') {
+          showNotification('You search carefully, but this object contains no hidden compartments.');
+        }
         return;
       }
 
@@ -802,38 +785,19 @@ export default function Room5Control({ team, onLogout }) {
             if ((propInfo && propInfo.isDone) || count >= totalInRoom) {
               engineRef.current?.setFragmentCleared?.(objectId);
             }
-            setInspectModalData({
-              type: 'evidence',
-              objectId,
-              snapshotUrl: snapUrl,
-              evidence: evObj,
-              bundledEvidence,
-              sourceName: propLabel,
-              collectedCount: count,
-              totalCount: totalInRoom,
-              remainingHere: propInfo?.remaining ?? 0,
-            });
-            engineRef.current?.unlock?.();
           } else {
             audioRef.current?.step?.(0.5);
             if (result.already_collected) {
               engineRef.current?.setFragmentCleared?.(objectId);
               if (!result.message) {
                 showNotification(
-                  `Nothing new in ${propLabel} — all items here are already in your Evidence Basket [B].`
+                  'Nothing new here — all items are already in your Evidence Basket [B].'
                 );
               }
             } else if (result.locked) {
-              if (snapUrl) setPropSnapshots((prev) => ({ ...prev, [objectId]: snapUrl }));
-              setInspectModalData({
-                type: 'sequence_locked',
-                objectId,
-                snapshotUrl: snapUrl,
-                propName: propLabel,
-                collectedCount: collectedCountNow,
-                totalCount: totalFragmentsCount,
-              });
-              engineRef.current?.unlock?.();
+              if (!result.message) {
+                showNotification('Locked for now. Follow the investigation trail in order to unlock this.');
+              }
             }
           }
         } else if (res.status === 401 || res.status === 403) {
@@ -937,7 +901,6 @@ export default function Room5Control({ team, onLogout }) {
     isRoomCompleteModalOpen ||
     isCCTVOpen ||
     isHintOpen ||
-    Boolean(inspectModalData) ||
     Boolean(activeClueModal);
 
   isStartedRef.current = isStarted;
@@ -1345,17 +1308,6 @@ export default function Room5Control({ team, onLogout }) {
           playerPos={telemetryState.playerPos}
           collectedIds={collectedIdsList}
           totalFragments={totalFragmentsCount}
-        />
-      )}
-
-      {/* Evidence Pickup & Terminal Locked Modal */}
-      {inspectModalData && (
-        <EvidencePickupModal
-          modalData={inspectModalData}
-          onClose={() => {
-            setInspectModalData(null);
-            resumeGameplayLock();
-          }}
         />
       )}
 

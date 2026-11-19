@@ -32,3 +32,6 @@ HorrorPackFBX/
 /MarkdownFile*.md
 *.dmg
 raw_models/
+
+Room-6_GLB/
+.vite/
