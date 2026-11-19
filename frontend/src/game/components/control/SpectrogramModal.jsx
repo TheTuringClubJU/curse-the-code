@@ -1,5 +1,4 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { copyDocumentText, downloadDocumentFile } from '../../engine/evidenceExport';
 
 // ─── Canvas drawing helpers ───────────────────────────────────────────────────
 
@@ -209,8 +208,6 @@ export default function SpectrogramModal({ isOpen, onClose, onSubmit, clueState 
   const [errorMsg, setErrorMsg] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const [blink, setBlink] = useState(true);
-  const [copiedTelemetry, setCopiedTelemetry] = useState(false);
-  const [downloadedTelemetry, setDownloadedTelemetry] = useState(false);
 
   const oscRef = useRef(null);
   const stripRef = useRef(null);
@@ -300,32 +297,6 @@ export default function SpectrogramModal({ isOpen, onClose, onSubmit, clueState 
   const profile = resolveTelemetryProfile(vmTab, clueState?.payload?.files);
   const activePacket = getActiveTelemetryPacket(vmTab, band, scrubPos, clueState?.payload?.files);
   const isCarrierPeak = activePacket.active;
-
-  const buildTelemetryDump = useCallback(() => {
-    const header = `DELTA-OSC-MK2 TELEMETRY | CHANNEL=${vmTab} (${profile.label}) | BAND=${band} | POS=${scrubPos}%`;
-    const body = isCarrierPeak
-      ? `CARRIER_LOCK=${activePacket.carrierFreqKHz}kHz (${activePacket.bandType})\n4-FRAME BCD-8421 / ITU-MORSE PACKET:\n` +
-        activePacket.frames.map(f => `F${f.idx}: BCD=${f.bcd} | MORSE=${f.morse} | PEAK=${f.peakHz}Hz`).join('\n')
-      : [
-          `STATUS=SCANNING (NO CARRIER PACKET AT POS=${scrubPos}% IN ${band} BAND)`,
-          `CHANNEL_FREQ=${profile.carrierFreqKHz}kHz`,
-          'CALIBRATION GUIDE: Low and mid bands contain background rumble and false harmonics.',
-          'Sweep the HIGH band past two-thirds travel (66%+) on the proven voicemail reel from R2-05 to capture the 4-frame BCD-8421 / ITU-Morse quartet.',
-        ].join('\n');
-    return `${header}\n${body}`;
-  }, [vmTab, profile, band, scrubPos, isCarrierPeak, activePacket]);
-
-  const handleCopyTelemetry = useCallback(async () => {
-    await copyDocumentText(buildTelemetryDump());
-    setCopiedTelemetry(true);
-    setTimeout(() => setCopiedTelemetry(false), 1800);
-  }, [buildTelemetryDump]);
-
-  const handleDownloadTelemetry = useCallback(() => {
-    downloadDocumentFile(`delta_spectrogram_${vmTab.toLowerCase()}_${band.toLowerCase()}.txt`, buildTelemetryDump());
-    setDownloadedTelemetry(true);
-    setTimeout(() => setDownloadedTelemetry(false), 1800);
-  }, [vmTab, band, buildTelemetryDump]);
 
   const handleAuditionCarrier = useCallback(() => {
     try {
@@ -489,22 +460,6 @@ export default function SpectrogramModal({ isOpen, onClose, onSubmit, clueState 
                     title="Audition carrier pulse via Web Audio"
                   >
                     Pulse Tone
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleCopyTelemetry}
-                    className="font-sans font-semibold text-[11px] px-3 py-1 rounded-full bg-white/8 hover:bg-white/15 border border-white/18 text-[#f5e1ba] cursor-pointer transition"
-                    title="Copy captured spectral telemetry for external/AI decoding"
-                  >
-                    {copiedTelemetry ? '✓ Copied Pkt' : 'Copy Telemetry'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleDownloadTelemetry}
-                    className="font-sans font-semibold text-[11px] px-3 py-1 rounded-full bg-white/8 hover:bg-white/15 border border-white/18 text-[#f5e1ba] cursor-pointer transition"
-                    title="Download captured spectral telemetry as a .txt file"
-                  >
-                    {downloadedTelemetry ? '✓ Downloaded' : 'Download Pkt'}
                   </button>
                 </div>
               </div>

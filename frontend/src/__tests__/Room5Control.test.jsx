@@ -461,8 +461,10 @@ describe('Room 5 (The Surveillance Morgue) Frontend Test Suite', () => {
 
   // ── 6. Clue Modal: TransmissionArchiveModal (R2-05) ────────────────────────
 
-  it('QA-R5-FE-36: radio_console opens TransmissionArchiveModal when basket unlocked', async () => {
-    global.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => makeUnlockedState() });
+  it('QA-R5-FE-36: radio_console opens TransmissionArchiveModal when basket unlocked and R2-01 solved', async () => {
+    const state = makeUnlockedState();
+    state.clues[0].solved = true;
+    global.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => state });
     render(<Room5Control team={mockTeam} onLogout={mockLogout} />);
     await waitFor(() => expect(activeEngineInstance).toBeTruthy());
     await act(async () => { await activeEngineInstance.callbacks.onInteract('radio_console'); });
@@ -512,8 +514,11 @@ describe('Room 5 (The Surveillance Morgue) Frontend Test Suite', () => {
 
   // ── 7. Clue Modal: SpectrogramModal (R2-06) ────────────────────────────────
 
-  it('QA-R5-FE-41: sound_console opens SpectrogramModal when basket unlocked', async () => {
-    global.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => makeUnlockedState() });
+  it('QA-R5-FE-41: sound_console opens SpectrogramModal when basket unlocked and preceding clues solved', async () => {
+    const state = makeUnlockedState();
+    state.clues[0].solved = true;
+    state.clues[1].solved = true;
+    global.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => state });
     render(<Room5Control team={mockTeam} onLogout={mockLogout} />);
     await waitFor(() => expect(activeEngineInstance).toBeTruthy());
     await act(async () => { await activeEngineInstance.callbacks.onInteract('sound_console'); });

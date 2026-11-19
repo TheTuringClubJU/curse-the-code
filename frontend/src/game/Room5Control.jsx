@@ -683,6 +683,26 @@ export default function Room5Control({ team, onLogout }) {
           showNotification('This terminal is locked. Collect all evidence fragments first.');
           return;
         }
+
+        // Sequential Clue Locking: R2-01 (staff_terminal) -> R2-05 (radio_console) -> R2-06 (sound_console)
+        const clueOrder = ['R2-01', 'R2-05', 'R2-06'];
+        const clueIndex = clueOrder.indexOf(resolvedClueId);
+        if (clueIndex > 0) {
+          const prevClueId = clueOrder[clueIndex - 1];
+          const prevClue = currentData?.clues?.find((c) => c.id === prevClueId);
+          if (!prevClue?.solved) {
+            audioRef.current?.bad?.();
+            const prevName =
+              prevClueId === 'R2-01'
+                ? 'Staff Terminal (R2-01)'
+                : prevClueId === 'R2-05'
+                ? 'Radio Console (R2-05)'
+                : prevClueId;
+            showNotification(`This terminal is locked. Solve the ${prevName} first.`);
+            return;
+          }
+        }
+
         if (resolvedClueId === 'R2-01') {
           scaresRef.current?.triggerTeamNameInjection?.();
         }
@@ -1242,17 +1262,6 @@ export default function Room5Control({ team, onLogout }) {
           basketUnlocked={effectiveBasketUnlocked}
           totalFragments={totalFragmentsCount}
           collectedCount={collectedCount}
-          onOpenClue={(clue) => {
-            setIsCaseDossierOpen(false);
-            if (!effectiveBasketUnlocked) {
-              showNotification(
-                `Terminal locked: Collect all ${totalFragmentsCount} evidence fragments first to unlock clue access.`
-              );
-              return;
-            }
-            setActiveClueModal(clue.id);
-            engineRef.current?.unlock?.();
-          }}
         />
       )}
 
@@ -1320,12 +1329,18 @@ export default function Room5Control({ team, onLogout }) {
             resumeGameplayLock();
           }}
           audio={audioRef.current}
-          onProceedToRoom6={() => {
+          onProceedToRoom6={(data) => {
             setIsFork2Open(false);
             window.dispatchEvent(new CustomEvent('ctc:navigate-room', { detail: 'vault' }));
-            showNotification(
-              'Core Airlock Valve B engaged. Hydraulic seal to The Anointing Vault (Room 6) unsealed!'
-            );
+            if (data?.penalty_applied) {
+              showNotification(
+                'Aerosol breach (+60s penalty applied). Emergency bypass forced airlock open into The Anointing Vault (Room 6)!'
+              );
+            } else {
+              showNotification(
+                'Core Airlock Valve B engaged. Hydraulic seal to The Anointing Vault (Room 6) unsealed!'
+              );
+            }
             resumeGameplayLock();
           }}
         />

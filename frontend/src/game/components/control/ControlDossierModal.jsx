@@ -10,7 +10,6 @@ export default function ControlDossierModal({
   basketUnlocked = false,
   totalFragments = 10,
   collectedCount = 0,
-  onOpenClue,
 }) {
   const [dossierRecords, setDossierRecords] = useState([]);
   const [copiedDossier, setCopiedDossier] = useState(false);
@@ -151,8 +150,7 @@ export default function ControlDossierModal({
             return (
               <div
                 key={clue.id}
-                onClick={() => onOpenClue?.(clue)}
-                className={`manila-dossier relative p-5 rounded-sm flex flex-col justify-between gap-4 cursor-pointer transition-transform hover:scale-[1.015] ${tiltClass} ${
+                className={`manila-dossier relative p-5 rounded-sm flex flex-col justify-between gap-4 ${tiltClass} ${
                   !basketUnlocked && !isSolved ? 'opacity-85' : ''
                 }`}
               >
@@ -169,7 +167,7 @@ export default function ControlDossierModal({
                       style={
                         isSolved
                           ? { borderColor: '#166534', color: '#166534' }
-                          : !basketUnlocked
+                          : !basketUnlocked || clue.is_locked || prevPending
                           ? { borderColor: '#5c4832', color: '#5c4832' }
                           : undefined
                       }
@@ -178,9 +176,9 @@ export default function ControlDossierModal({
                         ? 'SOLVED'
                         : isLockedOut
                         ? 'LOCKED OUT'
-                        : basketUnlocked
-                        ? 'OPEN TERMINAL'
-                        : 'SEALED'}
+                        : !basketUnlocked || clue.is_locked || prevPending
+                        ? 'SEALED'
+                        : 'UNSEALED'}
                     </span>
                   </div>
 
@@ -217,20 +215,20 @@ export default function ControlDossierModal({
 
                 <div className="pt-3 border-t border-black/15 flex items-center justify-between gap-2">
                   <div className="font-re-typewriter text-[10px] text-[#5e4a32]">
-                    <div>{clue.object_id?.replace(/_/g, ' ')}</div>
+                    <div className="font-semibold uppercase">LOCATION: {clue.object_id?.replace(/_/g, ' ')}</div>
                     <div>Attempts Left: {attemptsLeft}/{attemptsMax}</div>
                   </div>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onOpenClue?.(clue);
-                    }}
-                    className="re-btn"
-                  >
-                    <span className="re-btn-circle">E</span>
-                    <span>{isSolved ? 'Inspect' : 'Open Terminal'}</span>
-                  </button>
+                  <div className="font-re-typewriter text-[10px] tracking-wider uppercase text-[#735538]">
+                    {isSolved ? (
+                      <span className="text-[#166534] font-bold">✓ Record Unlocked</span>
+                    ) : !basketUnlocked ? (
+                      <span className="text-[#7c5b3c]">Terminal Restricted</span>
+                    ) : clue.is_locked || prevPending ? (
+                      <span className="text-[#8b1515] font-semibold">Locked: Solve {prevClue?.id || 'Preceding Clue'}</span>
+                    ) : (
+                      <span className="text-[#3b2b1b]">Access via 3D Console [E]</span>
+                    )}
+                  </div>
                 </div>
               </div>
             );
