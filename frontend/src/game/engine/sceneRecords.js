@@ -846,19 +846,50 @@ export function buildRecordsScene(E) {
   // 10. FLOODED VENT & ARCHIVE SHELVES VAULT (South-West Chamber)
   //     Hero Props: archive_shelves (ER05, ER06, XR02 Decoy), vent_grate (ER09)
   // =========================================================================
+
   {
-    // Awaiting user's new rack 3D model; invisible interaction hitbox preserved for clue R2-06
     const shelves = new THREE.Group();
     shelves.position.set(-5.3, 0, 1.8);
     shelves.rotation.y = 0;
 
-    const hit = mkHitBox(0.85, 2.2, 2.4, 0, 1.1, 0);
+    // Procedural fallback (agar GLB fail ho jaye)
+    const fallbackShelves = new THREE.Group();
+    // Simple metal rack structure
+    fallbackShelves.add(mkBox(0.08, 2.1, 0.08, darkMetalMat, -0.35, 1.05, -0.9));
+    fallbackShelves.add(mkBox(0.08, 2.1, 0.08, darkMetalMat, 0.35, 1.05, -0.9));
+    fallbackShelves.add(mkBox(0.08, 2.1, 0.08, darkMetalMat, -0.35, 1.05, 0.9));
+    fallbackShelves.add(mkBox(0.08, 2.1, 0.08, darkMetalMat, 0.35, 1.05, 0.9));
+    // Shelves
+    for (let i = 0; i < 4; i++) {
+      const sy = 0.35 + i * 0.5;
+      fallbackShelves.add(mkBox(0.85, 0.04, 1.9, rustedSteelMat, 0, sy, 0));
+    }
+    shelves.add(fallbackShelves);
+
+    const hit = mkHitBox(0.95, 2.2, 2.4, 0, 1.1, 0);
     shelves.add(hit);
 
     interact(shelves, 'archive_shelves');
     add(shelves);
     solid(-5.8, -4.5, 0.6, 3.0);
+
+    // Load real GLB model
+    loadModel('archive_shelves.glb')
+      .then((gltf) => {
+        const m = gltf.scene;
+        normalizeScale(m, 2.15);        // height adjust
+        alignToFloor(m, 0);
+        m.rotation.y = 0;               // agar direction galat lage to Math.PI / 2 try karna
+        gradeMaterials(m, { colorMul: 0.85, roughness: 0.82 });
+
+        shelves.remove(fallbackShelves);
+        shelves.add(m);
+        interact(shelves, 'archive_shelves');
+        add(shelves);
+      })
+      .catch((err) => console.warn('[RECORDS] archive_shelves.glb fallback active', err));
   }
+
 
   // Corroded Vent Grate (`vent_grate`: ER09)
   {
