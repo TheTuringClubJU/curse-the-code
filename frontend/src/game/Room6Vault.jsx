@@ -539,19 +539,14 @@ export default function Room6Vault({ team, onLogout }) {
     [fetchRoom, handleConsoleReject, handleVictory, showNotice]
   );
 
-  const handleSelectDossierClue = useCallback(
-    (clueIdOrObjectId) => {
-      setIsDossierOpen(false);
-      const clues = cluesRef.current || [];
-      const found =
-        clues.find((c) => c.id === clueIdOrObjectId || c.object_id === clueIdOrObjectId) || null;
-      if (found) {
-        setSubmitFeedback(null);
-        setActiveClue(found);
-      }
-    },
-    []
-  );
+  const handleOpenDebrief = useCallback(() => {
+    const clues = cluesRef.current || [];
+    const found = clues.find((c) => c.id === 'R2-10') || null;
+    if (found) {
+      setSubmitFeedback(null);
+      setActiveClue(found);
+    }
+  }, []);
 
   const clues = roomData.clues || [];
   const cluesSolved = clues.filter((c) => c.solved).length;
@@ -741,7 +736,7 @@ export default function Room6Vault({ team, onLogout }) {
             </span>
             <button
               type="button"
-              onClick={() => handleSelectDossierClue('R2-10')}
+              onClick={handleOpenDebrief}
               className="re-plate re-plate-emerald !py-1 !px-3 text-[10px] cursor-pointer"
             >
               Debrief
@@ -850,7 +845,6 @@ export default function Room6Vault({ team, onLogout }) {
           engineRef.current?.lock?.();
         }}
         vaultClues={clues}
-        onSelectClue={handleSelectDossierClue}
         discoveredDocIds={discoveredDocIds}
         documents={VAULT_DOCUMENTS}
         onOpenDocument={(docId) => {

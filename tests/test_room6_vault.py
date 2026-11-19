@@ -605,3 +605,57 @@ def test_r6_49_room6_completion_via_all_clues_resolved_with_exhaustion(auth_head
     res = client.get("/api/game/room/vault", headers=auth_headers)
     assert res.status_code == 200
     assert res.json()["is_completed"] is True
+
+# 7. Room 6 Universal Hint System & Decoy Verification (50-51)
+def test_r6_50_vault_hint_request_sequential_progression(auth_headers):
+    reset_vault_team_db("Team Cipher")
+    unlock_vault_entrance("Team Cipher")
+
+    # Vault has 0 fragments (no decoys in vault, decoys excluded from hint progression)
+    # Hint request immediately enters Phase 2 (sequential clue hints)
+    h1 = client.post("/api/game/hint", json={"room_id": "vault"}, headers=auth_headers)
+    assert h1.status_code == 200
+    d1 = h1.json()
+    assert d1["success"] is True
+    assert d1["target_id"] == "R2-08"
+    assert d1["hint_category"] == "clue"
+    assert d1["penalty_seconds"] == 30
+    assert "manual" in d1["hint_text"].lower()
+
+    # Free re-inspection
+    h1_repeat = client.post("/api/game/hint", json={"room_id": "vault", "target_id": "R2-08"}, headers=auth_headers)
+    assert h1_repeat.status_code == 200
+    assert h1_repeat.json()["is_free"] is True
+    assert h1_repeat.json()["penalty_seconds"] == 0
+
+    # Solve R2-08
+    client.post("/api/game/clue/R2-08/submit", json={"answer": "26"}, headers=auth_headers)
+
+    # Next hint request advances sequentially to R2-09
+    h2 = client.post("/api/game/hint", json={"room_id": "vault"}, headers=auth_headers)
+    assert h2.status_code == 200
+    d2 = h2.json()
+    assert d2["success"] is True
+    assert d2["target_id"] == "R2-09"
+    assert "circuit" in d2["hint_text"].lower() or "failsafe" in d2["hint_text"].lower()
+
+    # Solve R2-09
+    client.post("/api/game/clue/R2-09/submit", json={"answer": "1101"}, headers=auth_headers)
+
+    # Next hint request advances to R2-10
+    h3 = client.post("/api/game/hint", json={"room_id": "vault"}, headers=auth_headers)
+    assert h3.status_code == 200
+    d3 = h3.json()
+    assert d3["success"] is True
+    assert d3["target_id"] == "R2-10"
+    assert "console" in d3["hint_text"].lower() or "altar" in d3["hint_text"].lower()
+
+def test_r6_51_vault_hint_status_reflects_budget_and_penalties(auth_headers):
+    res = client.get("/api/game/hint/status", headers=auth_headers)
+    assert res.status_code == 200
+    data = res.json()
+    assert data["total_budget"] == 15
+    assert data["hints_used"] >= 3
+    assert data["hints_remaining"] == 15 - data["hints_used"]
+    assert data["total_penalty_seconds"] >= 90
+

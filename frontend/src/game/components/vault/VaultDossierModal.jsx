@@ -44,7 +44,6 @@ export default function VaultDossierModal({
   isOpen,
   onClose,
   vaultClues = [],
-  onSelectClue,
   discoveredDocIds = [],
   documents = {},
   onOpenDocument,
@@ -360,16 +359,9 @@ export default function VaultDossierModal({
                         )}
                       </span>
 
-                      {onSelectClue && (
-                        <button
-                          type="button"
-                          onClick={() => onSelectClue(rec.clue_id)}
-                          className="re-plate !px-3 !py-1.5 text-[10px] cursor-pointer"
-                        >
-                          <span>OPEN TERMINAL ({rec.clue_id})</span>
-                          <ArrowUpRight className="w-3.5 h-3.5" />
-                        </button>
-                      )}
+                      <span className="vault-font-mono text-[9px] tracking-wider uppercase px-2.5 py-1 rounded-[2px] border border-[#6b5438]/40 bg-[#1f160f]/60 text-[#a89578]">
+                        {rec.solved ? 'ARCHIVED' : 'ACCESS AT 3D CONSOLE [E]'}
+                      </span>
                     </div>
                   </div>
                 );
@@ -421,7 +413,7 @@ export default function VaultDossierModal({
             </div>
 
             <div className="p-3.5 rounded-[2px] border border-[#d6aa63]/25 bg-[#110a08]/85 vault-font-mono text-[10px] tracking-[0.14em] text-[#b8a587] leading-relaxed">
-              NOTE: Select any OPEN TERMINAL plate to jump straight to that console, or press ESC to return to the Vault nave.
+              NOTE: Chamber consoles must be operated in 3D space. Stand near the terminal prop in its sector and press [E] to engage.
             </div>
           </div>
         </div>
