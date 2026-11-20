@@ -347,8 +347,6 @@ export default function App() {
     }
     return <Room4Records team={team} onLogout={handleLogout} />;
   }
-    return <Room4Records team={team} onLogout={handleLogout} />;
-  }
 
   // Otherwise, player waits in the atmospheric Lobby
   return <Lobby team={team} onLogout={handleLogout} />;
