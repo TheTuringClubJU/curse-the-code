@@ -372,35 +372,25 @@ export default function ManualDiffModal({
           {/* Feedback Banner */}
           {feedback && (
             <div
-              className={`mt-4 p-3.5 rounded-[2px] border font-re-typewriter text-xs flex items-start gap-2.5 shadow-xl ${
+              className={`mt-4 p-3.5 rounded-[2px] border font-re-typewriter text-xs flex items-center gap-2.5 shadow-xl ${
                 feedback.correct
                   ? 'bg-[#0e1f15] border-emerald-600/70 text-emerald-200'
                   : 'bg-[#210b0d] border-red-700/70 text-red-200'
               }`}
             >
               {feedback.correct ? (
-                <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5 text-emerald-400" />
+                <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-400" />
               ) : (
-                <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-red-400" />
+                <AlertTriangle className="w-4 h-4 shrink-0 text-red-400" />
               )}
-              <div>
-                <div className="font-bold tracking-wide">{feedback.message}</div>
-                {feedback.reveal?.clean_steps_text && (
-                  <div className="mt-1 text-amber-200">{feedback.reveal.clean_steps_text}</div>
-                )}
-                {feedback.reveal?.clean_steps_code && (
-                  <div className="mt-1 text-emerald-300">
-                    Clean Steps Recorded in Case Dossier: <strong>{feedback.reveal.clean_steps_code}</strong>
-                  </div>
-                )}
-              </div>
+              <div className="font-bold tracking-wide">{feedback.message}</div>
             </div>
           )}
 
           {clue.solved && !feedback && (
             <div className="mt-4 p-3.5 rounded-[2px] border bg-[#0e1f15] border-emerald-600/60 text-emerald-200 font-re-typewriter text-xs flex items-center gap-2 shadow-xl">
               <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-              <span>Terminal {clue.id} verified. Open Case Dossier [C] to review clean steps.</span>
+              <span>Terminal {clue.id} verified.</span>
             </div>
           )}
 

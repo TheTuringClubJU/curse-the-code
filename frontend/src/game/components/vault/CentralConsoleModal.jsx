@@ -1,22 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ShieldCheck, AlertTriangle, BookOpen, Cpu, Sparkles, KeyRound } from 'lucide-react';
+import { ShieldCheck, AlertTriangle, BookOpen, Cpu, KeyRound } from 'lucide-react';
 import '../../vault.css';
-
-function extractRecoveredTokens(vaultClues = []) {
-  const tokens = { steps: '', code: '', badge: '' };
-  for (const c of vaultClues || []) {
-    const rev = c?.revealed_data || c?.reveal || c?.data;
-    if (!rev || typeof rev !== 'object') continue;
-    if (rev.clean_steps_code && !tokens.steps) tokens.steps = String(rev.clean_steps_code);
-    else if (rev.clean_steps && !tokens.steps) tokens.steps = String(rev.clean_steps);
-    if (rev.authorization_code && !tokens.code) tokens.code = String(rev.authorization_code);
-    else if (rev.auth_code && !tokens.code) tokens.code = String(rev.auth_code);
-    else if (rev.code && !tokens.code && String(rev.code) !== tokens.steps) tokens.code = String(rev.code);
-    if (rev.operator_badge && !tokens.badge) tokens.badge = String(rev.operator_badge);
-    else if (rev.badge && !tokens.badge) tokens.badge = String(rev.badge);
-  }
-  return tokens;
-}
 
 export default function CentralConsoleModal({
   isOpen,
@@ -65,8 +49,6 @@ export default function CentralConsoleModal({
     }
   }, [isOpen, clue]);
 
-  const recovered = useMemo(() => extractRecoveredTokens(vaultClues), [vaultClues]);
-
   if (!isOpen) return null;
 
   const isLocked = Boolean(clue?.locked);
@@ -74,14 +56,6 @@ export default function CentralConsoleModal({
   const clueId = clue?.id || clue?.clue_id || 'R2-10';
   const r08Solved = Boolean((vaultClues || []).find((c) => (c.id || c.clue_id) === 'R2-08')?.solved);
   const r09Solved = Boolean((vaultClues || []).find((c) => (c.id || c.clue_id) === 'R2-09')?.solved);
-  const hasRecoveredTokens = Boolean(recovered.steps || recovered.code || recovered.badge);
-
-  const applyRecoveredTokens = () => {
-    onKeystroke?.();
-    if (recovered.steps) setSteps(recovered.steps);
-    if (recovered.code) setCode(recovered.code);
-    if (recovered.badge) setBadge(recovered.badge);
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -379,29 +353,7 @@ export default function CentralConsoleModal({
                 </div>
               )}
 
-              {hasRecoveredTokens && (
-                <div className="p-3.5 rounded-[2px] border border-[#d6aa63]/35 bg-[#1b120d]/90 flex flex-wrap items-center justify-between gap-3">
-                  <div className="text-xs vault-font-mono text-[#ecd6ac] space-y-0.5">
-                    <div className="text-[10px] tracking-[0.16em] uppercase text-[#c7995e]">
-                      Recovered Seals Ready From Dossier
-                    </div>
-                    <div className="flex flex-wrap gap-3 text-[11px]">
-                      {recovered.steps && <span>Steps: <strong className="text-[#fde68a]">{recovered.steps}</strong></span>}
-                      {recovered.code && <span>Code: <strong className="text-[#fde68a]">{recovered.code}</strong></span>}
-                      {recovered.badge && <span>Badge: <strong className="text-[#fde68a]">{recovered.badge}</strong></span>}
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={applyRecoveredTokens}
-                    className="re-plate inline-flex items-center gap-1.5 px-3.5 py-1.5 text-[10px] vault-font-mono tracking-[0.14em] uppercase cursor-pointer"
-                  >
-                    <Sparkles className="w-3.5 h-3.5 text-[#f5d07a]" />
-                    <span>Fill Recovered Keys</span>
-                  </button>
-                </div>
-              )}
-
+              {/* Monolith Input Fields */}
               <div className="space-y-3.5">
                 {/* Bay 1 */}
                 <div className="p-3.5 rounded-[2px] border border-[#c49856]/25 bg-[#0a0809] flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 shadow-inner">
