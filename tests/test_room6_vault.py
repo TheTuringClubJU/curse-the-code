@@ -148,9 +148,9 @@ def test_r6_06_room6_basket_feeder_mechanic(auth_headers):
     data = res.json()
     assert data["ok"] is True
     assert data["room_id"] == "vault"
-    assert data["total_fragments_in_room"] == 3
+    assert data["total_fragments_in_room"] == 10
     assert data["collected_count"] == 0
-    assert len(data["fragments"]) == 3
+    assert len(data["fragments"]) == 10
     assert data["basket_unlocked"] is True
     for f in data["fragments"]:
         assert f["is_wrapped"] is True
@@ -162,9 +162,9 @@ def test_r6_06_room6_basket_feeder_mechanic(auth_headers):
     assert res_solved.status_code == 200
     data_solved = res_solved.json()
     assert data_solved["collected_count"] == 2
-    diff_frag = next(f for f in data_solved["fragments"] if f["id"] == "FRAG-R2-DIFF")
-    circuit_frag = next(f for f in data_solved["fragments"] if f["id"] == "FRAG-R2-CIRCUIT")
-    badge_frag = next(f for f in data_solved["fragments"] if f["id"] == "FRAG-R2-BADGE")
+    diff_frag = next(f for f in data_solved["fragments"] if f["id"] == "FRAG-R2-08")
+    circuit_frag = next(f for f in data_solved["fragments"] if f["id"] == "FRAG-R2-09")
+    badge_frag = next(f for f in data_solved["fragments"] if f["id"] == "FRAG-R2-01")
     assert diff_frag["is_wrapped"] is False
     assert "134578" in diff_frag["display"]["lines"][1]
     assert circuit_frag["is_wrapped"] is False

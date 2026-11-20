@@ -283,48 +283,185 @@ def get_room_basket(room_id: str, request: Request):
         conn.close()
 
     if room_id == "vault":
-        # Check if prereq/vault clues are solved in DB to reveal answers or display as SEALED
-        r2_06_solved = bool(team_clues.get("R2-06", {}).get("solved") or team_clues.get("R2-01", {}).get("solved"))
+        # Check if Round 2 clues are solved in DB to reveal answers or display as SEALED
+        r2_01_solved = bool(team_clues.get("R2-01", {}).get("solved"))
+        r2_02_solved = bool(team_clues.get("R2-02", {}).get("solved"))
+        r2_03_solved = bool(team_clues.get("R2-03", {}).get("solved"))
+        r2_04_solved = bool(team_clues.get("R2-04", {}).get("solved"))
+        r2_05_solved = bool(team_clues.get("R2-05", {}).get("solved"))
+        r2_06_solved = bool(team_clues.get("R2-06", {}).get("solved"))
+        r2_07_solved = bool(team_clues.get("R2-07", {}).get("solved"))
         r2_08_solved = bool(team_clues.get("R2-08", {}).get("solved"))
         r2_09_solved = bool(team_clues.get("R2-09", {}).get("solved"))
+        r2_10_solved = bool(team_clues.get("R2-10", {}).get("solved"))
 
         items = [
             {
-                "id": "FRAG-R2-BADGE",
-                "clue_id": "R2-06",
+                "id": "FRAG-R2-01",
+                "clue_id": "R2-01",
                 "part": "A",
-                "is_wrapped": not r2_06_solved,
+                "is_wrapped": not r2_01_solved,
                 "display": {
-                    "title": "Trusted Operator Credential & Voicemail" if r2_06_solved else "Sealed Operator Transmission",
-                    "image_file": "/evidence/evidence_er08.svg" if r2_06_solved else "/parcel_wrapped.png",
-                    "style": {"ink": "black", "paper": "bureaucratic" if r2_06_solved else "oilcloth"},
+                    "title": "Personnel Index - Active Operator" if r2_01_solved else "Sealed Personnel Index",
+                    "image_file": "/evidence/evidence_er08.svg" if r2_01_solved else "/parcel_wrapped.png",
+                    "style": {"ink": "black", "paper": "bureaucratic" if r2_01_solved else "oilcloth"},
                     "lines": [
-                        "OPERATOR BADGE: BDG-9001",
-                        "VOICEMAIL FREQUENCY AUDIO PIN: 8140",
-                        "STATUS: ACTIVE AFTER SHUTDOWN (VERIFIED)"
-                    ] if r2_06_solved else [
-                        "SEALED - RESTRICTED: Requires solving Control Room Voicemail (R2-06)"
+                        "ACTIVE OPERATOR BADGE: BDG-9001",
+                        "DEPARTMENT: SYSTEMS",
+                        "STATUS: VERIFIED POST-SHUTDOWN"
+                    ] if r2_01_solved else [
+                        "SEALED - RESTRICTED: Requires solving Personnel Index (R2-01) in Control"
                     ],
-                    "corner_mark": "BDG-9001" if r2_06_solved else "RESTRICTED"
+                    "corner_mark": "BDG-9001" if r2_01_solved else "RESTRICTED"
                 },
                 "secret": {
-                    "note": "Operator BDG-9001 authenticated. Voicemail spectrogram revealed frequency code 8140." if r2_06_solved else "Solve R2-06 in Control to unseal this operator credential."
+                    "note": "Badge BDG-9001 was active after the facility shutdown date." if r2_01_solved else "Solve R2-01 in Control to unseal this record."
                 }
             },
             {
-                "id": "FRAG-R2-DIFF",
-                "clue_id": "R2-08",
+                "id": "FRAG-R2-02",
+                "clue_id": "R2-02",
                 "part": "B",
+                "is_wrapped": not r2_02_solved,
+                "display": {
+                    "title": "Redacted Facility Report" if r2_02_solved else "Sealed Incident Report",
+                    "image_file": "/evidence/evidence_er01.svg" if r2_02_solved else "/parcel_wrapped.png",
+                    "style": {"ink": "black", "paper": "bureaucratic" if r2_02_solved else "oilcloth"},
+                    "lines": [
+                        "SHUTDOWN DATE: 2001-02-10",
+                        "INCIDENT CODENAME: COMET",
+                        "CLEARANCE: DR. CORVIN"
+                    ] if r2_02_solved else [
+                        "SEALED - RESTRICTED: Requires solving Redacted Report (R2-02) in Records"
+                    ],
+                    "corner_mark": "COMET-0210" if r2_02_solved else "RESTRICTED"
+                },
+                "secret": {
+                    "note": "The redacted memo identifies shutdown date 2001-02-10 and operation COMET." if r2_02_solved else "Solve R2-02 in Records to unseal this memo."
+                }
+            },
+            {
+                "id": "FRAG-R2-03",
+                "clue_id": "R2-03",
+                "part": "C",
+                "is_wrapped": not r2_03_solved,
+                "display": {
+                    "title": "Microfilm Surveillance Frame" if r2_03_solved else "Sealed Surveillance Microfilm",
+                    "image_file": "/evidence/evidence_er03.svg" if r2_03_solved else "/parcel_wrapped.png",
+                    "style": {"ink": "black", "paper": "bureaucratic" if r2_03_solved else "oilcloth"},
+                    "lines": [
+                        "FRAME DATE: 2001-02-10",
+                        "KEYPAD SUB-CODE: 1357",
+                        "LOCATION: LOWER BULKHEAD"
+                    ] if r2_03_solved else [
+                        "SEALED - RESTRICTED: Requires solving Photograph (R2-03) in Records"
+                    ],
+                    "corner_mark": "KEY-1357" if r2_03_solved else "RESTRICTED"
+                },
+                "secret": {
+                    "note": "Microfilm frame confirms shutdown date with sub-code 1357." if r2_03_solved else "Solve R2-03 in Records to unseal this frame."
+                }
+            },
+            {
+                "id": "FRAG-R2-04",
+                "clue_id": "R2-04",
+                "part": "D",
+                "is_wrapped": not r2_04_solved,
+                "display": {
+                    "title": "Epoch Chronology Marker" if r2_04_solved else "Sealed Timeline Marker",
+                    "image_file": "/evidence/evidence_er04.svg" if r2_04_solved else "/parcel_wrapped.png",
+                    "style": {"ink": "black", "paper": "bureaucratic" if r2_04_solved else "oilcloth"},
+                    "lines": [
+                        "TIMELINE KEYWORD: PLANET",
+                        "INCIDENT PHASE: CONTAINMENT RUPTURE"
+                    ] if r2_04_solved else [
+                        "SEALED - RESTRICTED: Requires solving Timeline (R2-04) in Records"
+                    ],
+                    "corner_mark": "PLANET" if r2_04_solved else "RESTRICTED"
+                },
+                "secret": {
+                    "note": "Timeline epoch marker letters spell out keyword PLANET." if r2_04_solved else "Solve R2-04 in Records to unseal this timeline marker."
+                }
+            },
+            {
+                "id": "FRAG-R2-05",
+                "clue_id": "R2-05",
+                "part": "E",
+                "is_wrapped": not r2_05_solved,
+                "display": {
+                    "title": "Radio Transmission Carrier Spectrum" if r2_05_solved else "Sealed Radio Transmission Log",
+                    "image_file": "/evidence/evidence_er06.svg" if r2_05_solved else "/parcel_wrapped.png",
+                    "style": {"ink": "black", "paper": "bureaucratic" if r2_05_solved else "oilcloth"},
+                    "lines": [
+                        "VALID TRANSMISSION CHANNEL: VM-A",
+                        "CARRIER FREQUENCY: 7.455 MHz",
+                        "STATUS: AUTHENTIC"
+                    ] if r2_05_solved else [
+                        "SEALED - RESTRICTED: Requires solving Transmissions (R2-05) in Control"
+                    ],
+                    "corner_mark": "VM-A" if r2_05_solved else "RESTRICTED"
+                },
+                "secret": {
+                    "note": "Oscilloscope spectrum matches legitimate audio carrier VM-A." if r2_05_solved else "Solve R2-05 in Control to unseal this radio log."
+                }
+            },
+            {
+                "id": "FRAG-R2-06",
+                "clue_id": "R2-06",
+                "part": "F",
+                "is_wrapped": not r2_06_solved,
+                "display": {
+                    "title": "Spectrogram Voicemail Pin" if r2_06_solved else "Sealed Voicemail Spectrogram",
+                    "image_file": "/evidence/evidence_er07.svg" if r2_06_solved else "/parcel_wrapped.png",
+                    "style": {"ink": "black", "paper": "bureaucratic" if r2_06_solved else "oilcloth"},
+                    "lines": [
+                        "VOICEMAIL FREQUENCY AUDIO PIN: 8140",
+                        "SOURCE: VM-A SPECTROGRAM (2–8 kHz)"
+                    ] if r2_06_solved else [
+                        "SEALED - RESTRICTED: Requires solving Voicemail (R2-06) in Control"
+                    ],
+                    "corner_mark": "PIN-8140" if r2_06_solved else "RESTRICTED"
+                },
+                "secret": {
+                    "note": "Spectrogram analysis of VM-A reveals 4-digit code 8140." if r2_06_solved else "Solve R2-06 in Control to unseal this voicemail spectrogram."
+                }
+            },
+            {
+                "id": "FRAG-R2-07",
+                "clue_id": "R2-07",
+                "part": "G",
+                "is_wrapped": not r2_07_solved,
+                "display": {
+                    "title": "Bulkhead Security Lock Bypass" if r2_07_solved else "Sealed Keypad Security Bypass",
+                    "image_file": "/evidence/evidence_er02.svg" if r2_07_solved else "/parcel_wrapped.png",
+                    "style": {"ink": "black", "paper": "bureaucratic" if r2_07_solved else "oilcloth"},
+                    "lines": [
+                        "KEYPAD PASSCODE: 1357",
+                        "CIPHER PHRASE: PLANET",
+                        "BULKHEAD: DISENGAGED"
+                    ] if r2_07_solved else [
+                        "SEALED - RESTRICTED: Requires solving Security Lock (R2-07) in Records"
+                    ],
+                    "corner_mark": "LOCK-OPEN" if r2_07_solved else "RESTRICTED"
+                },
+                "secret": {
+                    "note": "Substation records lock disengaged with passcode 1357 and PLANET." if r2_07_solved else "Solve R2-07 in Records to unseal this keypad cipher."
+                }
+            },
+            {
+                "id": "FRAG-R2-08",
+                "clue_id": "R2-08",
+                "part": "H",
                 "is_wrapped": not r2_08_solved,
                 "display": {
                     "title": "Scriptorium Containment Protocol (Diff)" if r2_08_solved else "Sealed Scriptorium Diff",
-                    "image_file": "/evidence/evidence_er01.svg" if r2_08_solved else "/parcel_wrapped.png",
+                    "image_file": "/evidence/evidence_er09.svg" if r2_08_solved else "/parcel_wrapped.png",
                     "style": {"ink": "black", "paper": "bureaucratic" if r2_08_solved else "oilcloth"},
                     "lines": [
                         "TAMPERED SCRIPTORIUM STEPS: 2, 6",
                         "CLEAN PROTOCOL INDICES: 1, 3, 4, 5, 7, 8 (134578)"
                     ] if r2_08_solved else [
-                        "SEALED - RESTRICTED: Requires solving Scriptorium Diff (R2-08)"
+                        "SEALED - RESTRICTED: Requires solving Scriptorium Diff (R2-08) in Vault"
                     ],
                     "corner_mark": "DIFF-134578" if r2_08_solved else "RESTRICTED"
                 },
@@ -333,9 +470,9 @@ def get_room_basket(room_id: str, request: Request):
                 }
             },
             {
-                "id": "FRAG-R2-CIRCUIT",
+                "id": "FRAG-R2-09",
                 "clue_id": "R2-09",
-                "part": "C",
+                "part": "I",
                 "is_wrapped": not r2_09_solved,
                 "display": {
                     "title": "East Switchgear Authorization Code" if r2_09_solved else "Sealed Switchgear Logic Matrix",
@@ -345,12 +482,35 @@ def get_room_basket(room_id: str, request: Request):
                         "CIRCUIT RELAY CODE: 1101",
                         "EAST SWITCHGEAR BUS: ENERGIZED"
                     ] if r2_09_solved else [
-                        "SEALED - RESTRICTED: Requires solving Switchgear Circuit (R2-09)"
+                        "SEALED - RESTRICTED: Requires solving Switchgear Circuit (R2-09) in Vault"
                     ],
                     "corner_mark": "CODE-1101" if r2_09_solved else "RESTRICTED"
                 },
                 "secret": {
                     "note": "Authorization code 1101 required for Central Console input." if r2_09_solved else "Solve R2-09 in East Switchgear to unseal relay code."
+                }
+            },
+            {
+                "id": "FRAG-R2-10",
+                "clue_id": "R2-10",
+                "part": "J",
+                "is_wrapped": not r2_10_solved,
+                "display": {
+                    "title": "Central Console Final Seal" if r2_10_solved else "Sealed Central Console Matrix",
+                    "image_file": "/evidence/evidence_er10.svg" if r2_10_solved else "/parcel_wrapped.png",
+                    "style": {"ink": "black", "paper": "bureaucratic" if r2_10_solved else "oilcloth"},
+                    "lines": [
+                        "CLEAN PROTOCOL: 134578",
+                        "CIRCUIT CODE: 1101",
+                        "OPERATOR BADGE: BDG-9001",
+                        "CONTAINMENT: SEALED"
+                    ] if r2_10_solved else [
+                        "SEALED - RESTRICTED: Requires solving Final Console (R2-10) in Vault"
+                    ],
+                    "corner_mark": "CORE-LOCKED" if r2_10_solved else "RESTRICTED"
+                },
+                "secret": {
+                    "note": "Final compound triad verified. Sub-basement bio-core dormant." if r2_10_solved else "Solve R2-10 at the Central Console to finalize the containment seal."
                 }
             }
         ]
@@ -360,7 +520,7 @@ def get_room_basket(room_id: str, request: Request):
             "ok": True,
             "room_id": "vault",
             "basket_unlocked": True,
-            "total_fragments_in_room": 3,
+            "total_fragments_in_room": len(items),
             "collected_count": len(unwrapped_ids),
             "fragments": items
         }

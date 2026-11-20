@@ -51,7 +51,7 @@ export default function Room6Vault({ team, onLogout }) {
     fragments: [],
     collected_ids: [],
     basket_unlocked: true,
-    total_fragments_in_room: 3,
+    total_fragments_in_room: 10,
   });
   const [isHintOpen, setIsHintOpen] = useState(false);
   const [isSystemOpen, setIsSystemOpen] = useState(false);
@@ -819,7 +819,7 @@ export default function Room6Vault({ team, onLogout }) {
         evidence={basketData.fragments || []}
         collectedIds={basketData.collected_ids || []}
         basketUnlocked={Boolean(basketData.basket_unlocked)}
-        totalInRoom={basketData.total_fragments_in_room || (basketData.fragments || []).length || 3}
+        totalInRoom={basketData.total_fragments_in_room || (basketData.fragments || []).length || 10}
         roomTitle={roomData.title || 'The Anointing Vault'}
       />
 
