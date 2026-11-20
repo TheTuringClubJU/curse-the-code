@@ -26,6 +26,8 @@ export default function Room3Basement({ team, onLogout, onProceedToLobby, previe
   const [isHintOpen, setIsHintOpen] = useState(false);
   const [hoverPrompt, setHoverPrompt] = useState(null), [notification, setNotification] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false), [audioMuted, setAudioMuted] = useState(false);
+  const [flashOverlay, setFlashOverlay] = useState({ color: '#c40414', opacity: 0, visible: false });
+  const doorScareCountRef = useRef(0);
 
   const previewRoomData = {
     title: 'The Basement',
@@ -78,7 +80,21 @@ export default function Room3Basement({ team, onLogout, onProceedToLobby, previe
     }
     if(objectId==='room_door'){
       if(data?.is_completed){ setIsCompleteOpen(true); engineRef.current?.unlock(); }
-      else showNotification('The subterranean vault remains sealed. Disengage the containment terminal to unlock the exit.');
+      else {
+        const now = Date.now();
+        const ds = typeof doorScareCountRef.current === 'object' ? doorScareCountRef.current : { count: doorScareCountRef.current || 0, lastAt: 0 };
+        const shouldScare = ds.count > 0 && (now - ds.lastAt) >= 45000 && Math.random() < 0.25;
+        ds.count += 1;
+        if (shouldScare) ds.lastAt = now;
+        doorScareCountRef.current = ds;
+        if (shouldScare) {
+          engineRef.current?.triggerDoorScare?.();
+          audioRef.current?.jumpscareSting?.(1.4);
+        } else {
+          audioRef.current?.slam?.(3, 2.95);
+        }
+        showNotification('The subterranean vault remains sealed. Disengage the containment terminal to unlock the exit.');
+      }
       return;
     }
     try {
@@ -115,7 +131,7 @@ export default function Room3Basement({ team, onLogout, onProceedToLobby, previe
   useEffect(()=>{
     if(!mountRef.current||engineRef.current)return;
     audioRef.current=new GameAudio();
-    try{ engineRef.current=createEngine(mountRef.current,basementConfig,{audio:audioRef.current,onFlash:()=>{},onTarget:(id)=>{activeTargetRef.current=id;setHoverPrompt(id?`Inspect ${id.replaceAll('_',' ')}`:null);},onInteract:(id)=>handleInteractRef.current?.(id),onLock:()=>{}}); }
+    try{ engineRef.current=createEngine(mountRef.current,basementConfig,{audio:audioRef.current,onFlash:(color,opacity=0.78,durationMs=200)=>{setFlashOverlay({color,opacity,visible:true});setTimeout(()=>setFlashOverlay(prev=>({...prev,visible:false})),durationMs||200);},onTarget:(id)=>{activeTargetRef.current=id;setHoverPrompt(id?`Inspect ${id.replaceAll('_',' ')}`:null);},onInteract:(id)=>handleInteractRef.current?.(id),onLock:()=>{}}); }
     catch(e){console.error('Basement initialization failed:',e);} return()=>{engineRef.current?.dispose?.();engineRef.current=null;audioRef.current?.dispose?.();};
   },[]);
 
@@ -204,6 +220,7 @@ export default function Room3Basement({ team, onLogout, onProceedToLobby, previe
 
   return <div className="relative w-full h-screen overflow-hidden bg-[#14161a] select-none font-mono">
     <div ref={mountRef} onClick={() => { if (isStarted && engineRef.current && !isAnyModalOpen) engineRef.current.lock(); }} className="absolute inset-0" />
+    {flashOverlay.visible && <div className="pointer-events-none fixed inset-0 z-40 transition-opacity duration-75" style={{ backgroundColor: flashOverlay.color, opacity: flashOverlay.opacity }} />}
     {!isStarted&&<div className="ov"><h1>CURSE THE CODE</h1><h3>The Basement</h3><ul><li><b>WASD</b> move</li><li><b>Mouse</b> look</li><li><b>E</b> interact/search</li><li><b>B/C/P</b> basket/clues/photo</li></ul><button onClick={handleStart}>CLICK TO ENTER BASEMENT</button></div>}
     {notification&&<div className="absolute top-20 left-1/2 -translate-x-1/2 z-[80] bg-red-950/95 border border-red-400/40 px-5 py-3 rounded text-xs text-red-100">{notification}</div>}
     {isStarted&&<HUD roomTitle={roomData?.title||'The Basement'} totalFragments={5} collectedCount={roomData?.collected_fragment_ids?.length||0} basketUnlocked={Boolean(roomData?.basket_unlocked)} isRoomCompleted={Boolean(roomData?.is_completed)} photoCount={roomData?.photo_pieces_collected||0} cluesSolved={roomClues.filter(c=>c.solved).length} totalClues={2} onOpenBasket={()=>{setIsBasketOpen(true);engineRef.current?.unlock();}} onOpenCaseFiles={()=>{setIsCaseFilesOpen(true);engineRef.current?.unlock();}} onOpenPhotoPuzzle={()=>{setIsPhotoPuzzleOpen(true);engineRef.current?.unlock();}} onOpenRules={()=>{setIsDossierOpen(true);engineRef.current?.unlock();}} onOpenHints={()=>{setIsHintOpen(true);engineRef.current?.unlock();}} onLogout={onLogout} audioMuted={audioMuted} onToggleAudio={()=>{const v=!audioMuted;audioRef.current?.setMuted(v);setAudioMuted(v);}} activeHoverPrompt={hoverPrompt}/>} 

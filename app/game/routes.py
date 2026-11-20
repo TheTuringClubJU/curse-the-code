@@ -256,7 +256,7 @@ def get_room_basket(room_id: str, request: Request):
     target_room = next((r for r in content.get("rooms", []) if r["id"] == room_id), None)
     if not target_room:
         raise HTTPException(status_code=404, detail="Room not found")
-        
+
     conn = get_db_connection()
     try:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
@@ -265,7 +265,7 @@ def get_room_basket(room_id: str, request: Request):
                 (team["id"], room_id)
             )
             collected_fragments = [dict(row) for row in cur.fetchall()]
-            
+
             cur.execute(
                 "SELECT is_basket_unlocked, is_completed FROM team_rooms WHERE team_id = %s AND room_id = %s",
                 (team["id"], room_id)
@@ -589,11 +589,8 @@ def search_object(room_id: str, payload: Dict[str, Any], request: Request):
             )
             collected_in_room = {row["fragment_id"] for row in cur.fetchall()}
 
-            # Verify sequence lock:
-            # Check for candidate fragment on this prop that is unlocked (or decoy with seq=None)
             target_ev = None
             is_locked = False
-
             for ev in uncollected_evs:
                 t_seq = ev.get("seq")
                 t_chain = ev.get("chain", room_id)
@@ -702,6 +699,23 @@ def submit_clue_answer(clue_id: str, payload: Dict[str, Any], request: Request):
         
     room_id = target_clue.get("room")
 
+    if target_clue.get("input_gate") == "room_evidence_complete" and room_id and target_clue.get("round") == 2:
+        conn_gate = get_db_connection()
+        try:
+            with conn_gate.cursor() as cur_gate:
+                cur_gate.execute(
+                    "SELECT is_basket_unlocked FROM team_rooms WHERE team_id = %s AND room_id = %s",
+                    (team["id"], room_id)
+                )
+                r_status = cur_gate.fetchone()
+                if not r_status or not r_status[0]:
+                    raise HTTPException(
+                        status_code=403,
+                        detail="Arcane seal unbroken: Recover all room evidence fragments to inspect this clue terminal."
+                    )
+        finally:
+            conn_gate.close()
+
     # Sequential clue prerequisite check
     seq = ["R1-01", "R1-02", "R1-03", "R1-04"]
     if clue_id in seq and not payload.get("_bypass_sequence"):
@@ -737,31 +751,11 @@ def submit_clue_answer(clue_id: str, payload: Dict[str, Any], request: Request):
         finally:
             conn.close()
 
-    # Enforce input gate: if room evidence must be complete, ensure basket is unlocked (Round 2)
-    input_gate = target_clue.get("input_gate")
-    if input_gate == "room_evidence_complete" and room_id and target_clue.get("round") == 2:
-        conn = get_db_connection()
-        try:
-            with conn.cursor() as cur:
-                cur.execute(
-                    "SELECT is_basket_unlocked FROM team_rooms WHERE team_id = %s AND room_id = %s",
-                    (team["id"], room_id)
-                )
-                r_status = cur.fetchone()
-                if not r_status or not r_status[0]:
-                    raise HTTPException(
-                        status_code=403,
-                        detail="Arcane seal unbroken: Recover all room evidence fragments to inspect this clue terminal."
-                    )
-        finally:
-            conn.close()
-
     # Prepare candidate answer representations (handles string, list, and dictionary payloads)
     candidates = []
     compound_cand = vault_service.extract_compound_candidate(payload, answer)
     if compound_cand:
         candidates.append(compound_cand)
-
     if isinstance(answer, dict):
         val_strings = [str(v).strip() for v in answer.values() if v is not None and str(v).strip()]
         candidates.extend([str(answer), " ".join(val_strings)] + val_strings)
@@ -982,7 +976,7 @@ def submit_clue_answer(clue_id: str, payload: Dict[str, Any], request: Request):
                     INSERT INTO team_rooms (team_id, room_id, is_completed, completed_at)
                     VALUES (%s, %s, TRUE, NOW())
                     ON CONFLICT (team_id, room_id)
-                    DO UPDATE SET is_completed = TRUE, completed_at = COALESCE(team_rooms.completed_at, NOW())
+                    DO UPDATE SET is_completed = TRUE, completed_at = NOW()
                     """,
                     (team["id"], room_id)
                 )
@@ -1052,6 +1046,23 @@ def get_clue_details(clue_id: str, request: Request):
         raise HTTPException(status_code=404, detail="Clue not found")
 
     room_id = target_clue.get("room")
+
+    if target_clue.get("input_gate") == "room_evidence_complete" and room_id and target_clue.get("round") == 2:
+        conn_gate = get_db_connection()
+        try:
+            with conn_gate.cursor() as cur_gate:
+                cur_gate.execute(
+                    "SELECT is_basket_unlocked FROM team_rooms WHERE team_id = %s AND room_id = %s",
+                    (team["id"], room_id)
+                )
+                r_status = cur_gate.fetchone()
+                if not r_status or not r_status[0]:
+                    raise HTTPException(
+                        status_code=403,
+                        detail="Arcane seal unbroken: Recover all room evidence fragments to inspect this clue terminal."
+                    )
+        finally:
+            conn_gate.close()
     ROOM_CLUE_SEQUENCES = {
         "bedroom": ["R1-01", "R1-02", "R1-03", "R1-04"],
         "study": ["R1-05", "R1-06", "R1-07", "R1-08"],
@@ -1121,6 +1132,7 @@ def get_clue_details(clue_id: str, request: Request):
     }
 
 
+
 @router.get("/time")
 def get_game_time():
     now = datetime.now(timezone.utc)
@@ -1170,7 +1182,6 @@ def get_fork_status(fork_id: str, request: Request):
         fork_id = "fork_2"
     elif fork_id in ("records", "fork_records", "fork1", "fork_1"):
         fork_id = "fork_1"
-
     if fork_id not in FORK_CONFIG:
         raise HTTPException(status_code=404, detail=f"Fork '{fork_id}' not found")
 
@@ -1206,16 +1217,15 @@ def get_fork_status(fork_id: str, request: Request):
 @router.post("/fork/{fork_id}/choose")
 def choose_fork_path(fork_id: str, payload: Dict[str, Any], request: Request):
     team = verify_team_auth(request)
-    if fork_id in ("airlock", "fork_airlock", "fork2", "fork_2", "valve"):
-        fork_id = "fork_2"
-    elif fork_id in ("records", "fork_records", "fork1", "fork_1"):
-        fork_id = "fork_1"
-
     raw_choice = payload.get("choice")
     if not raw_choice:
         raise HTTPException(status_code=400, detail="Missing fork choice")
 
     choice = str(raw_choice).strip().upper()
+    if fork_id in ("airlock", "fork_airlock", "fork2", "fork_2", "valve"):
+        fork_id = "fork_2"
+    elif fork_id in ("records", "fork_records", "fork1", "fork_1"):
+        fork_id = "fork_1"
     if fork_id not in FORK_CONFIG:
         raise HTTPException(status_code=404, detail=f"Fork '{fork_id}' not found")
 
@@ -1330,6 +1340,20 @@ def choose_fork_path(fork_id: str, payload: Dict[str, Any], request: Request):
     finally:
         conn.close()
 
+@router.get("/hint/status")
+def get_hint_status(request: Request, room_id: Optional[str] = None):
+    team = verify_team_auth(request)
+    return hint_service.get_hint_status(team["id"], room_id=room_id)
+
+
+@router.post("/hint")
+def request_hint_endpoint(request: Request, body: Optional[Dict[str, Any]] = None):
+    team = verify_team_auth(request)
+    body = body or {}
+    room_id = body.get("room_id")
+    target_id = body.get("target_id")
+    return hint_service.request_hint(team["id"], room_id=room_id, target_id=target_id)
+
 @router.post("/round/{round_num}/fork/{fork_id}/choose")
 def choose_round_fork(round_num: int, fork_id: str, payload: Dict[str, Any], request: Request):
     return choose_fork_path(fork_id, payload, request)
@@ -1350,7 +1374,7 @@ def get_airlock_fork_status(round_num: int, request: Request):
 def get_round_dossier(round_num: int, request: Request):
     team = verify_team_auth(request)
     content = get_content_data()
-    
+
     conn = get_db_connection()
     try:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
@@ -1508,18 +1532,4 @@ def get_round_dossier(round_num: int, request: Request):
         "records": records
     }
 
-
-@router.get("/hint/status")
-def get_hint_status(request: Request):
-    team = verify_team_auth(request)
-    return hint_service.get_hint_status(team["id"])
-
-
-@router.post("/hint")
-def request_hint_endpoint(request: Request, body: Optional[Dict[str, Any]] = None):
-    team = verify_team_auth(request)
-    body = body or {}
-    room_id = body.get("room_id")
-    target_id = body.get("target_id")
-    return hint_service.request_hint(team["id"], room_id=room_id, target_id=target_id)
 

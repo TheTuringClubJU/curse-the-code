@@ -1,5 +1,6 @@
 import * as THREE from 'three'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
+import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader.js'
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js'
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js'
 import { attachTorch as attachStudyTorch, updateTorchSway as updateStudyTorchSway, setTorch as setStudyTorch, bindTorchKey as bindStudyTorchKey } from './studyTorch.js'
@@ -15,17 +16,22 @@ import { buildStudy } from './studyScene.js'
 import { createScares } from './scares.js'
 import { buildRecordsScene } from './sceneRecords.js'
 import { createRecordsScares } from './scaresRecords.js'
+import { buildControlScene } from './sceneControl.js'
+import { createControlScares } from './scaresControl.js'
 import { buildVaultScene } from './sceneVault.js'
 import { createVaultScares } from './scaresVault.js'
 import { setupControls } from './controls.js'
 import { buildBasement } from './basementScene.js'
-import { attachTorch, updateTorchSway, setTorch } from './torch.js'
+import { attachTorch, updateTorchSway, setTorch, bindTorchKey } from './torch.js'
 export { posterCanvas } from './tex.js'
 
 export function createEngine(el,room,h){
  const tb0=performance.now()
  const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches,T=room.theme,[W,H,D]=room.size,debug=new URLSearchParams(location.search).has('debug')
- const isVault=room.id==='vault',isStudy=room.id==='study'
+ const isVault=room.id==='vault',isStudy=room.id==='study',isControl=room.id==='control'
+ const hwCores=typeof navigator!=='undefined'&&Number(navigator.hardwareConcurrency)>0?Number(navigator.hardwareConcurrency):8
+ const devMem=typeof navigator!=='undefined'&&Number(navigator.deviceMemory)>0?Number(navigator.deviceMemory):8
+ const isLowSpecControl=isControl&&(hwCores<=4||devMem<=4)
  const studyLow=isStudy&&isStudyLowDetail()
  const nativeRatio=isStudy
    ? Math.min(devicePixelRatio,studyLow?.85:1)
@@ -33,23 +39,24 @@ export function createEngine(el,room,h){
    ? Math.min(devicePixelRatio,0.72)
    : Math.min(devicePixelRatio,1.0)
  const R=new THREE.WebGLRenderer({
-   antialias:!studyLow&&!isVault,
+   antialias:isControl?!isLowSpecControl:(!studyLow&&!isVault),
+   stencil:false,
    powerPreference:'high-performance'
  })
  R.setPixelRatio(nativeRatio)
  R.setSize(el.clientWidth,el.clientHeight)
- R.shadowMap.enabled=!studyLow&&!isVault
+ R.shadowMap.enabled=isControl?true:(!studyLow&&!isVault)
  R.shadowMap.type=THREE.BasicShadowMap
  R.shadowMap.autoUpdate=false
- R.shadowMap.needsUpdate=!studyLow
+ R.shadowMap.needsUpdate=isControl?true:!studyLow
  R.toneMapping=THREE.ACESFilmicToneMapping
  R.toneMappingExposure=isVault?1.35:1.6
  el.appendChild(R.domElement)
 
- const S=new THREE.Scene();S.background=new THREE.Color(T.bg);S.fog=new THREE.FogExp2(T.bg,.045)
+ const S=new THREE.Scene();S.background=new THREE.Color(T.bg);S.fog=new THREE.FogExp2(T.bg,isControl?0.035:.045)
  const cam=new THREE.PerspectiveCamera(72,el.clientWidth/el.clientHeight,.05,isStudy?240:80);cam.rotation.order='YXZ';S.add(cam)
  const solids=[],pick=[],byId={},visualById={},rigL=[],rigG=[],anims=[],sc={v:1},ref={}
- let pmremGen=null,pmremRT=null,gltfLoader=null,halt=false,uiPaused=false;
+ let pmremGen=null,pmremRT=null,gltfLoader=null,fbxLoader=null,halt=false,uiPaused=false;
  const TEX_KEYS=['map','normalMap','roughnessMap','metalnessMap','aoMap','emissiveMap','alphaMap'];
  const disposeObjectResources=(root)=>{
   if(!root)return;
@@ -77,7 +84,7 @@ export function createEngine(el,room,h){
  };
  const rnd=(a,b)=>a+Math.random()*(b-a)
  const flick=(seed,amt=.3)=>t=>1-amt*Math.abs(Math.sin(t*(6.3+seed%5)+seed)*Math.sin(t*(2.9+seed%3)+seed*1.7))-.04*Math.abs(Math.sin(t*31+seed))
- let tl=performance.now();const E={lap:n=>{if(debug){const t=performance.now();console.info('[ctc] lap',n,Math.round(t-tl));tl=t}},S,cam,W,H,D,win:room.window,ref,sc,lampMats:[],lampGlow:null,flick,lightScale:()=>sc.v,audio:h.audio,
+ let tl=performance.now();const E={lap:n=>{if(debug){const t=performance.now();console.info('[ctc] lap',n,Math.round(t-tl));tl=t}},S,cam,W,H,D,win:room.window,ref,sc,lampMats:[],lampGlow:null,flick,lightScale:()=>sc.v,audio:h.audio,_pick:pick,_byId:byId,_visualById:visualById,_solids:solids,
   anim:f=>anims.push(f),
   solid:(x0,x1,z0,z1)=>{const box={x0,x1,z0,z1};solids.push(box);return box;},
   removeSolid:box=>{const i=solids.indexOf(box);if(i!==-1)solids.splice(i,1);},
@@ -108,6 +115,19 @@ export function createEngine(el,room,h){
     );
    }).catch((err)=>{if(!halt)reject(err);});
   }),
+  loadFBX:(url,onProgress)=>new Promise((resolve,reject)=>{
+   if(halt)return;
+   if(!fbxLoader)fbxLoader=new FBXLoader();
+   fbxLoader.load(
+    url,
+    (grp)=>{
+     if(!halt){resolve(grp);return;}
+     disposeObjectResources(grp);
+    },
+    onProgress,
+    (err)=>{if(!halt)reject(err);}
+   );
+  }),
   visualInteract:(target,id)=>{
    const list=Array.isArray(target)?target:[target];
    const hlById = E._hlMatById || (E._hlMatById = new Map());
@@ -122,11 +142,11 @@ export function createEngine(el,room,h){
      if(o.isMesh&&o.material){
       if(o.userData._hlId !== id){
        const cloneForId = (m) => {
-        if (!m) return m;
-        if (idCache.has(m)) return idCache.get(m);
-        const cm = m.clone();
-        idCache.set(m, cm);
-        return cm;
+         if (!m) return m;
+         if (idCache.has(m)) return idCache.get(m);
+         const cm = m.clone();
+         idCache.set(m, cm);
+         return cm;
        };
        o.material=Array.isArray(o.material)?o.material.map(cloneForId):cloneForId(o.material);
        o.userData._hlId = id;
@@ -136,7 +156,7 @@ export function createEngine(el,room,h){
     });
    });
   },
-  interact(obj,id){obj.traverse(o=>{if(o.isMesh){o.userData.id=id;delete o.userData.np}})},
+  interact(obj,id){obj.traverse(o=>{if(o.isMesh){o.userData.id=id;delete o.userData.np;if(room.id==='control'&&o.material){o.material=Array.isArray(o.material)?o.material.map(m=>m.clone()):o.material.clone()}}})},
   add(obj,o={}){obj.traverse(m=>{if(!m.isMesh)return;if(!m.userData.ns&&!o.noShadow){m.castShadow=true}m.receiveShadow=true;if(!m.userData.np){pick.push(m);if(m.userData.id)(byId[m.userData.id]??=[]).push(m)}});S.add(obj);return obj}}
  E.renderStudyFrame=()=>{const horror=ref.studyHorror,story=ref.studyProcession;
   if(story?.closeup?.visible&&story.overlayScene)R.render(story.overlayScene,story.overlayCamera);
@@ -164,7 +184,6 @@ export function createEngine(el,room,h){
    attachStudyTorch(E,cam);studyCleanups.push(bindStudyTorchKey(E));
  }
 
-
  if(room.id === 'study'){
    buildStudy(E);scares=createStudyScares(E,reduce);
  } else if(room.id === 'records'){
@@ -182,6 +201,18 @@ export function createEngine(el,room,h){
 
    buildRecordsScene(E);
    scares = createRecordsScares(E, h);
+ } else if (room.id === 'control') {
+   attachTorch(E, cam);
+
+   R.shadowMap.enabled = false;
+   R.setPixelRatio(Math.min(devicePixelRatio || 1, 0.85));
+   R.toneMappingExposure = 1.28;
+   S.fog = new THREE.FogExp2(0x050808, 0.034);
+   const ambHemi = new THREE.HemisphereLight(0x5c7264, 0x1c221e, 0.86);
+   S.add(ambHemi);
+
+   buildControlScene(E, h);
+   scares = createControlScares(E, h);
  } else if (room.id === 'vault') {
    ref.onLoadProgress = (pct, loaded, total) => h?.onProgress?.(pct, loaded, total);
    ref.onLoadComplete = () => h?.onComplete?.();
@@ -195,6 +226,8 @@ export function createEngine(el,room,h){
    buildVaultScene(E, h);
    scares = createVaultScares(E, h);
  } else {
+   attachTorch(E, cam);
+   E._torchUnbind = bindTorchKey(E);
    // ---- shell: textured walls, floor, ceiling, trim ----
    const wp=X.tex(X.wallpaper()),wmat=new THREE.MeshStandardMaterial({map:wp,bumpMap:wp,bumpScale:.5,roughness:.92,color:0xffffff})
    const fl=X.floorPlanks(),fmat=new THREE.MeshStandardMaterial({map:X.tex(fl.map),bumpMap:X.tex(fl.bump,{srgb:false}),bumpScale:1.2,roughness:.62,metalness:.04})
@@ -221,6 +254,30 @@ export function createEngine(el,room,h){
  // ---- SINGLE SOURCE OF TRUTH CONTROLS INITIALIZATION ----
  const ray=new THREE.Raycaster(),v0=new THREE.Vector2();
  const hl = (id, on) => {
+   if (room.id === 'control') {
+     const targets = [...(byId[id] || []), ...(visualById[id] || [])];
+     targets.forEach(m => {
+       const mats = Array.isArray(m.material) ? m.material : [m.material];
+       mats.forEach(q => {
+         if (q && q.emissive && typeof q.emissive.setHex === 'function') {
+           if (on) {
+             if (q.userData._origEmissive === undefined) {
+               q.userData._origEmissive = q.emissive.getHex();
+               q.userData._origEmissiveInt = q.emissiveIntensity ?? 1;
+             }
+             q.emissive.setHex(0x3b3019);
+             q.emissiveIntensity = Math.max(q.userData._origEmissiveInt || 0.08, 0.16);
+           } else if (q.userData._origEmissive !== undefined) {
+             q.emissive.setHex(q.userData._origEmissive);
+             q.emissiveIntensity = q.userData._origEmissiveInt;
+           } else {
+             q.emissive.setHex(0);
+           }
+         }
+       });
+     });
+     return;
+   }
    byId[id]?.forEach(m => {
      if (!m.userData.__highlightOriginalMaterials) {
        const original = Array.isArray(m.material) ? m.material.slice() : m.material;
@@ -263,13 +320,15 @@ export function createEngine(el,room,h){
    getSolids: () => solids,
    roomSize: [W, H, D],
    spawn: room.spawn,
-   isInputBlocked:()=>room.id==='study'&&Boolean(E._studyCinematicInput)
+   controlMode: room.id === 'control',
+   isInputBlocked: () => (room.id === 'study' && Boolean(E._studyCinematicInput)) || uiPaused
  });
 
  Object.assign(E,{
    px: () => controls.getPos().x,
    pz: () => controls.getPos().z,
    yaw: () => controls.getPos().yaw,
+   isSprinting: () => Boolean(controls.isSprinting?.()),
    shake: (a,d) => { shakeA=a; shakeT=d; },
    isModalOpen: () => uiPaused,
    get paused() { return false; }
@@ -296,24 +355,69 @@ export function createEngine(el,room,h){
  const studyQuality=room.id==='study'?createStudyQuality(R,nativeRatio,studyLow):null;
  const FRAME_INTERVAL = 1000 / FPS_LIMIT;
  let lastRenderTime = performance.now();
+ let targetFov=72;
+ const defaultEco = isLowSpecControl;
+ let qualityMode = defaultEco ? 'eco' : 'high';
+ if (room.id === 'control' && qualityMode === 'eco') {
+   R.setPixelRatio(Math.min(devicePixelRatio || 1, 0.72));
+ }
+ E._qualityMode = qualityMode;
+ const applyQualityMode = (mode) => {
+   qualityMode = mode === 'eco' ? 'eco' : 'high';
+   E._qualityMode = qualityMode;
+   R.setPixelRatio(qualityMode === 'eco' ? Math.min(devicePixelRatio || 1, 0.65) : Math.min(devicePixelRatio || 1, 0.85));
+   if (E._dustPoints) E._dustPoints.visible = qualityMode !== 'eco';
+   E._onQualityModeChange?.(qualityMode);
+   h.onQualityChange?.(qualityMode);
+ };
+ E.setQualityMode = applyQualityMode;
+ E.setCameraOverride = (active, ty, tp) => controls.setCameraOverride?.(active, ty, tp);
+ E.setTargetFov = (fov) => { targetFov = Math.max(42, Math.min(88, Number(fov) || 72)); };
+ let slowFrames = 0;
+ let autoSwitchedEco = false;
+ let lastPausedRender = 0;
 
  const loop = now => {
-   if (!halt) raf = requestAnimationFrame(loop);
-   const elapsed = now - lastRenderTime;
-   // Study follows the display's animation frames. Comparing a 60 Hz frame to
-   // exactly 16.666 ms was discarding healthy frames on small timing variations.
-   if (room.id!=='study'&&elapsed < FRAME_INTERVAL) return;
-
-   lastRenderTime = room.id==='study'?now:now - (elapsed % FRAME_INTERVAL);
-   const frameMs=now-last;last=now;
-   const dt = Math.min(0.05, (room.id==='study'?frameMs:elapsed) / 1000);
-   studyQuality?.tick(frameMs,E._studyState.paused||document.hidden||api._skip);
-   frameCount++;
+   if (halt) return;
+   raf = requestAnimationFrame(loop);
+   let dt, frameMs;
+   if (room.id === 'control') {
+     if (E._paused && now - lastPausedRender < 80) return;
+     if (E._paused) lastPausedRender = now;
+     const elapsed = now - last;
+     last = now;
+     frameMs = elapsed;
+     dt = Math.min(0.05, Math.max(0.001, elapsed / 1000));
+     frameCount++;
+     const t = (now - t0) / 1000;
+     if (!E._paused && !autoSwitchedEco && qualityMode === 'high' && t > 3.5) {
+       if (elapsed > 33 && elapsed < 150) {
+         slowFrames++;
+         if (slowFrames >= 45) {
+           autoSwitchedEco = true;
+           applyQualityMode('eco');
+         }
+       } else if (elapsed < 25) {
+         slowFrames = Math.max(0, slowFrames - 1);
+       }
+     }
+   } else {
+     const elapsed = now - lastRenderTime;
+     if (room.id !== 'study' && elapsed < FRAME_INTERVAL) return;
+     lastRenderTime = room.id === 'study' ? now : now - (elapsed % FRAME_INTERVAL);
+     frameMs = now - last;
+     last = now;
+     dt = Math.min(0.05, (room.id === 'study' ? frameMs : elapsed) / 1000);
+     studyQuality?.tick(frameMs, E._studyState?.paused || document.hidden || api._skip);
+     frameCount++;
+   }
    const t = (now - t0) / 1000;
-   haunting?.tick(Math.min(.25,frameMs/1000));
+   haunting?.tick(Math.min(0.25, (frameMs || 16) / 1000));
 
    // 1. Single-source Controls Update (WASD & Mouse Look)
-   const ctrl = room.id==='study'&&(E._studyState.paused||E._studyCinematicInput) ? {...controls.getPos(),px:controls.getPos().x,pz:controls.getPos().z,yaw:cam.rotation.y,pitch:cam.rotation.x,walk:0,isMoving:false} : controls.update(dt);
+   const ctrl = room.id === 'study' && (E._studyState?.paused || E._studyCinematicInput)
+     ? { ...controls.getPos(), px: controls.getPos().x, pz: controls.getPos().z, yaw: cam.rotation.y, pitch: cam.rotation.x, walk: 0, isMoving: false }
+     : controls.update(dt);
    const px = ctrl.px;
    const pz = ctrl.pz;
    const yaw = ctrl.yaw;
@@ -328,13 +432,27 @@ export function createEngine(el,room,h){
      }
    }
 
-   // Study aims at the current camera pose, at up to 30 Hz even on slower displays.
-   if(room.id==='study'){cam.position.set(px,E._studyEyeHeight??1.6,pz);cam.rotation.set(pitch,yaw,E._studyCameraRoll||0);cam.updateMatrixWorld();}
-   if (room.id==='study'?now-lastStudyPick>=1000/30:frameCount%2===0) {
-     lastStudyPick=now;
-     ray.setFromCamera(v0,cam);
-     ray.far = 5.5;
-     const hits = studyPicker?studyPicker.intersect(ray,pick):ray.intersectObjects(pick, false);
+   // 2. Aim Raycast check
+   if (room.id === 'study') {
+     cam.position.set(px, E._studyEyeHeight ?? 1.6, pz);
+     cam.rotation.set(pitch, yaw, E._studyCameraRoll || 0);
+     cam.updateMatrixWorld();
+   }
+   const shouldRaycast = room.id === 'study'
+     ? (now - lastStudyPick >= 1000 / 30)
+     : (frameCount % 2 === 0 && !(room.id === 'control' && E._paused));
+
+   if (shouldRaycast) {
+     lastStudyPick = now;
+     if (room.id === 'control' && controls.getPointerNDC) {
+       const ndc = controls.getPointerNDC();
+       v0.set(ndc.x, ndc.y);
+     } else {
+       v0.set(0, 0);
+     }
+     ray.setFromCamera(v0, cam);
+     ray.far = room.id === 'control' ? 4.2 : 5.5;
+     const hits = studyPicker ? studyPicker.intersect(ray, pick) : ray.intersectObjects(pick, false);
      const hitMesh = hits.find(it => it.object?.userData?.id);
      const id = hitMesh?.object?.userData?.id || null;
 
@@ -350,8 +468,8 @@ export function createEngine(el,room,h){
      }
    }
 
-   if (!uiPaused || room.id==='study') {
-     scares?.tick(room.id==='study'?Math.min(.25,frameMs/1000):dt,t);
+   if (!uiPaused && !(room.id === 'control' && E._paused)) {
+     scares?.tick(room.id === 'study' ? Math.min(0.25, (frameMs || 16) / 1000) : dt, t);
    }
    h.audio?.listen?.(px,pz,yaw);
 
@@ -359,6 +477,10 @@ export function createEngine(el,room,h){
    if(shakeT>0&&!reduce){shakeT-=dt;const k=shakeA*Math.max(0,shakeT)*3;sx=(Math.random()-.5)*k*.05;sy=(Math.random()-.5)*k*.05}
    cam.position.set(px+sx, (room.id==='study'?E._studyEyeHeight??1.6:1.6) + (mv && !reduce ? Math.sin(walk)*.022 : 0) + Math.sin(t*.9)*.004 + sy, pz);
    cam.rotation.set(pitch, yaw, room.id==='study'?E._studyCameraRoll||0:0);
+   if (room.id === 'control' && Math.abs(cam.fov - targetFov) > 0.08) {
+     cam.fov += (targetFov - cam.fov) * Math.min(1, dt * 15);
+     cam.updateProjectionMatrix();
+   }
    if(room.id==='study') updateStudyTorchSway(E, t, mv, reduce);
    else updateTorchSway(E, t, mv, reduce);
 
@@ -384,10 +506,26 @@ export function createEngine(el,room,h){
   tryStudyExit(){if(room.id!=='study')return {blocked:false};const held=haunting?.beforeExit();return held?.blocked?held:scares?.requestExit?.()||{blocked:false};},
   standUpStudy(){return haunting?.standUp?.()||false;},
   notifyStudyEvent(event){if(room.id==='study'){E.ref.onStudyInteract?.(event);scares?.notify?.(event);}},
-  setPaused(v){ if(room.id!=='study'){ uiPaused = Boolean(v); } },
+  setPaused(p){
+    uiPaused = Boolean(p);
+    E._paused = Boolean(p);
+    if (room.id === 'control') controls.setPaused?.(Boolean(p));
+  },
+  setSensitivity(s){ controls.setSensitivity?.(s); },
   lock(){ controls.requestLock(); },
   unlock(){ controls.unlock(); },
+  isLocked(){ return !!controls.isLocked?.(); },
   setView(x,z,y,p=0){ controls.setView(x,z,y,p); },
+  getPos(){ return controls.getPos(); },
+  getGhostPos(){
+    const g = E._ghost;
+    if (!g?.root) return null;
+    return {
+      x: g.root.position.x,
+      z: g.root.position.z,
+      isHunting: Boolean(g.isHunting),
+    };
+  },
   openDoor(){ 
     if(ref.bulkheadDoor) ref.bulkheadDoor.isOpen = true; 
     if(ref.roomDoor) ref.roomDoor.isOpen = true; 
@@ -403,10 +541,9 @@ export function createEngine(el,room,h){
     if(room.id==='study'){setStudyTorch(E,on);return;}
     if(E.flashlightModel && E._userFlashlightOn !== undefined) setTorch(E, on);
     else if(E.flashlight) E.flashlight.intensity = on ? 4.2 : 0;
+    else setTorch(E, on);
   },
   isFlashlightOn(){ return !!(E.flashlight && E.flashlight.intensity > 0); },
-  getPos(){ return controls.getPos(); },
-  setSensitivity(s){ controls.setSensitivity?.(s); },
   sparkDeadTorch(){
     if (room.id !== 'vault' || !E.flashlight) return;
     clearTimeout(E._deadSparkTimer);
@@ -421,6 +558,7 @@ export function createEngine(el,room,h){
   frame(){ last=performance.now()-16; loop(performance.now()); },
   step(n,ms=50){ api._skip=true; for(let i=0;i<n;i++){ last=performance.now()-ms; loop(performance.now()); } api._skip=false; last=performance.now()-16; loop(performance.now()); },
   triggerScare:n=>scares?.trigger(n),
+  triggerDoorScare:()=>scares?.triggerDoorScare?.(),
   scares,haunting,
   setCountdown(text, restored = false){
     ref.wallMonitor?.setText?.(text);
@@ -448,12 +586,107 @@ export function createEngine(el,room,h){
     }
     ref.setQualityMode?.(tier);
   },
-  setQualityMode(mode){
-    api.setResolutionMode(mode);
+  _controlBuilt: room.id === 'control',
+  toggleControlDoor: () => E.toggleControlDoor?.(),
+  toggleWingDoor: (id) => E.toggleWingDoor?.(id),
+  toggleBreakerLight: () => E.toggleBreakerLight?.(),
+  rattleDoor: (id) => E.rattleDoor?.(id),
+  setFragmentCleared: (id) => E.setFragmentCleared?.(id),
+  setFragmentGuidance: (nextId, pendingIds, clearedIds) => E.setFragmentGuidance?.(nextId, pendingIds, clearedIds),
+  setQualityMode: (m) => {
+    applyQualityMode(m);
+    api.setResolutionMode?.(m);
   },
+  getQualityMode: () => E._qualityMode || 'high',
+  captureView(objectId, opts = {}) {
+    if (halt || E._disposed) return null;
+    try {
+      const targetList = (objectId && (visualById[objectId]?.length ? visualById[objectId] : byId[objectId])) || [];
+      let snapCam = cam;
+      let tempLight = null;
+      let tempHemi = null;
+      const prevEnv = S.environmentIntensity;
+      if (opts.pos && opts.lookAt) {
+        snapCam = new THREE.PerspectiveCamera(opts.fov || 62, 4 / 3, 0.05, 45);
+        snapCam.position.set(opts.pos[0], opts.pos[1], opts.pos[2]);
+        snapCam.lookAt(opts.lookAt[0], opts.lookAt[1], opts.lookAt[2]);
+        snapCam.updateMatrixWorld();
+        tempLight = new THREE.PointLight(opts.lightColor ?? 0xb8f0c8, opts.lightIntensity ?? 7.5, 22, 1.0);
+        tempLight.position.copy(snapCam.position);
+        tempHemi = new THREE.HemisphereLight(opts.hemiColor ?? 0x9cf0b8, 0x16241a, opts.hemiIntensity ?? 1.45);
+        S.add(tempLight);
+        S.add(tempHemi);
+        S.environmentIntensity = Math.max(prevEnv || 0.25, 0.75);
+      } else if (targetList.length) {
+        const box = new THREE.Box3();
+        targetList.forEach((m) => { if (m?.updateWorldMatrix) m.updateWorldMatrix(true, false); box.expandByObject(m); });
+        if (!box.isEmpty()) {
+          const center = box.getCenter(new THREE.Vector3());
+          const size = box.getSize(new THREE.Vector3());
+          const maxDim = Math.max(size.x, size.y, size.z, 0.45);
+          const fov = Math.max(38, Math.min(56, 46 + maxDim * 3));
+          snapCam = new THREE.PerspectiveCamera(fov, 4 / 3, 0.05, 45);
+          const dir = new THREE.Vector3().subVectors(cam.position, center);
+          dir.y = 0;
+          const flatDist = dir.length();
+          if (flatDist > 0.01) dir.divideScalar(flatDist);
+          else dir.set(0, 0, 1);
+          const idealDist = Math.max(0.9, Math.min(2.4, maxDim * 1.45));
+          const dist = flatDist > 0.45 ? Math.min(idealDist, flatDist * 0.92) : idealDist;
+          snapCam.position.set(
+            center.x + dir.x * dist,
+            Math.max(0.55, Math.min(2.45, center.y + Math.max(0.24, size.y * 0.36))),
+            center.z + dir.z * dist
+          );
+          snapCam.lookAt(center);
+          snapCam.updateMatrixWorld();
+          tempLight = new THREE.PointLight(0xffe9c7, 5.2, 11, 1.1);
+          tempLight.position.copy(snapCam.position);
+          tempHemi = new THREE.HemisphereLight(0xf6e4c4, 0x2a2018, 0.95);
+          S.add(tempLight);
+          S.add(tempHemi);
+          S.environmentIntensity = Math.max(prevEnv || 0.25, 0.65);
+        }
+      } else {
+        tempLight = new THREE.PointLight(0xffe9c7, 4.2, 10, 1.1);
+        tempLight.position.copy(cam.position);
+        tempHemi = new THREE.HemisphereLight(0xf6e4c4, 0x2a2018, 0.85);
+        S.add(tempLight);
+        S.add(tempHemi);
+      }
+      R.render(S, snapCam);
+      const src = R.domElement;
+      const out = document.createElement('canvas');
+      out.width = opts.width || 480;
+      out.height = opts.height || 360;
+      const ctx = out.getContext('2d');
+      if (ctx && src.width > 0 && src.height > 0) {
+        const targetRatio = out.width / out.height;
+        const srcRatio = src.width / src.height;
+        let sx = 0, sy = 0, sw = src.width, sh = src.height;
+        if (srcRatio > targetRatio) {
+          sw = Math.round(src.height * targetRatio);
+          sx = Math.round((src.width - sw) / 2);
+        } else {
+          sh = Math.round(src.width / targetRatio);
+          sy = Math.round((src.height - sh) / 2);
+        }
+        ctx.drawImage(src, sx, sy, sw, sh, 0, 0, out.width, out.height);
+      }
+      if (tempLight) S.remove(tempLight);
+      if (tempHemi) S.remove(tempHemi);
+      S.environmentIntensity = prevEnv;
+      R.render(S, cam);
+      return out.toDataURL('image/jpeg', opts.quality || 0.85);
+    } catch (_) {
+      return null;
+    }
+  },
+  get dev() { return E._dev || null; },
   dispose(){
     if(room.id==='study'){studyDisposed=true;studyCleanups.forEach(fn=>fn());}
     halt=true;
+    E._disposed = true;
     clearTimeout(E._deadSparkTimer);
     E._torchUnbind?.();
     cancelAnimationFrame(raf);
@@ -463,11 +696,23 @@ export function createEngine(el,room,h){
     window.removeEventListener('resize',rs);
     pmremRT?.dispose?.();
     pmremGen?.dispose?.();
-    S.traverse(o=>{
-      o.geometry?.dispose();
-      if (Array.isArray(o.material)) o.material.forEach(disposeMaterial);
-      else disposeMaterial(o.material);
-    });
+    if (room.id === 'control') {
+      disposeObjectResources(S);
+      E._hlMatById = null;
+      gltfLoader = null;
+      fbxLoader = null;
+      rigL.length = 0;
+      rigG.length = 0;
+      anims.length = 0;
+      pick.length = 0;
+      solids.length = 0;
+    } else {
+      S.traverse(o=>{
+        o.geometry?.dispose();
+        if (Array.isArray(o.material)) o.material.forEach(disposeMaterial);
+        else disposeMaterial(o.material);
+      });
+    }
     R.dispose();
     R.domElement.remove();
   }

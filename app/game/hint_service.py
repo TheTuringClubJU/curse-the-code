@@ -1,20 +1,8 @@
-"""Universal Hint Service for Curse The Code - Round 1
-
-Enforces:
-1. Exact tournament budget: 15 hints total across all rooms in Round 1 per team.
-2. Two-Phase Hint Progression:
-   - Phase 1 (Hunting Fragments): Dispatches next sequential uncollected fragment hint (+10s penalty).
-   - Phase 2 (Deciphering Clues): Dispatches active sequential clue hint (+30s penalty) with:
-     (a) 3D room location prop, (b) puzzle/cipher type, (c) subtle solving guidance.
-3. Free Re-Inspection: Re-opening an unlocked hint costs 0s penalty and 0 hint budget.
-4. NO CLUE BURNOUT (+180s is strictly forbidden).
-"""
-
 from typing import Optional, Dict, Any, List
 from fastapi import HTTPException
-from psycopg2.extras import RealDictCursor
-from app.login.service import get_db_connection
+from app.db import get_db_connection
 from app.lobby.routes import get_content_data
+from psycopg2.extras import RealDictCursor
 
 TOTAL_HINT_BUDGET = 15
 FRAGMENT_PENALTY_SECONDS = 10
@@ -128,10 +116,10 @@ CLUE_HINT_DETAILS = {
         "guidance": "The door asks for three words you have already been given: one from a girl's page, one from a machine's last words, and one from a guest who should not exist. Match the torn edges of the photograph. Then count what the living cast to uncover the hidden sequence."
     },
     "R2-01": {
-        "title": "CCTV Footage Matrix",
-        "location_prop": "Bank of 9 surveillance monitors on the observation wall.",
-        "puzzle_type": "Video Timestamp & Frame Anomaly Correlation",
-        "guidance": "Cross-reference the 9 camera feeds against the breach timeline. Identify the feed displaying timestamp slippage."
+        "title": "Personnel Index",
+        "location_prop": "Staff Terminal console in Control Bay 5B (staff_terminal).",
+        "puzzle_type": "Unix Epoch Conversion & Anomaly Filtering",
+        "guidance": "Convert the machine timestamps in your recovered cards from Unix epoch seconds, cross-reference termination dates in the personnel register, and flag any anomalous post-closure login."
     },
     "R2-02": {
         "title": "Flooded Index Registry",
@@ -152,16 +140,16 @@ CLUE_HINT_DETAILS = {
         "guidance": "Convert the Dewey-Hex notation on the requisition slip to identify the vault bulkhead sequence number."
     },
     "R2-05": {
-        "title": "Intercom Matrix",
-        "location_prop": "Desk intercom console with broadcast toggle switches.",
-        "puzzle_type": "Audio Spectrogram Frequency Analysis",
-        "guidance": "Isolate the carrier frequency from the background drone. The periodic chime reveals the circuit relay state."
+        "title": "Transmission Archive",
+        "location_prop": "Radio Console in Control Bay 5B (radio_console).",
+        "puzzle_type": "Base64 Header Authentication & Spoof Detection",
+        "guidance": "Decode the X-Auth headers attached to each intercepted transmission and match them against the verified operator badge uncovered from the Personnel Index."
     },
     "R2-06": {
-        "title": "Paper Tape Punch",
-        "location_prop": "Mechanical teleprinter puncher beside the observation desk.",
-        "puzzle_type": "8-Channel Baudot Tape Translation",
-        "guidance": "Align the punched holes against the Baudot translation table to read the operator badge ID."
+        "title": "Voicemail Spectrogram",
+        "location_prop": "Sound Console in Control Bay 5B (sound_console).",
+        "puzzle_type": "Audio Frequency Spectrogram Inspection",
+        "guidance": "Inspect the upper-frequency spectrogram of the authentic voicemail file identified in the Radio Console archive to reveal the hidden code."
     },
     "R2-07": {
         "title": "Vault Bulkhead Gate",
@@ -196,11 +184,12 @@ def get_clue_hint_point_deduction(cur, team_id: int, clue_id: str) -> float:
     - Other clues: -15 points deduction (awards 85 pts upon solve)
     - If no clue hint was purchased: 0.0 deduction (awards full 100 pts)
     """
+    round_num = 2 if clue_id.startswith("R2-") else 1
     cur.execute(
         """SELECT 1 FROM team_hints
-           WHERE team_id = %s AND target_id = %s AND hint_category = 'clue'
+           WHERE team_id = %s AND round = %s AND target_id = %s AND hint_category = 'clue'
            LIMIT 1""",
-        (team_id, clue_id),
+        (team_id, round_num, clue_id),
     )
     if cur.fetchone():
         return 30.0 if clue_id in ("R1-FIN", "R2-10") else 15.0
@@ -221,37 +210,40 @@ def _get_fragment_hint_text(content: Dict[str, Any], room_id: str, fragment_id: 
     return f"Search the area around fragment {fragment_id}."
 
 
-def get_hint_status(team_id: int) -> Dict[str, Any]:
+def get_hint_status(team_id: int, room_id: Optional[str] = None) -> Dict[str, Any]:
     """Retrieve full hint usage history, current budget remaining, and total penalty seconds."""
     with get_db_connection() as conn:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            # Determine active round
-            cur.execute(
-                """SELECT tr.room_id FROM team_rooms tr
-                   WHERE tr.team_id = %s
-                   ORDER BY tr.id DESC LIMIT 1""",
-                (team_id,)
-            )
-            last_room = cur.fetchone()
-            if last_room and last_room["room_id"] in ROOM_TO_ROUND:
-                active_round = ROOM_TO_ROUND[last_room["room_id"]]
+            if room_id and room_id in ROOM_TO_ROUND:
+                target_round = ROOM_TO_ROUND[room_id]
             else:
-                cur.execute("SELECT round FROM rounds WHERE status = 'live' ORDER BY round DESC LIMIT 1")
-                live_r = cur.fetchone()
-                active_round = live_r["round"] if live_r else 1
+                # Determine active round
+                cur.execute(
+                    """SELECT tr.room_id FROM team_rooms tr
+                       WHERE tr.team_id = %s
+                       ORDER BY tr.id DESC LIMIT 1""",
+                    (team_id,)
+                )
+                last_room = cur.fetchone()
+                if last_room and last_room["room_id"] in ROOM_TO_ROUND:
+                    target_round = ROOM_TO_ROUND[last_room["room_id"]]
+                else:
+                    cur.execute("SELECT round FROM rounds WHERE status = 'live' ORDER BY round DESC LIMIT 1")
+                    live_r = cur.fetchone()
+                    target_round = live_r["round"] if live_r else 1
 
             cur.execute(
                 """SELECT id, room_id, hint_category, target_id, penalty_seconds, hint_text, created_at
                    FROM team_hints
                    WHERE team_id = %s AND round = %s
                    ORDER BY created_at ASC""",
-                (team_id, active_round),
+                (team_id, target_round),
             )
             hints = cur.fetchall()
 
             cur.execute(
                 "SELECT penalty_seconds FROM team_rounds WHERE team_id = %s AND round = %s",
-                (team_id, active_round),
+                (team_id, target_round),
             )
             round_row = cur.fetchone()
             total_penalty = round_row["penalty_seconds"] if round_row and round_row["penalty_seconds"] else 0
@@ -307,7 +299,8 @@ def request_hint(
                 else:
                     room_id = "vault"
 
-            if room_id not in ROOM_FRAGMENTS:
+            valid_rooms = set(ROOM_FRAGMENTS.keys()) | {r.get("id") for r in content.get("rooms", [])}
+            if room_id not in valid_rooms:
                 raise HTTPException(400, f"Invalid room_id '{room_id}'")
 
             round_num = ROOM_TO_ROUND.get(room_id, 1)
@@ -366,17 +359,20 @@ def request_hint(
                     },
                 )
 
-            # 4. Check fragment collection state for this room
+            # 4. Check fragment collection state for this room (real + decoy fragments)
             cur.execute(
                 "SELECT fragment_id FROM team_fragments WHERE team_id = %s AND room_id = %s",
                 (team_id, room_id),
             )
             collected_fragments = {r["fragment_id"] for r in cur.fetchall()}
+
+            # Dynamically lookup all expected fragments (real + decoys) from content definition
             content_room = next((r for r in content.get("rooms", []) if r.get("id") == room_id), None)
             if content_room and content_room.get("evidence"):
                 expected_fragments = [ev["id"] for ev in content_room["evidence"] if ev.get("id")]
             else:
                 expected_fragments = ROOM_FRAGMENTS.get(room_id, [])
+
             uncollected_fragments = [fid for fid in expected_fragments if fid not in collected_fragments]
 
             # 5. Check if basket is officially unlocked in team_rooms
@@ -385,10 +381,26 @@ def request_hint(
                 (team_id, room_id),
             )
             basket_row = cur.fetchone()
-            is_basket_unlocked = bool(basket_row and basket_row["is_basket_unlocked"]) or (len(uncollected_fragments) == 0)
+
+            # Universal progression constraint:
+            # Basket is only unlocked if marked unlocked in team_rooms OR all expected fragments (real + decoys) are collected
+            is_basket_unlocked = bool(basket_row and basket_row["is_basket_unlocked"]) or (len(uncollected_fragments) == 0 and len(expected_fragments) > 0)
+
+            # Persist basket unlock if all room fragments have been collected
+            if len(uncollected_fragments) == 0 and len(expected_fragments) > 0 and not (basket_row and basket_row["is_basket_unlocked"]):
+                cur.execute(
+                    """INSERT INTO team_rooms (team_id, room_id, is_basket_unlocked)
+                       VALUES (%s, %s, TRUE)
+                       ON CONFLICT (team_id, room_id) DO UPDATE SET is_basket_unlocked = TRUE""",
+                    (team_id, room_id),
+                )
+                conn.commit()
+                is_basket_unlocked = True
 
             # ----------------------------------------------------
             # PHASE 1: Hunting Fragments (if fragments remain)
+            # Universal Rule: All decoys and fragments must be collected.
+            # Until all fragments are collected, hints cost strictly +10s.
             # ----------------------------------------------------
             if not is_basket_unlocked and uncollected_fragments:
                 next_fragment_id = uncollected_fragments[0]
@@ -434,6 +446,10 @@ def request_hint(
                     (team_id, round_num, room_id, next_fragment_id, penalty, hint_text),
                 )
                 cur.execute(
+                    "INSERT INTO rounds (round, status) VALUES (%s, 'pending') ON CONFLICT (round) DO NOTHING",
+                    (round_num,),
+                )
+                cur.execute(
                     """INSERT INTO team_rounds (team_id, round, penalty_seconds, updated_at)
                        VALUES (%s, %s, %s, NOW())
                        ON CONFLICT (team_id, round)
@@ -468,7 +484,7 @@ def request_hint(
                 (team_id, round_num),
             )
             clues_prog = {r["clue_id"]: r for r in cur.fetchall()}
-            expected_clues = ROOM_CLUES[room_id]
+            expected_clues = ROOM_CLUES.get(room_id, [])
 
             # Find active clue in sequential order
             active_clue_id = None
@@ -536,6 +552,10 @@ def request_hint(
                 """INSERT INTO team_hints (team_id, round, room_id, hint_category, target_id, penalty_seconds, hint_text)
                    VALUES (%s, %s, %s, 'clue', %s, %s, %s)""",
                 (team_id, round_num, room_id, active_clue_id, penalty, rich_hint_text),
+            )
+            cur.execute(
+                "INSERT INTO rounds (round, status) VALUES (%s, 'pending') ON CONFLICT (round) DO NOTHING",
+                (round_num,),
             )
             cur.execute(
                 """INSERT INTO team_rounds (team_id, round, penalty_seconds, updated_at)

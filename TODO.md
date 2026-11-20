@@ -1107,18 +1107,18 @@ Every interactive prop must be a real visible 3D mesh tagged with `E.interact(ob
 ### 5.4 Cross-Room Systems & Paranormal Infrastructure
 
 #### Detailed Tasks for Frontend (Cross-Room Systems)
-- [ ] **FE-SYS-01** Build `CaseDossierModal.jsx` (`[C]` shortcut): ring-bound leather folder showing all carried-forward forensic case records with wax seal stamps.
-- [ ] **FE-SYS-02** Implement Infrasound Engine: continuous 18.98 Hz subliminal audio tone mixed at 20% volume across all Round 2 scenes.
-- [ ] **FE-SYS-03** Implement Follower Entity AI manager: tracks unlit room coordinates, leaves physical evidence (ajar drawers, slid papers, tilted chairs), mirrors player stillness.
-- [ ] **FE-SYS-04** Implement Breathing Vignette Shader: post-processing vignette oscillating at 0.2 Hz synchronized with entity respiration track.
+- [x] **FE-SYS-01** Build `CaseDossierModal.jsx` (`[C]` shortcut): ring-bound leather folder showing all carried-forward forensic case records with wax seal stamps.
+- [x] **FE-SYS-02** Implement Infrasound Engine: continuous 18.98 Hz subliminal audio tone mixed at 20% volume across all Round 2 scenes.
+- [x] **FE-SYS-03** Implement Follower Entity AI manager: tracks unlit room coordinates, leaves physical evidence (ajar drawers, slid papers, tilted chairs), mirrors player stillness.
+- [x] **FE-SYS-04** Implement Breathing Vignette Shader: post-processing vignette oscillating at 0.2 Hz synchronized with entity respiration track.
 - [ ] **FE-SYS-05** Implement Film Grain & Chromatic Aberration Spikes: dynamic noise scaling with entity proximity and RGB separation on impact events.
-- [ ] **FE-SYS-06** Implement Screen Glass Crack System: cumulative procedural hairline fractures deepening on every wrong answer or panic event.
+- [x] **FE-SYS-06** Implement Screen Glass Crack System: cumulative procedural hairline fractures deepening on every wrong answer or panic event.
 - [ ] **FE-SYS-07** Implement Browser Title Creep: background tab title cycle (`Curse the Code` → `I CAN SEE YOU` → `DON'T BLINK`).
 - [ ] **FE-SYS-08** Implement 4th-Wall Paranoia injections: fake browser warning modal on decoy paths, injection of registered team name into Dossier at 70+ minutes.
 
 #### Detailed Tasks for Backend (Cross-Room Systems)
-- [ ] **BE-SYS-01** Create `GET /api/game/round/2/dossier` returning all solved clue records and reveal payloads for the authenticated team.
-- [ ] **BE-SYS-02** Create `POST /api/game/round/2/fork/{fork_id}/choose` to record branch commitments, validate correct passage, and track trap penalties.
+- [x] **BE-SYS-01** Create `GET /api/game/round/2/dossier` returning all solved clue records and reveal payloads for the authenticated team.
+- [x] **BE-SYS-02** Create `POST /api/game/round/2/fork/{fork_id}/choose` to record branch commitments, validate correct passage, and track trap penalties.
 
 ---
 
@@ -1200,8 +1200,8 @@ Total Round 2 QA Target: 300 Tests
 
 #### Room 5: The Surveillance Morgue (100 Tests: `QA-R5-*`)
 - [ ] `QA-R5-E2E-01` **`e2e_control_complete_participant_journey`** (Full walkthrough: enter bunker -> search 8 fragments -> basket auto-unlock -> filter R2-01 personnel DB -> read R2-05 paper tape -> scrub R2-06 spectrogram -> choose Fork 2 valve -> unlock Vault tunnel).
-- [x] `QA-R5-BE-01` to `QA-R5-BE-49` Backend validation (49 Tests in `tests/test_room5_control.py` - 49/49 PASSED): strict sequence `EC01`–`EC08`, R2-01 active badge query, R2-05 transmission identification, R2-06 4-digit audio code check, 3-attempts exhaustion handling, Fork 2 valve penalty logic.
-- [ ] `QA-R5-FE-01` to `QA-R5-FE-50` Frontend validation: 9-CRT monitor canvas shaders, `PersonnelIndexModal` filtering, `TransmissionArchiveModal` paper tape dragging, `SpectrogramModal` oscilloscope dial scrub, Fork 2 valve selection, and horror triggers (JS-03 corner entity build, JS-05 CCTV playback, JS-07 team name injection).
+- [ ] `QA-R5-BE-01` to `QA-R5-BE-49` Backend validation: strict sequence `EC01`–`EC08`, R2-01 active badge query, R2-05 transmission identification, R2-06 4-digit audio code check, 3-attempts exhaustion handling, Fork 2 valve penalty logic.
+- [x] `QA-R5-FE-01` to `QA-R5-FE-50` Frontend validation: 9-CRT monitor canvas shaders, `PersonnelIndexModal` filtering, `TransmissionArchiveModal` paper tape dragging, `SpectrogramModal` oscilloscope dial scrub, Fork 2 valve selection, and horror triggers (JS-03 corner entity build, JS-05 CCTV playback, JS-07 team name injection).
 
 ---
 

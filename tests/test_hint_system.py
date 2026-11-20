@@ -241,3 +241,158 @@ def test_clue_hint_point_deduction_15_points_and_finale_30_points():
             assert get_clue_hint_point_deduction(cur, TEAM_ID, "R1-FIN") == 30.0
             conn.commit()
 
+
+def test_control_room_hint_phases_and_round2_penalty(auth_headers):
+    """Verify Room 5 (control) supports Phase 1 fragment hints and Phase 2 R2 clue hints in Round 2."""
+    with get_db_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("DELETE FROM team_hints WHERE team_id = %s", (TEAM_ID,))
+            cur.execute("DELETE FROM team_fragments WHERE team_id = %s AND room_id = 'control'", (TEAM_ID,))
+            cur.execute("DELETE FROM team_rooms WHERE team_id = %s AND room_id = 'control'", (TEAM_ID,))
+            cur.execute("DELETE FROM team_clues WHERE team_id = %s AND round = 2", (TEAM_ID,))
+            cur.execute("UPDATE team_rounds SET penalty_seconds = 0 WHERE team_id = %s AND round = 2", (TEAM_ID,))
+            conn.commit()
+
+    # Phase 1: EC01 fragment hint (+10s in Round 2)
+    res_p1 = client.post("/api/game/hint", json={"room_id": "control"}, headers=auth_headers)
+    assert res_p1.status_code == 200
+    d1 = res_p1.json()
+    assert d1["hint_category"] == "fragment"
+    assert d1["target_id"] == "EC01"
+    assert d1["room_id"] == "control"
+    assert d1["penalty_applied"] == 10
+
+    status_res = client.get("/api/game/hint/status?room_id=control", headers=auth_headers)
+    assert status_res.status_code == 200
+    assert status_res.json()["hints_used"] == 1
+    assert status_res.json()["total_penalty_seconds"] == 10
+
+    # Unlock control basket -> Phase 2 clue hint for R2-01 (+30s)
+    with get_db_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """INSERT INTO team_rooms (team_id, room_id, is_basket_unlocked)
+                   VALUES (%s, 'control', TRUE)
+                   ON CONFLICT (team_id, room_id) DO UPDATE SET is_basket_unlocked = TRUE""",
+                (TEAM_ID,),
+            )
+            conn.commit()
+
+    res_p2 = client.post("/api/game/hint", json={"room_id": "control"}, headers=auth_headers)
+    assert res_p2.status_code == 200
+    d2 = res_p2.json()
+    assert d2["hint_category"] == "clue"
+    assert d2["target_id"] == "R2-01"
+    assert d2["penalty_applied"] == 30
+    assert "Unix Epoch" in d2["hint_details"]["puzzle_type"]
+    assert d2["total_penalty_seconds"] == 40
+
+
+def test_control_room_decoys_enforce_fragment_hints_until_all_collected(auth_headers):
+    """Enforce that uncollected decoys XC01 and XC02 prevent clue phase and charge strictly +10s."""
+    with get_db_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("DELETE FROM team_hints WHERE team_id = %s", (TEAM_ID,))
+            cur.execute("DELETE FROM team_fragments WHERE team_id = %s AND room_id = 'control'", (TEAM_ID,))
+            cur.execute("DELETE FROM team_rooms WHERE team_id = %s AND room_id = 'control'", (TEAM_ID,))
+            cur.execute("DELETE FROM team_clues WHERE team_id = %s AND round = 2", (TEAM_ID,))
+            cur.execute("UPDATE team_rounds SET penalty_seconds = 0 WHERE team_id = %s AND round = 2", (TEAM_ID,))
+            
+            # Insert all 8 core fragments (EC01 through EC08), leaving decoys XC01, XC02 uncollected
+            for i in range(1, 9):
+                cur.execute(
+                    "INSERT INTO team_fragments (team_id, room_id, fragment_id, is_wrapped) VALUES (%s, 'control', %s, TRUE)",
+                    (TEAM_ID, f"EC0{i}")
+                )
+            conn.commit()
+
+    # Hint request MUST target first uncollected decoy XC01 (+10s, NOT +30s)
+    res_decoy1 = client.post("/api/game/hint", json={"room_id": "control"}, headers=auth_headers)
+    assert res_decoy1.status_code == 200
+    data1 = res_decoy1.json()
+    assert data1["hint_category"] == "fragment"
+    assert data1["target_id"] == "XC01"
+    assert data1["penalty_applied"] == 10
+    assert "seat and backrest" in data1["hint_text"]
+
+    # Now team collects XC01
+    with get_db_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "INSERT INTO team_fragments (team_id, room_id, fragment_id, is_wrapped) VALUES (%s, 'control', 'XC01', TRUE)",
+                (TEAM_ID,)
+            )
+            conn.commit()
+
+    # Hint request MUST target second uncollected decoy XC02 (+10s, NOT +30s)
+    res_decoy2 = client.post("/api/game/hint", json={"room_id": "control"}, headers=auth_headers)
+    assert res_decoy2.status_code == 200
+    data2 = res_decoy2.json()
+    assert data2["hint_category"] == "fragment"
+    assert data2["target_id"] == "XC02"
+    assert data2["penalty_applied"] == 10
+    assert "clipboard" in data2["hint_text"]
+
+    # Now team collects XC02 (all 10 fragments in Room 5 collected!)
+    with get_db_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "INSERT INTO team_fragments (team_id, room_id, fragment_id, is_wrapped) VALUES (%s, 'control', 'XC02', TRUE)",
+                (TEAM_ID,)
+            )
+            conn.commit()
+
+    # With ALL 10 fragments collected, hint MUST transition to Phase 2 clue hint R2-01 (+30s)
+    res_clue = client.post("/api/game/hint", json={"room_id": "control"}, headers=auth_headers)
+    assert res_clue.status_code == 200
+    data3 = res_clue.json()
+    assert data3["hint_category"] == "clue"
+    assert data3["target_id"] == "R2-01"
+    assert data3["penalty_applied"] == 30
+    assert "Unix Epoch" in data3["hint_details"]["puzzle_type"]
+
+
+def test_bedroom_decoys_enforce_fragment_hints_until_all_collected(auth_headers):
+    """Enforce that uncollected decoys XB01 and XB02 in Room 1 enforce +10s fragment hints."""
+    with get_db_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("DELETE FROM team_hints WHERE team_id = %s", (TEAM_ID,))
+            cur.execute("DELETE FROM team_fragments WHERE team_id = %s AND room_id = 'bedroom'", (TEAM_ID,))
+            cur.execute("DELETE FROM team_rooms WHERE team_id = %s AND room_id = 'bedroom'", (TEAM_ID,))
+            cur.execute("DELETE FROM team_clues WHERE team_id = %s AND round = 1", (TEAM_ID,))
+            cur.execute("UPDATE team_rounds SET penalty_seconds = 0 WHERE team_id = %s AND round = 1", (TEAM_ID,))
+            
+            # Insert all 13 core fragments (EB01-EB12, EK01), omitting decoys XB01, XB02
+            core_ids = [f"EB{i:02d}" for i in range(1, 13)] + ["EK01"]
+            for cid in core_ids:
+                cur.execute(
+                    "INSERT INTO team_fragments (team_id, room_id, fragment_id, is_wrapped) VALUES (%s, 'bedroom', %s, TRUE)",
+                    (TEAM_ID, cid)
+                )
+            conn.commit()
+
+    # Must target decoy XB01 with +10s fragment penalty
+    res_b1 = client.post("/api/game/hint", json={"room_id": "bedroom"}, headers=auth_headers)
+    assert res_b1.status_code == 200
+    db1 = res_b1.json()
+    assert db1["hint_category"] == "fragment"
+    assert db1["target_id"] == "XB01"
+    assert db1["penalty_applied"] == 10
+
+    # Collect XB01 & XB02
+    with get_db_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("INSERT INTO team_fragments (team_id, room_id, fragment_id, is_wrapped) VALUES (%s, 'bedroom', 'XB01', TRUE)", (TEAM_ID,))
+            cur.execute("INSERT INTO team_fragments (team_id, room_id, fragment_id, is_wrapped) VALUES (%s, 'bedroom', 'XB02', TRUE)", (TEAM_ID,))
+            conn.commit()
+
+    # With all 15 collected, transition to clue R1-01 (+30s)
+    res_b2 = client.post("/api/game/hint", json={"room_id": "bedroom"}, headers=auth_headers)
+    assert res_b2.status_code == 200
+    db2 = res_b2.json()
+    assert db2["hint_category"] == "clue"
+    assert db2["target_id"] == "R1-01"
+    assert db2["penalty_applied"] == 30
+
+
+

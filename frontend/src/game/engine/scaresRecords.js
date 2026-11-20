@@ -473,6 +473,7 @@ export function createRecordsScares(E, handlers) {
 
   return {
     trigger,
+    triggerDoorScare: () => trigger('phantomLunge'),
     dispose() {
       window.removeEventListener('keydown', onKeyScare);
       if (stalker.parent) stalker.parent.remove(stalker);

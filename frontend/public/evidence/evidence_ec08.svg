@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 580 440" width="100%" height="100%">
+    <defs>
+        <radialGradient id="paperV" cx="50%" cy="50%" r="70%"><stop offset="60%" stop-color="#f0ebe0"/><stop offset="100%" stop-color="#c8bfaa"/></radialGradient>
+    </defs>
+    <rect width="580" height="440" fill="url(#paperV)" rx="5"/>
+    <rect width="564" height="424" x="8" y="8" fill="none" stroke="#8a3a2a" stroke-width="1.5" opacity="0.4" rx="4"/>
+
+    <!-- Warning triangle graphic -->
+    <polygon points="290,42 230,138 350,138" fill="none" stroke="#a31818" stroke-width="3" opacity="0.8"/>
+    <text x="290" y="122" font-family="Courier, monospace" font-size="22" font-weight="bold" fill="#a31818" text-anchor="middle">!</text>
+
+    <!-- Header -->
+    <text x="60" y="168" font-family="Courier, monospace" font-size="14" font-weight="bold" letter-spacing="3" fill="#2b1510">FUSE BOX WARNING NOTICE</text>
+    <text x="60" y="186" font-family="Courier, monospace" font-size="10" letter-spacing="1" fill="#8a3a2a">DELTA CONTROL // ELECTRICAL SAFETY // FORM EL-83</text>
+    <line x1="60" y1="200" x2="520" y2="200" stroke="#8a3a2a" stroke-width="1.2" opacity="0.5"/>
+
+    <!-- Body -->
+    <text x="60" y="228" font-family="Courier, monospace" font-size="12" fill="#2b1510">FUSE PANEL REF: FP-CTRL-05</text>
+    <text x="60" y="248" font-family="Courier, monospace" font-size="12" fill="#2b1510">WARNING: DO NOT DISCONNECT CIRCUIT BREAKER CB-7</text>
+    <text x="60" y="268" font-family="Courier, monospace" font-size="12" fill="#2b1510">CB-7 FEEDS: RADIO CONSOLE + SOUND CONSOLE</text>
+    <text x="60" y="288" font-family="Courier, monospace" font-size="12" fill="#2b1510">DISCONNECTION WILL ERASE ACTIVE VOICEMAIL BUFFER.</text>
+    <text x="60" y="310" font-family="Courier, monospace" font-size="11" fill="#5a2a1a" font-style="italic">VM-A buffer is live and loaded. Power loss = data loss.</text>
+    <text x="60" y="330" font-family="Courier, monospace" font-size="11" fill="#5a2a1a" font-style="italic">The spectrogram data embedded in VM-A is irreplaceable.</text>
+
+    <!-- Stamp -->
+    <g transform="translate(360, 215) rotate(-8)">
+        <rect x="0" y="0" width="155" height="40" fill="none" stroke="#a31818" stroke-width="2.5" stroke-dasharray="4 2" rx="4" opacity="0.9"/>
+        <text x="78" y="26" font-family="Courier, monospace" font-size="11" font-weight="900" fill="#a31818" text-anchor="middle" letter-spacing="1">DO NOT RESET</text>
+    </g>
+
+    <!-- Footer -->
+    <line x1="60" y1="385" x2="520" y2="385" stroke="#8a3a2a" stroke-width="0.8" opacity="0.4"/>
+    <text x="60" y="405" font-family="Courier, monospace" font-size="10" fill="#8a3a2a">RECORD ID: EC08 — FUSE BOX WARNING NOTE</text>
+    <text x="520" y="405" font-family="Courier, monospace" font-size="9" fill="#aa5a4a" text-anchor="end">SUBSTATION DELTA // CTRL-04</text>
+</svg>
+
