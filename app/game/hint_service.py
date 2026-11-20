@@ -42,10 +42,10 @@ ROOM_FRAGMENTS = {
         "EK04", "EK05", "EK06", "XK01", "XK02"
     ],
     "records": [
-        "ER01", "ER02", "ER03", "ER04", "ER05", "ER06", "ER07", "ER08", "ER09", "ER10"
+        "ER01", "ER02", "ER03", "ER04", "ER05", "ER06", "ER07", "ER08", "ER09", "ER10", "XR01", "XR02"
     ],
     "control": [
-        "EC01", "EC02", "EC03", "EC04", "EC05", "EC06", "EC07", "EC08"
+        "EC01", "EC02", "EC03", "EC04", "EC05", "EC06", "EC07", "EC08", "XC01", "XC02"
     ],
     "vault": []
 }
