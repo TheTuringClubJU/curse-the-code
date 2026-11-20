@@ -28,7 +28,7 @@ export default function HintModal({
     setLoading(true);
     setErrorMsg(null);
     try {
-      const query = roomId ? `?room_id=${encodeURIComponent(roomId)}` : '';
+      const query = roomId === 'control' ? `?room_id=control` : '';
       const res = await fetch(`/api/game/hint/status${query}`, {
         credentials: 'include',
         headers: {
@@ -55,6 +55,8 @@ export default function HintModal({
     }
   }, [isOpen, roomId]);
 
+  const isVault = roomId === 'vault';
+  const isControlRoom = roomId === 'control';
   if (!isOpen) return null;
 
   const handleRequestHint = async () => {
@@ -88,7 +90,6 @@ export default function HintModal({
   const remaining = hintStatus?.hints_remaining ?? 15;
   const totalPenalty = hintStatus?.total_penalty_seconds ?? 0;
   const unlockedHints = hintStatus?.unlocked_hints || [];
-  const isControlRoom = roomId === 'control';
 
   const ui = isControlRoom
     ? {
@@ -105,7 +106,7 @@ export default function HintModal({
         titleStyle: { fontFamily: "'Cormorant Garamond', Georgia, serif" },
         subTitleClass: 'text-[11px] font-mono text-[#a69a84]',
         subTitleValueClass: 'text-[#e5c17d]',
-        closeIconBtnClass: 'p-1.5 rounded-lg text-[#a69a84] hover:text-[#faf1e2] hover:bg-white/10 transition',
+        closeIconBtnClass: 'p-1.5 rounded-lg text-[#a69a84] hover:text-[#faf1e2] hover:bg-white/10 transition cursor-pointer',
         meterBarClass: 'grid grid-cols-2 bg-[#100d0b] border-b border-[#c4a265]/20 px-5 py-2.5 text-xs font-mono',
         meterIconClass: 'w-4 h-4 text-[#d4b06a]',
         meterLabelClass: 'text-[#a69a84]',
@@ -143,62 +144,129 @@ export default function HintModal({
         footerBtnClass:
           'px-4 py-1.5 rounded-full bg-[#241b15] text-[#f3e6d0] hover:bg-[#7a1c1c] border border-[#c4a265]/35 transition text-xs font-mono cursor-pointer',
       }
+    : isVault
+    ? {
+        backdropStyle: undefined,
+        panelClass:
+          'bg-[#0a0c10]/94 backdrop-blur-xl border border-slate-500/35 rounded-[2px] border-l-2 border-l-[#b91c1c] shadow-[0_24px_70px_rgba(0,0,0,0.85)]',
+        headerClass: 'bg-white/[0.03] border-b border-white/10',
+        iconWrapClass: 'p-1.5 rounded-[2px] bg-red-950/35 border border-red-500/45',
+        iconClass: 'w-5 h-5 text-[#ff9d54]',
+        titleClass: 'text-base sm:text-lg font-bold text-[#f5efe6] font-serif tracking-wide flex items-center gap-2',
+        titleStyle: undefined,
+        subTitleClass: 'text-[11px] font-mono text-slate-400',
+        subTitleValueClass: 'text-amber-200',
+        closeIconBtnClass: 're-plate !p-2 cursor-pointer text-slate-300 hover:text-white',
+        meterBarClass: 'grid grid-cols-2 bg-black/35 border-b border-white/10 px-5 py-2.5 text-xs font-mono',
+        meterIconClass: 'w-4 h-4 text-[#ff9d54]',
+        meterLabelClass: 'text-gray-400',
+        budgetPillClass: 'font-bold text-white bg-black/50 px-2.5 py-0.5 rounded-[2px] border border-white/15',
+        penaltyPillClass: 'font-bold text-red-300 bg-red-950/50 px-2.5 py-0.5 rounded-[2px] border border-red-500/35',
+        actionCardClass: 'p-4 rounded-[2px] bg-white/[0.03] border border-white/10 space-y-3',
+        actionTitleClass: 'text-xs uppercase font-mono font-bold tracking-wider text-amber-300 block',
+        actionDescClass: 'text-[11px] text-slate-300 font-sans',
+        requestBtnClass:
+          're-plate re-plate-amber shrink-0 !py-2.5 !px-5 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed',
+        rulesDividerClass:
+          'grid grid-cols-1 sm:grid-cols-2 gap-2 text-[10px] font-mono text-slate-400 border-t border-white/10 pt-2.5',
+        ruleIconClass: 'w-3 h-3 text-[#ff9d54]',
+        latestCardClass:
+          'p-4 rounded-[2px] bg-[#16100b] border border-[#926933]/70 border-l-2 border-l-[#f59e0b] animate-fade-in space-y-2',
+        latestHeadClass: 'flex items-center justify-between border-b border-[#f59e0b]/30 pb-2',
+        latestTitleClass: 'flex items-center gap-1.5 font-bold text-[#fef3c7] font-mono text-xs uppercase tracking-wide',
+        latestSparkleClass: 'w-4 h-4 text-[#fbbf24]',
+        latestPenaltyClass:
+          'text-[10px] font-mono px-2 py-0.5 rounded-[2px] bg-black/60 text-[#fde68a] border border-[#f59e0b]/40',
+        latestLocClass: 'text-xs text-[#fed7aa] font-mono flex items-center gap-1.5',
+        latestPinClass: 'w-3.5 h-3.5 text-[#fbbf24] shrink-0',
+        latestBodyClass:
+          'text-sm font-serif text-white bg-black/40 p-3 rounded-[2px] border border-white/10 leading-relaxed',
+        archiveHeaderClass:
+          'flex items-center justify-between text-xs font-mono text-gray-400 border-b border-white/10 pb-1.5',
+        archiveTitleClass: 'text-[#ffdfba] font-bold uppercase tracking-wider flex items-center gap-1.5',
+        archiveIconClass: 'w-3.5 h-3.5 text-[#ff9d54]',
+        freeBadgeClass:
+          'text-[10px] text-emerald-400 font-bold bg-emerald-950/30 px-2 py-0.5 rounded-[2px] border border-emerald-500/30',
+        emptyArchiveClass:
+          'text-center py-6 border border-dashed border-[#78441d]/30 rounded-[2px] text-xs font-mono text-gray-500',
+        historyCardClass:
+          'p-3 rounded-[2px] bg-[#140b07] border border-[#78441d]/30 text-xs font-mono space-y-1 hover:border-[#ff9d54]/50 transition',
+        historyTitleClass: 'flex items-center gap-1.5 text-[#ff9d54] font-bold',
+        historyRoomClass:
+          'text-[9px] uppercase px-1.5 py-0.5 rounded-[2px] bg-black text-gray-400 border border-white/10',
+        historyTextClass: 'text-gray-300 font-serif text-xs leading-normal pt-1',
+        footerClass: 'px-5 py-3 bg-white/[0.03] border-t border-white/10 flex items-center justify-between text-xs font-mono',
+        footerHintClass: 'text-[10px] text-gray-400',
+        kbdClass: 're-keycap',
+        footerBtnClass: 're-plate !px-4 !py-1.5 cursor-pointer text-xs font-mono',
+      }
     : {
         backdropStyle: undefined,
-        panelClass: 'bg-[#0c0a12] border border-[#78441d]/60 shadow-[0_0_35px_rgba(255,122,26,0.15)]',
+        panelClass:
+          'bg-[#0c0a12] border border-[#78441d]/60 shadow-[0_0_35px_rgba(255,122,26,0.15)] rounded-3xl',
         headerClass: 'bg-[#1a0e08] border-b border-[#78441d]/50',
-        iconWrapClass: 'p-1.5 rounded-lg bg-[#ff7a1a]/15 border border-[#ff7a1a]/30',
+        iconWrapClass: 'p-1.5 rounded-full bg-amber-500/15 border border-amber-400/35',
         iconClass: 'w-5 h-5 text-[#ff9d54]',
         titleClass: 'text-base sm:text-lg font-bold text-[#ffdfba] font-serif tracking-wide flex items-center gap-2',
         titleStyle: undefined,
         subTitleClass: 'text-[11px] font-mono text-[#c29b7f]',
         subTitleValueClass: 'text-[#ffdfba]',
-        closeIconBtnClass: 'p-1.5 rounded-lg text-[#c29b7f] hover:text-white hover:bg-white/10 transition',
+        closeIconBtnClass:
+          'p-2 rounded-full bg-white/5 hover:bg-white/15 border border-white/10 text-slate-300 hover:text-white transition cursor-pointer',
         meterBarClass: 'grid grid-cols-2 bg-[#120a06] border-b border-[#78441d]/30 px-5 py-2.5 text-xs font-mono',
         meterIconClass: 'w-4 h-4 text-[#ff9d54]',
         meterLabelClass: 'text-gray-400',
-        budgetPillClass: 'font-bold text-white bg-black/60 px-2 py-0.5 rounded border border-[#78441d]/40',
-        penaltyPillClass: 'font-bold text-red-300 bg-red-950/40 px-2 py-0.5 rounded border border-red-500/30',
-        actionCardClass: 'p-4 rounded-xl bg-[#1f120a]/80 border border-[#8a4b22]/40 shadow-inner space-y-3',
+        budgetPillClass: 'font-bold text-white bg-black/50 px-2.5 py-0.5 rounded-full border border-white/15',
+        penaltyPillClass: 'font-bold text-red-300 bg-red-950/50 px-2.5 py-0.5 rounded-full border border-red-500/35',
+        actionCardClass: 'p-4 rounded-2xl bg-white/[0.03] border border-white/10 space-y-3',
         actionTitleClass: 'text-xs uppercase font-mono font-bold tracking-wider text-[#ff9d54] block',
         actionDescClass: 'text-[11px] text-[#dec3ab] font-sans',
         requestBtnClass:
-          'shrink-0 flex items-center justify-center gap-2 bg-gradient-to-r from-[#b45309] to-[#d97706] hover:from-[#d97706] hover:to-[#f59e0b] text-white font-mono font-bold text-xs px-4 py-2.5 rounded-lg shadow-md transition disabled:opacity-40 disabled:cursor-not-allowed',
+          'shrink-0 flex items-center justify-center gap-2 bg-[#b45309]/85 hover:bg-[#d97706] border border-amber-400/45 text-white font-mono font-bold text-xs px-5 py-2.5 rounded-full shadow-md transition disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer',
         rulesDividerClass:
           'grid grid-cols-1 sm:grid-cols-2 gap-2 text-[10px] font-mono text-[#c29b7f] border-t border-[#78441d]/20 pt-2.5',
         ruleIconClass: 'w-3 h-3 text-[#ff9d54]',
-        latestCardClass: 'p-4 rounded-xl bg-[#2e1507] border-2 border-[#f59e0b] shadow-[0_0_20px_rgba(245,158,11,0.25)] animate-fade-in space-y-2',
+        latestCardClass:
+          'p-4 rounded-xl bg-[#2e1507] border-2 border-[#f59e0b] shadow-[0_0_20px_rgba(245,158,11,0.25)] animate-fade-in space-y-2',
         latestHeadClass: 'flex items-center justify-between border-b border-[#f59e0b]/30 pb-2',
         latestTitleClass: 'flex items-center gap-1.5 font-bold text-[#fef3c7] font-mono text-xs uppercase tracking-wide',
         latestSparkleClass: 'w-4 h-4 text-[#fbbf24]',
-        latestPenaltyClass: 'text-[10px] font-mono px-2 py-0.5 rounded bg-black/60 text-[#fde68a] border border-[#f59e0b]/40',
+        latestPenaltyClass:
+          'text-[10px] font-mono px-2 py-0.5 rounded-full bg-black/60 text-[#fde68a] border border-[#f59e0b]/40',
         latestLocClass: 'text-xs text-[#fed7aa] font-mono flex items-center gap-1.5',
         latestPinClass: 'w-3.5 h-3.5 text-[#fbbf24] shrink-0',
-        latestBodyClass: 'text-sm font-serif text-white bg-black/40 p-3 rounded-lg border border-white/10 leading-relaxed',
-        archiveHeaderClass: 'flex items-center justify-between text-xs font-mono text-gray-400 border-b border-white/10 pb-1.5',
+        latestBodyClass:
+          'text-sm font-serif text-white bg-black/40 p-3 rounded-lg border border-white/10 leading-relaxed',
+        archiveHeaderClass:
+          'flex items-center justify-between text-xs font-mono text-gray-400 border-b border-white/10 pb-1.5',
         archiveTitleClass: 'text-[#ffdfba] font-bold uppercase tracking-wider flex items-center gap-1.5',
         archiveIconClass: 'w-3.5 h-3.5 text-[#ff9d54]',
-        freeBadgeClass: 'text-[10px] text-emerald-400 font-bold bg-emerald-950/30 px-2 py-0.5 rounded border border-emerald-500/30',
-        emptyArchiveClass: 'text-center py-6 border border-dashed border-[#78441d]/30 rounded-lg text-xs font-mono text-gray-500',
-        historyCardClass: 'p-3 rounded-lg bg-[#140b07] border border-[#78441d]/30 text-xs font-mono space-y-1 hover:border-[#ff9d54]/50 transition',
+        freeBadgeClass:
+          'text-[10px] text-emerald-400 font-bold bg-emerald-950/30 px-2 py-0.5 rounded border border-emerald-500/30',
+        emptyArchiveClass:
+          'text-center py-6 border border-dashed border-[#78441d]/30 rounded-lg text-xs font-mono text-gray-500',
+        historyCardClass:
+          'p-3 rounded-lg bg-[#140b07] border border-[#78441d]/30 text-xs font-mono space-y-1 hover:border-[#ff9d54]/50 transition',
         historyTitleClass: 'flex items-center gap-1.5 text-[#ff9d54] font-bold',
         historyRoomClass: 'text-[9px] uppercase px-1.5 py-0.5 rounded bg-black text-gray-400 border border-white/10',
         historyTextClass: 'text-gray-300 font-serif text-xs leading-normal pt-1',
-        footerClass: 'px-5 py-2.5 bg-[#1a0e08] border-t border-[#78441d]/40 flex items-center justify-between text-xs font-mono',
+        footerClass:
+          'px-5 py-2.5 bg-[#1a0e08] border-t border-[#78441d]/40 flex items-center justify-between text-xs font-mono',
         footerHintClass: 'text-[10px] text-gray-400',
-        kbdClass: 'px-1 py-0.5 bg-black/60 rounded border border-white/10 text-gray-300',
-        footerBtnClass: 'px-4 py-1.5 rounded bg-[#3d2011] text-[#ffdfba] hover:bg-[#522b17] border border-[#78441d]/60 transition text-xs font-mono',
+        kbdClass: 'px-1.5 py-0.5 bg-black/50 rounded-full border border-white/15 text-gray-300',
+        footerBtnClass:
+          'px-5 py-1.5 rounded-full bg-white/10 text-slate-100 hover:bg-white/20 border border-white/15 transition text-xs font-mono cursor-pointer',
       };
 
   return (
     <div
-      className="fixed inset-0 z-[120] bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 select-none"
+      className="fixed inset-0 z-[120] bg-black/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 select-none"
       style={ui.backdropStyle}
       onClick={onClose}
     >
       <div
-        data-hint-theme={isControlRoom ? 'control' : 'default'}
-        className={`relative w-full max-w-2xl rounded-xl overflow-hidden flex flex-col max-h-[90vh] ${ui.panelClass}`}
+        data-hint-theme={isControlRoom ? 'control' : isVault ? 'vault' : 'default'}
+        className={`relative w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh] ${ui.panelClass}`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -221,7 +289,7 @@ export default function HintModal({
             aria-label="Close"
             className={ui.closeIconBtnClass}
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 

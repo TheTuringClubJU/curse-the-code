@@ -50,6 +50,8 @@ vi.mock('../game/engine/audio.js', () => ({
   }
 }));
 
+vi.mock('../game/engine/studyAudio.js', () => ({ StudyAudio: class { constructor() { return mockAudioInstance; } } }));
+
 describe('Room 2 Frontend E2E & Combinatorics Test Suite', () => {
   const mockTeam = { id: 1, name: 'techtesting1' };
 
@@ -232,6 +234,8 @@ describe('Room 2 Frontend E2E & Combinatorics Test Suite', () => {
     await waitFor(() => {
       expect(activeEngineInstance).not.toBeNull();
     });
+
+    fireEvent.click(await screen.findByText(/CLICK TO ENTER ROOM/i));
 
     // Interacting with study_door_exit when is_completed=true triggers transition to Room 3
     await act(async () => {

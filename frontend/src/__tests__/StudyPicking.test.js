@@ -1,0 +1,8 @@
+﻿import {it,expect,vi} from 'vitest';
+import * as THREE from 'three';
+import {createStudyPicker} from '../game/engine/studyPicking.js';
+const box=(x,z=0)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(1,1,1),new THREE.MeshBasicMaterial());m.position.set(x,0,z);m.updateMatrixWorld();return m;};
+it('rejects off-ray and distant props before triangle picking',()=>{const near=box(0),far=box(0,-10),off=Array.from({length:100},(_,i)=>box(10+i));const ray=new THREE.Raycaster(new THREE.Vector3(0,0,2),new THREE.Vector3(0,0,-1),0,5.5),spy=vi.spyOn(ray,'intersectObjects');const hits=createStudyPicker().intersect(ray,[...off,far,near]);expect(spy.mock.calls[0][0]).toEqual([near]);expect(hits[0].object).toBe(near);});
+it('uses current transforms for a moving drawer or door',()=>{const m=box(0),pick=createStudyPicker(),ray=new THREE.Raycaster(new THREE.Vector3(0,0,2),new THREE.Vector3(0,0,-1),0,5.5);expect(pick.intersect(ray,[m]).length).toBeGreaterThan(0);m.position.x=5;m.updateMatrixWorld();expect(pick.intersect(ray,[m])).toHaveLength(0);});
+it('does not discard an object containing the camera',()=>{const m=box(0);m.scale.setScalar(20);m.updateMatrixWorld();const ray=new THREE.Raycaster(new THREE.Vector3(),new THREE.Vector3(0,0,-1),0,1),spy=vi.spyOn(ray,'intersectObjects');createStudyPicker().intersect(ray,[m]);expect(spy.mock.calls[0][0]).toEqual([m]);});
+it('preserves invisible window and cable interaction targets',()=>{const m=new THREE.Mesh(new THREE.PlaneGeometry(2,2),new THREE.MeshBasicMaterial({transparent:true,opacity:0,side:THREE.DoubleSide}));m.updateMatrixWorld();const r=new THREE.Raycaster(new THREE.Vector3(0,0,2),new THREE.Vector3(0,0,-1),0,5.5);expect(createStudyPicker().intersect(r,[m])[0].object).toBe(m);});

@@ -139,19 +139,24 @@ def get_db_connection():
     p = get_pool()
     if p:
         try:
-            for _ in range(3):
-                raw = p.getconn()
-                if raw.closed != 0:
-                    p.putconn(raw, close=True)
-                    continue
-                try:
-                    with raw.cursor() as cur:
-                        cur.execute("SELECT 1")
-                    raw.rollback()
-                    return PooledConnectionProxy(raw, p)
-                except Exception:
-                    p.putconn(raw, close=True)
             raw = p.getconn()
+            # If the borrowed connection was unexpectedly closed or broken, test or retry
+            needs_recycle = False
+            if raw.closed != 0:
+                needs_recycle = True
+            else:
+                try:
+                    with raw.cursor() as test_cur:
+                        test_cur.execute("SELECT 1")
+                except Exception:
+                    needs_recycle = True
+
+            if needs_recycle:
+                try:
+                    p.putconn(raw, close=True)
+                except Exception:
+                    pass
+                raw = p.getconn()
             return PooledConnectionProxy(raw, p)
         except Exception as e:
             logger.warning(f"Connection pool getconn failed, falling back to direct connect: {e}")

@@ -1401,4 +1401,90 @@ describe('Room 4 (The Rotting Archive) Comprehensive Test Suite (QA-R4-FE-01 to 
     });
     expect(activeEngineInstance.openDoor).toHaveBeenCalled();
   });
+
+  // Test 61: Clue sequence picking - interacting with locked clue shows prerequisite notification
+  it('QA-R4-FE-61: interacting with locked clue R2-03 before R2-02 is resolved blocks access and notifies player', async () => {
+    initialRecordsState.is_completed = false;
+    initialRecordsState.clues = [
+      { id: 'R2-02', object_id: 'report_folder', title: 'Redacted Report', solved: false, attempts: 0 },
+      { id: 'R2-03', object_id: 'microfilm_reader', title: 'Microfilm Reader', solved: false, attempts: 0, requires_resolved: ['R2-02'] }
+    ];
+
+    await act(async () => {
+      render(<Room4Records team={mockTeam} onLogout={vi.fn()} />);
+    });
+    fireEvent.click(screen.getByText(/DESCEND INTO THE SUB-BASEMENT/i));
+
+    act(() => {
+      activeEngineInstance.callbacks.onTarget('microfilm_reader');
+    });
+
+    await act(async () => {
+      fireEvent.keyDown(window, { key: 'e', code: 'KeyE' });
+    });
+
+    expect(screen.getAllByText(/Prerequisite clue\(s\) \(R2-02\) must be resolved first/i).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/MICROFILM REEL/i)).not.toBeInTheDocument();
+  });
+
+  // Test 62: Bulkhead keypad sequence picking - interacting with bulkhead door before prereqs resolved blocks keypad
+  it('QA-R4-FE-62: interacting with bulkhead door when R2-07 is locked blocks keypad and notifies player', async () => {
+    initialRecordsState.is_completed = false;
+    initialRecordsState.clues = [
+      { id: 'R2-02', object_id: 'report_folder', title: 'Redacted Report', solved: true, attempts: 1 },
+      { id: 'R2-03', object_id: 'microfilm_reader', title: 'Microfilm Reader', solved: false, attempts: 0, requires_resolved: ['R2-02'] },
+      { id: 'R2-04', object_id: 'timeline_board', title: 'Whiteboard Timeline', solved: false, attempts: 0 },
+      { id: 'R2-07', object_id: 'bulkhead_door', title: 'Bulkhead Door Lock', solved: false, attempts: 0, requires_resolved: ['R2-03', 'R2-04'] }
+    ];
+
+    await act(async () => {
+      render(<Room4Records team={mockTeam} onLogout={vi.fn()} />);
+    });
+    fireEvent.click(screen.getByText(/DESCEND INTO THE SUB-BASEMENT/i));
+
+    act(() => {
+      activeEngineInstance.callbacks.onTarget('bulkhead_door');
+    });
+
+    await act(async () => {
+      fireEvent.keyDown(window, { key: 'e', code: 'KeyE' });
+    });
+
+    expect(screen.getAllByText(/Prerequisite clue\(s\) \(R2-03, R2-04\) must be resolved first/i).length).toBeGreaterThan(0);
+  });
+
+  // Test 63: Hint modal opens on [H] shortcut and closes on Escape
+  it('QA-R4-FE-63: pressing H opens HintModal and pressing Escape closes it', async () => {
+    await act(async () => {
+      render(<Room4Records team={mockTeam} onLogout={vi.fn()} />);
+    });
+    fireEvent.click(screen.getByText(/DESCEND INTO THE SUB-BASEMENT/i));
+
+    await act(async () => {
+      fireEvent.keyDown(window, { key: 'h', code: 'KeyH' });
+    });
+
+    expect(screen.getByText(/HINTS & INVESTIGATION GUIDANCE/i)).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.keyDown(window, { key: 'Escape', code: 'Escape' });
+    });
+
+    expect(screen.queryByText(/HINTS & INVESTIGATION GUIDANCE/i)).not.toBeInTheDocument();
+  });
+
+  // Test 64: Clicking Guidance button in HUD opens HintModal
+  it('QA-R4-FE-64: clicking Guidance button in HUD opens HintModal', async () => {
+    await act(async () => {
+      render(<Room4Records team={mockTeam} onLogout={vi.fn()} />);
+    });
+    fireEvent.click(screen.getByText(/DESCEND INTO THE SUB-BASEMENT/i));
+
+    const guidanceBtn = screen.getByTitle(/Request Field Guidance & Hints/i);
+    await act(async () => {
+      fireEvent.click(guidanceBtn);
+    });
+
+    expect(screen.getByText(/HINTS & INVESTIGATION GUIDANCE/i)).toBeInTheDocument();
+  });
 });

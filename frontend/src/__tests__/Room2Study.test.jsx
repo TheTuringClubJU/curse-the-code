@@ -36,6 +36,8 @@ vi.mock('../game/engine/engine.js', () => ({
     activeEngineInstance = {
       canvas,
       setPaused: vi.fn(),
+      setStudyState: vi.fn(),
+      notifyStudyEvent: vi.fn(),
       lock: vi.fn(),
       unlock: vi.fn(),
       isLocked: vi.fn(() => false),
@@ -49,8 +51,8 @@ vi.mock('../game/engine/engine.js', () => ({
   })
 }));
 
-vi.mock('../game/engine/audio.js', () => ({
-  GameAudio: class {
+vi.mock('../game/engine/studyAudio.js', () => ({
+  StudyAudio: class {
     constructor() {
       return mockAudioInstance;
     }
@@ -208,7 +210,7 @@ describe('Room 2 (Daniel\'s Study) Comprehensive Test Suite (50 Tests)', () => {
     );
 
     // 1. Enter Room
-    const enterBtn = screen.getByText(/CLICK TO ENTER ROOM/i);
+    const enterBtn = await screen.findByText(/CLICK TO ENTER ROOM/i);
     fireEvent.click(enterBtn);
 
     await waitFor(() => {
@@ -229,7 +231,7 @@ describe('Room 2 (Daniel\'s Study) Comprehensive Test Suite (50 Tests)', () => {
 
     // 4. Verify basket hotkey B
     fireEvent.keyDown(window, { key: 'b', code: 'KeyB' });
-    expect(screen.getByText(/INVESTIGATION BASKET • EVIDENCE TABLE/i)).toBeInTheDocument();
+    expect(screen.getByText(/INVESTIGATION BASKET/i)).toBeInTheDocument();
     fireEvent.keyDown(window, { key: 'b', code: 'KeyB' });
 
     // 5. Open and solve R1-05 (tablet_drawer -> ALPHA)
@@ -306,20 +308,20 @@ describe('Room 2 (Daniel\'s Study) Comprehensive Test Suite (50 Tests)', () => {
 
   it('QA-R2-FE-07: test_room2_wasd_movement_inside_study_bounding_box', () => {
     const [W, H, D] = studyConfig.size;
-    expect(W).toBe(7.0);
-    expect(D).toBe(6.4);
-    expect(studyConfig.spawn).toEqual([0.0, 1.6, 0]);
+    expect(W).toBe(11.0);
+    expect(D).toBe(9.0);
+    expect(studyConfig.spawn).toEqual([0.0, 1.6, 2.4]);
   });
 
   it('QA-R2-FE-08: test_room2_pointer_lock_engages_and_releases_properly', async () => {
     render(<Room2Study team={mockTeam} onLogout={vi.fn()} />);
-    fireEvent.click(screen.getByText(/CLICK TO ENTER ROOM/i));
+    fireEvent.click(await screen.findByText(/CLICK TO ENTER ROOM/i));
     expect(activeEngineInstance.lock).toHaveBeenCalled();
   });
 
   it('QA-R2-FE-09: test_room2_hud_displays_study_title_and_collected_count', async () => {
     render(<Room2Study team={mockTeam} onLogout={vi.fn()} />);
-    fireEvent.click(screen.getByText(/CLICK TO ENTER ROOM/i));
+    fireEvent.click(await screen.findByText(/CLICK TO ENTER ROOM/i));
 
     await waitFor(() => {
       expect(screen.getByText("Daniel's Study")).toBeInTheDocument();
@@ -332,8 +334,9 @@ describe('Room 2 (Daniel\'s Study) Comprehensive Test Suite (50 Tests)', () => {
   // ==========================================================================
   it('QA-R2-FE-10: test_room2_pressing_B_opens_study_evidence_basket', async () => {
     render(<Room2Study team={mockTeam} onLogout={vi.fn()} />);
+    fireEvent.click(await screen.findByText(/CLICK TO ENTER ROOM/i));
     fireEvent.keyDown(window, { key: 'b', code: 'KeyB' });
-    expect(screen.getByText(/INVESTIGATION BASKET • EVIDENCE TABLE/i)).toBeInTheDocument();
+    expect(screen.getByText(/INVESTIGATION BASKET/i)).toBeInTheDocument();
   });
 
   it('QA-R2-FE-11: test_room2_basket_renders_study_png_thumbnails_correctly', () => {
@@ -377,6 +380,7 @@ describe('Room 2 (Daniel\'s Study) Comprehensive Test Suite (50 Tests)', () => {
 
   it('QA-R2-FE-13: test_room2_pressing_C_opens_clues_modal_for_study', async () => {
     render(<Room2Study team={mockTeam} onLogout={vi.fn()} />);
+    fireEvent.click(await screen.findByText(/CLICK TO ENTER ROOM/i));
     fireEvent.keyDown(window, { key: 'c', code: 'KeyC' });
     expect(screen.getByText(/Clues Status/i)).toBeInTheDocument();
   });
@@ -418,6 +422,7 @@ describe('Room 2 (Daniel\'s Study) Comprehensive Test Suite (50 Tests)', () => {
 
   it('QA-R2-FE-18: test_room2_pressing_P_shows_photo_puzzle_with_up_to_8_pieces', async () => {
     render(<Room2Study team={mockTeam} onLogout={vi.fn()} />);
+    fireEvent.click(await screen.findByText(/CLICK TO ENTER ROOM/i));
     fireEvent.keyDown(window, { key: 'p', code: 'KeyP' });
     expect(screen.getByText(/THE VANCE FAMILY PORTRAIT/i)).toBeInTheDocument();
   });
@@ -427,7 +432,7 @@ describe('Room 2 (Daniel\'s Study) Comprehensive Test Suite (50 Tests)', () => {
   // ==========================================================================
   it('QA-R2-FE-19: test_room2_raycaster_detects_bookshelf_and_prompts_inspect', async () => {
     render(<Room2Study team={mockTeam} onLogout={vi.fn()} />);
-    fireEvent.click(screen.getByText(/CLICK TO ENTER ROOM/i));
+    fireEvent.click(await screen.findByText(/CLICK TO ENTER ROOM/i));
 
     act(() => {
       activeEngineInstance.callbacks.onTarget('bookshelf');
@@ -440,7 +445,7 @@ describe('Room 2 (Daniel\'s Study) Comprehensive Test Suite (50 Tests)', () => {
 
   it('QA-R2-FE-20: test_room2_pressing_E_searches_bookshelf_and_calls_api', async () => {
     render(<Room2Study team={mockTeam} onLogout={vi.fn()} />);
-    fireEvent.click(screen.getByText(/CLICK TO ENTER ROOM/i));
+    fireEvent.click(await screen.findByText(/CLICK TO ENTER ROOM/i));
 
     await waitFor(() => {
       expect(screen.getByText("Daniel's Study")).toBeInTheDocument();
@@ -463,7 +468,7 @@ describe('Room 2 (Daniel\'s Study) Comprehensive Test Suite (50 Tests)', () => {
 
   it('QA-R2-FE-21: test_room2_toast_notification_on_study_fragment_found', async () => {
     render(<Room2Study team={mockTeam} onLogout={vi.fn()} />);
-    fireEvent.click(screen.getByText(/CLICK TO ENTER ROOM/i));
+    fireEvent.click(await screen.findByText(/CLICK TO ENTER ROOM/i));
 
     await waitFor(() => {
       expect(screen.getByText("Daniel's Study")).toBeInTheDocument();
@@ -484,7 +489,7 @@ describe('Room 2 (Daniel\'s Study) Comprehensive Test Suite (50 Tests)', () => {
   it('QA-R2-FE-22: test_room2_pressing_E_on_tablet_drawer_opens_tablet_modal', async () => {
     initialStudyState.basket_unlocked = true;
     render(<Room2Study team={mockTeam} onLogout={vi.fn()} />);
-    fireEvent.click(screen.getByText(/CLICK TO ENTER ROOM/i));
+    fireEvent.click(await screen.findByText(/CLICK TO ENTER ROOM/i));
 
     await waitFor(() => {
       expect(screen.getByText("Daniel's Study")).toBeInTheDocument();
@@ -538,7 +543,7 @@ describe('Room 2 (Daniel\'s Study) Comprehensive Test Suite (50 Tests)', () => {
   it('QA-R2-FE-26: test_room2_pressing_E_on_crt_monitor_opens_email_modal', async () => {
     initialStudyState.basket_unlocked = true;
     render(<Room2Study team={mockTeam} onLogout={vi.fn()} />);
-    fireEvent.click(screen.getByText(/CLICK TO ENTER ROOM/i));
+    fireEvent.click(await screen.findByText(/CLICK TO ENTER ROOM/i));
 
     await waitFor(() => {
       expect(screen.getByText("Daniel's Study")).toBeInTheDocument();
@@ -580,7 +585,7 @@ describe('Room 2 (Daniel\'s Study) Comprehensive Test Suite (50 Tests)', () => {
   it('QA-R2-FE-29: test_room2_pressing_E_on_terminal_pc_opens_crash_dump_modal', async () => {
     initialStudyState.basket_unlocked = true;
     render(<Room2Study team={mockTeam} onLogout={vi.fn()} />);
-    fireEvent.click(screen.getByText(/CLICK TO ENTER ROOM/i));
+    fireEvent.click(await screen.findByText(/CLICK TO ENTER ROOM/i));
 
     await waitFor(() => {
       expect(screen.getByText("Daniel's Study")).toBeInTheDocument();
@@ -622,7 +627,7 @@ describe('Room 2 (Daniel\'s Study) Comprehensive Test Suite (50 Tests)', () => {
   it('QA-R2-FE-32: test_room2_pressing_E_on_line_printer_opens_access_log_modal', async () => {
     initialStudyState.basket_unlocked = true;
     render(<Room2Study team={mockTeam} onLogout={vi.fn()} />);
-    fireEvent.click(screen.getByText(/CLICK TO ENTER ROOM/i));
+    fireEvent.click(await screen.findByText(/CLICK TO ENTER ROOM/i));
 
     await waitFor(() => {
       expect(screen.getByText("Daniel's Study")).toBeInTheDocument();
@@ -682,7 +687,7 @@ describe('Room 2 (Daniel\'s Study) Comprehensive Test Suite (50 Tests)', () => {
   it('QA-R2-FE-36: test_room2_submitting_all_4_clues_triggers_study_complete_modal', async () => {
     initialStudyState.basket_unlocked = true;
     render(<Room2Study team={mockTeam} onLogout={vi.fn()} />);
-    fireEvent.click(screen.getByText(/CLICK TO ENTER ROOM/i));
+    fireEvent.click(await screen.findByText(/CLICK TO ENTER ROOM/i));
 
     await waitFor(() => {
       expect(screen.getByText("Daniel's Study")).toBeInTheDocument();
@@ -714,6 +719,9 @@ describe('Room 2 (Daniel\'s Study) Comprehensive Test Suite (50 Tests)', () => {
       expect(screen.getByText(/Daniel's Study Completed!/i)).toBeInTheDocument();
       expect(activeEngineInstance.openDoor).toHaveBeenCalled();
     });
+    expect(screen.queryByText(/CONTINUOUS PRINTOUT VIEWER/i)).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', {name: /Proceed to Blast Door/i}));
+    expect(activeEngineInstance.setStudyState).toHaveBeenLastCalledWith({started:true,paused:false});
   });
 
   it('QA-R2-FE-37: test_room2_study_exit_door_rotates_open_smoothly', () => {
@@ -726,7 +734,7 @@ describe('Room 2 (Daniel\'s Study) Comprehensive Test Suite (50 Tests)', () => {
   it('QA-R2-FE-38: test_room2_exit_door_audio_plays_heavy_unlatch_sound', async () => {
     initialStudyState.basket_unlocked = true;
     render(<Room2Study team={mockTeam} onLogout={vi.fn()} />);
-    fireEvent.click(screen.getByText(/CLICK TO ENTER ROOM/i));
+    fireEvent.click(await screen.findByText(/CLICK TO ENTER ROOM/i));
 
     await waitFor(() => {
       expect(screen.getByText("Daniel's Study")).toBeInTheDocument();
@@ -762,23 +770,23 @@ describe('Room 2 (Daniel\'s Study) Comprehensive Test Suite (50 Tests)', () => {
   // ==========================================================================
   // Door Navigation (QA-R2-FE-39 to QA-R2-FE-41)
   // ==========================================================================
-  it('QA-R2-FE-39: test_room2_has_no_backward_door_to_bedroom', async () => {
+  it('QA-R2-FE-39: sealed entry door has no target prompt, request or backward transition', async () => {
     render(<Room2Study team={mockTeam} onLogout={vi.fn()} />);
-    fireEvent.click(screen.getByText(/CLICK TO ENTER ROOM/i));
-
-    act(() => {
-      activeEngineInstance.callbacks.onTarget('study_door_back');
-    });
-
-    await waitFor(() => {
-      expect(screen.queryByText(/Return to Lena's Bedroom/i)).not.toBeInTheDocument();
-    });
+    fireEvent.click(await screen.findByText(/CLICK TO ENTER ROOM/i));
+    act(() => activeEngineInstance.callbacks.onTarget('study_door_back'));
+    expect(screen.queryByText(/Return to Lena's Bedroom/i)).toBeNull();
+    const before = global.fetch.mock.calls.length;
+    fireEvent.keyDown(window, {key:'e',code:'KeyE'});
+    await act(async () => activeEngineInstance.callbacks.onInteract('study_door_back'));
+    expect(global.fetch).toHaveBeenCalledTimes(before);
+    expect(studyConfig.interact.study_door_back).toBeUndefined();
+    expect(studyConfig.objectCoordinates.study_door_back).toBeUndefined();
   });
 
-  it('QA-R2-FE-40: test_room2_only_features_forward_exit_door_to_basement', async () => {
+  it('QA-R2-FE-40: test_room2_forward_exit_door_shows_authoritative_locked_state', async () => {
     const onTransitionToRoom3 = vi.fn();
     render(<Room2Study team={mockTeam} onLogout={vi.fn()} onTransitionToRoom3={onTransitionToRoom3} />);
-    fireEvent.click(screen.getByText(/CLICK TO ENTER ROOM/i));
+    fireEvent.click(await screen.findByText(/CLICK TO ENTER ROOM/i));
 
     await waitFor(() => {
       expect(screen.getByText("Daniel's Study")).toBeInTheDocument();
@@ -798,7 +806,7 @@ describe('Room 2 (Daniel\'s Study) Comprehensive Test Suite (50 Tests)', () => {
     initialStudyState.is_completed = true;
     const onTransitionToRoom3 = vi.fn();
     render(<Room2Study team={mockTeam} onLogout={vi.fn()} onTransitionToRoom3={onTransitionToRoom3} />);
-    fireEvent.click(screen.getByText(/CLICK TO ENTER ROOM/i));
+    fireEvent.click(await screen.findByText(/CLICK TO ENTER ROOM/i));
 
     await waitFor(() => {
       expect(screen.getByText("Daniel's Study")).toBeInTheDocument();
@@ -816,7 +824,7 @@ describe('Room 2 (Daniel\'s Study) Comprehensive Test Suite (50 Tests)', () => {
   // ==========================================================================
   it('QA-R2-FE-42: test_room2_ambient_typewriter_and_crt_hum_plays', async () => {
     render(<Room2Study team={mockTeam} onLogout={vi.fn()} />);
-    fireEvent.click(screen.getByText(/CLICK TO ENTER ROOM/i));
+    fireEvent.click(await screen.findByText(/CLICK TO ENTER ROOM/i));
 
     expect(mockAudioInstance.start).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -828,7 +836,7 @@ describe('Room 2 (Daniel\'s Study) Comprehensive Test Suite (50 Tests)', () => {
 
   it('QA-R2-FE-43: test_room2_global_mute_silences_study_audio', async () => {
     render(<Room2Study team={mockTeam} onLogout={vi.fn()} />);
-    fireEvent.click(screen.getByText(/CLICK TO ENTER ROOM/i));
+    fireEvent.click(await screen.findByText(/CLICK TO ENTER ROOM/i));
 
     await waitFor(() => {
       expect(screen.getByTitle(/Mute Ambient/i)).toBeInTheDocument();
@@ -870,7 +878,7 @@ describe('Room 2 (Daniel\'s Study) Comprehensive Test Suite (50 Tests)', () => {
     window.removeEventListener('resize', resizeSpy);
   });
 
-  it('QA-R2-FE-48: test_room2_whisper_sound_plays_at_random_intervals', () => {
+  it('QA-R2-FE-48: test_room2_scary_audio_uses_configured_study_voice_and_cooldown', () => {
     expect(studyConfig.audio.voices).toContain('whisper_study');
     expect(studyConfig.audio.whisperCooldown).toBe(35);
   });
@@ -891,4 +899,166 @@ describe('Room 2 (Daniel\'s Study) Comprehensive Test Suite (50 Tests)', () => {
     expect(screen.getByText(/8 Photo Pieces Recovered/i)).toBeInTheDocument();
     expect(screen.getByText(/Basement Blast Door Unlocked/i)).toBeInTheDocument();
   });
+  it('blocks interactions and inventory shortcuts until the participant starts', async () => {
+    render(<Room2Study team={mockTeam} onLogout={vi.fn()} />);
+    await screen.findByText(/CLICK TO ENTER ROOM/i);
+    const initialCalls = global.fetch.mock.calls.length;
+    act(() => activeEngineInstance.callbacks.onInteract('bookshelf'));
+    fireEvent.keyDown(window, { key: 'b' });
+    expect(global.fetch).toHaveBeenCalledTimes(initialCalls);
+    expect(screen.queryByText(/EVIDENCE TABLE/i)).not.toBeInTheDocument();
+    expect(activeEngineInstance.setStudyState).toHaveBeenLastCalledWith({ started: false, paused: true });
+    expect(mockAudioInstance.start).not.toHaveBeenCalled();
+  });
+
+  it('pauses the scene for inventory and blocks E, engine callbacks and modal stacking', async () => {
+    render(<Room2Study team={mockTeam} onLogout={vi.fn()} />);
+    fireEvent.click(await screen.findByText(/CLICK TO ENTER ROOM/i));
+    act(() => activeEngineInstance.callbacks.onTarget('bookshelf'));
+    fireEvent.keyDown(window, { key: 'b' });
+    expect(activeEngineInstance.setStudyState).toHaveBeenLastCalledWith({ started: true, paused: true });
+    const calls = global.fetch.mock.calls.length;
+    fireEvent.keyDown(window, { key: 'e' });
+    fireEvent.keyDown(window, { key: 'c' });
+    act(() => activeEngineInstance.callbacks.onInteract('bookshelf'));
+    expect(global.fetch).toHaveBeenCalledTimes(calls);
+    expect(screen.queryByText(/Clues Status/i)).not.toBeInTheDocument();
+    fireEvent.keyDown(window, { key: 'b' });
+    expect(activeEngineInstance.setStudyState).toHaveBeenLastCalledWith({ started: true, paused: false });
+  });
+
+  it('uses a successful backend search to trigger one fragment event despite duplicate input', async () => {
+    render(<Room2Study team={mockTeam} onLogout={vi.fn()} />);
+    fireEvent.click(await screen.findByText(/CLICK TO ENTER ROOM/i));
+    act(() => {
+      activeEngineInstance.callbacks.onInteract('bookshelf');
+      activeEngineInstance.callbacks.onInteract('bookshelf');
+    });
+    await waitFor(() => expect(activeEngineInstance.notifyStudyEvent).toHaveBeenCalledWith({ type: 'fragment', objectId: 'bookshelf' }));
+    expect(global.fetch.mock.calls.filter(([url]) => url.endsWith('/search'))).toHaveLength(1);
+    expect(activeEngineInstance.notifyStudyEvent).toHaveBeenCalledTimes(1);
+  });
+
+  it('notifies the scene when a clue opens and keeps it paused while the participant types', async () => {
+    initialStudyState.basket_unlocked = true;
+    render(<Room2Study team={mockTeam} onLogout={vi.fn()} />);
+    fireEvent.click(await screen.findByText(/CLICK TO ENTER ROOM/i));
+    act(() => activeEngineInstance.callbacks.onInteract('tablet_drawer'));
+    const input = await screen.findByPlaceholderText(/Enter deduced answer/i);
+    expect(activeEngineInstance.notifyStudyEvent).toHaveBeenCalledWith({ type: 'clue', objectId: 'tablet_drawer' });
+    const calls = global.fetch.mock.calls.length;
+    fireEvent.keyDown(input, { key: 'e' });
+    fireEvent.keyDown(input, { key: 'b' });
+    expect(global.fetch).toHaveBeenCalledTimes(calls);
+    expect(activeEngineInstance.setStudyState).toHaveBeenLastCalledWith({ started: true, paused: true });
+  });
+
+  it('shows an actionable error instead of entering an unauthorized room and can retry', async () => {
+    global.fetch.mockResolvedValueOnce({ ok: false, status: 403 });
+    render(<Room2Study team={mockTeam} onLogout={vi.fn()} />);
+    expect(await screen.findByRole('alert')).toHaveTextContent('Study is locked');
+    expect(screen.queryByText(/CLICK TO ENTER ROOM/i)).not.toBeInTheDocument();
+    act(() => activeEngineInstance.callbacks.onInteract('study_door_exit'));
+    expect(activeEngineInstance.lock).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
+    fireEvent.click(await screen.findByText(/CLICK TO ENTER ROOM/i));
+    expect(activeEngineInstance.setStudyState).toHaveBeenLastCalledWith({ started: true, paused: false });
+  });
+
+  it('allows a server-completed room to exit with exhausted clues and blocks client-only completion', async () => {
+    initialStudyState.clues.forEach(clue => { clue.attempts = 3; });
+    const next = vi.fn();
+    const { unmount } = render(<Room2Study team={mockTeam} onTransitionToRoom3={next} />);
+    fireEvent.click(await screen.findByText(/CLICK TO ENTER ROOM/i));
+    act(() => activeEngineInstance.callbacks.onInteract('study_door_exit'));
+    expect(next).not.toHaveBeenCalled();
+    expect(screen.getByRole('status')).toHaveTextContent('The Basement door is locked.');
+    unmount();
+    initialStudyState.is_completed = true;
+    render(<Room2Study team={mockTeam} onTransitionToRoom3={next} />);
+    fireEvent.click(await screen.findByText(/CLICK TO ENTER ROOM/i));
+    act(() => activeEngineInstance.callbacks.onInteract('study_door_exit'));
+    expect(next).toHaveBeenCalledTimes(1);
+  });
+
+  it('waits for asset loading to settle and allows fallback after a failed download', async () => {
+    render(<Room2Study team={mockTeam} />);
+    act(() => activeEngineInstance.callbacks.onStudyAssets({ loaded: 1, total: 5, failed: 1 }));
+    expect(screen.getByText(/Preparing the room/)).toBeInTheDocument();
+    expect(await screen.findByRole('button', {name: /PREPARING THE STUDY/i})).toBeDisabled();
+    expect(activeEngineInstance.lock).not.toHaveBeenCalled();
+    act(() => activeEngineInstance.callbacks.onStudyAssets({ loaded: 4, total: 5, failed: 1 }));
+    fireEvent.click(await screen.findByText(/CLICK TO ENTER ROOM/i));
+    expect(activeEngineInstance.lock).toHaveBeenCalled();
+  });
+
+  it('blocks exit and tools through the finale and requires a second exit action', async () => {
+    initialStudyState.is_completed = true;
+    const next=vi.fn();render(<Room2Study team={mockTeam} onTransitionToRoom3={next}/>);
+    fireEvent.click(await screen.findByText(/CLICK TO ENTER ROOM/i));
+    activeEngineInstance.tryStudyExit=vi.fn(()=>{activeEngineInstance.callbacks.onStudyFinale(true);return {blocked:true};});
+    act(()=>activeEngineInstance.callbacks.onInteract('study_door_exit'));
+    expect(next).not.toHaveBeenCalled();
+    expect(activeEngineInstance.setStudyState).toHaveBeenLastCalledWith({started:true,paused:true,exitScare:true});
+    fireEvent.keyDown(window,{key:'b'});expect(screen.queryByRole('dialog',{name:'Evidence Table'})).not.toBeInTheDocument();
+    act(()=>activeEngineInstance.callbacks.onStudyFinale(false));
+    expect(next).not.toHaveBeenCalled();activeEngineInstance.tryStudyExit.mockReturnValue({blocked:false});
+    act(()=>activeEngineInstance.callbacks.onInteract('study_door_exit'));expect(next).toHaveBeenCalledOnce();
+  });
+
+  it('blocks tools during the procession and offers keyboard and button recovery',async()=>{
+    render(<Room2Study team={mockTeam}/>);fireEvent.click(await screen.findByText(/CLICK TO ENTER ROOM/i));
+    activeEngineInstance.standUpStudy=vi.fn();
+    act(()=>activeEngineInstance.callbacks.onStudyCinematic({locked:true,phase:'prone',caption:'You passed out. Press Q to stand up.'}));
+    const calls=global.fetch.mock.calls.length;for(const key of ['b','c','e'])fireEvent.keyDown(window,{key});
+    act(()=>activeEngineInstance.callbacks.onInteract('bookshelf'));expect(global.fetch).toHaveBeenCalledTimes(calls);
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();fireEvent.keyDown(window,{key:'q'});expect(activeEngineInstance.standUpStudy).toHaveBeenCalledOnce();
+    fireEvent.click(screen.getByRole('button',{name:/Stand up Q/i}));expect(activeEngineInstance.standUpStudy).toHaveBeenCalledTimes(2);
+    act(()=>activeEngineInstance.callbacks.onStudyCinematic({locked:false,phase:'recovery',caption:''}));
+    expect(activeEngineInstance.setStudyState).toHaveBeenLastCalledWith({started:true,paused:false});
+  });
+  it('uses the shared Study hint modal and tournament costs from the first hint', async () => {
+    const originalFetch = global.fetch;
+    global.fetch = vi.fn((url, options) => {
+      if (String(url).endsWith('/api/game/hint/status')) return Promise.resolve({ok:true,json:async()=>({total_budget:15,hints_remaining:15,total_penalty_seconds:0,unlocked_hints:[]})});
+      if (String(url).endsWith('/api/game/hint')) return Promise.resolve({ok:true,json:async()=>({success:true,target_id:'ES01',is_free:false,penalty_applied:10,hint_text:'Exact guidance from the shared service.'})});
+      return originalFetch(url, options);
+    });
+    render(<Room2Study team={mockTeam} onLogout={vi.fn()} />);
+    fireEvent.click(await screen.findByText(/CLICK TO ENTER ROOM/i));
+    fireEvent.keyDown(window, {key:'h',code:'KeyH'});
+    await screen.findByText(/Active Chamber:/);
+    expect(screen.getByText(/Fragment Search:/)).toHaveTextContent('+10s time penalty');
+    expect(screen.getByText(/Clue Solve:/)).toHaveTextContent('+30s time penalty');
+    expect(screen.queryByText(/first two|free Study hints|Current hint: free/i)).toBeNull();
+    fireEvent.click(screen.getByRole('button', {name:/REQUEST NEXT HINT/i}));
+    expect(await screen.findByText('Exact guidance from the shared service.')).toBeInTheDocument();
+    expect(global.fetch.mock.calls.find(([url]) => String(url).endsWith('/api/game/hint'))[1].body).toBe('{"room_id":"study"}');
+  });
+
+  it('uses the shared HUD and clue directory without a field-notes walkthrough', async () => {
+    render(<Room2Study team={mockTeam} onLogout={vi.fn()} />);
+    fireEvent.click(await screen.findByText(/CLICK TO ENTER ROOM/i));
+    expect(screen.queryByLabelText('Current objective')).toBeNull();
+    expect(screen.queryByText(/FIELD NOTES|Current lead:/i)).toBeNull();
+    expect(screen.getByTitle('Open Case Files Directory (Press C)')).toBeInTheDocument();
+    fireEvent.keyDown(window, {key:'c',code:'KeyC'});
+    expect(await screen.findByText('Clues Status')).toBeInTheDocument();
+    expect(screen.getByText('Test Tablet')).toBeInTheDocument();
+    expect(screen.queryByText(/Resolve Console drawer first|Beneath the map on the west wall/i)).toBeNull();
+  });
+
+  it('uses the shared Basket and existing evidence image mapping', async () => {
+    initialStudyState.basket_unlocked=true;
+    initialStudyState.collected_fragment_ids=['ES01'];
+    initialStudyState.evidence=[{id:'ES01',is_wrapped:false,display:{title:'Server record',lines:['Server evidence text.']}}];
+    render(<Room2Study team={mockTeam} onLogout={vi.fn()} />);
+    fireEvent.click(await screen.findByText(/CLICK TO ENTER ROOM/i));
+    fireEvent.keyDown(window, {key:'b',code:'KeyB'});
+    expect(await screen.findByText(/INVESTIGATION BASKET/i)).toBeInTheDocument();
+    expect(screen.getByAltText('Server record')).toHaveAttribute('src','/evidence/study/ES01.png');
+    expect(screen.getByText(/Server evidence text/)).toBeInTheDocument();
+    expect(screen.queryByText(/Recovered at:|Follow the field notes/i)).toBeNull();
+  });
+
 });

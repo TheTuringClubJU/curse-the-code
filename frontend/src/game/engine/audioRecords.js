@@ -307,19 +307,51 @@ export class GameAudioRecords {
     }, 15);
   }
 
-  // Player footsteps in puddle water
+  // Player footsteps in puddle water with echoing cavernous stone slap-back reverb
   step(v = 1) {
     if (!this.ctx) return;
     const o = this.master;
     // Splash transient
-    this.burst(1200, 2.5, 0.08, 0.12 * v, o, 400, 'bandpass');
-    // Wet thud
-    this.burst(180, 1.2, 0.14, 0.22 * v, o, 90, 'lowpass');
-    // Secondary splash droplets
-    if (Math.random() < 0.4) {
+    this.burst(1100, 2.2, 0.09, 0.16 * v, o, 380, 'bandpass');
+    // Heavy wet stone heel impact
+    this.burst(160, 1.4, 0.16, 0.28 * v, o, 75, 'lowpass');
+    // Stone cavern slap-back echo into convolver reverb
+    this.burst(650, 3.5, 0.12, 0.18 * v, this.verb, 300, 'bandpass');
+    // Secondary droplet splash
+    if (Math.random() < 0.5) {
       setTimeout(() => {
-        this.osc('sine', rnd(1200, 2000), rnd(800, 1400), 0.04, 0.06 * v, this.verb);
-      }, 40);
+        this.osc('sine', rnd(1100, 1800), rnd(700, 1200), 0.05, 0.08 * v, this.verb);
+      }, 35);
+    }
+  }
+
+  // Rushing creature attack sprint footsteps + horrifying vocal screech (Reference 2)
+  creatureSprintRushing(startX, startZ, targetX, targetZ, durationMs = 800) {
+    this.ensureActive();
+    if (!this.ctx) return;
+    const steps = 9;
+    const interval = durationMs / steps;
+
+    // Guttural demonic inhalation / screech
+    this.screamingStinger(1.1);
+    this.whisperRaspy('behind', startX, startZ);
+
+    for (let i = 0; i < steps; i++) {
+      const frac = i / (steps - 1);
+      const delay = i * interval * (1 - frac * 0.35); // Accelerating tempo!
+      setTimeout(() => {
+        if (!this.ctx) return;
+        const curX = startX + (targetX - startX) * frac;
+        const curZ = startZ + (targetZ - startZ) * frac;
+        const d = this.spat(curX, curZ, 2.0 + frac * 1.5);
+        if (!d) return;
+
+        // Heavy slamming thud + puddle splash
+        const vol = 0.5 + frac * 0.8;
+        this.burst(130, 1.2, 0.2, vol, d, 55, 'lowpass');
+        this.burst(1400, 3.0, 0.14, vol * 0.6, d, 450, 'bandpass');
+        this.burst(800, 2.5, 0.18, vol * 0.5, this.verb, 350, 'bandpass');
+      }, delay);
     }
   }
 

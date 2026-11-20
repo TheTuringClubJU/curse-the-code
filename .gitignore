@@ -22,6 +22,8 @@ schema.completed.sql
 ctc/
 
 scratch/
+
+# local raw assets and OS/tool files
 .neon
 Room-5 Glb models/
 horror-game-floor-generator-free/
@@ -32,6 +34,6 @@ HorrorPackFBX/
 /MarkdownFile*.md
 *.dmg
 raw_models/
-
 Room-6_GLB/
+
 .vite/

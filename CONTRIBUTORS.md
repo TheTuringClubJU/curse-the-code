@@ -35,3 +35,12 @@ This list is maintained by hand alongside the GitHub [contributors graph](https:
 Add new contributors below this line, following the format above.
 One bullet per contribution/PR, most recent contribution added to the bottom of their list.
 -->
+- Krishnapriya N ([@krishnapriya-op](https://github.com/krishnapriya-op))
+  - Implemented frontend for basement room 3 ([#10](https://github.com/TheTuringClubJU/curse-the-code/pull/10))
+- R Hari priya ([@Haripriya24071](https://github.com/Haripriya24071)) — Tech Co-Lead
+  - Implemented Room 5 backend, Fork 2 Core Airlock routes, Case Dossier system, and 49 tests ([#16](https://github.com/TheTuringClubJU/curse-the-code/pull/16))
+  - Implemented Room 6 backend engine, Grand Finale validation, tournament victory state, and 49 tests ([#18](https://github.com/TheTuringClubJU/curse-the-code/pull/18))
+- Shahan Samar ([@shxhxn](https://github.com/shxhxn))
+  - Implemented Room 2 (Daniel's Study) backend: evidence collection, clue validation, transactional progress and scoring, room completion, and regression tests ([#7](https://github.com/TheTuringClubJU/curse-the-code/pull/7))
+  - Developed Room 2's 3D frontend, gothic environment, interactive props, horror sequences, audio, performance optimizations, and regression tests ([#30](https://github.com/TheTuringClubJU/curse-the-code/pull/30), under review)
+
