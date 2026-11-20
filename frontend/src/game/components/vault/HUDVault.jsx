@@ -4,7 +4,6 @@ import {
   Crosshair,
   FlashlightOff,
   HelpCircle,
-  Layers,
   Lock,
   LogOut,
   Monitor,
@@ -68,7 +67,6 @@ export default function HUDVault({
   onChangeSensitivity,
   muted = false,
   onToggleMute,
-  onToggleBasket,
   onToggleDossier,
   onToggleHint,
   onRequestLock,
@@ -178,17 +176,6 @@ export default function HUDVault({
         {/* Top-Right: Clean Rounded Pill Buttons in Crisp White Text Matching Room 5 */}
         <div className="pointer-events-auto flex flex-col items-end gap-2">
           <div className="flex flex-wrap items-center justify-end gap-2">
-            <button
-              type="button"
-              onClick={onToggleBasket}
-              className="re-btn cursor-pointer"
-              title="Evidence Basket [B]"
-            >
-              <span className="re-btn-circle">B</span>
-              <Layers className="w-3.5 h-3.5 text-white/90" />
-              <span>Basket</span>
-            </button>
-
             <button
               type="button"
               onClick={onToggleDossier}

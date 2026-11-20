@@ -7,7 +7,6 @@ import VaultDossierModal from './components/vault/VaultDossierModal';
 import ManualDiffModal from './components/vault/ManualDiffModal';
 import FailsafeCircuitModal from './components/vault/FailsafeCircuitModal';
 import CentralConsoleModal from './components/vault/CentralConsoleModal';
-import BasketModal from './components/BasketModal';
 import HintModal from './components/HintModal';
 import './vault.css';
 
@@ -50,13 +49,6 @@ export default function Room6Vault({ team, onLogout }) {
   });
   const [activeClue, setActiveClue] = useState(null);
   const [isDossierOpen, setIsDossierOpen] = useState(false);
-  const [isBasketOpen, setIsBasketOpen] = useState(false);
-  const [basketData, setBasketData] = useState({
-    fragments: [],
-    collected_ids: [],
-    basket_unlocked: true,
-    total_fragments_in_room: 10,
-  });
   const [isHintOpen, setIsHintOpen] = useState(false);
   const [isSystemOpen, setIsSystemOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -153,21 +145,6 @@ export default function Room6Vault({ team, onLogout }) {
         if (!prev) return null;
         return clues.find((c) => c.id === prev.id) || prev;
       });
-      return data;
-    } catch {
-      return null;
-    }
-  }, []);
-
-  const fetchBasket = useCallback(async () => {
-    try {
-      const res = await fetch('/api/game/room/vault/basket', {
-        headers: authHeaders(),
-        credentials: 'include',
-      });
-      if (!res.ok) return null;
-      const data = await res.json();
-      setBasketData(data);
       return data;
     } catch {
       return null;
@@ -281,17 +258,16 @@ export default function Room6Vault({ team, onLogout }) {
   );
 
   useEffect(() => {
-    const isAnyOpen = Boolean(activeClue || isDossierOpen || isBasketOpen || isHintOpen || isSystemOpen);
+    const isAnyOpen = Boolean(activeClue || isDossierOpen || isHintOpen || isSystemOpen);
     anyModalOpenRef.current = isAnyOpen;
     engineRef.current?.setPaused?.(isAnyOpen);
     if (isAnyOpen) {
       engineRef.current?.unlock?.();
     }
-  }, [activeClue, isDossierOpen, isBasketOpen, isHintOpen, isSystemOpen]);
+  }, [activeClue, isDossierOpen, isHintOpen, isSystemOpen]);
 
   useEffect(() => {
     fetchRoom();
-    fetchBasket();
     syncCountdown();
     const timePoll = setInterval(syncCountdown, 1000);
     return () => clearInterval(timePoll);
@@ -408,10 +384,6 @@ export default function Room6Vault({ team, onLogout }) {
           setIsSystemOpen(false);
           return;
         }
-        if (isBasketOpen) {
-          setIsBasketOpen(false);
-          return;
-        }
         if (activeClue) {
           setActiveClue(null);
           setSubmitFeedback(null);
@@ -440,9 +412,6 @@ export default function Room6Vault({ team, onLogout }) {
           audioRef.current?.ensureActive?.();
           engineRef.current?.lock?.();
         }
-      } else if (e.code === 'KeyB') {
-        e.preventDefault();
-        setIsBasketOpen((prev) => !prev);
       } else if (e.code === 'KeyC') {
         e.preventDefault();
         setIsDossierOpen((prev) => !prev);
@@ -466,7 +435,7 @@ export default function Room6Vault({ team, onLogout }) {
 
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [activeClue, isBasketOpen, isDossierOpen, isHintOpen, isSystemOpen, showNotice]);
+  }, [activeClue, isDossierOpen, isHintOpen, isSystemOpen, showNotice]);
 
   const handleConsoleReject = useCallback(() => {
     triggerScanTear();
@@ -525,7 +494,6 @@ export default function Room6Vault({ team, onLogout }) {
         if (isCorrect) {
           audioRef.current?.good?.();
           await fetchRoom();
-          await fetchBasket();
           if (clueId === 'R2-10') {
             handleVictory(data);
           } else {
@@ -547,7 +515,6 @@ export default function Room6Vault({ team, onLogout }) {
           audioRef.current?.bad?.();
         }
         await fetchRoom();
-        await fetchBasket();
         const errMsg = data.message || 'Verification rejected. Recheck containment parameters.';
         setSubmitFeedback({ ok: false, message: errMsg });
         return { ok: false, correct: false, message: errMsg, ...data };
@@ -559,7 +526,7 @@ export default function Room6Vault({ team, onLogout }) {
         setIsSubmitting(false);
       }
     },
-    [fetchBasket, fetchRoom, handleConsoleReject, handleVictory, showNotice]
+    [fetchRoom, handleConsoleReject, handleVictory, showNotice]
   );
 
   const handleOpenDebrief = useCallback(() => {
@@ -697,7 +664,6 @@ export default function Room6Vault({ team, onLogout }) {
             return next;
           });
         }}
-        onToggleBasket={() => setIsBasketOpen((v) => !v)}
         onToggleDossier={() => setIsDossierOpen((v) => !v)}
         onToggleHint={() => setIsHintOpen((v) => !v)}
         onRequestLock={() => {
@@ -732,7 +698,6 @@ export default function Room6Vault({ team, onLogout }) {
         !clearanceDismissed &&
         !notice &&
         !activeClue &&
-        !isBasketOpen &&
         !isDossierOpen &&
         !isHintOpen && (
           <div className="fixed top-20 left-1/2 -translate-x-1/2 z-40 pointer-events-auto flex flex-wrap items-center justify-center gap-2.5 px-4 py-2 rounded-[2px] border border-emerald-400/45 border-l-2 border-l-emerald-400 bg-[#09120e]/90 backdrop-blur-md shadow-[0_12px_34px_rgba(0,0,0,0.72)]">
@@ -825,20 +790,6 @@ export default function Room6Vault({ team, onLogout }) {
         onVictory={handleVictory}
         onLogout={onLogout}
         isSubmitting={isSubmitting}
-      />
-
-      {/* [B] Evidence Basket */}
-      <BasketModal
-        isOpen={isBasketOpen}
-        onClose={() => {
-          setIsBasketOpen(false);
-          engineRef.current?.lock?.();
-        }}
-        evidence={basketData.fragments || []}
-        collectedIds={basketData.collected_ids || []}
-        basketUnlocked={Boolean(basketData.basket_unlocked)}
-        totalInRoom={basketData.total_fragments_in_room || (basketData.fragments || []).length || 10}
-        roomTitle={roomData.title || 'The Anointing Vault'}
       />
 
       {/* [C] Case Dossier */}

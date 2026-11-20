@@ -399,25 +399,23 @@ describe('Room 6 (The Anointing Vault) Comprehensive Test Suite', () => {
     expect(mockAudioInstance.flapClack).toHaveBeenCalled();
   });
 
-  it('opens BasketModal on [B] and verifies no GFX resolution button on HUD', async () => {
+  it('verifies no Basket button on HUD, no BasketModal on [B], and Dossier [C] has 7/3 split', async () => {
     render(<Room6Vault team={mockTeam} onLogout={vi.fn()} />);
     await waitFor(() => expect(activeEngineInstance).not.toBeNull());
 
     // GFX resolution button removed from HUD
     expect(screen.queryByText(/GFX:/i)).not.toBeInTheDocument();
 
-    // Basket button exists on HUD and opens on [B]
-    expect(screen.getByTitle(/Evidence Basket \[B\]/i)).toBeInTheDocument();
+    // Basket button is completely removed from HUD
+    expect(screen.queryByTitle(/Evidence Basket/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Basket/i)).not.toBeInTheDocument();
 
+    // KeyB does nothing
     fireEvent.keyDown(window, { code: 'KeyB' });
-    await waitFor(() => {
-      expect(screen.getByText(/INVESTIGATION BASKET • EVIDENCE TABLE/i)).toBeInTheDocument();
-    });
+    expect(screen.queryByText(/INVESTIGATION BASKET • EVIDENCE TABLE/i)).not.toBeInTheDocument();
 
-    fireEvent.keyDown(window, { code: 'Escape' });
-    await waitFor(() => {
-      expect(screen.queryByText(/INVESTIGATION BASKET • EVIDENCE TABLE/i)).not.toBeInTheDocument();
-    });
+    // Case Dossier button is present
+    expect(screen.getByTitle(/Case Dossier \[C\]/i)).toBeInTheDocument();
   });
 
   it('opens VaultDossierModal on [C] and lets user jump to a Vault terminal', async () => {

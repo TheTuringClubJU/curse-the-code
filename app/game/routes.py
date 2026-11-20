@@ -1363,6 +1363,17 @@ def get_round_dossier(round_num: int, request: Request):
                 (team["id"], round_num)
             )
             clue_records_map = {r["clue_id"]: dict(r) for r in cur.fetchall()}
+
+            cur.execute(
+                "SELECT clue_id, submitted_answer FROM submissions WHERE team_id = %s AND is_correct = TRUE ORDER BY created_at ASC",
+                (team["id"],)
+            )
+            team_submissions = {}
+            for r in cur.fetchall():
+                cid = r["clue_id"]
+                if cid not in team_submissions:
+                    team_submissions[cid] = []
+                team_submissions[cid].append(r["submitted_answer"])
     finally:
         conn.close()
 
@@ -1379,7 +1390,100 @@ def get_round_dossier(round_num: int, request: Request):
         first_stage = c.get("stages", [{}])[0]
         reveal = dict(first_stage.get("reveal", {})) if is_solved else None
         vault_service.format_vault_dossier_reveal(cid, is_solved, reveal)
-        
+
+        # Dynamic revealed answer for solved clue
+        answer_data = None
+        if is_solved:
+            plain_answers = []
+            for stg in c.get("stages", []):
+                ap = stg.get("answer_plain")
+                if isinstance(ap, list):
+                    for a in ap:
+                        if a is not None and str(a) not in plain_answers:
+                            plain_answers.append(str(a))
+                elif ap is not None and str(ap) not in plain_answers:
+                    plain_answers.append(str(ap))
+
+            if not plain_answers and cid in team_submissions:
+                plain_answers = team_submissions[cid]
+
+            if cid == "R2-01":
+                ans_val = plain_answers[0] if plain_answers else "BDG-9001"
+                answer_data = {
+                    "label": "Active Operator Badge",
+                    "value": str(ans_val),
+                    "details": "Clearance: Systems Department · Sub-basement Access",
+                }
+            elif cid == "R2-02":
+                ans_val = plain_answers[0] if plain_answers else "COMET"
+                answer_data = {
+                    "label": "Incident Codename & Date",
+                    "value": f"{ans_val} · 2001-02-10",
+                    "details": "Containment protocol revision codename: COMET",
+                }
+            elif cid == "R2-03":
+                ans_val = plain_answers[0] if plain_answers else "1357"
+                answer_data = {
+                    "label": "Keypad Passcode",
+                    "value": str(ans_val),
+                    "details": "Surveillance timestamp confirmed: 2001-02-10",
+                }
+            elif cid == "R2-04":
+                ans_val = plain_answers[0] if plain_answers else "PLANET"
+                answer_data = {
+                    "label": "Chronology Keyword",
+                    "value": str(ans_val),
+                    "details": "Chronological facility log sequence verified",
+                }
+            elif cid == "R2-05":
+                ans_val = plain_answers[0] if plain_answers else "VM-A"
+                answer_data = {
+                    "label": "Authentic Carrier Channel",
+                    "value": f"{ans_val} (7.455 MHz)",
+                    "details": "Transmission channel verified legitimate",
+                }
+            elif cid == "R2-06":
+                ans_val = plain_answers[0] if plain_answers else "8140"
+                answer_data = {
+                    "label": "Voicemail Pin Code",
+                    "value": str(ans_val),
+                    "details": "Spectrogram audio frequency verified",
+                }
+            elif cid == "R2-07":
+                ans_val = plain_answers[0] if plain_answers else "1357"
+                answer_data = {
+                    "label": "Bulkhead Security Lock",
+                    "value": f"Passcode: {ans_val} | Keyword: PLANET",
+                    "details": "Records-to-Vault lower bulkhead bypassed",
+                }
+            elif cid == "R2-08":
+                tampered_str = plain_answers[0] if plain_answers else "26"
+                digits = ", ".join([ch for ch in str(tampered_str) if ch.isdigit()] or ["2", "6"])
+                answer_data = {
+                    "label": "Tampered Protocol Steps",
+                    "value": digits,
+                    "details": "Clean steps remain intact in original manual",
+                }
+            elif cid == "R2-09":
+                ans_val = plain_answers[0] if plain_answers else "1101"
+                answer_data = {
+                    "label": "Circuit Authorization Code",
+                    "value": str(ans_val),
+                    "details": "East switchgear logic bus latched",
+                }
+            elif cid == "R2-10":
+                answer_data = {
+                    "label": "Containment Status",
+                    "value": "STABILIZED & VERIFIED",
+                    "details": "Biological core dormant · Round 2 complete",
+                }
+            else:
+                answer_data = {
+                    "label": "Verified Answer",
+                    "value": str(plain_answers[0]) if plain_answers else "SOLVED",
+                    "details": "Subsystem verified",
+                }
+
         record = {
             "clue_id": cid,
             "title": c.get("title", ""),
@@ -1391,7 +1495,8 @@ def get_round_dossier(round_num: int, request: Request):
             "exhausted": is_exhausted,
             "score": float(c_info.get("score", 0.0)) if is_solved else 0.0,
             "solved_at": c_info["solved_at"].isoformat() if is_solved and c_info.get("solved_at") else None,
-            "reveal": reveal if is_solved else None
+            "reveal": reveal if is_solved else None,
+            "answer": answer_data,
         }
         records.append(record)
 

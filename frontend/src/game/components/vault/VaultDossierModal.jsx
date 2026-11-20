@@ -67,19 +67,75 @@ const FALLBACK_META = {
   },
 };
 
+const FALLBACK_ANSWERS = {
+  'R2-01': {
+    label: 'Active Operator Badge',
+    value: 'BDG-9001',
+    details: 'Clearance: Systems Department · Sub-basement Access',
+  },
+  'R2-02': {
+    label: 'Incident Codename & Date',
+    value: 'COMET · 2001-02-10',
+    details: 'Containment protocol revision codename: COMET',
+  },
+  'R2-03': {
+    label: 'Keypad Passcode',
+    value: '1357',
+    details: 'Surveillance timestamp confirmed: 2001-02-10',
+  },
+  'R2-04': {
+    label: 'Chronology Keyword',
+    value: 'PLANET',
+    details: 'Chronological facility log sequence verified',
+  },
+  'R2-05': {
+    label: 'Authentic Carrier Channel',
+    value: 'VM-A (7.455 MHz)',
+    details: 'Transmission channel verified legitimate',
+  },
+  'R2-06': {
+    label: 'Voicemail Pin Code',
+    value: '8140',
+    details: 'Spectrogram audio frequency verified',
+  },
+  'R2-07': {
+    label: 'Bulkhead Security Lock',
+    value: 'Passcode: 1357 | Keyword: PLANET',
+    details: 'Records-to-Vault lower bulkhead bypassed',
+  },
+  'R2-08': {
+    label: 'Tampered Protocol Steps',
+    value: '2, 6',
+    details: 'Clean steps remain intact in original manual',
+  },
+  'R2-09': {
+    label: 'Circuit Authorization Code',
+    value: '1101',
+    details: 'East switchgear logic bus latched',
+  },
+  'R2-10': {
+    label: 'Containment Status',
+    value: 'STABILIZED & VERIFIED',
+    details: 'Biological core dormant · Round 2 complete',
+  },
+};
+
 function normalizeRecord(raw) {
   const clueId = raw.clue_id || raw.id || '';
   const meta = FALLBACK_META[clueId] || {};
   const isVault = ['R2-08', 'R2-09', 'R2-10'].includes(clueId) || raw.room === 'vault';
+  const isSolved = Boolean(raw.solved ?? raw.is_solved);
+  const answer = raw.answer || (isSolved ? FALLBACK_ANSWERS[clueId] : null);
   return {
     clue_id: clueId,
     title: raw.title || raw.name || meta.title || clueId,
     room: raw.room || meta.room || (isVault ? 'Vault' : 'Previous Room'),
     sector: meta.sector || (raw.room ? raw.room.toUpperCase() : 'SUBSTATION DELTA'),
     dossierNote: meta.dossierNote || raw.description || '',
-    solved: Boolean(raw.solved ?? raw.is_solved),
+    solved: isSolved,
     locked: Boolean(raw.locked ?? raw.is_locked),
     summary: raw.summary || null,
+    answer: answer || null,
   };
 }
 
@@ -100,6 +156,7 @@ export default function VaultDossierModal({
       setLoading(true);
       try {
         const token =
+          localStorage.getItem('ctc_token') ||
           localStorage.getItem('session_token') ||
           localStorage.getItem('ctc_session_token') ||
           '';
@@ -168,7 +225,7 @@ export default function VaultDossierModal({
     const defaultPrevIds = ['R2-01', 'R2-02', 'R2-03', 'R2-04', 'R2-05', 'R2-06', 'R2-07'];
     for (const id of defaultPrevIds) {
       if (!list.some((r) => r.clue_id === id)) {
-        list.push(normalizeRecord({ clue_id: id, solved: true }));
+        list.push(normalizeRecord({ clue_id: id, solved: false }));
       }
     }
     return list.sort((a, b) => a.clue_id.localeCompare(b.clue_id));
@@ -459,6 +516,31 @@ function renderVaultCard(rec, onSelectClue) {
         </p>
       )}
 
+      {/* Recovered Answer Block for Solved Vault Subsystem */}
+      {rec.solved && rec.answer && (
+        <div className="mt-3 p-2.5 rounded-[2px] bg-[#102416] border border-[#22c55e]/50 text-xs font-mono">
+          <div className="text-[10px] tracking-widest uppercase text-emerald-400 font-bold">
+            RECOVERED ANSWER // {rec.answer.label}:
+          </div>
+          <div className="text-sm font-bold text-emerald-200 mt-0.5 tracking-wider">
+            {rec.answer.value}
+          </div>
+          {rec.answer.details && (
+            <div className="text-[11px] text-emerald-300/80 mt-0.5 italic">
+              {rec.answer.details}
+            </div>
+          )}
+        </div>
+      )}
+
+      {!rec.solved && (
+        <div className="mt-3 p-2 rounded-[2px] bg-[#1a0f0d] border border-[#7a2222]/40 text-xs font-mono">
+          <span className="text-rose-400 font-bold tracking-wider text-[11px] uppercase">
+            {rec.locked ? '[SEALED // REQUIRES UPSTREAM CLEARANCE]' : '[ACTIVE // READY AT TERMINAL]'}
+          </span>
+        </div>
+      )}
+
       <div className="mt-3 pt-2.5 border-t border-[#8a7558]/25 flex items-center justify-between gap-2">
         <span className="vault-font-mono text-[10px] tracking-[0.12em] text-[#5e4c36] inline-flex items-center gap-1.5">
           {rec.solved ? (
@@ -492,7 +574,11 @@ function renderPrevRoomCard(rec) {
   return (
     <div
       key={rec.clue_id}
-      className="p-3 rounded-[2px] bg-[#1a120c]/80 border border-[#5c462e]/50 hover:border-[#8c6b45]/70 transition"
+      className={`p-3 rounded-[2px] border transition ${
+        isSolved
+          ? 'bg-[#1a120c]/80 border-[#5c462e]/50 hover:border-[#8c6b45]/70'
+          : 'bg-[#160d0f]/90 border-rose-950/80 hover:border-rose-900/90'
+      }`}
     >
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-1.5">
@@ -505,13 +591,13 @@ function renderPrevRoomCard(rec) {
           </span>
         </div>
         <span
-          className={`vault-font-mono text-[8px] font-bold tracking-wider px-1.5 py-0.5 rounded-[2px] uppercase ${
+          className={`vault-font-mono text-[8px] font-bold tracking-wider px-2 py-0.5 rounded-[2px] uppercase ${
             isSolved
               ? 'bg-[#1d3a27]/90 text-[#bfe3c8] border border-[#3d6b4e]'
-              : 'bg-zinc-800 text-zinc-400 border border-zinc-700'
+              : 'vault-wax-seal !text-[8px] !px-2 !py-0.5'
           }`}
         >
-          {isSolved ? 'VERIFIED' : 'PENDING'}
+          {isSolved ? 'VERIFIED' : 'SEALED'}
         </span>
       </div>
 
@@ -523,6 +609,32 @@ function renderPrevRoomCard(rec) {
         <p className="vault-font-serif italic text-xs text-[#b8a78e] mt-1 leading-normal line-clamp-2">
           {rec.dossierNote}
         </p>
+      )}
+
+      {/* Answer reveal if solved / Sealed restricted notice if unsolved */}
+      {isSolved && rec.answer && (
+        <div className="mt-2.5 p-2 rounded-[2px] bg-[#0c1f14] border border-[#22c55e]/40 text-xs font-mono">
+          <div className="text-[9px] tracking-widest uppercase text-emerald-400 font-bold">
+            RECOVERED KEY // {rec.answer.label}:
+          </div>
+          <div className="text-xs font-bold text-emerald-200 mt-0.5 tracking-wider">
+            {rec.answer.value}
+          </div>
+          {rec.answer.details && (
+            <div className="text-[10px] text-emerald-300/70 mt-0.5 italic">
+              {rec.answer.details}
+            </div>
+          )}
+        </div>
+      )}
+
+      {!isSolved && (
+        <div className="mt-2.5 p-2 rounded-[2px] bg-[#240c0f]/80 border border-rose-900/60 text-xs font-mono flex items-center gap-1.5">
+          <Lock className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+          <span className="text-rose-300 font-bold tracking-wider text-[10px] uppercase">
+            SEALED - RESTRICTED // UNSOLVED IN PREVIOUS ROOM
+          </span>
+        </div>
       )}
     </div>
   );
