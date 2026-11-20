@@ -17,10 +17,11 @@ def reset_vault_team_db(team_name="Team Cipher"):
                 DELETE FROM team_fragments WHERE team_id = (SELECT id FROM teams WHERE name = %s) AND room_id IN ('records', 'control', 'vault');
                 DELETE FROM team_rooms WHERE team_id = (SELECT id FROM teams WHERE name = %s) AND room_id IN ('records', 'control', 'vault');
                 DELETE FROM submissions WHERE team_id = (SELECT id FROM teams WHERE name = %s) AND clue_id IN ('R2-01', 'R2-05', 'R2-06', 'R2-08', 'R2-09', 'R2-10');
+                DELETE FROM team_hints WHERE team_id = (SELECT id FROM teams WHERE name = %s);
                 UPDATE team_rounds 
                 SET penalty_seconds = 0, clues_solved = 0, total_score = 0, last_solved_at = NULL, finished_at = NULL, qualified_at = NULL
                 WHERE team_id = (SELECT id FROM teams WHERE name = %s) AND round IN (1, 2);
-            """, (team_name, team_name, team_name, team_name, team_name, team_name))
+            """, (team_name, team_name, team_name, team_name, team_name, team_name, team_name))
             conn.commit()
         conn.close()
 
@@ -139,16 +140,40 @@ def test_r6_05_room6_initial_flags_false(auth_headers):
     assert data["is_completed"] is False
     assert data.get("total_fragments_in_room", 0) == 0
 
-def test_r6_06_room6_no_fragments_or_basket_mechanic(auth_headers):
+def test_r6_06_room6_basket_feeder_mechanic(auth_headers):
+    reset_vault_team_db("Team Cipher")
+    unlock_vault_entrance("Team Cipher")
     res = client.get("/api/game/room/vault/basket", headers=auth_headers)
     assert res.status_code == 200
     data = res.json()
     assert data["ok"] is True
     assert data["room_id"] == "vault"
-    assert data["total_fragments_in_room"] == 0
+    assert data["total_fragments_in_room"] == 10
     assert data["collected_count"] == 0
-    assert data["fragments"] == []
+    assert len(data["fragments"]) == 10
     assert data["basket_unlocked"] is True
+    for f in data["fragments"]:
+        assert f["is_wrapped"] is True
+        assert "SEALED" in f["display"]["title"] or "SEALED" in f["display"]["lines"][0]
+
+    # When prereq clues are solved, fragments unseal and reveal answers in basket
+    solve_prereqs_r2_08_r2_09("Team Cipher")
+    res_solved = client.get("/api/game/room/vault/basket", headers=auth_headers)
+    assert res_solved.status_code == 200
+    data_solved = res_solved.json()
+    assert data_solved["collected_count"] == 2
+    diff_frag = next(f for f in data_solved["fragments"] if f["id"] == "FRAG-R2-08")
+    circuit_frag = next(f for f in data_solved["fragments"] if f["id"] == "FRAG-R2-09")
+    badge_frag = next(f for f in data_solved["fragments"] if f["id"] == "FRAG-R2-01")
+    assert diff_frag["is_wrapped"] is False
+    assert "134578" in diff_frag["display"]["lines"][1]
+    assert circuit_frag["is_wrapped"] is False
+    assert "1101" in circuit_frag["display"]["lines"][0]
+    assert badge_frag["is_wrapped"] is True
+
+    # Reset DB back to clean state for subsequent tests
+    reset_vault_team_db("Team Cipher")
+    unlock_vault_entrance("Team Cipher")
 
 def test_r6_07_room6_all_three_clues_projected(auth_headers):
     res = client.get("/api/game/room/vault", headers=auth_headers)
@@ -605,3 +630,57 @@ def test_r6_49_room6_completion_via_all_clues_resolved_with_exhaustion(auth_head
     res = client.get("/api/game/room/vault", headers=auth_headers)
     assert res.status_code == 200
     assert res.json()["is_completed"] is True
+
+# 7. Room 6 Universal Hint System & Decoy Verification (50-51)
+def test_r6_50_vault_hint_request_sequential_progression(auth_headers):
+    reset_vault_team_db("Team Cipher")
+    unlock_vault_entrance("Team Cipher")
+
+    # Vault has 0 fragments (no decoys in vault, decoys excluded from hint progression)
+    # Hint request immediately enters Phase 2 (sequential clue hints)
+    h1 = client.post("/api/game/hint", json={"room_id": "vault"}, headers=auth_headers)
+    assert h1.status_code == 200
+    d1 = h1.json()
+    assert d1["success"] is True
+    assert d1["target_id"] == "R2-08"
+    assert d1["hint_category"] == "clue"
+    assert d1["penalty_seconds"] == 30
+    assert "manual" in d1["hint_text"].lower()
+
+    # Free re-inspection
+    h1_repeat = client.post("/api/game/hint", json={"room_id": "vault", "target_id": "R2-08"}, headers=auth_headers)
+    assert h1_repeat.status_code == 200
+    assert h1_repeat.json()["is_free"] is True
+    assert h1_repeat.json()["penalty_seconds"] == 0
+
+    # Solve R2-08
+    client.post("/api/game/clue/R2-08/submit", json={"answer": "26"}, headers=auth_headers)
+
+    # Next hint request advances sequentially to R2-09
+    h2 = client.post("/api/game/hint", json={"room_id": "vault"}, headers=auth_headers)
+    assert h2.status_code == 200
+    d2 = h2.json()
+    assert d2["success"] is True
+    assert d2["target_id"] == "R2-09"
+    assert "circuit" in d2["hint_text"].lower() or "failsafe" in d2["hint_text"].lower()
+
+    # Solve R2-09
+    client.post("/api/game/clue/R2-09/submit", json={"answer": "1101"}, headers=auth_headers)
+
+    # Next hint request advances to R2-10
+    h3 = client.post("/api/game/hint", json={"room_id": "vault"}, headers=auth_headers)
+    assert h3.status_code == 200
+    d3 = h3.json()
+    assert d3["success"] is True
+    assert d3["target_id"] == "R2-10"
+    assert "console" in d3["hint_text"].lower() or "altar" in d3["hint_text"].lower()
+
+def test_r6_51_vault_hint_status_reflects_budget_and_penalties(auth_headers):
+    res = client.get("/api/game/hint/status", headers=auth_headers)
+    assert res.status_code == 200
+    data = res.json()
+    assert data["total_budget"] == 15
+    assert data["hints_used"] >= 3
+    assert data["hints_remaining"] == 15 - data["hints_used"]
+    assert data["total_penalty_seconds"] >= 90
+

@@ -52,12 +52,22 @@ export default function PhotoPuzzleModal({
                 }`}
               >
                 {slot.unlocked ? (
-                  <div className="text-center p-2">
-                    <Sparkles className="w-4 h-4 text-[#ffcf8a] mx-auto mb-1" />
-                    <span className="text-[10px] font-mono font-bold text-[#e8e0ff]">
-                      {slot.id}
-                    </span>
-                  </div>
+                  <>
+                    <img
+                      src={`/photo_pieces/${slot.id}.png`}
+                      alt={slot.id}
+                      className="absolute inset-0 w-full h-full object-cover"
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                      }}
+                    />
+                    <div className="relative z-10 text-center p-1 bg-black/60 rounded backdrop-blur-xs">
+                      <Sparkles className="w-3.5 h-3.5 text-[#ffcf8a] mx-auto mb-0.5" />
+                      <span className="text-[10px] font-mono font-bold text-[#e8e0ff]">
+                        {slot.id}
+                      </span>
+                    </div>
+                  </>
                 ) : (
                   <span className="text-[11px] font-mono text-gray-600">
                     {index + 1}

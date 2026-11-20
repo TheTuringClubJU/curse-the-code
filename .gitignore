@@ -20,3 +20,14 @@ frontend/dist/
 schema.completed.sql
 
 ctc/
+
+scratch/
+
+# local raw assets and OS/tool files
+raw_models/
+Room-6_GLB/
+.DS_Store
+*.dmg
+.neon
+.agents/
+.vite/
