@@ -311,11 +311,6 @@ export default function FailsafeCircuitModal({
                 </span>
               </div>
             )}
-            <div className="text-[11px] text-[#ceb991]">
-              <strong className="text-[#f6cb76]">How to Solve: </strong>
-              Toggle knife switches (A1..D0) per the engraved instruction, watch the 4 filament bulbs update live, press{' '}
-              <strong className="text-white">LOAD CODE</strong>, then press <strong className="text-white">TRANSMIT CODE</strong>.
-            </div>
           </div>
 
           {/* ── 8 Heavy Ceramic/Slate Knife Switches (Pairs A, B, C, D) ── */}

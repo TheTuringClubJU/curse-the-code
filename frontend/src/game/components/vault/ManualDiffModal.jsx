@@ -181,33 +181,22 @@ export default function ManualDiffModal({
           </div>
         </div>
 
-        {/* Clear Objective Guide Strip + Interactive Candidate Chip Tray */}
-        <div className="mx-1 px-4 py-2.5 rounded-[2px] bg-[#0c0f16] border border-slate-600/40 text-xs font-re-typewriter text-slate-200 flex flex-wrap items-center justify-between gap-2.5 shrink-0">
-          <div className="flex items-start gap-2.5">
-            <Info className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
-            <span>
-              <strong className="text-red-200 uppercase tracking-wider">How to Solve: </strong>
-              Compare v1.1 vs v2.0, spot rows marked{' '}
-              <strong className="text-red-300">ALTERED</strong>, click rows to collect tampered step digits, or enter combined digits below.
+        {/* Interactive Candidate Chip Tray (shown when steps are pinned) */}
+        {selectedDigits.length > 0 && !clue.solved && (
+          <div className="mx-1 px-4 py-2 rounded-[2px] bg-[#0c0f16] border border-slate-600/40 text-xs font-re-typewriter text-slate-200 flex items-center justify-between gap-2.5 shrink-0">
+            <span className="text-[11px] text-slate-300">
+              Selected Steps: <strong className="text-red-200">{selectedDigits.join('')}</strong>
             </span>
+            <button
+              type="button"
+              onClick={applyCandidateDigits}
+              className="inline-flex items-center gap-1 px-3 py-1 rounded-[2px] bg-red-950/80 hover:bg-red-900/80 border border-red-500/50 text-[10px] text-red-100 uppercase tracking-wider cursor-pointer transition"
+            >
+              <Sparkles className="w-3 h-3" />
+              <span>Use Selected</span>
+            </button>
           </div>
-
-          {selectedDigits.length > 0 && !clue.solved && (
-            <div className="flex items-center gap-2">
-              <span className="text-[11px] text-slate-300">
-                Selected: <strong className="text-red-200">{selectedDigits.join('')}</strong>
-              </span>
-              <button
-                type="button"
-                onClick={applyCandidateDigits}
-                className="inline-flex items-center gap-1 px-3 py-1 rounded-[2px] bg-red-950/80 hover:bg-red-900/80 border border-red-500/50 text-[10px] text-red-100 uppercase tracking-wider cursor-pointer transition"
-              >
-                <Sparkles className="w-3 h-3" />
-                <span>Use Selected</span>
-              </button>
-            </div>
-          )}
-        </div>
+        )}
 
         {/* Desk Document Spread */}
         <div className="flex-1 overflow-y-auto px-1 py-1">
@@ -238,7 +227,6 @@ export default function ManualDiffModal({
                 {Array.from({ length: maxRows }).map((_, idx) => {
                   const left = plainLines[idx] || '';
                   const right = revisedLines[idx] || '';
-                  const differs = right && right !== left;
                   const digit = extractStepDigit(right || left, idx);
                   const isPinned = Boolean(pinnedRows[idx]);
                   return (
@@ -247,35 +235,25 @@ export default function ManualDiffModal({
                       key={`redline-${idx}`}
                       onClick={() => toggleRowPin(idx, digit)}
                       className={`w-full text-left p-3 rounded-[2px] border transition cursor-pointer ${
-                        differs
-                          ? 'bg-[#991b1b]/12 border-[#991b1b]/55 ring-1 ring-[#991b1b]/20'
-                          : isPinned
-                            ? 'bg-[#d97706]/18 border-[#92400e]/60'
-                            : 'bg-white/40 border-[#8e7a56]/35 hover:bg-white/60'
+                        isPinned
+                          ? 'bg-[#d97706]/18 border-[#92400e]/60 ring-1 ring-[#92400e]/30'
+                          : 'bg-white/40 border-[#8e7a56]/35 hover:bg-white/60'
                       }`}
                     >
                       <div className="flex items-center justify-between gap-2 mb-1">
                         <span className="text-[10px] font-bold uppercase tracking-wider text-[#523d28]">
                           CLAUSE #{digit}
                         </span>
-                        <span
-                          className={`text-[9px] font-bold px-2.5 py-0.5 rounded-[2px] border uppercase tracking-wider ${
-                            differs
-                              ? 'border-[#9b1c1c]/65 bg-[#9b1c1c]/15 text-[#7f1d1d]'
-                              : 'border-[#3f593b]/55 bg-[#3f593b]/10 text-[#284725]'
-                          }`}
-                        >
-                          {differs ? 'TAMPERED' : 'CLEAN'}
-                        </span>
+                        {isPinned && (
+                          <span className="text-[9px] font-bold px-2.5 py-0.5 rounded-[2px] border border-[#92400e]/60 bg-[#d97706]/20 text-[#78350f] uppercase tracking-wider">
+                            PINNED #{digit}
+                          </span>
+                        )}
                       </div>
-                      {differs ? (
-                        <div className="space-y-1">
-                          <div className="text-[#4a3929] line-through opacity-75">v1.1: {left || '—'}</div>
-                          <div className="text-[#690f0f] font-bold">v2.0: {right || '—'}</div>
-                        </div>
-                      ) : (
-                        <div className="text-[#221912]">{left || right || '—'}</div>
-                      )}
+                      <div className="space-y-1">
+                        <div className="text-[#4a3929] text-xs">v1.1 ARCHIVE: {left || '—'}</div>
+                        <div className="text-[#26150a] font-bold text-xs">v2.0 REVISED: {right || '—'}</div>
+                      </div>
                     </button>
                   );
                 })}
@@ -349,27 +327,24 @@ export default function ManualDiffModal({
 
                 <div className={`space-y-2 font-re-typewriter ${textSizeCls} flex-1`}>
                   {Array.from({ length: maxRows }).map((_, idx) => {
-                    const left = plainLines[idx] || '';
                     const right = revisedLines[idx] || '';
-                    const differs = right && right !== left;
-                    const digit = extractStepDigit(right || left, idx);
+                    const digit = extractStepDigit(right || plainLines[idx], idx);
+                    const isPinned = Boolean(pinnedRows[idx]);
                     return (
                       <button
                         type="button"
                         key={`rev-${idx}`}
                         onClick={() => toggleRowPin(idx, digit)}
                         className={`w-full text-left py-1.5 px-3 rounded-[2px] border leading-relaxed flex items-start justify-between gap-2 cursor-pointer transition ${
-                          differs
-                            ? 'bg-[#b45309]/15 border-[#922618]/55 text-[#381008] font-bold shadow-[inset_3px_0_0_#9b1c1c]'
-                            : pinnedRows[idx]
-                              ? 'bg-[#d97706]/15 border-[#92400e]/45 text-[#2d2115]'
-                              : 'bg-black/5 border-[#8e744c]/35 text-[#2d2115] hover:bg-black/10'
+                          isPinned
+                            ? 'bg-[#d97706]/20 border-[#92400e]/70 text-[#1e1208] ring-1 ring-[#92400e]/40 font-bold'
+                            : 'bg-black/5 border-[#8e744c]/35 text-[#2d2115] hover:bg-black/10'
                         }`}
                       >
                         <span>{right || '—'}</span>
-                        {differs && (
-                          <span className="shrink-0 text-[9px] px-2 py-0.5 rounded-[2px] border border-[#9b1c1c]/60 text-[#7f1d1d] tracking-wider uppercase">
-                            ALTERED
+                        {isPinned && (
+                          <span className="shrink-0 text-[9px] px-2 py-0.5 rounded-[2px] border border-[#92400e]/60 bg-[#d97706]/20 text-[#78350f] tracking-wider uppercase font-bold">
+                            PINNED #{digit}
                           </span>
                         )}
                       </button>
