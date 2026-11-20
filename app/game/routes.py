@@ -271,8 +271,99 @@ def get_room_basket(room_id: str, request: Request):
                 (team["id"], room_id)
             )
             room_status = cur.fetchone()
+
+            team_clues = {}
+            if room_id == "vault":
+                cur.execute(
+                    "SELECT clue_id, solved, score, solved_at FROM team_clues WHERE team_id = %s",
+                    (team["id"],)
+                )
+                team_clues = {r["clue_id"]: dict(r) for r in cur.fetchall()}
     finally:
         conn.close()
+
+    if room_id == "vault":
+        # Check if prereq/vault clues are solved in DB to reveal answers or display as SEALED
+        r2_06_solved = bool(team_clues.get("R2-06", {}).get("solved") or team_clues.get("R2-01", {}).get("solved"))
+        r2_08_solved = bool(team_clues.get("R2-08", {}).get("solved"))
+        r2_09_solved = bool(team_clues.get("R2-09", {}).get("solved"))
+
+        items = [
+            {
+                "id": "FRAG-R2-BADGE",
+                "clue_id": "R2-06",
+                "part": "A",
+                "is_wrapped": not r2_06_solved,
+                "display": {
+                    "title": "Trusted Operator Credential & Voicemail" if r2_06_solved else "Sealed Operator Transmission",
+                    "image_file": "/evidence/evidence_er08.svg" if r2_06_solved else "/parcel_wrapped.png",
+                    "style": {"ink": "black", "paper": "bureaucratic" if r2_06_solved else "oilcloth"},
+                    "lines": [
+                        "OPERATOR BADGE: BDG-9001",
+                        "VOICEMAIL FREQUENCY AUDIO PIN: 8140",
+                        "STATUS: ACTIVE AFTER SHUTDOWN (VERIFIED)"
+                    ] if r2_06_solved else [
+                        "SEALED - RESTRICTED: Requires solving Control Room Voicemail (R2-06)"
+                    ],
+                    "corner_mark": "BDG-9001" if r2_06_solved else "RESTRICTED"
+                },
+                "secret": {
+                    "note": "Operator BDG-9001 authenticated. Voicemail spectrogram revealed frequency code 8140." if r2_06_solved else "Solve R2-06 in Control to unseal this operator credential."
+                }
+            },
+            {
+                "id": "FRAG-R2-DIFF",
+                "clue_id": "R2-08",
+                "part": "B",
+                "is_wrapped": not r2_08_solved,
+                "display": {
+                    "title": "Scriptorium Containment Protocol (Diff)" if r2_08_solved else "Sealed Scriptorium Diff",
+                    "image_file": "/evidence/evidence_er01.svg" if r2_08_solved else "/parcel_wrapped.png",
+                    "style": {"ink": "black", "paper": "bureaucratic" if r2_08_solved else "oilcloth"},
+                    "lines": [
+                        "TAMPERED SCRIPTORIUM STEPS: 2, 6",
+                        "CLEAN PROTOCOL INDICES: 1, 3, 4, 5, 7, 8 (134578)"
+                    ] if r2_08_solved else [
+                        "SEALED - RESTRICTED: Requires solving Scriptorium Diff (R2-08)"
+                    ],
+                    "corner_mark": "DIFF-134578" if r2_08_solved else "RESTRICTED"
+                },
+                "secret": {
+                    "note": "Clean sequence 134578 required for Central Console input." if r2_08_solved else "Solve R2-08 in West Scriptorium to unseal clean protocol steps."
+                }
+            },
+            {
+                "id": "FRAG-R2-CIRCUIT",
+                "clue_id": "R2-09",
+                "part": "C",
+                "is_wrapped": not r2_09_solved,
+                "display": {
+                    "title": "East Switchgear Authorization Code" if r2_09_solved else "Sealed Switchgear Logic Matrix",
+                    "image_file": "/evidence/evidence_er05.svg" if r2_09_solved else "/parcel_wrapped.png",
+                    "style": {"ink": "black", "paper": "bureaucratic" if r2_09_solved else "oilcloth"},
+                    "lines": [
+                        "CIRCUIT RELAY CODE: 1101",
+                        "EAST SWITCHGEAR BUS: ENERGIZED"
+                    ] if r2_09_solved else [
+                        "SEALED - RESTRICTED: Requires solving Switchgear Circuit (R2-09)"
+                    ],
+                    "corner_mark": "CODE-1101" if r2_09_solved else "RESTRICTED"
+                },
+                "secret": {
+                    "note": "Authorization code 1101 required for Central Console input." if r2_09_solved else "Solve R2-09 in East Switchgear to unseal relay code."
+                }
+            }
+        ]
+
+        unwrapped_ids = [item["id"] for item in items if not item["is_wrapped"]]
+        return {
+            "ok": True,
+            "room_id": "vault",
+            "basket_unlocked": True,
+            "total_fragments_in_room": 3,
+            "collected_count": len(unwrapped_ids),
+            "fragments": items
+        }
         
     collected_ids = [f["fragment_id"] for f in collected_fragments]
     room_evidence = target_room.get("evidence", [])

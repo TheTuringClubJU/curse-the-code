@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { BookOpen, Lock, CheckCircle2, FileText, ArrowUpRight, ShieldAlert, ScrollText } from 'lucide-react';
+import { BookOpen, Lock, CheckCircle2, FileText, ShieldAlert } from 'lucide-react';
 import '../../vault.css';
 
 const API_BASE = import.meta.env.VITE_API_URL || '';
@@ -44,13 +44,9 @@ export default function VaultDossierModal({
   isOpen,
   onClose,
   vaultClues = [],
-  discoveredDocIds = [],
-  documents = {},
-  onOpenDocument,
 }) {
   const [dossierData, setDossierData] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState('records'); // 'records' | 'manuscripts'
 
   useEffect(() => {
     if (!isOpen) return;
@@ -159,33 +155,8 @@ export default function VaultDossierModal({
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <div className="flex rounded-[2px] p-0.5 bg-black/60 border border-slate-700/70">
-              <button
-                type="button"
-                onClick={() => setActiveTab('records')}
-                className={`px-3 py-1 rounded-[2px] vault-font-mono text-[10px] tracking-wider uppercase cursor-pointer transition ${
-                  activeTab === 'records'
-                    ? 'bg-red-900/60 text-red-100 border border-red-500/45'
-                    : 'text-slate-400 hover:text-slate-200'
-                }`}
-              >
-                Records ({records.length || 3})
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab('manuscripts')}
-                className={`px-3 py-1 rounded-[2px] vault-font-mono text-[10px] tracking-wider uppercase cursor-pointer transition inline-flex items-center gap-1 ${
-                  activeTab === 'manuscripts'
-                    ? 'bg-red-900/60 text-red-100 border border-red-500/45'
-                    : 'text-slate-400 hover:text-slate-200'
-                }`}
-              >
-                <ScrollText className="w-3 h-3" />
-                <span>Folios ({discoveredDocIds.length})</span>
-              </button>
-            </div>
             <span className="vault-font-mono text-[11px] px-3 py-1 rounded-[2px] border border-slate-600/55 bg-[#0e121c] text-slate-200">
-              {solvedCount}/{records.length || 3} VERIFIED
+              {solvedCount}/3 VERIFIED
             </span>
             <button
               type="button"
@@ -198,59 +169,6 @@ export default function VaultDossierModal({
         </div>
 
         {/* Stitched Binder Body */}
-        {activeTab === 'manuscripts' ? (
-          <div className="p-5 sm:p-7 space-y-4">
-            <div className="flex items-center justify-between border-b border-[#5b2a26]/40 pb-2">
-              <span className="vault-font-mono text-[10px] tracking-[0.24em] uppercase text-[#bfa782]">
-                EXAMINED MANUSCRIPTS &amp; FIELD SHEETS ({discoveredDocIds.length})
-              </span>
-              <span className="vault-font-mono text-[10px] text-[#9b8668]">
-                INSPECT PROPS THROUGHOUT ZONES 6A–6F WITH [E]
-              </span>
-            </div>
-
-            {discoveredDocIds.length === 0 ? (
-              <div className="vault-index-card p-6 rounded-[2px] text-center vault-font-serif text-base italic">
-                No archival manuscripts examined yet. Walk through Narthex (6A), Nave (6B), Scriptorium (6C), and Switchgear (6D) and press [E] on ledgers, clipboards, statues, or glazing panes.
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
-                {discoveredDocIds.map((docId) => {
-                  const doc = documents?.[docId];
-                  if (!doc) return null;
-                  return (
-                    <div
-                      key={docId}
-                      className="vault-index-card p-4 rounded-[2px] flex flex-col justify-between gap-3"
-                    >
-                      <div>
-                        <div className="vault-font-mono text-[9px] font-bold tracking-[0.18em] uppercase text-[#7a1e1a]">
-                          {doc.wing} · {doc.folioCode}
-                        </div>
-                        <h3 className="vault-font-serif text-base font-bold text-[#1f160f] mt-1">
-                          {doc.title}
-                        </h3>
-                        <p className="vault-font-serif italic text-xs text-[#4a3926] mt-1.5 line-clamp-3">
-                          {doc.marginalia}
-                        </p>
-                      </div>
-                      {onOpenDocument && (
-                        <button
-                          type="button"
-                          onClick={() => onOpenDocument(docId)}
-                          className="re-plate self-start !px-3 !py-1.5 text-[10px] cursor-pointer"
-                        >
-                          <span>READ FOLIO</span>
-                          <ArrowUpRight className="w-3.5 h-3.5" />
-                        </button>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        ) : (
         <div className="relative p-5 sm:p-7 grid grid-cols-1 lg:grid-cols-12 gap-5">
           {/* Decorative Metallic Binder Clamps */}
           <div
@@ -417,7 +335,6 @@ export default function VaultDossierModal({
             </div>
           </div>
         </div>
-        )}
       </div>
     </div>
   );

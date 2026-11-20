@@ -17,10 +17,11 @@ def reset_vault_team_db(team_name="Team Cipher"):
                 DELETE FROM team_fragments WHERE team_id = (SELECT id FROM teams WHERE name = %s) AND room_id IN ('records', 'control', 'vault');
                 DELETE FROM team_rooms WHERE team_id = (SELECT id FROM teams WHERE name = %s) AND room_id IN ('records', 'control', 'vault');
                 DELETE FROM submissions WHERE team_id = (SELECT id FROM teams WHERE name = %s) AND clue_id IN ('R2-01', 'R2-05', 'R2-06', 'R2-08', 'R2-09', 'R2-10');
+                DELETE FROM team_hints WHERE team_id = (SELECT id FROM teams WHERE name = %s);
                 UPDATE team_rounds 
                 SET penalty_seconds = 0, clues_solved = 0, total_score = 0, last_solved_at = NULL, finished_at = NULL, qualified_at = NULL
                 WHERE team_id = (SELECT id FROM teams WHERE name = %s) AND round IN (1, 2);
-            """, (team_name, team_name, team_name, team_name, team_name, team_name))
+            """, (team_name, team_name, team_name, team_name, team_name, team_name, team_name))
             conn.commit()
         conn.close()
 
@@ -139,16 +140,40 @@ def test_r6_05_room6_initial_flags_false(auth_headers):
     assert data["is_completed"] is False
     assert data.get("total_fragments_in_room", 0) == 0
 
-def test_r6_06_room6_no_fragments_or_basket_mechanic(auth_headers):
+def test_r6_06_room6_basket_feeder_mechanic(auth_headers):
+    reset_vault_team_db("Team Cipher")
+    unlock_vault_entrance("Team Cipher")
     res = client.get("/api/game/room/vault/basket", headers=auth_headers)
     assert res.status_code == 200
     data = res.json()
     assert data["ok"] is True
     assert data["room_id"] == "vault"
-    assert data["total_fragments_in_room"] == 0
+    assert data["total_fragments_in_room"] == 3
     assert data["collected_count"] == 0
-    assert data["fragments"] == []
+    assert len(data["fragments"]) == 3
     assert data["basket_unlocked"] is True
+    for f in data["fragments"]:
+        assert f["is_wrapped"] is True
+        assert "SEALED" in f["display"]["title"] or "SEALED" in f["display"]["lines"][0]
+
+    # When prereq clues are solved, fragments unseal and reveal answers in basket
+    solve_prereqs_r2_08_r2_09("Team Cipher")
+    res_solved = client.get("/api/game/room/vault/basket", headers=auth_headers)
+    assert res_solved.status_code == 200
+    data_solved = res_solved.json()
+    assert data_solved["collected_count"] == 2
+    diff_frag = next(f for f in data_solved["fragments"] if f["id"] == "FRAG-R2-DIFF")
+    circuit_frag = next(f for f in data_solved["fragments"] if f["id"] == "FRAG-R2-CIRCUIT")
+    badge_frag = next(f for f in data_solved["fragments"] if f["id"] == "FRAG-R2-BADGE")
+    assert diff_frag["is_wrapped"] is False
+    assert "134578" in diff_frag["display"]["lines"][1]
+    assert circuit_frag["is_wrapped"] is False
+    assert "1101" in circuit_frag["display"]["lines"][0]
+    assert badge_frag["is_wrapped"] is True
+
+    # Reset DB back to clean state for subsequent tests
+    reset_vault_team_db("Team Cipher")
+    unlock_vault_entrance("Team Cipher")
 
 def test_r6_07_room6_all_three_clues_projected(auth_headers):
     res = client.get("/api/game/room/vault", headers=auth_headers)

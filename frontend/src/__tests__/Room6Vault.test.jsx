@@ -399,6 +399,27 @@ describe('Room 6 (The Anointing Vault) Comprehensive Test Suite', () => {
     expect(mockAudioInstance.flapClack).toHaveBeenCalled();
   });
 
+  it('opens BasketModal on [B] and verifies no GFX resolution button on HUD', async () => {
+    render(<Room6Vault team={mockTeam} onLogout={vi.fn()} />);
+    await waitFor(() => expect(activeEngineInstance).not.toBeNull());
+
+    // GFX resolution button removed from HUD
+    expect(screen.queryByText(/GFX:/i)).not.toBeInTheDocument();
+
+    // Basket button exists on HUD and opens on [B]
+    expect(screen.getByTitle(/Evidence Basket \[B\]/i)).toBeInTheDocument();
+
+    fireEvent.keyDown(window, { code: 'KeyB' });
+    await waitFor(() => {
+      expect(screen.getByText(/INVESTIGATION BASKET • EVIDENCE TABLE/i)).toBeInTheDocument();
+    });
+
+    fireEvent.keyDown(window, { code: 'Escape' });
+    await waitFor(() => {
+      expect(screen.queryByText(/INVESTIGATION BASKET • EVIDENCE TABLE/i)).not.toBeInTheDocument();
+    });
+  });
+
   it('opens VaultDossierModal on [C] and lets user jump to a Vault terminal', async () => {
     render(<Room6Vault team={mockTeam} onLogout={vi.fn()} />);
     await waitFor(() => expect(activeEngineInstance).not.toBeNull());

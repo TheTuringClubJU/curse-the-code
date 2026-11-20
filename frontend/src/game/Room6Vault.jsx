@@ -7,7 +7,7 @@ import VaultDossierModal from './components/vault/VaultDossierModal';
 import ManualDiffModal from './components/vault/ManualDiffModal';
 import FailsafeCircuitModal from './components/vault/FailsafeCircuitModal';
 import CentralConsoleModal from './components/vault/CentralConsoleModal';
-import VaultDocumentModal, { VAULT_DOCUMENTS } from './components/vault/VaultDocumentModal';
+import BasketModal from './components/BasketModal';
 import HintModal from './components/HintModal';
 import './vault.css';
 
@@ -45,12 +45,16 @@ export default function Room6Vault({ team, onLogout }) {
     is_completed: false,
   });
   const [activeClue, setActiveClue] = useState(null);
-  const [activeDocumentId, setActiveDocumentId] = useState(null);
-  const [discoveredDocIds, setDiscoveredDocIds] = useState([]);
   const [isDossierOpen, setIsDossierOpen] = useState(false);
+  const [isBasketOpen, setIsBasketOpen] = useState(false);
+  const [basketData, setBasketData] = useState({
+    fragments: [],
+    collected_ids: [],
+    basket_unlocked: true,
+    total_fragments_in_room: 3,
+  });
   const [isHintOpen, setIsHintOpen] = useState(false);
   const [isSystemOpen, setIsSystemOpen] = useState(false);
-  const docDelayRef = useRef(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitFeedback, setSubmitFeedback] = useState(null);
   const [audioMuted, setAudioMuted] = useState(false);
@@ -151,6 +155,21 @@ export default function Room6Vault({ team, onLogout }) {
     }
   }, []);
 
+  const fetchBasket = useCallback(async () => {
+    try {
+      const res = await fetch('/api/game/room/vault/basket', {
+        headers: authHeaders(),
+        credentials: 'include',
+      });
+      if (!res.ok) return null;
+      const data = await res.json();
+      setBasketData(data);
+      return data;
+    } catch {
+      return null;
+    }
+  }, []);
+
   const syncCountdown = useCallback(async () => {
     if (vaultRestoredRef.current) {
       engineRef.current?.setCountdown?.('00:00', true);
@@ -214,10 +233,6 @@ export default function Room6Vault({ team, onLogout }) {
     [fetchRoom, showNotice]
   );
 
-  const markDocDiscovered = useCallback((docId) => {
-    setDiscoveredDocIds((prev) => (prev.includes(docId) ? prev : [...prev, docId]));
-  }, []);
-
   const handleInteract = useCallback(
     (objectId) => {
       if (objectId && objectId.startsWith('door_')) {
@@ -235,7 +250,6 @@ export default function Room6Vault({ team, onLogout }) {
             ? 'Something pressed from inside the reinforced glass — then slipped back into the crimson core.'
             : 'Reinforced lead-glass barrier. The suspended core pulses relentlessly at the center of the pit.'
         );
-        markDocDiscovered('core_glass');
         return;
       }
 
@@ -243,7 +257,6 @@ export default function Room6Vault({ team, onLogout }) {
         const display = lastTimeStrRef.current || '--:--';
         showNotice(`Split-flap containment clock: ${display} until automatic purge.`);
         audioRef.current?.flapClack?.();
-        markDocDiscovered('countdown_timer');
         return;
       }
 
@@ -256,29 +269,25 @@ export default function Room6Vault({ team, onLogout }) {
         return;
       }
 
-      if (VAULT_DOCUMENTS[objectId]) {
-        const doc = VAULT_DOCUMENTS[objectId];
-        audioRef.current?.ensureActive?.();
-        audioRef.current?.click?.();
-        engineRef.current?.triggerScare?.(`inspect_${objectId}`);
-        markDocDiscovered(objectId);
-        showNotice(`Logged to Case Dossier [C]: ${doc.title}`);
-      }
+      audioRef.current?.ensureActive?.();
+      audioRef.current?.click?.();
+      showNotice('Station apparatus secured. Containment requires console operation.');
     },
-    [markDocDiscovered, openClueByObjectId, showNotice]
+    [openClueByObjectId, showNotice]
   );
 
   useEffect(() => {
-    const isAnyOpen = Boolean(activeClue || activeDocumentId || isDossierOpen || isHintOpen || isSystemOpen);
+    const isAnyOpen = Boolean(activeClue || isDossierOpen || isBasketOpen || isHintOpen || isSystemOpen);
     anyModalOpenRef.current = isAnyOpen;
     engineRef.current?.setPaused?.(isAnyOpen);
     if (isAnyOpen) {
       engineRef.current?.unlock?.();
     }
-  }, [activeClue, activeDocumentId, isDossierOpen, isHintOpen, isSystemOpen]);
+  }, [activeClue, isDossierOpen, isBasketOpen, isHintOpen, isSystemOpen]);
 
   useEffect(() => {
     fetchRoom();
+    fetchBasket();
     syncCountdown();
     const timePoll = setInterval(syncCountdown, 1000);
     return () => clearInterval(timePoll);
@@ -372,7 +381,6 @@ export default function Room6Vault({ team, onLogout }) {
       if (tearTimerRef.current) clearTimeout(tearTimerRef.current);
       if (nightmareTimerRef.current) clearTimeout(nightmareTimerRef.current);
       if (crackTimerRef.current) clearTimeout(crackTimerRef.current);
-      if (docDelayRef.current) clearTimeout(docDelayRef.current);
       engine?.dispose?.();
       audio?.dispose?.();
       engineRef.current = null;
@@ -396,15 +404,22 @@ export default function Room6Vault({ team, onLogout }) {
           setIsSystemOpen(false);
           return;
         }
-        if (activeDocumentId) {
-          setActiveDocumentId(null);
-        } else if (activeClue) {
+        if (isBasketOpen) {
+          setIsBasketOpen(false);
+          return;
+        }
+        if (activeClue) {
           setActiveClue(null);
           setSubmitFeedback(null);
-        } else if (isDossierOpen) {
+          return;
+        }
+        if (isDossierOpen) {
           setIsDossierOpen(false);
-        } else if (isHintOpen) {
+          return;
+        }
+        if (isHintOpen) {
           setIsHintOpen(false);
+          return;
         }
         return;
       }
@@ -421,6 +436,9 @@ export default function Room6Vault({ team, onLogout }) {
           audioRef.current?.ensureActive?.();
           engineRef.current?.lock?.();
         }
+      } else if (e.code === 'KeyB') {
+        e.preventDefault();
+        setIsBasketOpen((prev) => !prev);
       } else if (e.code === 'KeyC') {
         e.preventDefault();
         setIsDossierOpen((prev) => !prev);
@@ -439,27 +457,12 @@ export default function Room6Vault({ team, onLogout }) {
         engineRef.current?.sparkDeadTorch?.();
         audioRef.current?.click?.();
         showNotice('Torch battery dead (0%). Follow the candle sconces and amber lamps.');
-      } else if (e.code === 'KeyR' && !e.repeat) {
-        e.preventDefault();
-        setQualityMode((prev) => {
-          const order = ['low', 'med', 'high'];
-          const cur = prev === 'eco' ? 'low' : prev === 'crisp' ? 'high' : order.includes(prev) ? prev : 'med';
-          const next = order[(order.indexOf(cur) + 1) % order.length];
-          try {
-            localStorage.setItem('vault_quality', next);
-          } catch {
-            // ignore
-          }
-          engineRef.current?.setResolutionMode?.(next);
-          showNotice(`Render Resolution: ${next.toUpperCase()} [R]`);
-          return next;
-        });
       }
     };
 
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [activeClue, activeDocumentId, isDossierOpen, isHintOpen, isSystemOpen, showNotice]);
+  }, [activeClue, isBasketOpen, isDossierOpen, isHintOpen, isSystemOpen, showNotice]);
 
   const handleConsoleReject = useCallback(() => {
     triggerScanTear();
@@ -504,6 +507,7 @@ export default function Room6Vault({ team, onLogout }) {
         if (isCorrect) {
           audioRef.current?.good?.();
           await fetchRoom();
+          await fetchBasket();
           if (clueId === 'R2-10') {
             handleVictory(data);
           } else {
@@ -525,6 +529,7 @@ export default function Room6Vault({ team, onLogout }) {
           audioRef.current?.bad?.();
         }
         await fetchRoom();
+        await fetchBasket();
         const errMsg = data.message || 'Verification rejected. Recheck containment parameters.';
         setSubmitFeedback({ ok: false, message: errMsg });
         return { ok: false, correct: false, message: errMsg, ...data };
@@ -536,7 +541,7 @@ export default function Room6Vault({ team, onLogout }) {
         setIsSubmitting(false);
       }
     },
-    [fetchRoom, handleConsoleReject, handleVictory, showNotice]
+    [fetchBasket, fetchRoom, handleConsoleReject, handleVictory, showNotice]
   );
 
   const handleOpenDebrief = useCallback(() => {
@@ -674,22 +679,7 @@ export default function Room6Vault({ team, onLogout }) {
             return next;
           });
         }}
-        qualityMode={qualityMode}
-        onChangeQuality={() => {
-          setQualityMode((prev) => {
-            const order = ['low', 'med', 'high'];
-            const cur = prev === 'eco' ? 'low' : prev === 'crisp' ? 'high' : order.includes(prev) ? prev : 'med';
-            const next = order[(order.indexOf(cur) + 1) % order.length];
-            try {
-              localStorage.setItem('vault_quality', next);
-            } catch {
-              // ignore storage errors
-            }
-            engineRef.current?.setResolutionMode?.(next);
-            showNotice(`Render Resolution: ${next.toUpperCase()} [R]`);
-            return next;
-          });
-        }}
+        onToggleBasket={() => setIsBasketOpen((v) => !v)}
         onToggleDossier={() => setIsDossierOpen((v) => !v)}
         onToggleHint={() => setIsHintOpen((v) => !v)}
         onRequestLock={() => {
@@ -703,8 +693,6 @@ export default function Room6Vault({ team, onLogout }) {
           }
         }}
         onLogout={onLogout}
-        discoveredDocsCount={discoveredDocIds.length}
-        totalDocsCount={Object.keys(VAULT_DOCUMENTS).length}
         isSystemOpen={isSystemOpen}
         onToggleSystem={() => setIsSystemOpen((v) => !v)}
         getPlayerPos={() => engineRef.current?.getPos?.() || playerPos}
@@ -726,7 +714,7 @@ export default function Room6Vault({ team, onLogout }) {
         !clearanceDismissed &&
         !notice &&
         !activeClue &&
-        !activeDocumentId &&
+        !isBasketOpen &&
         !isDossierOpen &&
         !isHintOpen && (
           <div className="fixed top-20 left-1/2 -translate-x-1/2 z-40 pointer-events-auto flex flex-wrap items-center justify-center gap-2.5 px-4 py-2 rounded-[2px] border border-emerald-400/45 border-l-2 border-l-emerald-400 bg-[#09120e]/90 backdrop-blur-md shadow-[0_12px_34px_rgba(0,0,0,0.72)]">
@@ -821,21 +809,19 @@ export default function Room6Vault({ team, onLogout }) {
         isSubmitting={isSubmitting}
       />
 
-      {/* Inspection Manuscript / Document Modal */}
-      {activeDocumentId && (
-        <VaultDocumentModal
-          documentId={activeDocumentId}
-          discoveredIds={discoveredDocIds}
-          onSelectDocument={(id) => {
-            markDocDiscovered(id);
-            setActiveDocumentId(id);
-          }}
-          onClose={() => {
-            setActiveDocumentId(null);
-            engineRef.current?.lock?.();
-          }}
-        />
-      )}
+      {/* [B] Evidence Basket */}
+      <BasketModal
+        isOpen={isBasketOpen}
+        onClose={() => {
+          setIsBasketOpen(false);
+          engineRef.current?.lock?.();
+        }}
+        evidence={basketData.fragments || []}
+        collectedIds={basketData.collected_ids || []}
+        basketUnlocked={Boolean(basketData.basket_unlocked)}
+        totalInRoom={basketData.total_fragments_in_room || (basketData.fragments || []).length || 3}
+        roomTitle={roomData.title || 'The Anointing Vault'}
+      />
 
       {/* [C] Case Dossier */}
       <VaultDossierModal
@@ -845,12 +831,6 @@ export default function Room6Vault({ team, onLogout }) {
           engineRef.current?.lock?.();
         }}
         vaultClues={clues}
-        discoveredDocIds={discoveredDocIds}
-        documents={VAULT_DOCUMENTS}
-        onOpenDocument={(docId) => {
-          setIsDossierOpen(false);
-          setActiveDocumentId(docId);
-        }}
       />
 
       {/* [H] Shared Hint Modal */}

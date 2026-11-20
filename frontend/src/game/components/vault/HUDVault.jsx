@@ -4,6 +4,7 @@ import {
   Crosshair,
   FlashlightOff,
   HelpCircle,
+  Layers,
   Lock,
   LogOut,
   Monitor,
@@ -67,14 +68,11 @@ export default function HUDVault({
   onChangeSensitivity,
   muted = false,
   onToggleMute,
-  qualityMode = 'med',
-  onChangeQuality,
+  onToggleBasket,
   onToggleDossier,
   onToggleHint,
   onRequestLock,
   onLogout,
-  discoveredDocsCount = 0,
-  totalDocsCount = 8,
   isSystemOpen,
   onToggleSystem,
   getPlayerPos,
@@ -103,7 +101,6 @@ export default function HUDVault({
 
   const zoneInfo = getRoomZone(pose.x, pose.z);
   const riddleLine = getRiddleObjective(clues, cluesSolved, totalClues);
-  const resLabel = qualityMode === 'high' ? 'HIGH' : qualityMode === 'low' ? 'LOW' : 'MED';
   const promptBody = activeHoverPrompt ? activeHoverPrompt.replace(/^\[E\]\s*/i, '') : '';
 
   // Convert 3D world coords (-18..18, -12..17) into clean SVG blueprint coords (152x104)
@@ -183,6 +180,17 @@ export default function HUDVault({
           <div className="flex flex-wrap items-center justify-end gap-2">
             <button
               type="button"
+              onClick={onToggleBasket}
+              className="re-btn cursor-pointer"
+              title="Evidence Basket [B]"
+            >
+              <span className="re-btn-circle">B</span>
+              <Layers className="w-3.5 h-3.5 text-white/90" />
+              <span>Basket</span>
+            </button>
+
+            <button
+              type="button"
               onClick={onToggleDossier}
               className="re-btn cursor-pointer"
               title="Case Dossier [C]"
@@ -190,9 +198,6 @@ export default function HUDVault({
               <span className="re-btn-circle">C</span>
               <BookOpen className="w-3.5 h-3.5 text-white/90" />
               <span>Dossier</span>
-              <span className="text-[10px] text-white/70 ml-0.5">
-                {discoveredDocsCount}/{totalDocsCount}
-              </span>
             </button>
 
             <button
@@ -205,19 +210,6 @@ export default function HUDVault({
               <HelpCircle className="w-3.5 h-3.5 text-white/90" />
               <span>Guidance</span>
             </button>
-
-            {onChangeQuality && (
-              <button
-                type="button"
-                onClick={onChangeQuality}
-                className="re-btn cursor-pointer"
-                title="Cycle Render Resolution [R]"
-              >
-                <span className="re-btn-circle">R</span>
-                <Monitor className="w-3.5 h-3.5 text-white/90" />
-                <span>GFX: {resLabel}</span>
-              </button>
-            )}
 
             <button
               type="button"
