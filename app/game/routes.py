@@ -724,30 +724,6 @@ def submit_clue_answer(clue_id: str, payload: Dict[str, Any], request: Request):
             finally:
                 conn_pre.close()
 
-    # Generic prerequisite resolution check (e.g. Round 2 clues)
-    requires_resolved = target_clue.get("unlock", {}).get("requires_resolved", [])
-    if requires_resolved and not payload.get("_bypass_sequence"):
-        conn_pre = get_db_connection()
-        try:
-            with conn_pre.cursor(cursor_factory=RealDictCursor) as cur_pre:
-                cur_pre.execute(
-                    "SELECT clue_id, solved, attempts FROM team_clues WHERE team_id = %s AND clue_id = ANY(%s)",
-                    (team["id"], requires_resolved)
-                )
-                p_map = {r["clue_id"]: r for r in cur_pre.fetchall()}
-                for req_id in requires_resolved:
-                    r_info = p_map.get(req_id, {})
-                    req_clue = next((cl for cl in content.get("clues", []) if cl["id"] == req_id), {})
-                    req_max = req_clue.get("attempts_max", 3)
-                    req_resolved = bool(r_info.get("solved") or (req_max is not None and r_info.get("attempts", 0) >= req_max))
-                    if not req_resolved:
-                        raise HTTPException(
-                            status_code=403,
-                            detail={"code": "CLUE_LOCKED", "message": f"Prerequisite clue '{req_id}' must be resolved first."}
-                        )
-        finally:
-            conn_pre.close()
-
     attempts_max = target_clue.get("attempts_max", 3)
 
     # Room 6 prerequisite interlock: R2-10 Grand Finale requires R2-08 and R2-09 resolved
