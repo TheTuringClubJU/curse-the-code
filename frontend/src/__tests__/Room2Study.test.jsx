@@ -1020,7 +1020,7 @@ describe('Room 2 (Daniel\'s Study) Comprehensive Test Suite (50 Tests)', () => {
   it('uses the shared Study hint modal and tournament costs from the first hint', async () => {
     const originalFetch = global.fetch;
     global.fetch = vi.fn((url, options) => {
-      if (String(url).endsWith('/api/game/hint/status')) return Promise.resolve({ok:true,json:async()=>({total_budget:15,hints_remaining:15,total_penalty_seconds:0,unlocked_hints:[]})});
+      if (String(url).includes('/api/game/hint/status')) return Promise.resolve({ok:true,json:async()=>({total_budget:15,hints_remaining:15,total_penalty_seconds:0,unlocked_hints:[]})});
       if (String(url).endsWith('/api/game/hint')) return Promise.resolve({ok:true,json:async()=>({success:true,target_id:'ES01',is_free:false,penalty_applied:10,hint_text:'Exact guidance from the shared service.'})});
       return originalFetch(url, options);
     });

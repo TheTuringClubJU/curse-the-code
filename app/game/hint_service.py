@@ -4,7 +4,12 @@ from app.db import get_db_connection
 from app.lobby.routes import get_content_data
 from psycopg2.extras import RealDictCursor
 
-TOTAL_HINT_BUDGET = 15
+DEFAULT_ROUND_HINT_BUDGET = 15
+TOTAL_HINT_BUDGET = DEFAULT_ROUND_HINT_BUDGET
+ROUND_HINT_BUDGET = {
+    1: 15,
+    2: 15,
+}
 FRAGMENT_PENALTY_SECONDS = 10
 CLUE_PENALTY_SECONDS = 30
 
@@ -232,6 +237,8 @@ def get_hint_status(team_id: int, room_id: Optional[str] = None) -> Dict[str, An
                     live_r = cur.fetchone()
                     target_round = live_r["round"] if live_r else 1
 
+            budget = ROUND_HINT_BUDGET.get(target_round, DEFAULT_ROUND_HINT_BUDGET)
+
             cur.execute(
                 """SELECT id, room_id, hint_category, target_id, penalty_seconds, hint_text, created_at
                    FROM team_hints
@@ -250,9 +257,11 @@ def get_hint_status(team_id: int, room_id: Optional[str] = None) -> Dict[str, An
 
     hints_used = len(hints)
     return {
-        "total_budget": TOTAL_HINT_BUDGET,
+        "round": target_round,
+        "round_budget": budget,
+        "total_budget": budget,
         "hints_used": hints_used,
-        "hints_remaining": max(0, TOTAL_HINT_BUDGET - hints_used),
+        "hints_remaining": max(0, budget - hints_used),
         "total_penalty_seconds": total_penalty,
         "unlocked_hints": [dict(h) for h in hints],
     }
@@ -304,6 +313,7 @@ def request_hint(
                 raise HTTPException(400, f"Invalid room_id '{room_id}'")
 
             round_num = ROOM_TO_ROUND.get(room_id, 1)
+            budget = ROUND_HINT_BUDGET.get(round_num, DEFAULT_ROUND_HINT_BUDGET)
 
             # 2. Check if the specific target_id requested is ALREADY unlocked
             if target_id:
@@ -330,6 +340,9 @@ def request_hint(
                     details = CLUE_HINT_DETAILS.get(target_id) if existing["hint_category"] == "clue" else None
                     return {
                         "success": True,
+                        "round": round_num,
+                        "round_budget": budget,
+                        "total_budget": budget,
                         "penalty_seconds": 0,
                         "target_id": existing["target_id"],
                         "hint_category": existing["hint_category"],
@@ -339,7 +352,7 @@ def request_hint(
                         "penalty_applied": 0,
                         "is_free": True,
                         "hints_used": used_cnt,
-                        "hints_remaining": max(0, TOTAL_HINT_BUDGET - used_cnt),
+                        "hints_remaining": max(0, budget - used_cnt),
                         "total_penalty_seconds": total_pen,
                         "message": "Re-inspected previously unlocked hint (no penalty applied)."
                     }
@@ -350,12 +363,12 @@ def request_hint(
                 (team_id, round_num),
             )
             hints_used = cur.fetchone()["count"]
-            if hints_used >= TOTAL_HINT_BUDGET:
+            if hints_used >= budget:
                 raise HTTPException(
                     403,
                     detail={
                         "code": "HINT_BUDGET_EXHAUSTED",
-                        "message": f"Tournament hint budget exhausted ({TOTAL_HINT_BUDGET}/{TOTAL_HINT_BUDGET} used).",
+                        "message": f"Round {round_num} hint budget exhausted ({budget}/{budget} used).",
                     },
                 )
 
@@ -422,6 +435,9 @@ def request_hint(
                     total_pen = r_row["penalty_seconds"] if r_row and r_row["penalty_seconds"] else 0
                     return {
                         "success": True,
+                        "round": round_num,
+                        "round_budget": budget,
+                        "total_budget": budget,
                         "penalty_seconds": 0,
                         "target_id": next_fragment_id,
                         "hint_category": "fragment",
@@ -431,7 +447,7 @@ def request_hint(
                         "penalty_applied": 0,
                         "is_free": True,
                         "hints_used": hints_used,
-                        "hints_remaining": max(0, TOTAL_HINT_BUDGET - hints_used),
+                        "hints_remaining": max(0, budget - hints_used),
                         "total_penalty_seconds": total_pen,
                         "message": "Re-inspected previously unlocked hint (no penalty applied)."
                     }
@@ -462,6 +478,9 @@ def request_hint(
 
                 return {
                     "success": True,
+                    "round": round_num,
+                    "round_budget": budget,
+                    "total_budget": budget,
                     "penalty_seconds": penalty,
                     "target_id": next_fragment_id,
                     "hint_category": "fragment",
@@ -471,7 +490,7 @@ def request_hint(
                     "penalty_applied": penalty,
                     "is_free": False,
                     "hints_used": hints_used + 1,
-                    "hints_remaining": max(0, TOTAL_HINT_BUDGET - (hints_used + 1)),
+                    "hints_remaining": max(0, budget - (hints_used + 1)),
                     "total_penalty_seconds": new_total_pen,
                     "message": f"Fragment hint unlocked (+{penalty}s penalty applied)."
                 }
@@ -518,6 +537,9 @@ def request_hint(
                 total_pen = r_row["penalty_seconds"] if r_row and r_row["penalty_seconds"] else 0
                 return {
                     "success": True,
+                    "round": round_num,
+                    "round_budget": budget,
+                    "total_budget": budget,
                     "penalty_seconds": 0,
                     "target_id": active_clue_id,
                     "hint_category": "clue",
@@ -527,7 +549,7 @@ def request_hint(
                     "penalty_applied": 0,
                     "is_free": True,
                     "hints_used": hints_used,
-                    "hints_remaining": max(0, TOTAL_HINT_BUDGET - hints_used),
+                    "hints_remaining": max(0, budget - hints_used),
                     "total_penalty_seconds": total_pen,
                     "message": "Re-inspected previously unlocked hint (no penalty applied)."
                 }
@@ -570,6 +592,9 @@ def request_hint(
 
             return {
                 "success": True,
+                "round": round_num,
+                "round_budget": budget,
+                "total_budget": budget,
                 "penalty_seconds": penalty,
                 "target_id": active_clue_id,
                 "hint_category": "clue",
@@ -579,7 +604,7 @@ def request_hint(
                 "penalty_applied": penalty,
                 "is_free": False,
                 "hints_used": hints_used + 1,
-                "hints_remaining": max(0, TOTAL_HINT_BUDGET - (hints_used + 1)),
+                "hints_remaining": max(0, budget - (hints_used + 1)),
                 "total_penalty_seconds": new_total_pen,
                 "message": f"Clue hint unlocked (+{penalty}s penalty applied)."
             }

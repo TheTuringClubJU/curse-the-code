@@ -441,7 +441,7 @@ describe('Room 6 (The Anointing Vault) Comprehensive Test Suite', () => {
     fireEvent.keyDown(window, { code: 'KeyH' });
     await waitFor(() => {
       expect(global.fetch).toHaveBeenCalledWith(
-        '/api/game/hint/status',
+        expect.stringContaining('/api/game/hint/status'),
         expect.any(Object)
       );
     });

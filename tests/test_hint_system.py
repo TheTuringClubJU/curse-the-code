@@ -395,4 +395,113 @@ def test_bedroom_decoys_enforce_fragment_hints_until_all_collected(auth_headers)
     assert db2["penalty_applied"] == 30
 
 
+def test_per_round_independent_15_hint_budgets_total_30(auth_headers):
+    """Enforce that Round 1 and Round 2 each have independent 15-hint budgets (total 30 hints)."""
+    with get_db_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("DELETE FROM team_hints WHERE team_id = %s", (TEAM_ID,))
+            cur.execute("DELETE FROM team_fragments WHERE team_id = %s", (TEAM_ID,))
+            cur.execute("DELETE FROM team_rooms WHERE team_id = %s", (TEAM_ID,))
+            cur.execute("DELETE FROM team_clues WHERE team_id = %s", (TEAM_ID,))
+            cur.execute("DELETE FROM team_rounds WHERE team_id = %s", (TEAM_ID,))
+            cur.execute("INSERT INTO rounds (round, status) VALUES (1, 'live') ON CONFLICT (round) DO UPDATE SET status = 'live'")
+            cur.execute("INSERT INTO rounds (round, status) VALUES (2, 'live') ON CONFLICT (round) DO UPDATE SET status = 'live'")
+            cur.execute("INSERT INTO team_rounds (team_id, round, penalty_seconds, clues_solved, total_score) VALUES (%s, 1, 0, 0, 0)", (TEAM_ID,))
+            cur.execute("INSERT INTO team_rounds (team_id, round, penalty_seconds, clues_solved, total_score) VALUES (%s, 2, 0, 0, 0)", (TEAM_ID,))
+            conn.commit()
+
+    # 1. Exhaust all 15 hints in Round 1 (bedroom has 15 fragments: EB01-EB12, EK01, XB01, XB02)
+    for i in range(15):
+        res = client.post("/api/game/hint", json={"room_id": "bedroom"}, headers=auth_headers)
+        assert res.status_code == 200, f"Round 1 hint {i+1} failed: {res.text}"
+        data = res.json()
+        assert data["round"] == 1
+        assert data["round_budget"] == 15
+        assert data["hints_used"] == i + 1
+        assert data["hints_remaining"] == 15 - (i + 1)
+        # Mark fragment as collected so next hint gives next fragment
+        frag_id = data["target_id"]
+        with get_db_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "INSERT INTO team_fragments (team_id, room_id, fragment_id, is_wrapped) VALUES (%s, 'bedroom', %s, TRUE) ON CONFLICT DO NOTHING",
+                    (TEAM_ID, frag_id)
+                )
+                conn.commit()
+
+    # 16th hint in Round 1 must be rejected with 403 HINT_BUDGET_EXHAUSTED
+    res_r1_over = client.post("/api/game/hint", json={"room_id": "bedroom"}, headers=auth_headers)
+    assert res_r1_over.status_code == 403
+    assert res_r1_over.json()["detail"]["code"] == "HINT_BUDGET_EXHAUSTED"
+    assert "Round 1 hint budget exhausted (15/15 used)" in res_r1_over.json()["detail"]["message"]
+
+    # Verify status for Round 1
+    r1_status = client.get("/api/game/hint/status?room_id=bedroom", headers=auth_headers).json()
+    assert r1_status["round"] == 1
+    assert r1_status["round_budget"] == 15
+    assert r1_status["hints_used"] == 15
+    assert r1_status["hints_remaining"] == 0
+
+    # 2. Transition team to Round 2 (Records chamber)
+    # Check status for Round 2 - MUST be completely fresh with 0 used, 15 remaining!
+    r2_status = client.get("/api/game/hint/status?room_id=records", headers=auth_headers).json()
+    assert r2_status["round"] == 2
+    assert r2_status["round_budget"] == 15
+    assert r2_status["hints_used"] == 0
+    assert r2_status["hints_remaining"] == 15
+
+    # 3. Exhaust all 15 hints in Round 2 without any blockage from Round 1
+    # Room 4 records has 12 fragments (ER01..ER10, XR01, XR02)
+    for i in range(12):
+        res = client.post("/api/game/hint", json={"room_id": "records"}, headers=auth_headers)
+        assert res.status_code == 200, f"Round 2 hint {i+1} failed: {res.text}"
+        data = res.json()
+        assert data["round"] == 2
+        assert data["round_budget"] == 15
+        assert data["hints_used"] == i + 1
+        assert data["hints_remaining"] == 15 - (i + 1)
+        frag_id = data["target_id"]
+        with get_db_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "INSERT INTO team_fragments (team_id, room_id, fragment_id, is_wrapped) VALUES (%s, 'records', %s, TRUE) ON CONFLICT DO NOTHING",
+                    (TEAM_ID, frag_id)
+                )
+                conn.commit()
+
+    # Now all 12 fragments in records collected, remaining 3 hints are Phase 2 clue hints (R2-02, R2-03, R2-04)
+    for i in range(12, 15):
+        res = client.post("/api/game/hint", json={"room_id": "records"}, headers=auth_headers)
+        assert res.status_code == 200, f"Round 2 clue hint {i+1} failed: {res.text}"
+        data = res.json()
+        assert data["round"] == 2
+        assert data["hint_category"] == "clue"
+        assert data["hints_used"] == i + 1
+        assert data["hints_remaining"] == 15 - (i + 1)
+        clue_id = data["target_id"]
+        with get_db_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "INSERT INTO team_clues (team_id, clue_id, round, room_id, solved, attempts) VALUES (%s, %s, 2, 'records', TRUE, 1) ON CONFLICT (team_id, clue_id) DO UPDATE SET solved = TRUE",
+                    (TEAM_ID, clue_id)
+                )
+                conn.commit()
+
+    # 16th hint in Round 2 must be rejected with 403 HINT_BUDGET_EXHAUSTED
+    res_r2_over = client.post("/api/game/hint", json={"room_id": "records"}, headers=auth_headers)
+    assert res_r2_over.status_code == 403
+    assert res_r2_over.json()["detail"]["code"] == "HINT_BUDGET_EXHAUSTED"
+    assert "Round 2 hint budget exhausted (15/15 used)" in res_r2_over.json()["detail"]["message"]
+
+    # Final check: total hints in DB for this team across both rounds is exactly 30 (15 R1 + 15 R2)
+    with get_db_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT COUNT(*) as total FROM team_hints WHERE team_id = %s", (TEAM_ID,))
+            assert cur.fetchone()[0] == 30
+            cur.execute("SELECT COUNT(*) as r1_total FROM team_hints WHERE team_id = %s AND round = 1", (TEAM_ID,))
+            assert cur.fetchone()[0] == 15
+            cur.execute("SELECT COUNT(*) as r2_total FROM team_hints WHERE team_id = %s AND round = 2", (TEAM_ID,))
+            assert cur.fetchone()[0] == 15
+
+
 

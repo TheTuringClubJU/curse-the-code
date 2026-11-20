@@ -28,7 +28,7 @@ export default function HintModal({
     setLoading(true);
     setErrorMsg(null);
     try {
-      const query = roomId === 'control' ? `?room_id=control` : '';
+      const query = roomId ? `?room_id=${encodeURIComponent(roomId)}` : '';
       const res = await fetch(`/api/game/hint/status${query}`, {
         credentials: 'include',
         headers: {
