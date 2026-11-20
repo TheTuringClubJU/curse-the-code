@@ -20,6 +20,15 @@ TOTAL_HINT_BUDGET = 15
 FRAGMENT_PENALTY_SECONDS = 10
 CLUE_PENALTY_SECONDS = 30
 
+ROOM_TO_ROUND = {
+    "bedroom": 1,
+    "study": 1,
+    "basement": 1,
+    "records": 2,
+    "control": 2,
+    "vault": 2,
+}
+
 ROOM_FRAGMENTS = {
     "bedroom": [
         "EB01", "EB02", "EB03", "EB04", "EB05", "EB06",
@@ -31,16 +40,26 @@ ROOM_FRAGMENTS = {
     ],
     "basement": [
         "EK04", "EK05", "EK06", "XK01", "XK02"
-    ]
+    ],
+    "records": [
+        "ER01", "ER02", "ER03", "ER04", "ER05", "ER06", "ER07", "ER08", "ER09", "ER10"
+    ],
+    "control": [
+        "EC01", "EC02", "EC03", "EC04", "EC05", "EC06", "EC07", "EC08"
+    ],
+    "vault": []
 }
 
 ROOM_CLUES = {
     "bedroom": ["R1-01", "R1-02", "R1-03", "R1-04"],
     "study": ["R1-05", "R1-06", "R1-07", "R1-08"],
-    "basement": ["R1-09", "R1-10", "R1-FIN"]
+    "basement": ["R1-09", "R1-10", "R1-FIN"],
+    "records": ["R2-02", "R2-03", "R2-04", "R2-07"],
+    "control": ["R2-01", "R2-05", "R2-06"],
+    "vault": ["R2-08", "R2-09", "R2-10"],
 }
 
-# Detailed hints for Round 1 Clues
+# Detailed hints for Clues
 CLUE_HINT_DETAILS = {
     "R1-01": {
         "title": "Lena's Diary",
@@ -107,24 +126,84 @@ CLUE_HINT_DETAILS = {
         "location_prop": "Central containment terminal console (containment_console).",
         "puzzle_type": "3-Stage Master Override Protocol",
         "guidance": "The door asks for three words you have already been given: one from a girl's page, one from a machine's last words, and one from a guest who should not exist. Match the torn edges of the photograph. Then count what the living cast to uncover the hidden sequence."
+    },
+    "R2-01": {
+        "title": "CCTV Footage Matrix",
+        "location_prop": "Bank of 9 surveillance monitors on the observation wall.",
+        "puzzle_type": "Video Timestamp & Frame Anomaly Correlation",
+        "guidance": "Cross-reference the 9 camera feeds against the breach timeline. Identify the feed displaying timestamp slippage."
+    },
+    "R2-02": {
+        "title": "Flooded Index Registry",
+        "location_prop": "Rotting library shelves in the archive sub-basement.",
+        "puzzle_type": "Waterlogged Ledger Cross-Reference",
+        "guidance": "Reconstruct the blurred index entries using surviving shelf tags. Identify the accession number matching the transfer order."
+    },
+    "R2-03": {
+        "title": "Microfiche Reader",
+        "location_prop": "Illuminated microfiche projector in the catalog aisle.",
+        "puzzle_type": "Optical Grid Decryption",
+        "guidance": "Align the microfilm reel markers with the ledger coordinates to reveal the redacted project clearance."
+    },
+    "R2-04": {
+        "title": "Card Catalog Drawer",
+        "location_prop": "Solid brass card catalog cabinet against the south wall.",
+        "puzzle_type": "Dewey-Hex Decimal Cross-Indexing",
+        "guidance": "Convert the Dewey-Hex notation on the requisition slip to identify the vault bulkhead sequence number."
+    },
+    "R2-05": {
+        "title": "Intercom Matrix",
+        "location_prop": "Desk intercom console with broadcast toggle switches.",
+        "puzzle_type": "Audio Spectrogram Frequency Analysis",
+        "guidance": "Isolate the carrier frequency from the background drone. The periodic chime reveals the circuit relay state."
+    },
+    "R2-06": {
+        "title": "Paper Tape Punch",
+        "location_prop": "Mechanical teleprinter puncher beside the observation desk.",
+        "puzzle_type": "8-Channel Baudot Tape Translation",
+        "guidance": "Align the punched holes against the Baudot translation table to read the operator badge ID."
+    },
+    "R2-07": {
+        "title": "Vault Bulkhead Gate",
+        "location_prop": "Heavy hydraulic containment door leading to the Anointing Vault.",
+        "puzzle_type": "Hydraulic Interlock Release",
+        "guidance": "Verify all upstream record clearances to disengage the magnetic interlock seal."
+    },
+    "R2-08": {
+        "title": "Shutdown Manual Diff",
+        "location_prop": "Manual terminal in the Western Scriptorium lectern (Sector 6C).",
+        "puzzle_type": "Procedure Manual Comparison (Vigenère Diff)",
+        "guidance": "Compare the original manual v1.1 against Corvin's tampered v2.0 revision line by line. Identify the step numbers that were tampered with."
+    },
+    "R2-09": {
+        "title": "Failsafe Circuit",
+        "location_prop": "Failsafe knife-switch panel in the Eastern Switchgear (Sector 6D).",
+        "puzzle_type": "Logic Gate Circuit Evaluation",
+        "guidance": "Derive the 8 binary switch inputs from the voicemail digits. Trace signal flow through NOT, AND, and OR gates to find the 4-digit lamp authorization code."
+    },
+    "R2-10": {
+        "title": "Central Containment Console",
+        "location_prop": "Central Altar Monolith Console in the Anointing Nave (Sector 6B).",
+        "puzzle_type": "Grand Finale Tri-Fold Authorization",
+        "guidance": "Simultaneously enter the clean procedure steps from R2-08, the failsafe authorization code from R2-09, and the real sender badge (BDG-9001)."
     }
 }
 
 
 def get_clue_hint_point_deduction(cur, team_id: int, clue_id: str) -> float:
     """Returns point deduction if a clue hint was unlocked for this clue.
-    - R1-FIN: -30 points deduction (awards 70 pts upon solve)
-    - Other clues (R1-01 to R1-10): -15 points deduction (awards 85 pts upon solve)
+    - R1-FIN / R2-10: -30 points deduction (awards 70 pts upon solve)
+    - Other clues: -15 points deduction (awards 85 pts upon solve)
     - If no clue hint was purchased: 0.0 deduction (awards full 100 pts)
     """
     cur.execute(
         """SELECT 1 FROM team_hints
-           WHERE team_id = %s AND round = 1 AND target_id = %s AND hint_category = 'clue'
+           WHERE team_id = %s AND target_id = %s AND hint_category = 'clue'
            LIMIT 1""",
         (team_id, clue_id),
     )
     if cur.fetchone():
-        return 30.0 if clue_id == "R1-FIN" else 15.0
+        return 30.0 if clue_id in ("R1-FIN", "R2-10") else 15.0
     return 0.0
 
 
@@ -146,18 +225,33 @@ def get_hint_status(team_id: int) -> Dict[str, Any]:
     """Retrieve full hint usage history, current budget remaining, and total penalty seconds."""
     with get_db_connection() as conn:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            # Determine active round
+            cur.execute(
+                """SELECT tr.room_id FROM team_rooms tr
+                   WHERE tr.team_id = %s
+                   ORDER BY tr.id DESC LIMIT 1""",
+                (team_id,)
+            )
+            last_room = cur.fetchone()
+            if last_room and last_room["room_id"] in ROOM_TO_ROUND:
+                active_round = ROOM_TO_ROUND[last_room["room_id"]]
+            else:
+                cur.execute("SELECT round FROM rounds WHERE status = 'live' ORDER BY round DESC LIMIT 1")
+                live_r = cur.fetchone()
+                active_round = live_r["round"] if live_r else 1
+
             cur.execute(
                 """SELECT id, room_id, hint_category, target_id, penalty_seconds, hint_text, created_at
                    FROM team_hints
-                   WHERE team_id = %s AND round = 1
+                   WHERE team_id = %s AND round = %s
                    ORDER BY created_at ASC""",
-                (team_id,),
+                (team_id, active_round),
             )
             hints = cur.fetchall()
 
             cur.execute(
-                "SELECT penalty_seconds FROM team_rounds WHERE team_id = %s AND round = 1",
-                (team_id,),
+                "SELECT penalty_seconds FROM team_rounds WHERE team_id = %s AND round = %s",
+                (team_id, active_round),
             )
             round_row = cur.fetchone()
             total_penalty = round_row["penalty_seconds"] if round_row and round_row["penalty_seconds"] else 0
@@ -195,7 +289,7 @@ def request_hint(
             # 1. Determine active room if not provided
             if not room_id:
                 cur.execute(
-                    "SELECT room_id, is_completed FROM team_rooms WHERE team_id = %s ORDER BY updated_at DESC",
+                    "SELECT room_id, is_completed FROM team_rooms WHERE team_id = %s ORDER BY id DESC",
                     (team_id,),
                 )
                 rooms_prog = cur.fetchall()
@@ -204,30 +298,38 @@ def request_hint(
                     room_id = "bedroom"
                 elif "study" not in completed:
                     room_id = "study"
-                else:
+                elif "basement" not in completed:
                     room_id = "basement"
+                elif "records" not in completed:
+                    room_id = "records"
+                elif "control" not in completed:
+                    room_id = "control"
+                else:
+                    room_id = "vault"
 
             if room_id not in ROOM_FRAGMENTS:
                 raise HTTPException(400, f"Invalid room_id '{room_id}'")
+
+            round_num = ROOM_TO_ROUND.get(room_id, 1)
 
             # 2. Check if the specific target_id requested is ALREADY unlocked
             if target_id:
                 cur.execute(
                     """SELECT id, room_id, hint_category, target_id, penalty_seconds, hint_text, created_at
                        FROM team_hints
-                       WHERE team_id = %s AND round = 1 AND target_id = %s""",
-                    (team_id, target_id),
+                       WHERE team_id = %s AND round = %s AND target_id = %s""",
+                    (team_id, round_num, target_id),
                 )
                 existing = cur.fetchone()
                 if existing:
                     cur.execute(
-                        "SELECT COUNT(*) as count FROM team_hints WHERE team_id = %s AND round = 1",
-                        (team_id,),
+                        "SELECT COUNT(*) as count FROM team_hints WHERE team_id = %s AND round = %s",
+                        (team_id, round_num),
                     )
                     used_cnt = cur.fetchone()["count"]
                     cur.execute(
-                        "SELECT penalty_seconds FROM team_rounds WHERE team_id = %s AND round = 1",
-                        (team_id,),
+                        "SELECT penalty_seconds FROM team_rounds WHERE team_id = %s AND round = %s",
+                        (team_id, round_num),
                     )
                     r_row = cur.fetchone()
                     total_pen = r_row["penalty_seconds"] if r_row and r_row["penalty_seconds"] else 0
@@ -251,8 +353,8 @@ def request_hint(
 
             # 3. Check current budget
             cur.execute(
-                "SELECT COUNT(*) as count FROM team_hints WHERE team_id = %s AND round = 1",
-                (team_id,),
+                "SELECT COUNT(*) as count FROM team_hints WHERE team_id = %s AND round = %s",
+                (team_id, round_num),
             )
             hints_used = cur.fetchone()["count"]
             if hints_used >= TOTAL_HINT_BUDGET:
@@ -294,15 +396,15 @@ def request_hint(
                 # Check if this fragment hint was already purchased
                 cur.execute(
                     """SELECT id, hint_text FROM team_hints
-                       WHERE team_id = %s AND round = 1 AND target_id = %s""",
-                    (team_id, next_fragment_id),
+                       WHERE team_id = %s AND round = %s AND target_id = %s""",
+                    (team_id, round_num, next_fragment_id),
                 )
                 existing_frag = cur.fetchone()
                 if existing_frag:
                     # Return cached free hint
                     cur.execute(
-                        "SELECT penalty_seconds FROM team_rounds WHERE team_id = %s AND round = 1",
-                        (team_id,),
+                        "SELECT penalty_seconds FROM team_rounds WHERE team_id = %s AND round = %s",
+                        (team_id, round_num),
                     )
                     r_row = cur.fetchone()
                     total_pen = r_row["penalty_seconds"] if r_row and r_row["penalty_seconds"] else 0
@@ -328,16 +430,16 @@ def request_hint(
 
                 cur.execute(
                     """INSERT INTO team_hints (team_id, round, room_id, hint_category, target_id, penalty_seconds, hint_text)
-                       VALUES (%s, 1, %s, 'fragment', %s, %s, %s)""",
-                    (team_id, room_id, next_fragment_id, penalty, hint_text),
+                       VALUES (%s, %s, %s, 'fragment', %s, %s, %s)""",
+                    (team_id, round_num, room_id, next_fragment_id, penalty, hint_text),
                 )
                 cur.execute(
                     """INSERT INTO team_rounds (team_id, round, penalty_seconds, updated_at)
-                       VALUES (%s, 1, %s, NOW())
+                       VALUES (%s, %s, %s, NOW())
                        ON CONFLICT (team_id, round)
                        DO UPDATE SET penalty_seconds = team_rounds.penalty_seconds + EXCLUDED.penalty_seconds, updated_at = NOW()
                        RETURNING penalty_seconds""",
-                    (team_id, penalty),
+                    (team_id, round_num, penalty),
                 )
                 new_total_pen = cur.fetchone()["penalty_seconds"]
                 conn.commit()
@@ -362,8 +464,8 @@ def request_hint(
             # PHASE 2: Deciphering Clues (Basket Unlocked)
             # ----------------------------------------------------
             cur.execute(
-                "SELECT clue_id, solved, attempts FROM team_clues WHERE team_id = %s AND round = 1",
-                (team_id,),
+                "SELECT clue_id, solved, attempts FROM team_clues WHERE team_id = %s AND round = %s",
+                (team_id, round_num),
             )
             clues_prog = {r["clue_id"]: r for r in cur.fetchall()}
             expected_clues = ROOM_CLUES[room_id]
@@ -386,15 +488,15 @@ def request_hint(
             # Check if this clue hint was already purchased
             cur.execute(
                 """SELECT id, hint_text FROM team_hints
-                   WHERE team_id = %s AND round = 1 AND target_id = %s""",
-                (team_id, active_clue_id),
+                   WHERE team_id = %s AND round = %s AND target_id = %s""",
+                (team_id, round_num, active_clue_id),
             )
             existing_clue = cur.fetchone()
             if existing_clue:
                 # Return cached free clue hint
                 cur.execute(
-                    "SELECT penalty_seconds FROM team_rounds WHERE team_id = %s AND round = 1",
-                    (team_id,),
+                    "SELECT penalty_seconds FROM team_rounds WHERE team_id = %s AND round = %s",
+                    (team_id, round_num),
                 )
                 r_row = cur.fetchone()
                 total_pen = r_row["penalty_seconds"] if r_row and r_row["penalty_seconds"] else 0
@@ -432,16 +534,16 @@ def request_hint(
 
             cur.execute(
                 """INSERT INTO team_hints (team_id, round, room_id, hint_category, target_id, penalty_seconds, hint_text)
-                   VALUES (%s, 1, %s, 'clue', %s, %s, %s)""",
-                (team_id, room_id, active_clue_id, penalty, rich_hint_text),
+                   VALUES (%s, %s, %s, 'clue', %s, %s, %s)""",
+                (team_id, round_num, room_id, active_clue_id, penalty, rich_hint_text),
             )
             cur.execute(
                 """INSERT INTO team_rounds (team_id, round, penalty_seconds, updated_at)
-                   VALUES (%s, 1, %s, NOW())
+                   VALUES (%s, %s, %s, NOW())
                    ON CONFLICT (team_id, round)
                    DO UPDATE SET penalty_seconds = team_rounds.penalty_seconds + EXCLUDED.penalty_seconds, updated_at = NOW()
                    RETURNING penalty_seconds""",
-                (team_id, penalty),
+                (team_id, round_num, penalty),
             )
             new_total_pen = cur.fetchone()["penalty_seconds"]
             conn.commit()

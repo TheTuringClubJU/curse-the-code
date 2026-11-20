@@ -13,7 +13,7 @@
 | **Room 3: The Basement** | Industrial Containment Bunker | **Krishnapriya** | **Darsh** | `R1-09`, `R1-10`, `R1-FIN` (3 clues) | 5 pieces (3 real + 2 decoys) | **Completed** |
 | **Room 4: The Rotting Archive** | Flooded Sub-Basement / Decay | **Darsh** | **Darsh** | `R2-02`, `R2-03`, `R2-04`, `R2-07` (4 clues) | 12 pieces (`ER01`–`ER10`, `XR01`, `XR02`) | **Completed (Round 2 Reference)** |
 | **Room 5: The Surveillance Morgue** | CRT Bunker / Quarantine Plastic | **Swapnil** | **Hari Priya** | `R2-01`, `R2-05`, `R2-06` (3 clues) | 10 pieces (`EC01`–`EC08`, `XC01`, `XC02`) | **Assigned** |
-| **Room 6: The Anointing Vault** | Occult Containment Tomb / Flesh Core | **Swapnil** | **Hari Priya** | `R2-08`, `R2-09`, `R2-10` (3 clues) | Master Case Dossier Convergence | **Assigned** |
+| **Room 6: The Anointing Vault** | Occult Containment Tomb / Flesh Core | **Swapnil** | **Hari Priya** | `R2-08`, `R2-09`, `R2-10` (3 clues) | Master Case Dossier Convergence | **Completed & Polished** |
 
 ### Active Visual Upgrade & Developer Assignments (Round 1 & Round 2)
 
@@ -24,7 +24,7 @@
 | **Room 3: The Basement** | **Krishnapriya** | `visual/room3-basement` | 3D Visual Upgrade & Containment Bunker |
 | **Room 4: The Rotting Archive** | **Ishan** | `visual/room4-records` | 3D Visual Upgrade & Archive Shelves |
 | **Room 5: The Surveillance Morgue** | **Swapnil** | `feat/room-5-frontend` | Completed (PR #25 in Review) |
-| **Room 6: The Anointing Vault** | **Swapnil** | `feat/room-6-vault` | Build & Clue Modals |
+| **Room 6: The Anointing Vault** | **Swapnil** | `feat/room-6-frontend` | Completed & Polished |
 
 ### Round 1 Master Test Target
 - **Total Tests for Round 1:** Exactly **300 Automated Tests**
@@ -897,7 +897,7 @@ Each room has a dedicated suite of **100 tests**:
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | **Room 4: The Rotting Archive** (`records`) | Flooded sub-basement archive. Buckled concrete, dripping ceiling, flickering tubes. | **Darsh** | **Darsh** | `R2-02`, `R2-03`, `R2-04`, `R2-07` (4 clues) | 12 pieces (`ER01`–`ER10`, `XR01`, `XR02` decoys) | **Completed (Round 2 Reference)** |
 | **Room 5: The Surveillance Morgue** (`control`) | Narrow observation bunker. 9 cracked CRTs, plastic quarantine sheeting. | **Swapnil** | **Hari Priya** | `R2-01`, `R2-05`, `R2-06` (3 clues) | 10 pieces (`EC01`–`EC08`, `XC01`, `XC02` decoys) | **Assigned** |
-| **Room 6: The Anointing Vault** (`vault`) | Occult containment tomb. Suspended rusted iron cage, pulsing flesh organism. | **Swapnil** | **Hari Priya** | `R2-08`, `R2-09`, `R2-10` (3 clues) | None (Master Case Dossier convergence) | **Assigned** |
+| **Room 6: The Anointing Vault** (`vault`) | Occult containment tomb. Suspended rusted iron cage, pulsing flesh organism. | **Swapnil** | **Hari Priya** | `R2-08`, `R2-09`, `R2-10` (3 clues) | None (Master Case Dossier convergence) | **Completed & Polished** |
 
 ### Round 2 Master Test Target
 - **Total Tests for Round 2:** Exactly **300 Automated Tests**
@@ -1032,32 +1032,32 @@ Every interactive prop must remain a **real visible 3D mesh** tagged with `E.int
 - [x] **FE-R5-10** Implement situation-triggered horror events for Room 5: JS-03 (Corner entity 10-minute slow crawl and lunge), JS-07 (Personnel roster injected with real player team name as active subject), and progressive room fog desaturation.
 
 #### Detailed Tasks for Backend (Room 5)
-- [ ] **BE-R5-01** Create `GET /api/game/room/control/state`.
-- [ ] **BE-R5-02** Create `POST /api/game/room/control/search` enforcing strict sequence for `EC01`–`EC08` and handling decoys `XC01`, `XC02`.
-- [ ] **BE-R5-03** Create `GET /api/game/room/control/basket`.
-- [ ] **BE-R5-04** Enforce `input_gate: room_evidence_complete` on `R2-01`, `R2-05`, `R2-06`.
-- [ ] **BE-R5-05** Route `POST /api/game/clue/R2-01/submit`: badge verification, recording genuine active badge into dossier.
-- [ ] **BE-R5-06** Route `POST /api/game/clue/R2-05/submit`: authentic transmission file validation.
-- [ ] **BE-R5-07** Route `POST /api/game/clue/R2-06/submit`: 4-digit spectrogram code validation.
+- [x] **BE-R5-01** Create `GET /api/game/room/control/state`.
+- [x] **BE-R5-02** Create `POST /api/game/room/control/search` enforcing strict sequence for `EC01`–`EC08` and handling decoys `XC01`, `XC02`.
+- [x] **BE-R5-03** Create `GET /api/game/room/control/basket`.
+- [x] **BE-R5-04** Enforce `input_gate: room_evidence_complete` on `R2-01`, `R2-05`, `R2-06`.
+- [x] **BE-R5-05** Route `POST /api/game/clue/R2-01/submit`: badge verification, recording genuine active badge into dossier.
+- [x] **BE-R5-06** Route `POST /api/game/clue/R2-05/submit`: authentic transmission file validation.
+- [x] **BE-R5-07** Route `POST /api/game/clue/R2-06/submit`: 4-digit spectrogram code validation.
 
 ---
 
 ### 5.3 Room 6: The Anointing Vault (`vault`)
 
 #### Detailed Tasks for Frontend (Room 6)
-- [ ] **FE-R6-01** Create `frontend/src/game/rooms/vault.js`: circular domed stone chamber, suspended rusted iron cage with chains, pulsing biological organism (vertex displacement shader, crimson emissive cycling at 1.4s), cracked bulletproof glass with internal handprints, mechanical split-flap countdown display with `CLACK-SNAP` audio.
-- [ ] **FE-R6-02** Create `frontend/src/game/Room6Vault.jsx` with automatic flashlight battery cutoff upon entering.
-- [ ] **FE-R6-03** Build `ManualDiffModal.jsx` for `R2-08`: side-by-side procedure document comparison, amber diff highlights on tampered clauses, clipboard copy utility.
-- [ ] **FE-R6-04** Build `FailsafeCircuitModal.jsx` for `R2-09`: 8 heavy knife switches with physical throw animations and metallic `CLANG` audio, hand-drawn logic gate schematic diagram, 4 amber filament output lamps.
-- [ ] **FE-R6-05** Build `FinalConsoleModal.jsx` for `R2-10`: full-viewport black terminal, 3 cast-iron input slots, mechanical hammer keystroke sounds, incorrect response screen tear, and multi-stage victory sequence (heartbeat stop, room blackout, emergency amber switch, `CONTAINMENT RESTORED` split-flap, narrative bridge lines, and final empty cage reveal).
-- [ ] **FE-R6-06** Implement core proximity horror: approaching within 2m causes organism to press against glass, pulse accelerates to 140 BPM, new procedural fractures form.
-- [ ] **FE-R6-07** Implement JS-08 vault entry sequence: door slams shut, human scratching and muffled pleading from the outside, then sudden silence.
+- [x] **FE-R6-01** Create `frontend/src/game/rooms/vault.js`: circular domed stone chamber, suspended rusted iron cage with chains, pulsing biological organism (vertex displacement shader, crimson emissive cycling at 1.4s), cracked bulletproof glass with internal handprints, mechanical split-flap countdown display with `CLACK-SNAP` audio.
+- [x] **FE-R6-02** Create `frontend/src/game/Room6Vault.jsx` with automatic flashlight battery cutoff upon entering.
+- [x] **FE-R6-03** Build `ManualDiffModal.jsx` for `R2-08`: side-by-side procedure document comparison, amber diff highlights on tampered clauses, clipboard copy utility.
+- [x] **FE-R6-04** Build `FailsafeCircuitModal.jsx` for `R2-09`: 8 heavy knife switches with physical throw animations and metallic `CLANG` audio, hand-drawn logic gate schematic diagram, 4 amber filament output lamps.
+- [x] **FE-R6-05** Build `FinalConsoleModal.jsx` for `R2-10`: full-viewport black terminal, 3 cast-iron input slots, mechanical hammer keystroke sounds, incorrect response screen tear, and multi-stage victory sequence (heartbeat stop, room blackout, emergency amber switch, `CONTAINMENT RESTORED` split-flap, narrative bridge lines, and final empty cage reveal).
+- [x] **FE-R6-06** Implement core proximity horror: approaching within 2m causes organism to press against glass, pulse accelerates to 140 BPM, new procedural fractures form.
+- [x] **FE-R6-07** Implement JS-08 vault entry sequence: door slams shut, human scratching and muffled pleading from the outside, then sudden silence.
 
 #### Detailed Tasks for Backend (Room 6)
-- [ ] **BE-R6-01** Create `GET /api/game/room/vault/state` (no fragment checking).
-- [ ] **BE-R6-02** Route `POST /api/game/clue/R2-08/submit`: tampered steps verification, returning clean steps array in reveal payload.
-- [ ] **BE-R6-03** Route `POST /api/game/clue/R2-09/submit`: 4-digit circuit authorization code verification.
-- [ ] **BE-R6-04** Route `POST /api/game/clue/R2-10/submit`: atomic compound verification of all 3 fields (Clean Steps + Auth Code + Operator Badge). On success: set `qualified_at`, set `completed_at`, update leaderboard rank, and return `round_complete: true`.
+- [x] **BE-R6-01** Create `GET /api/game/room/vault/state` (no fragment checking).
+- [x] **BE-R6-02** Route `POST /api/game/clue/R2-08/submit`: tampered steps verification, returning clean steps array in reveal payload.
+- [x] **BE-R6-03** Route `POST /api/game/clue/R2-09/submit`: 4-digit circuit authorization code verification.
+- [x] **BE-R6-04** Route `POST /api/game/clue/R2-10/submit`: atomic compound verification of all 3 fields (Clean Steps + Auth Code + Operator Badge). On success: set `qualified_at`, set `completed_at`, update leaderboard rank, and return `round_complete: true`.
 
 #### Room 6 Grand Finale Roadmap (Assigned: Swapnil · Branch: `feat/room-6-vault`)
 
@@ -1083,24 +1083,24 @@ Every interactive prop must remain a **real visible 3D mesh** tagged with `E.int
 
 ##### Exact Object IDs (from `content.test.json`)
 Every interactive prop must be a real visible 3D mesh tagged with `E.interact(obj, '<exact_id>')`.
-- [ ] `core_glass` (`decor` — special horror trigger: bulletproof cracked glass panel on the suspended iron cage with inner handprints & scratches)
-- [ ] `countdown_timer` (`decor` — mechanical split-flap board on east wall synced strictly to `GET /api/game/time`, sharp clack-snap per second)
-- [ ] `manual_terminal` (`clue_entry`, `R2-08` — heavy cast-iron workstation on west wall facing the cage)
-- [ ] `failsafe_panel` (`clue_entry`, `R2-09` — copper & brass switchboard with 8 large knife-switch levers on north wall)
-- [ ] `central_console` (`clue_entry`, `R2-10` — monolithic control altar directly facing the cage; requires all 3 Round 2 outputs)
+- [x] `core_glass` (`decor` — special horror trigger: bulletproof cracked glass panel on the suspended iron cage with inner handprints & scratches)
+- [x] `countdown_timer` (`decor` — mechanical split-flap board on east wall synced strictly to `GET /api/game/time`, sharp clack-snap per second)
+- [x] `manual_terminal` (`clue_entry`, `R2-08` — heavy cast-iron workstation on west wall facing the cage)
+- [x] `failsafe_panel` (`clue_entry`, `R2-09` — copper & brass switchboard with 8 large knife-switch levers on north wall)
+- [x] `central_console` (`clue_entry`, `R2-10` — monolithic control altar directly facing the cage; requires all 3 Round 2 outputs)
 
 ##### Build Checklist
 ###### Assets & Optimization
-- [ ] Source/build & compress Meshopt+WebP GLBs for: concrete dome shell, spherical iron cage + chains, pulsing flesh core, split-flap board, cast-iron terminal, 8-lever knife-switch panel, central altar console.
-- [ ] All GLBs within budgets (`≤ 1.5 MB` single / `≤ 8 MB` room total, `< 250` draw calls, Eco-mode compatible).
-- [ ] Source audio (`amb_vault`, `core_pulse`, `steel_creak`, split-flap `clack-snap`, stingers).
-- [ ] Keep track of model and audio sources (author, licence, file sizes).
+- [x] Source/build & compress Meshopt+WebP GLBs for: concrete dome shell, spherical iron cage + chains, pulsing flesh core, split-flap board, cast-iron terminal, 8-lever knife-switch panel, central altar console.
+- [x] All GLBs within budgets (`≤ 1.5 MB` single / `≤ 8 MB` room total, `< 250` draw calls, Eco-mode compatible).
+- [x] Source audio (`amb_vault`, `core_pulse`, `steel_creak`, split-flap `clack-snap`, stingers).
+- [x] Keep track of model and audio sources (author, licence, file sizes).
 
 ###### Integration, UI & Horror
-- [ ] Implement `Room6Vault.jsx` + `R2-08`, `R2-09`, `R2-10` clue modals + `[C]` `ControlDossierModal` / `CaseDossierModal` integration.
-- [ ] Disable torch on threshold (`setFlashlight(false)`); drive 1.4s crimson bioluminescence pulse.
-- [ ] Implement situation-based horror events (`core_glass` inspection scare, split-flap countdown tension, final containment victory/ending sequence).
-- [ ] Ensure `npm test`, `npm run build`, and Room 6 automated test suite pass; test full Round 2 flow (`records` → Fork 1 → `control` → Fork 2 → `vault`).
+- [x] Implement `Room6Vault.jsx` + `R2-08`, `R2-09`, `R2-10` clue modals + `[C]` `ControlDossierModal` / `CaseDossierModal` integration.
+- [x] Disable torch on threshold (`setFlashlight(false)`); drive 1.4s crimson bioluminescence pulse.
+- [x] Implement situation-based horror events (`core_glass` inspection scare, split-flap countdown tension, final containment victory/ending sequence).
+- [x] Ensure `npm test`, `npm run build`, and Room 6 automated test suite pass; test full Round 2 flow (`records` → Fork 1 → `control` → Fork 2 → `vault`).
 
 ---
 
@@ -1200,15 +1200,15 @@ Total Round 2 QA Target: 300 Tests
 
 #### Room 5: The Surveillance Morgue (100 Tests: `QA-R5-*`)
 - [ ] `QA-R5-E2E-01` **`e2e_control_complete_participant_journey`** (Full walkthrough: enter bunker -> search 8 fragments -> basket auto-unlock -> filter R2-01 personnel DB -> read R2-05 paper tape -> scrub R2-06 spectrogram -> choose Fork 2 valve -> unlock Vault tunnel).
-- [ ] `QA-R5-BE-01` to `QA-R5-BE-49` Backend validation: strict sequence `EC01`–`EC08`, R2-01 active badge query, R2-05 transmission identification, R2-06 4-digit audio code check, 3-attempts exhaustion handling, Fork 2 valve penalty logic.
+- [x] `QA-R5-BE-01` to `QA-R5-BE-49` Backend validation (49 Tests in `tests/test_room5_control.py` - 49/49 PASSED): strict sequence `EC01`–`EC08`, R2-01 active badge query, R2-05 transmission identification, R2-06 4-digit audio code check, 3-attempts exhaustion handling, Fork 2 valve penalty logic.
 - [ ] `QA-R5-FE-01` to `QA-R5-FE-50` Frontend validation: 9-CRT monitor canvas shaders, `PersonnelIndexModal` filtering, `TransmissionArchiveModal` paper tape dragging, `SpectrogramModal` oscilloscope dial scrub, Fork 2 valve selection, and horror triggers (JS-03 corner entity build, JS-05 CCTV playback, JS-07 team name injection).
 
 ---
 
 #### Room 6: The Anointing Vault (100 Tests: `QA-R6-*`)
-- [ ] `QA-R6-E2E-01` **`e2e_vault_complete_containment_victory_journey`** (Full walkthrough: enter vault -> flashlight cut -> R2-08 manual diff -> R2-09 logic gate circuit throw -> R2-10 triple-field containment console -> victory sequence -> leaderboard lock).
-- [ ] `QA-R6-BE-01` to `QA-R6-BE-49` Backend validation: R2-08 diff verification, R2-09 logic circuit truth table, R2-10 atomic 3-field compound validation (Clean Steps + Auth Code + Badge ID), tournament completion timestamp recording, leaderboard tie-breaker calculation.
-- [ ] `QA-R6-FE-01` to `QA-R6-FE-50` Frontend validation: organic core pulsing shader, cracked glass dome shaders, `ManualDiffModal` copy utility, `FailsafeCircuitModal` knife-switch throw animations, `FinalConsoleModal` typewriter sound and victory sequence, split-flap countdown display animation.
+- [x] `QA-R6-E2E-01` **`e2e_vault_complete_containment_victory_journey`** (Full walkthrough: enter vault -> flashlight cut -> R2-08 manual diff -> R2-09 logic gate circuit throw -> R2-10 triple-field containment console -> victory sequence -> leaderboard lock).
+- [x] `QA-R6-BE-01` to `QA-R6-BE-49` Backend validation: R2-08 diff verification, R2-09 logic circuit truth table, R2-10 atomic 3-field compound validation (Clean Steps + Auth Code + Badge ID), tournament completion timestamp recording, leaderboard tie-breaker calculation.
+- [x] `QA-R6-FE-01` to `QA-R6-FE-50` Frontend validation: organic core pulsing shader, cracked glass dome shaders, `ManualDiffModal` copy utility, `FailsafeCircuitModal` knife-switch throw animations, `FinalConsoleModal` typewriter sound and victory sequence, split-flap countdown display animation.
 
 
 ## 6. Admin Panel, Authentication & Infrastructure (Completed Milestones)

@@ -631,10 +631,18 @@ export default function Room4Records({ team, onLogout }) {
           setIsRoomCompleteModalOpen(false);
           engineRef.current?.lock();
         }}
+        roomLabel="ROOM 4 CLEARED"
+        title="The Rotting Archive Completed!"
+        description="Primary Wing B is authenticated and the hydraulic bulkhead is unsealed. Proceed onward into the sealed depths."
+        rewards={[
+          '✓ Archive Case Files Resolved (R2-02 – R2-07)',
+          '✓ Primary Wing B Route Authenticated',
+          '✓ Hydraulic Bulkhead Door Unsealed'
+        ]}
+        actionLabel="Enter Next Sector (Vault)"
         onProceedToDoor={() => {
           setIsRoomCompleteModalOpen(false);
-          engineRef.current?.lock();
-          showNotification('The heavy hydraulic bulkhead is unsealed. Step through the doorway into Room 5.');
+          window.dispatchEvent(new CustomEvent('ctc:navigate-room', { detail: 'vault' }));
         }}
       />
     </div>
