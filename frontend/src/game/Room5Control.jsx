@@ -19,6 +19,7 @@ import DevCalibratorOverlay from './components/control/DevCalibratorOverlay.jsx'
 import CCTVMonitorModal from './components/control/CCTVMonitorModal.jsx';
 import Fork2Modal from './components/control/Fork2Modal.jsx';
 import HintModal from './components/HintModal.jsx';
+import Round2DossierModal from './components/Round2DossierModal.jsx';
 import './game.css';
 import './control.css';
 
@@ -131,6 +132,7 @@ export default function Room5Control({ team, onLogout }) {
   const [isFork2Open, setIsFork2Open] = useState(false);
   const [isCCTVOpen, setIsCCTVOpen] = useState(false);
   const [isHintOpen, setIsHintOpen] = useState(false);
+  const [isRulesDossierOpen, setIsRulesDossierOpen] = useState(false);
   const [activeClueModal, setActiveClueModal] = useState(null); // 'R2-01' | 'R2-05' | 'R2-06' | null
   const [propSnapshots, setPropSnapshots] = useState(() => {
     try {
@@ -468,6 +470,7 @@ export default function Room5Control({ team, onLogout }) {
           setIsFork2Open(false);
           setIsCCTVOpen(false);
           setIsHintOpen(false);
+          setIsRulesDossierOpen(false);
           setIsRoomCompleteModalOpen(false);
           setActiveClueModal(null);
                 engineRef.current?.setPaused?.(false);
@@ -549,6 +552,16 @@ export default function Room5Control({ team, onLogout }) {
             engineRef.current?.setPaused?.(false);
             engineRef.current?.lock?.();
           }
+          return next;
+        });
+        return;
+      }
+
+      if (e.key === 'r' || e.key === 'R' || e.code === 'KeyR') {
+        e.preventDefault();
+        setIsRulesDossierOpen((prev) => {
+          const next = !prev;
+          if (next) engineRef.current?.unlock?.();
           return next;
         });
         return;
@@ -921,6 +934,7 @@ export default function Room5Control({ team, onLogout }) {
     isRoomCompleteModalOpen ||
     isCCTVOpen ||
     isHintOpen ||
+    isRulesDossierOpen ||
     Boolean(activeClueModal);
 
   isStartedRef.current = isStarted;
@@ -1220,6 +1234,10 @@ export default function Room5Control({ team, onLogout }) {
           onOpenBasket={handleOpenBasket}
           onOpenCaseFiles={handleOpenCaseFiles}
           onOpenHints={handleOpenHints}
+          onOpenRules={() => {
+            setIsRulesDossierOpen(true);
+            engineRef.current?.unlock?.();
+          }}
           onLogout={onLogout}
           audioMuted={audioMuted}
           onToggleAudio={handleToggleAudio}
@@ -1379,6 +1397,18 @@ export default function Room5Control({ team, onLogout }) {
 
       {/* Dev Position Calibrator (?dev=1) */}
       {isStarted && isDevMode && <DevCalibratorOverlay engineRef={engineRef} />}
+
+      {/* Round 2 Investigation Rules Dossier (Press R) */}
+      {isRulesDossierOpen && (
+        <Round2DossierModal
+          isOpen={true}
+          onClose={() => {
+            setIsRulesDossierOpen(false);
+            resumeGameplayLock();
+          }}
+          isLobby={false}
+        />
+      )}
     </div>
   );
 }

@@ -10,7 +10,8 @@ import {
   Lock,
   Unlock,
   AlertTriangle,
-  HelpCircle
+  HelpCircle,
+  BookOpen
 } from 'lucide-react';
 
 export default function HUDRecords({
@@ -27,6 +28,7 @@ export default function HUDRecords({
   onOpenBasket,
   onOpenCaseFiles,
   onOpenHints,
+  onOpenRules,
   onLogout,
   audioMuted = false,
   onToggleAudio,
@@ -98,6 +100,21 @@ export default function HUDRecords({
               H
             </kbd>
           </button>
+
+          {/* Rules Dossier Button (R) */}
+          {onOpenRules && (
+            <button
+              onClick={onOpenRules}
+              title="View Round 2 Investigation Rules (Press R)"
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border bg-[#1c1811] text-[#e8dfc8] border-[#4a391e] hover:bg-[#2b2417] hover:border-[#c47a00] transition"
+            >
+              <BookOpen className="w-3.5 h-3.5 text-[#c47a00]" />
+              <span className="hidden sm:inline">Rules:</span>
+              <kbd className="px-1 py-0.2 text-[9px] bg-black/60 rounded border border-white/10 text-gray-300">
+                R
+              </kbd>
+            </button>
+          )}
 
           {/* Flashlight Battery Meter (F) */}
           <button

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
+  Book,
   BookOpen,
   Crosshair,
   FlashlightOff,
@@ -68,6 +69,7 @@ export default function HUDVault({
   muted = false,
   onToggleMute,
   onToggleDossier,
+  onToggleRules,
   onToggleHint,
   onRequestLock,
   onLogout,
@@ -186,6 +188,19 @@ export default function HUDVault({
               <BookOpen className="w-3.5 h-3.5 text-white/90" />
               <span>Dossier</span>
             </button>
+
+            {onToggleRules && (
+              <button
+                type="button"
+                onClick={onToggleRules}
+                className="re-btn cursor-pointer"
+                title="Investigation Rules [R]"
+              >
+                <span className="re-btn-circle">R</span>
+                <Book className="w-3.5 h-3.5 text-white/90" />
+                <span>Rules</span>
+              </button>
+            )}
 
             <button
               type="button"

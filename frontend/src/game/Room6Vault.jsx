@@ -8,6 +8,7 @@ import ManualDiffModal from './components/vault/ManualDiffModal';
 import FailsafeCircuitModal from './components/vault/FailsafeCircuitModal';
 import CentralConsoleModal from './components/vault/CentralConsoleModal';
 import HintModal from './components/HintModal';
+import Round2DossierModal from './components/Round2DossierModal';
 import './vault.css';
 
 function authHeaders(extra = {}) {
@@ -49,6 +50,7 @@ export default function Room6Vault({ team, onLogout }) {
   });
   const [activeClue, setActiveClue] = useState(null);
   const [isDossierOpen, setIsDossierOpen] = useState(false);
+  const [isRulesDossierOpen, setIsRulesDossierOpen] = useState(false);
   const [isHintOpen, setIsHintOpen] = useState(false);
   const [isSystemOpen, setIsSystemOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -258,13 +260,13 @@ export default function Room6Vault({ team, onLogout }) {
   );
 
   useEffect(() => {
-    const isAnyOpen = Boolean(activeClue || isDossierOpen || isHintOpen || isSystemOpen);
+    const isAnyOpen = Boolean(activeClue || isDossierOpen || isRulesDossierOpen || isHintOpen || isSystemOpen);
     anyModalOpenRef.current = isAnyOpen;
     engineRef.current?.setPaused?.(isAnyOpen);
     if (isAnyOpen) {
       engineRef.current?.unlock?.();
     }
-  }, [activeClue, isDossierOpen, isHintOpen, isSystemOpen]);
+  }, [activeClue, isDossierOpen, isRulesDossierOpen, isHintOpen, isSystemOpen]);
 
   useEffect(() => {
     fetchRoom();
@@ -393,6 +395,10 @@ export default function Room6Vault({ team, onLogout }) {
           setIsDossierOpen(false);
           return;
         }
+        if (isRulesDossierOpen) {
+          setIsRulesDossierOpen(false);
+          return;
+        }
         if (isHintOpen) {
           setIsHintOpen(false);
           return;
@@ -415,6 +421,9 @@ export default function Room6Vault({ team, onLogout }) {
       } else if (e.code === 'KeyC') {
         e.preventDefault();
         setIsDossierOpen((prev) => !prev);
+      } else if (e.code === 'KeyR') {
+        e.preventDefault();
+        setIsRulesDossierOpen((prev) => !prev);
       } else if (e.code === 'KeyH') {
         e.preventDefault();
         setIsHintOpen((prev) => !prev);
@@ -435,7 +444,7 @@ export default function Room6Vault({ team, onLogout }) {
 
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [activeClue, isDossierOpen, isHintOpen, isSystemOpen, showNotice]);
+  }, [activeClue, isDossierOpen, isRulesDossierOpen, isHintOpen, isSystemOpen, showNotice]);
 
   const handleConsoleReject = useCallback(() => {
     triggerScanTear();
@@ -665,6 +674,7 @@ export default function Room6Vault({ team, onLogout }) {
           });
         }}
         onToggleDossier={() => setIsDossierOpen((v) => !v)}
+        onToggleRules={() => setIsRulesDossierOpen((v) => !v)}
         onToggleHint={() => setIsHintOpen((v) => !v)}
         onRequestLock={() => {
           if (anyModalOpenRef.current) return;
@@ -800,6 +810,16 @@ export default function Room6Vault({ team, onLogout }) {
           engineRef.current?.lock?.();
         }}
         vaultClues={clues}
+      />
+
+      {/* [R] Investigation Rules Dossier */}
+      <Round2DossierModal
+        isOpen={isRulesDossierOpen}
+        onClose={() => {
+          setIsRulesDossierOpen(false);
+          engineRef.current?.lock?.();
+        }}
+        isLobby={false}
       />
 
       {/* [H] Shared Hint Modal */}

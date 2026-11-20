@@ -12,6 +12,7 @@ import CaseDossierModal, { isClueLocked, getClueLockReason } from './components/
 import Fork1Modal from './components/records/Fork1Modal.jsx';
 import RoomCompleteModal from './components/RoomCompleteModal.jsx';
 import HintModal from './components/HintModal.jsx';
+import Round2DossierModal from './components/Round2DossierModal.jsx';
 import './game.css';
 import './records.css';
 
@@ -31,6 +32,7 @@ export default function Room4Records({ team, onLogout }) {
   const [isCaseDossierOpen, setIsCaseDossierOpen] = useState(false);
   const [isFork1Open, setIsFork1Open] = useState(false);
   const [isHintOpen, setIsHintOpen] = useState(false);
+  const [isRulesDossierOpen, setIsRulesDossierOpen] = useState(false);
   const [isRoomCompleteModalOpen, setIsRoomCompleteModalOpen] = useState(false);
   const [activeClueModal, setActiveClueModal] = useState(null); // 'R2-02' | 'R2-03' | 'R2-04' | 'R2-07' | null
   const [activeHoverPrompt, setActiveHoverPrompt] = useState(null);
@@ -85,6 +87,7 @@ export default function Room4Records({ team, onLogout }) {
         setIsCaseDossierOpen(false);
         setIsFork1Open(false);
         setIsHintOpen(false);
+        setIsRulesDossierOpen(false);
         setActiveClueModal(null);
         engineRef.current?.lock();
         return;
@@ -129,6 +132,18 @@ export default function Room4Records({ team, onLogout }) {
       if (e.key === 'h' || e.key === 'H' || e.code === 'KeyH') {
         e.preventDefault();
         setIsHintOpen((prev) => {
+          const next = !prev;
+          if (next) engineRef.current?.unlock();
+          else engineRef.current?.lock();
+          return next;
+        });
+        return;
+      }
+
+      // R Key - Toggle Round 2 Rules & Investigation Dossier
+      if (e.key === 'r' || e.key === 'R' || e.code === 'KeyR') {
+        e.preventDefault();
+        setIsRulesDossierOpen((prev) => {
           const next = !prev;
           if (next) engineRef.current?.unlock();
           else engineRef.current?.lock();
@@ -575,6 +590,10 @@ export default function Room4Records({ team, onLogout }) {
             setIsHintOpen(true);
             engineRef.current?.unlock();
           }}
+          onOpenRules={() => {
+            setIsRulesDossierOpen(true);
+            engineRef.current?.unlock();
+          }}
           onLogout={onLogout}
           audioMuted={audioMuted}
           onToggleAudio={toggleAudio}
@@ -732,6 +751,16 @@ export default function Room4Records({ team, onLogout }) {
           setIsRoomCompleteModalOpen(false);
           window.dispatchEvent(new CustomEvent('ctc:navigate-room', { detail: 'vault' }));
         }}
+      />
+
+      {/* Round 2 Rules & Investigation Dossier (Press R) */}
+      <Round2DossierModal
+        isOpen={isRulesDossierOpen}
+        onClose={() => {
+          setIsRulesDossierOpen(false);
+          engineRef.current?.lock();
+        }}
+        isLobby={false}
       />
     </div>
   );

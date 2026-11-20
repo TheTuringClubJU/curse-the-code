@@ -8,6 +8,7 @@ import {
   HelpCircle,
   Crosshair,
   MousePointer2,
+  BookOpen,
 } from 'lucide-react';
 
 const KeyCap = ({ children }) => (
@@ -66,6 +67,7 @@ const HUDControl = memo(function HUDControl({
   onOpenBasket,
   onOpenCaseFiles,
   onOpenHints,
+  onOpenRules,
   onLogout,
   audioMuted = false,
   onToggleAudio,
@@ -210,6 +212,19 @@ const HUDControl = memo(function HUDControl({
               <span className="re-btn-circle">H</span>
               <HelpCircle className="w-3.5 h-3.5 text-[#fbbf24]" />
               <span className="hidden sm:inline">Hint</span>
+            </button>
+          )}
+
+          {onOpenRules && (
+            <button
+              type="button"
+              onClick={onOpenRules}
+              title="Investigation Rules & Protocols (Press R)"
+              className="re-btn !py-1 !px-2.5 !pr-4"
+            >
+              <span className="re-btn-circle">R</span>
+              <BookOpen className="w-3.5 h-3.5 text-[#fbbf24]" />
+              <span className="hidden sm:inline">Rules</span>
             </button>
           )}
 
