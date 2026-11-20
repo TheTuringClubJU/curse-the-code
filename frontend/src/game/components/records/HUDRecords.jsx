@@ -9,7 +9,8 @@ import {
   Zap,
   Lock,
   Unlock,
-  AlertTriangle
+  AlertTriangle,
+  HelpCircle
 } from 'lucide-react';
 
 export default function HUDRecords({
@@ -25,6 +26,7 @@ export default function HUDRecords({
   onToggleFlashlight,
   onOpenBasket,
   onOpenCaseFiles,
+  onOpenHints,
   onLogout,
   audioMuted = false,
   onToggleAudio,
@@ -81,6 +83,19 @@ export default function HUDRecords({
             <span className="text-[#ffd68a] font-bold">{cluesSolved}/{totalClues}</span>
             <kbd className="px-1 py-0.2 text-[9px] bg-black/60 rounded border border-white/10 text-gray-300">
               C
+            </kbd>
+          </button>
+
+          {/* Guidance / Hints Button (H) */}
+          <button
+            onClick={onOpenHints}
+            title="Request Field Guidance & Hints (Press H)"
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg border bg-[#1c1811] text-[#e8dfc8] border-[#4a391e] hover:bg-[#2b2417] hover:border-[#c47a00] transition"
+          >
+            <HelpCircle className="w-3.5 h-3.5 text-[#c47a00]" />
+            <span className="hidden sm:inline">Guidance:</span>
+            <kbd className="px-1 py-0.2 text-[9px] bg-black/60 rounded border border-white/10 text-gray-300">
+              H
             </kbd>
           </button>
 
