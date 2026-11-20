@@ -1,32 +1,173 @@
 import * as THREE from 'three'
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
+import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js'
+import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js'
+import { attachTorch as attachStudyTorch, updateTorchSway as updateStudyTorchSway, setTorch as setStudyTorch, bindTorchKey as bindStudyTorchKey } from './studyTorch.js'
+import { createStudyScares } from './studyScares.js'
+import { createStudyHaunting } from './studyHaunting.js'
+import { createStudyQuality } from './studyQuality.js'
+import { createStudyPicker } from './studyPicking.js'
+import { isStudyLowDetail, capStudyTextures, optimizeStudyMaterials } from './studyPerformance.js'
 import * as X from './tex.js'
-import {TX,bgeo,mat,wm} from './kit.js'
-import {buildBedroom} from './scene.js'
-import {buildStudy} from './studyScene.js'
-import {createScares} from './scares.js'
-import {buildRecordsScene} from './sceneRecords.js'
-import {createRecordsScares} from './scaresRecords.js'
-import {setupControls} from './controls.js'
-import {buildBasement} from './basementScene.js'
-export {posterCanvas} from './tex.js'
+import { TX, bgeo, mat, wm } from './kit.js'
+import { buildBedroom } from './scene.js'
+import { buildStudy } from './studyScene.js'
+import { createScares } from './scares.js'
+import { buildRecordsScene } from './sceneRecords.js'
+import { createRecordsScares } from './scaresRecords.js'
+import { buildVaultScene } from './sceneVault.js'
+import { createVaultScares } from './scaresVault.js'
+import { setupControls } from './controls.js'
+import { buildBasement } from './basementScene.js'
+import { attachTorch, updateTorchSway, setTorch } from './torch.js'
+export { posterCanvas } from './tex.js'
 
 export function createEngine(el,room,h){
  const tb0=performance.now()
  const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches,T=room.theme,[W,H,D]=room.size,debug=new URLSearchParams(location.search).has('debug')
- const R=new THREE.WebGLRenderer({antialias:true});R.setPixelRatio(Math.min(devicePixelRatio,1.0));R.powerPreference='high-performance';R.setSize(el.clientWidth,el.clientHeight);R.shadowMap.enabled=true;R.shadowMap.type=THREE.BasicShadowMap;R.shadowMap.autoUpdate=false;R.shadowMap.needsUpdate=true;
- R.toneMapping=THREE.ACESFilmicToneMapping;R.toneMappingExposure=1.6;el.appendChild(R.domElement)
+ const isVault=room.id==='vault',isStudy=room.id==='study'
+ const studyLow=isStudy&&isStudyLowDetail()
+ const nativeRatio=isStudy
+   ? Math.min(devicePixelRatio,studyLow?.85:1)
+   : isVault
+   ? Math.min(devicePixelRatio,0.72)
+   : Math.min(devicePixelRatio,1.0)
+ const R=new THREE.WebGLRenderer({
+   antialias:!studyLow&&!isVault,
+   powerPreference:'high-performance'
+ })
+ R.setPixelRatio(nativeRatio)
+ R.setSize(el.clientWidth,el.clientHeight)
+ R.shadowMap.enabled=!studyLow&&!isVault
+ R.shadowMap.type=THREE.BasicShadowMap
+ R.shadowMap.autoUpdate=false
+ R.shadowMap.needsUpdate=!studyLow
+ R.toneMapping=THREE.ACESFilmicToneMapping
+ R.toneMappingExposure=isVault?1.35:1.6
+ el.appendChild(R.domElement)
+
  const S=new THREE.Scene();S.background=new THREE.Color(T.bg);S.fog=new THREE.FogExp2(T.bg,.045)
- const cam=new THREE.PerspectiveCamera(72,el.clientWidth/el.clientHeight,.05,80);cam.rotation.order='YXZ';S.add(cam)
- const solids=[],pick=[],byId={},rigL=[],rigG=[],anims=[],sc={v:1},ref={}
+ const cam=new THREE.PerspectiveCamera(72,el.clientWidth/el.clientHeight,.05,isStudy?240:80);cam.rotation.order='YXZ';S.add(cam)
+ const solids=[],pick=[],byId={},visualById={},rigL=[],rigG=[],anims=[],sc={v:1},ref={}
+ let pmremGen=null,pmremRT=null,gltfLoader=null,halt=false,uiPaused=false;
+ const TEX_KEYS=['map','normalMap','roughnessMap','metalnessMap','aoMap','emissiveMap','alphaMap'];
+ const disposeObjectResources=(root)=>{
+  if(!root)return;
+  const disposedMats=new Set(),disposedTexs=new Set();
+  root.traverse?.(o=>{
+   o.geometry?.dispose?.();
+   const mats=Array.isArray(o.material)?o.material:(o.material?[o.material]:[]);
+   mats.forEach(m=>{
+    if(!m||disposedMats.has(m))return;
+    disposedMats.add(m);
+    for(const k of TEX_KEYS){
+     const tx=m[k];
+     if(tx&&!disposedTexs.has(tx)){disposedTexs.add(tx);tx.dispose?.();}
+    }
+    m.dispose?.();
+   });
+  });
+ };
+ const getGLTFLoader = () => {
+  if (!gltfLoader) {
+   gltfLoader = new GLTFLoader();
+   gltfLoader.setMeshoptDecoder(MeshoptDecoder);
+  }
+  return gltfLoader;
+ };
  const rnd=(a,b)=>a+Math.random()*(b-a)
  const flick=(seed,amt=.3)=>t=>1-amt*Math.abs(Math.sin(t*(6.3+seed%5)+seed)*Math.sin(t*(2.9+seed%3)+seed*1.7))-.04*Math.abs(Math.sin(t*31+seed))
  let tl=performance.now();const E={lap:n=>{if(debug){const t=performance.now();console.info('[ctc] lap',n,Math.round(t-tl));tl=t}},S,cam,W,H,D,win:room.window,ref,sc,lampMats:[],lampGlow:null,flick,lightScale:()=>sc.v,audio:h.audio,
-  anim:f=>anims.push(f),solid:(x0,x1,z0,z1)=>solids.push({x0,x1,z0,z1}),glow:(m,b,f)=>rigG.push({m,b,f:f||flick(Math.floor(Math.random()*90),.3)}),lightRig:(l,b,f)=>rigL.push({l,b,f}),
+  anim:f=>anims.push(f),
+  solid:(x0,x1,z0,z1)=>{const box={x0,x1,z0,z1};solids.push(box);return box;},
+  removeSolid:box=>{const i=solids.indexOf(box);if(i!==-1)solids.splice(i,1);},
+  glow:(m,b,f)=>rigG.push({m,b,f:f||flick(Math.floor(Math.random()*90),.3)}),lightRig:(l,b,f)=>rigL.push({l,b,f}),
+  bakeShadows:()=>{R.shadowMap.needsUpdate=true;},
+  initPMREM:(intensity=0.28)=>{
+   if(!pmremGen){
+    pmremGen=new THREE.PMREMGenerator(R);
+    pmremGen.compileEquirectangularShader();
+    const envScene=new RoomEnvironment();
+    pmremRT=pmremGen.fromScene(envScene,0.04);
+    envScene.dispose();
+    S.environment=pmremRT.texture;
+   }
+   S.environmentIntensity=intensity;
+  },
+  loadGLB:(url,onProgress)=>new Promise((resolve,reject)=>{
+   MeshoptDecoder.ready.then(()=>{
+    if(halt)return;
+    getGLTFLoader().load(
+     url,
+     (g)=>{
+      if(!halt){resolve(g);return;}
+      disposeObjectResources(g?.scene);
+     },
+     onProgress,
+     (err)=>{if(!halt)reject(err);}
+    );
+   }).catch((err)=>{if(!halt)reject(err);});
+  }),
+  visualInteract:(target,id)=>{
+   const list=Array.isArray(target)?target:[target];
+   const hlById = E._hlMatById || (E._hlMatById = new Map());
+   let idCache = hlById.get(id);
+   if (!idCache) {
+    idCache = new WeakMap();
+    hlById.set(id, idCache);
+   }
+   list.forEach(node=>{
+    if(!node)return;
+    node.traverse(o=>{
+     if(o.isMesh&&o.material){
+      if(o.userData._hlId !== id){
+       const cloneForId = (m) => {
+        if (!m) return m;
+        if (idCache.has(m)) return idCache.get(m);
+        const cm = m.clone();
+        idCache.set(m, cm);
+        return cm;
+       };
+       o.material=Array.isArray(o.material)?o.material.map(cloneForId):cloneForId(o.material);
+       o.userData._hlId = id;
+      }
+      (visualById[id]??=[]).push(o);
+     }
+    });
+   });
+  },
   interact(obj,id){obj.traverse(o=>{if(o.isMesh){o.userData.id=id;delete o.userData.np}})},
   add(obj,o={}){obj.traverse(m=>{if(!m.isMesh)return;if(!m.userData.ns&&!o.noShadow){m.castShadow=true}m.receiveShadow=true;if(!m.userData.np){pick.push(m);if(m.userData.id)(byId[m.userData.id]??=[]).push(m)}});S.add(obj);return obj}}
- let lamp=null,LB=9,scares=null;
+ E.renderStudyFrame=()=>{const horror=ref.studyHorror,story=ref.studyProcession;
+  if(story?.closeup?.visible&&story.overlayScene)R.render(story.overlayScene,story.overlayCamera);
+  else if(horror?.closeup?.visible&&horror.overlayScene)R.render(horror.overlayScene,horror.overlayCamera);
+  else {R.render(S,cam);if(story?.blinkScene&&E._studyBlackout>0){story.blackMaterial.opacity=E._studyBlackout;R.autoClear=false;R.clearDepth();R.render(story.blinkScene,story.blinkCamera);R.autoClear=true;}}
+ };
+ let lamp=null,LB=room.id==='study'?3:9,scares=null;
+ const studyCleanups=[];let studyDisposed=false;
+ if(room.id==='study'){
+   E._studyState={started:false,paused:true};E.renderer=R;E.studyLowDetail=studyLow;E.studyStorageKey=h.studyStorageKey;
+   E.reportStudyFinale=active=>{if(!studyDisposed)h.onStudyFinale?.(active);};
+   E.reportStudyCinematic=event=>{if(!studyDisposed)h.onStudyCinematic?.(event);};
+   E.onDispose=fn=>studyCleanups.push(fn);
+   E.reportStudyAsset=progress=>{if(!studyDisposed)h.onStudyAssets?.(progress);};
+   const loader=new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
+   E.loadGLB=async url=>{
+     await MeshoptDecoder.ready;
+     const gltf=await loader.loadAsync(url);
+     if(studyDisposed){gltf.scene.traverse(o=>{o.geometry?.dispose();const ms=Array.isArray(o.material)?o.material:[o.material];ms.forEach(m=>{if(m){Object.values(m).forEach(v=>{if(v?.isTexture)v.dispose();});m.dispose();}});});throw new Error('Study disposed');}
+     if(studyLow)capStudyTextures(gltf.scene);
+     optimizeStudyMaterials(gltf.scene);
+     return gltf;
+   };
+   E.retire=root=>{if(!root)return;root.traverse(m=>{const i=pick.indexOf(m);if(i>=0)pick.splice(i,1);const list=byId[m.userData.id];if(list){const j=list.indexOf(m);if(j>=0)list.splice(j,1);}});root.visible=false;};
+   attachStudyTorch(E,cam);studyCleanups.push(bindStudyTorchKey(E));
+ }
 
- if(room.id === 'records'){
+
+ if(room.id === 'study'){
+   buildStudy(E);scares=createStudyScares(E,reduce);
+ } else if(room.id === 'records'){
    // Tactical Heavy-duty Player Flashlight
    const flashL = new THREE.SpotLight(0xfff0d8, 4.2, 16, Math.PI / 5.5, 0.45, 1.6);
    flashL.position.set(0.18, -0.15, 0.1);
@@ -41,6 +182,18 @@ export function createEngine(el,room,h){
 
    buildRecordsScene(E);
    scares = createRecordsScares(E, h);
+ } else if (room.id === 'vault') {
+   ref.onLoadProgress = (pct, loaded, total) => h?.onProgress?.(pct, loaded, total);
+   ref.onLoadComplete = () => h?.onComplete?.();
+   // Common held torch model from Room 5, battery dead (0%) on entry per Vault storyline
+   attachTorch(E, cam);
+   setTorch(E, false);
+   R.setPixelRatio(Math.min(devicePixelRatio, 1.0));
+   R.shadowMap.enabled = false;
+   R.toneMappingExposure = 1.54;
+   S.fog = new THREE.FogExp2(T.bg || 0x09070b, 0.0175);
+   buildVaultScene(E, h);
+   scares = createVaultScares(E, h);
  } else {
    // ---- shell: textured walls, floor, ceiling, trim ----
    const wp=X.tex(X.wallpaper()),wmat=new THREE.MeshStandardMaterial({map:wp,bumpMap:wp,bumpScale:.5,roughness:.92,color:0xffffff})
@@ -56,12 +209,12 @@ export function createEngine(el,room,h){
    const tr=wm('ebony',{r:.7}),trim=(y,hh,dp)=>[[0,-D/2+dp/2,W,0],[0,D/2-dp/2,W,0],[-W/2+dp/2,0,D,1],[W/2-dp/2,0,D,1]].forEach(([x,z,l,r])=>{box([x,y,z],r?[dp,hh,l]:[l,hh,dp],tr,1.6).castShadow=false})
    trim(.08,.16,.04);trim(H-.05,.1,.08)
    // ---- lights ----
-   const hemi=new THREE.HemisphereLight(0x6a72d8,0x2a1a4a,1.5);S.add(hemi)
-   const moonL=new THREE.DirectionalLight(T.moon,2.2);moonL.position.set(-9,5,win?win.z:0);moonL.target.position.set(2,0,win?win.z:0);S.add(moonL.target);moonL.castShadow=true;moonL.shadow.mapSize.set(512,512);moonL.shadow.autoUpdate=false;moonL.shadow.needsUpdate=true;moonL.shadow.bias=-.0004;moonL.shadow.normalBias=.03;Object.assign(moonL.shadow.camera,{left:-8,right:8,top:8,bottom:-8,far:30});S.add(moonL);E.bakeShadows=()=>{moonL.shadow.needsUpdate=true;}
+   const hemi=new THREE.HemisphereLight(0x6a72d8,0x2a1a4a,room.id==='study'?.35:1.5);S.add(hemi)
+   const moonL=new THREE.DirectionalLight(T.moon,room.id==='study'?.8:2.2);moonL.position.set(-9,5,win?win.z:0);moonL.target.position.set(2,0,win?win.z:0);S.add(moonL.target);moonL.castShadow=true;moonL.shadow.mapSize.set(512,512);moonL.shadow.autoUpdate=false;moonL.shadow.needsUpdate=true;moonL.shadow.bias=-.0004;moonL.shadow.normalBias=.03;Object.assign(moonL.shadow.camera,{left:-8,right:8,top:8,bottom:-8,far:30});S.add(moonL);E.bakeShadows=()=>{moonL.shadow.needsUpdate=true;}
    lamp=new THREE.PointLight(T.lamp,room.lamp?9:0,10,2);if(room.lamp)lamp.position.set(...room.lamp.pos);lamp.castShadow=false;lamp.shadow.mapSize.set(256,256);lamp.shadow.bias=-.002;S.add(lamp);
    if(room.id==='study'||room.builder==='study')buildStudy(E);else if(room.id==='basement')buildBasement(E);else if(room.haunted)buildBedroom(E);else{
     S.add(new THREE.PointLight(T.accent,3,10,2));(room.boxes||[]).forEach(b=>{const o=new THREE.Mesh(new THREE.BoxGeometry(...b.s),new THREE.MeshStandardMaterial({color:b.c,roughness:.9}));o.position.set(...b.p);S.add(o);if(b.solid){const[x,y,z]=b.p,[w,hh,d]=b.s;solids.push({x0:x-w/2,x1:x+w/2,z0:z-d/2,z1:z+d/2})}})}
-   scares=room.haunted?createScares(E,h):null
+   scares=room.id==='study'?createStudyScares(E,reduce):room.haunted?createScares(E,h):null
  }
  if(debug)console.info('[ctc] scene built in',Math.round(performance.now()-tb0),'ms')
 
@@ -81,8 +234,17 @@ export function createEngine(el,room,h){
        ? m.userData.__highlightMaterials
        : [m.userData.__highlightMaterials];
      mats.forEach(q => {
-       if (q && q.emissive && typeof q.emissive.setHex === 'function') {
-         q.emissive.setHex(on ? (room.id === 'basement' ? 0xff3030 : (room.id === 'records' ? 0xb37418 : 0x4a3c9a)) : 0);
+       if (q && q.emissive && !q.userData?.noEmissiveHl && typeof q.emissive.setHex === 'function') {
+         if (room.id === 'vault') {
+           if (q.userData._hlOrigHex === undefined) {
+             q.userData._hlOrigHex = q.emissive.getHex();
+             q.userData._hlOrigIntensity = q.emissiveIntensity ?? 0;
+           }
+           q.emissive.setHex(on ? 0xd89a28 : q.userData._hlOrigHex);
+           q.emissiveIntensity = on ? 0.11 : q.userData._hlOrigIntensity;
+         } else {
+           q.emissive.setHex(on ? (room.id === 'study' ? 0x16110a : room.id === 'basement' ? 0xff3030 : (room.id === 'records' ? 0xb37418 : 0x4a3c9a)) : 0);
+         }
        }
      });
    });
@@ -92,7 +254,7 @@ export function createEngine(el,room,h){
  const controls = setupControls({
    canvas: R.domElement,
    onInteract: (targetId) => {
-     h.onInteract?.(targetId);
+     if(room.id!=='study'||(!E._studyState.paused&&!E._studyCinematicInput))h.onInteract?.(targetId);
    },
    onTargetChange: (targetId) => {
      h.onTarget?.(targetId);
@@ -100,7 +262,8 @@ export function createEngine(el,room,h){
    getAudio: () => h.audio,
    getSolids: () => solids,
    roomSize: [W, H, D],
-   spawn: room.spawn
+   spawn: room.spawn,
+   isInputBlocked:()=>room.id==='study'&&Boolean(E._studyCinematicInput)
  });
 
  Object.assign(E,{
@@ -108,8 +271,12 @@ export function createEngine(el,room,h){
    pz: () => controls.getPos().z,
    yaw: () => controls.getPos().yaw,
    shake: (a,d) => { shakeA=a; shakeT=d; },
+   isModalOpen: () => uiPaused,
    get paused() { return false; }
  });
+ E.unlockStudy=()=>{controls.unlock();controls.resetInput();};
+ E.setStudyView=(x,z,yaw,pitch,height=1.6,roll=0)=>{controls.setView(x,z,yaw,pitch);E._studyEyeHeight=height;E._studyCameraRoll=roll;cam.position.set(x,height,z);cam.rotation.set(pitch,yaw,roll);};
+ const haunting=room.id==='study'?createStudyHaunting(E,scares,{reduced:reduce}):null;
 
  const disposedTextures=new Set();
  const disposeMaterial=(material)=>{
@@ -119,27 +286,34 @@ export function createEngine(el,room,h){
   });
   material.dispose?.();
  }
- const rs=()=>{R.setSize(el.clientWidth,el.clientHeight);cam.aspect=el.clientWidth/el.clientHeight;cam.updateProjectionMatrix()}
+ const rs=()=>{R.setSize(el.clientWidth,el.clientHeight);cam.aspect=el.clientWidth/el.clientHeight;cam.updateProjectionMatrix();if(room.id==='study')for(const refGroup of [ref.studyHorror,ref.studyProcession])if(refGroup?.overlayCamera){refGroup.overlayCamera.aspect=cam.aspect;refGroup.overlayCamera.updateProjectionMatrix();}}
  window.addEventListener('resize',rs)
 
  const fr=new THREE.Frustum(),pm=new THREE.Matrix4(),hp=new THREE.Vector3(),lp=new THREE.Vector3()
- let last=performance.now(),raf,halt=false,frameCount=0;const t0=last
- const FPS_LIMIT = 60;
+ let last=performance.now(),raf,frameCount=0;const t0=last
+ const studyPicker=room.id==='study'?createStudyPicker():null;let lastStudyPick=0;
+ const FPS_LIMIT = room.id==='vault' ? 65 : 60;
+ const studyQuality=room.id==='study'?createStudyQuality(R,nativeRatio,studyLow):null;
  const FRAME_INTERVAL = 1000 / FPS_LIMIT;
  let lastRenderTime = performance.now();
 
  const loop = now => {
    if (!halt) raf = requestAnimationFrame(loop);
    const elapsed = now - lastRenderTime;
-   if (elapsed < FRAME_INTERVAL) return;
+   // Study follows the display's animation frames. Comparing a 60 Hz frame to
+   // exactly 16.666 ms was discarding healthy frames on small timing variations.
+   if (room.id!=='study'&&elapsed < FRAME_INTERVAL) return;
 
-   lastRenderTime = now - (elapsed % FRAME_INTERVAL);
-   const dt = Math.min(0.05, elapsed / 1000);
+   lastRenderTime = room.id==='study'?now:now - (elapsed % FRAME_INTERVAL);
+   const frameMs=now-last;last=now;
+   const dt = Math.min(0.05, (room.id==='study'?frameMs:elapsed) / 1000);
+   studyQuality?.tick(frameMs,E._studyState.paused||document.hidden||api._skip);
    frameCount++;
    const t = (now - t0) / 1000;
+   haunting?.tick(Math.min(.25,frameMs/1000));
 
    // 1. Single-source Controls Update (WASD & Mouse Look)
-   const ctrl = controls.update(dt);
+   const ctrl = room.id==='study'&&(E._studyState.paused||E._studyCinematicInput) ? {...controls.getPos(),px:controls.getPos().x,pz:controls.getPos().z,yaw:cam.rotation.y,pitch:cam.rotation.x,walk:0,isMoving:false} : controls.update(dt);
    const px = ctrl.px;
    const pz = ctrl.pz;
    const yaw = ctrl.yaw;
@@ -147,11 +321,20 @@ export function createEngine(el,room,h){
    const walk = ctrl.walk;
    const mv = ctrl.isMoving ? 1 : 0;
 
-   // 2. Aim Raycast check (Every 2 frames for ultra responsiveness)
-   if (frameCount % 2 === 0) {
+   // Automatic walk-through transition when player steps into the open Study exit passage
+   if (room.id === 'study' && E._studyProgress?.completed && pz <= -4.1 && Math.abs(px) < 1.2) {
+     if (!E._studyState?.paused && !E._studyCinematicInput) {
+       h.onInteract?.('study_door_exit');
+     }
+   }
+
+   // Study aims at the current camera pose, at up to 30 Hz even on slower displays.
+   if(room.id==='study'){cam.position.set(px,E._studyEyeHeight??1.6,pz);cam.rotation.set(pitch,yaw,E._studyCameraRoll||0);cam.updateMatrixWorld();}
+   if (room.id==='study'?now-lastStudyPick>=1000/30:frameCount%2===0) {
+     lastStudyPick=now;
      ray.setFromCamera(v0,cam);
      ray.far = 5.5;
-     const hits = ray.intersectObjects(pick, false);
+     const hits = studyPicker?studyPicker.intersect(ray,pick):ray.intersectObjects(pick, false);
      const hitMesh = hits.find(it => it.object?.userData?.id);
      const id = hitMesh?.object?.userData?.id || null;
 
@@ -167,39 +350,48 @@ export function createEngine(el,room,h){
      }
    }
 
-   scares?.tick(dt,t);
+   if (!uiPaused || room.id==='study') {
+     scares?.tick(room.id==='study'?Math.min(.25,frameMs/1000):dt,t);
+   }
    h.audio?.listen?.(px,pz,yaw);
 
    let sx=0,sy=0;
    if(shakeT>0&&!reduce){shakeT-=dt;const k=shakeA*Math.max(0,shakeT)*3;sx=(Math.random()-.5)*k*.05;sy=(Math.random()-.5)*k*.05}
-   cam.position.set(px+sx, 1.6 + (mv && !reduce ? Math.sin(walk)*.022 : 0) + Math.sin(t*.9)*.004 + sy, pz);
-   cam.rotation.set(pitch, yaw, 0);
+   cam.position.set(px+sx, (room.id==='study'?E._studyEyeHeight??1.6:1.6) + (mv && !reduce ? Math.sin(walk)*.022 : 0) + Math.sin(t*.9)*.004 + sy, pz);
+   cam.rotation.set(pitch, yaw, room.id==='study'?E._studyCameraRoll||0:0);
+   if(room.id==='study') updateStudyTorchSway(E, t, mv, reduce);
+   else updateTorchSway(E, t, mv, reduce);
 
    // lamp flicker
    if(lamp){
-     if(!reduce){if(now>nextFlick){flickUntil=now+rnd(120,600);nextFlick=now+rnd(1800,6000)}}
+     if(!reduce&&room.id!=='study'){if(now>nextFlick){flickUntil=now+rnd(120,600);nextFlick=now+rnd(1800,6000)}}
      const lf=!reduce&&now<flickUntil?rnd(.05,.9):1,sv=sc.v
      lamp.intensity=LB*lf*sv;E.lampMats.forEach(m=>m.emissiveIntensity=.9*lf*sv);if(E.lampGlow)E.lampGlow.material.opacity=.55*lf*sv
    }
    
    rigL.forEach(r=>r.l.intensity=r.b*r.f(t)*sc.v);rigG.forEach(r=>r.m.emissiveIntensity=r.b*r.f(t)*sc.v)
-   anims.forEach(f=>f(t,dt))
+   anims.forEach(f=>f(t,dt));
    if(ref.doll){cam.updateMatrixWorld();pm.multiplyMatrices(cam.projectionMatrix,cam.matrixWorldInverse);fr.setFromProjectionMatrix(pm);const hd=ref.doll.head;hd.getWorldPosition(hp)
     if(!fr.containsPoint(hp)&&!ref.dollLock){lp.copy(cam.position);hd.parent.worldToLocal(lp);const tg=Math.max(-1.35,Math.min(1.35,Math.atan2(lp.x,lp.z)));hd.rotation.y+=(tg-hd.rotation.y)*Math.min(1,dt*1.6)}}
    ref.eyes?.forEach(e=>e.lookAt(cam.position))
-   if(!api._skip)R.render(S,cam)
+   if(!api._skip){if(room.id==='study')E.renderStudyFrame();else R.render(S,cam)}
  }
  raf=requestAnimationFrame(loop)
 
  const api={
-  setPaused(){ /* Intentionally no-op: movement & controls never get blocked! */ },
+  setStudyState(state){if(room.id==='study'){E._studyState.exitScare=Boolean(state.exitScare);E._studyState.cinematic=Boolean(state.cinematic);Object.assign(E._studyState,state);if(state.paused&&!state.exitScare)controls.unlock();}},
+  setStudyProgress(progress){if(room.id==='study'){E._studyProgress=progress;E.ref.updateStudyDisplays?.(progress);}},
+  tryStudyExit(){if(room.id!=='study')return {blocked:false};const held=haunting?.beforeExit();return held?.blocked?held:scares?.requestExit?.()||{blocked:false};},
+  standUpStudy(){return haunting?.standUp?.()||false;},
+  notifyStudyEvent(event){if(room.id==='study'){E.ref.onStudyInteract?.(event);scares?.notify?.(event);}},
+  setPaused(v){ if(room.id!=='study'){ uiPaused = Boolean(v); } },
   lock(){ controls.requestLock(); },
   unlock(){ controls.unlock(); },
   setView(x,z,y,p=0){ controls.setView(x,z,y,p); },
   openDoor(){ 
     if(ref.bulkheadDoor) ref.bulkheadDoor.isOpen = true; 
     if(ref.roomDoor) ref.roomDoor.isOpen = true; 
-    if(ref.studyExitDoor) ref.studyExitDoor.isOpen = true;
+    if(ref.studyExitDoor){ref.studyExitDoor.unlocked=true;ref.studyExitDoor.isOpen=scares?.isExitCleared?.()??true;}
   },
   closeDoor(){ 
     if(ref.bulkheadDoor) ref.bulkheadDoor.isOpen = false; 
@@ -207,19 +399,70 @@ export function createEngine(el,room,h){
     if(ref.studyExitDoor) ref.studyExitDoor.isOpen = false;
   },
   isDoorOpen(){ return !!(ref.bulkheadDoor?.isOpen || ref.roomDoor?.isOpen || ref.studyExitDoor?.isOpen); },
-  setFlashlight(on){ if(E.flashlight) E.flashlight.intensity = on ? 4.2 : 0; },
+  setFlashlight(on){
+    if(room.id==='study'){setStudyTorch(E,on);return;}
+    if(E.flashlightModel && E._userFlashlightOn !== undefined) setTorch(E, on);
+    else if(E.flashlight) E.flashlight.intensity = on ? 4.2 : 0;
+  },
   isFlashlightOn(){ return !!(E.flashlight && E.flashlight.intensity > 0); },
+  getPos(){ return controls.getPos(); },
+  setSensitivity(s){ controls.setSensitivity?.(s); },
+  sparkDeadTorch(){
+    if (room.id !== 'vault' || !E.flashlight) return;
+    clearTimeout(E._deadSparkTimer);
+    E.flashlight.intensity = 2.8;
+    if (E._flashLensMat) E._flashLensMat.emissiveIntensity = 0.72;
+    E._deadSparkTimer = setTimeout(() => {
+      if (halt) return;
+      setTorch(E, false);
+    }, 95);
+  },
   halt(){ halt=true; cancelAnimationFrame(raf); },
   frame(){ last=performance.now()-16; loop(performance.now()); },
   step(n,ms=50){ api._skip=true; for(let i=0;i<n;i++){ last=performance.now()-ms; loop(performance.now()); } api._skip=false; last=performance.now()-16; loop(performance.now()); },
   triggerScare:n=>scares?.trigger(n),
-  scares,
-  setCountdown(text){ ref.wallMonitor?.setText?.(text); },
+  scares,haunting,
+  setCountdown(text, restored = false){
+    ref.wallMonitor?.setText?.(text);
+    ref.countdownBoard?.setText?.(text, restored);
+  },
+  restoreContainment(){ ref.restoreContainment?.(); },
+  openZoneDoor(key, silent = false){
+    ref.openZoneDoor?.(key, silent);
+  },
+  closeZoneDoor(key, silent = false){
+    ref.closeZoneDoor?.(key, silent);
+  },
+  isDoorOpened(key){
+    return Boolean(ref.doors?.[key]?.opened);
+  },
+  setResolutionMode(mode){
+    const tier = (mode === 'low' || mode === 'eco') ? 'low' : (mode === 'high' || mode === 'crisp') ? 'high' : 'med';
+    const ratio = tier === 'low' ? Math.min(devicePixelRatio, 0.7) : tier === 'high' ? Math.min(devicePixelRatio, 1.45) : Math.min(devicePixelRatio, 1.1);
+    R.setPixelRatio(ratio);
+    cam.far = tier === 'low' ? 48 : tier === 'high' ? 88 : 66;
+    cam.updateProjectionMatrix();
+    if (room.id !== 'vault') {
+      R.shadowMap.enabled = tier !== 'low';
+      R.shadowMap.needsUpdate = true;
+    }
+    ref.setQualityMode?.(tier);
+  },
+  setQualityMode(mode){
+    api.setResolutionMode(mode);
+  },
   dispose(){
+    if(room.id==='study'){studyDisposed=true;studyCleanups.forEach(fn=>fn());}
+    halt=true;
+    clearTimeout(E._deadSparkTimer);
+    E._torchUnbind?.();
     cancelAnimationFrame(raf);
+    haunting?.dispose();
     scares?.dispose?.();
     controls.dispose();
     window.removeEventListener('resize',rs);
+    pmremRT?.dispose?.();
+    pmremGen?.dispose?.();
     S.traverse(o=>{
       o.geometry?.dispose();
       if (Array.isArray(o.material)) o.material.forEach(disposeMaterial);
