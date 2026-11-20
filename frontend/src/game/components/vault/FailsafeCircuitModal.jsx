@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { X, AlertTriangle, CheckCircle2, Zap, HelpCircle } from 'lucide-react';
 
 function evaluateCircuit(circuit, inputState) {
@@ -152,6 +152,11 @@ export default function FailsafeCircuitModal({
   const [answer, setAnswer] = useState('');
   const [feedback, setFeedback] = useState(null);
   const [showTruthTable, setShowTruthTable] = useState(false);
+  const [localAttempts, setLocalAttempts] = useState(null);
+
+  useEffect(() => {
+    setLocalAttempts(clue?.attempts ?? 0);
+  }, [clue?.attempts, isOpen]);
 
   const evalResult = useMemo(
     () => evaluateCircuit(circuit, switches),
@@ -166,7 +171,9 @@ export default function FailsafeCircuitModal({
   if (!isOpen || !clue) return null;
 
   const stage = clue.stages?.[0] || {};
-  const attemptsLeft = Math.max(0, (clue.attempts_max ?? 3) - (clue.attempts ?? 0));
+  const attemptsMade = localAttempts ?? clue?.attempts ?? 0;
+  const attemptsMax = clue?.attempts_max ?? 3;
+  const attemptsLeft = Math.max(0, attemptsMax - attemptsMade);
   const isExhausted = !clue.solved && attemptsLeft <= 0;
 
   const toggleSwitch = (name) => {
@@ -186,7 +193,14 @@ export default function FailsafeCircuitModal({
     const candidate = (answer || evalResult.code).trim();
     if (!candidate || isSubmitting || clue.solved || isExhausted) return;
     const res = await onSubmit(clue.id, candidate);
-    setFeedback(res);
+    if (res) {
+      setFeedback(res);
+      if (typeof res.attempts === 'number') {
+        setLocalAttempts(res.attempts);
+      } else if (res.correct === false) {
+        setLocalAttempts((prev) => (prev ?? clue?.attempts ?? 0) + 1);
+      }
+    }
   };
 
   const pairs = [];
@@ -251,8 +265,8 @@ export default function FailsafeCircuitModal({
             <span className="re-btn cursor-default !border-white/10">
               <span className="re-btn-circle">#</span>
               <span className="text-[11px] uppercase tracking-wider text-[#9f9483]">Attempts:</span>
-              <span className="font-mono text-[#fca5a5] font-bold">
-                {clue.attempts ?? 0}/{clue.attempts_max ?? 3}
+              <span className={`font-mono font-bold ${attemptsLeft <= 1 ? 'text-red-400' : 'text-[#ffd68a]'}`}>
+                {attemptsLeft}/{attemptsMax}
               </span>
             </span>
             <button
@@ -593,6 +607,13 @@ export default function FailsafeCircuitModal({
                 <AlertTriangle className="w-4 h-4 shrink-0 text-red-400" />
               )}
               <span>{feedback.message}</span>
+            </div>
+          )}
+
+          {isExhausted && !clue.solved && !feedback && (
+            <div className="p-3.5 rounded-xl border font-re-typewriter text-xs flex items-center gap-2 bg-[#210b0d] border-red-700/70 text-red-200">
+              <AlertTriangle className="w-4 h-4 shrink-0 text-red-400" />
+              <span>SECURITY LOCKOUT: MAXIMUM ATTEMPTS EXCEEDED (0/{attemptsMax}).</span>
             </div>
           )}
         </div>

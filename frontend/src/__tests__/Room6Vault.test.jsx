@@ -601,6 +601,53 @@ describe('Room 6 (The Anointing Vault) Comprehensive Test Suite', () => {
     expect(() => audio.dispose()).not.toThrow();
   });
 
+  it('counts attempts down as remaining attempts (3/3 -> 2/3) in ManualDiffModal and FailsafeCircuitModal', async () => {
+    const mockSubmit = vi.fn().mockResolvedValue({
+      ok: false,
+      correct: false,
+      attempts: 1,
+      attempts_max: 3,
+      message: 'Diff mismatch.',
+    });
+
+    const clueData = {
+      id: 'R2-08',
+      title: 'Containment Manual Diff',
+      attempts: 0,
+      attempts_max: 3,
+      solved: false,
+      payload: {
+        manual_plain: ['STEP 1: POWER DOWN'],
+        manual_encrypted: ['UHQT 1: IQKQV'],
+      },
+    };
+
+    const { rerender } = render(
+      <ManualDiffModal
+        isOpen={true}
+        onClose={vi.fn()}
+        clue={clueData}
+        onSubmit={mockSubmit}
+      />
+    );
+
+    // Initial state shows 3 attempts remaining out of 3
+    expect(screen.getByText('3/3')).toBeInTheDocument();
+
+    const input = screen.getByRole('textbox', { name: /tampered steps/i });
+    fireEvent.change(input, { target: { value: '99' } });
+    fireEvent.click(screen.getByRole('button', { name: /submit diff/i }));
+
+    await waitFor(() => {
+      expect(mockSubmit).toHaveBeenCalledWith('R2-08', '99');
+    });
+
+    // After 1 wrong attempt, counts down to 2/3
+    await waitFor(() => {
+      expect(screen.getByText('2/3')).toBeInTheDocument();
+    });
+  });
+
   it('renders standalone HUDVault, ManualDiffModal, FailsafeCircuitModal, CentralConsoleModal, and VaultDossierModal safely when closed/empty', () => {
     const { container } = render(
       <>

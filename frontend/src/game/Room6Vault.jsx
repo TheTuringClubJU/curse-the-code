@@ -12,7 +12,11 @@ import HintModal from './components/HintModal';
 import './vault.css';
 
 function authHeaders(extra = {}) {
-  const token = localStorage.getItem('ctc_token') || '';
+  const token =
+    localStorage.getItem('ctc_token') ||
+    localStorage.getItem('session_token') ||
+    localStorage.getItem('ctc_session_token') ||
+    '';
   return token ? { 'x-session-token': token, ...extra } : { ...extra };
 }
 
@@ -502,6 +506,20 @@ export default function Room6Vault({ team, onLogout }) {
           body: JSON.stringify(body),
         });
         const data = await res.json().catch(() => ({}));
+
+        if (!res.ok) {
+          const errMsg =
+            (typeof data.detail === 'string'
+              ? data.detail
+              : data.detail?.message) ||
+            data.message ||
+            `Server returned ${res.status}: Submission could not be verified.`;
+          audioRef.current?.bad?.();
+          setSubmitFeedback({ ok: false, message: errMsg });
+          showNotice(errMsg);
+          return { ok: false, correct: false, message: errMsg, ...data };
+        }
+
         const isCorrect = Boolean(data.correct || data.solved);
 
         if (isCorrect) {

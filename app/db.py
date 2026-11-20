@@ -140,9 +140,22 @@ def get_db_connection():
     if p:
         try:
             raw = p.getconn()
-            # If the borrowed connection was unexpectedly closed by Neon/PgBouncer, discard and retry
+            # If the borrowed connection was unexpectedly closed or broken, test or retry
+            needs_recycle = False
             if raw.closed != 0:
-                p.putconn(raw, close=True)
+                needs_recycle = True
+            else:
+                try:
+                    with raw.cursor() as test_cur:
+                        test_cur.execute("SELECT 1")
+                except Exception:
+                    needs_recycle = True
+
+            if needs_recycle:
+                try:
+                    p.putconn(raw, close=True)
+                except Exception:
+                    pass
                 raw = p.getconn()
             return PooledConnectionProxy(raw, p)
         except Exception as e:

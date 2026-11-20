@@ -59,6 +59,9 @@ export default function CentralConsoleModal({
       setAttemptsRemaining(clue.attempts_remaining);
     } else if (typeof clue?.remaining_attempts === 'number') {
       setAttemptsRemaining(clue.remaining_attempts);
+    } else if (typeof clue?.attempts_max === 'number') {
+      const left = Math.max(0, clue.attempts_max - (clue.attempts ?? 0));
+      setAttemptsRemaining(left);
     }
   }, [isOpen, clue]);
 
@@ -96,6 +99,12 @@ export default function CentralConsoleModal({
 
       if (typeof res?.attempts_remaining === 'number') {
         setAttemptsRemaining(res.attempts_remaining);
+      } else if (typeof res?.remaining_attempts === 'number') {
+        setAttemptsRemaining(res.remaining_attempts);
+      } else if (typeof res?.attempts === 'number' && typeof res?.attempts_max === 'number') {
+        setAttemptsRemaining(Math.max(0, res.attempts_max - res.attempts));
+      } else if (res?.correct === false) {
+        setAttemptsRemaining((prev) => (typeof prev === 'number' ? Math.max(0, prev - 1) : 0));
       }
 
       if (res?.correct) {

@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Copy,
   Check,
@@ -35,6 +35,11 @@ export default function ManualDiffModal({
   const [viewMode, setViewMode] = useState('split'); // 'split' | 'redline'
   const [largeType, setLargeType] = useState(false);
   const [feedback, setFeedback] = useState(null);
+  const [localAttempts, setLocalAttempts] = useState(null);
+
+  useEffect(() => {
+    setLocalAttempts(clue?.attempts ?? 0);
+  }, [clue?.attempts, isOpen]);
 
   const payload = clue?.payload || {};
   const plainLines = useMemo(
@@ -70,7 +75,9 @@ export default function ManualDiffModal({
     placeholder: 'e.g. 26',
   };
 
-  const attemptsLeft = Math.max(0, (clue.attempts_max ?? 3) - (clue.attempts ?? 0));
+  const attemptsMade = localAttempts ?? clue?.attempts ?? 0;
+  const attemptsMax = clue?.attempts_max ?? 3;
+  const attemptsLeft = Math.max(0, attemptsMax - attemptsMade);
   const isExhausted = !clue.solved && attemptsLeft <= 0;
 
   const handleCopy = async () => {
@@ -98,7 +105,14 @@ export default function ManualDiffModal({
     e.preventDefault();
     if (!answer.trim() || isSubmitting || clue.solved || isExhausted) return;
     const res = await onSubmit(clue.id, answer.trim());
-    setFeedback(res);
+    if (res) {
+      setFeedback(res);
+      if (typeof res.attempts === 'number') {
+        setLocalAttempts(res.attempts);
+      } else if (res.correct === false) {
+        setLocalAttempts((prev) => (prev ?? clue?.attempts ?? 0) + 1);
+      }
+    }
   };
 
   const maxRows = Math.max(plainLines.length, revisedLines.length);
@@ -164,9 +178,9 @@ export default function ManualDiffModal({
             </button>
 
             <span className="re-plate !py-1.5 !px-3.5 cursor-default">
-              <span className="text-[10px] tracking-widest uppercase text-[#b8a586]">Attempts</span>
-              <span className="text-[#f3d499] font-mono">
-                {clue.attempts ?? 0}/{clue.attempts_max ?? 3}
+              <span className="text-[10px] tracking-widest uppercase text-[#b8a586]">Attempts:</span>
+              <span className={`font-mono font-bold ${attemptsLeft <= 1 ? 'text-red-400' : 'text-[#ffd68a]'}`}>
+                {attemptsLeft}/{attemptsMax}
               </span>
             </span>
             <button
@@ -387,6 +401,12 @@ export default function ManualDiffModal({
             <div className="mt-4 p-3.5 rounded-[2px] border bg-[#0e1f15] border-emerald-600/60 text-emerald-200 font-re-typewriter text-xs flex items-center gap-2 shadow-xl">
               <CheckCircle2 className="w-4 h-4 text-emerald-400" />
               <span>Terminal {clue.id} verified. Open Case Dossier [C] to review clean steps.</span>
+            </div>
+          )}
+
+          {isExhausted && !clue.solved && (
+            <div className="mt-4 p-3.5 rounded-[2px] border bg-red-950/80 border-red-500/80 text-red-200 font-mono text-xs tracking-wider">
+              SECURITY LOCKOUT: MAXIMUM ATTEMPTS EXCEEDED (0/{attemptsMax}).
             </div>
           )}
         </div>
