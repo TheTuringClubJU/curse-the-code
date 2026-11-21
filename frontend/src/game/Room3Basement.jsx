@@ -113,7 +113,11 @@ export default function Room3Basement({ team, onLogout, onProceedToLobby, previe
   };
   handleInteractRef.current=handleInteract;
 
-  useEffect(()=>{fetchRoomState();},[]);
+  useEffect(() => {
+    fetchRoomState();
+    const iv = setInterval(fetchRoomState, 2000);
+    return () => clearInterval(iv);
+  }, []);
   useEffect(() => () => {
     if (notificationTimerRef.current) clearTimeout(notificationTimerRef.current);
   }, []);

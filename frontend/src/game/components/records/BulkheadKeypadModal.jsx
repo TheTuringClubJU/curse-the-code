@@ -349,6 +349,18 @@ export default function BulkheadKeypadModal({
           >
             {isSubmitting ? 'VERIFYING CREDENTIALS...' : 'ENTER'}
           </button>
+
+          {/* Route Selection (Fork 1) Advance Button */}
+          <button
+            type="button"
+            onClick={() => {
+              onClose();
+              onBulkheadUnlocked?.();
+            }}
+            className="w-full max-w-xs py-2 px-3 rounded-lg text-xs font-mono font-bold text-[#ffd68a] hover:text-white border border-[#b38600]/50 hover:border-[#ffd68a] bg-[#1f190e] hover:bg-[#2e2515] transition tracking-wider uppercase"
+          >
+            Advance to Route Selector (Fork 1) ➔
+          </button>
         </div>
 
         {/* Industrial Status Footnote / Result Tray */}

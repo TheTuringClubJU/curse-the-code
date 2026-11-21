@@ -47,8 +47,8 @@ export default function Room4Records({ team, onLogout }) {
   const [flashOverlay, setFlashOverlay] = useState({ color: '#000', opacity: 0, visible: false });
   const doorScareCountRef = useRef(0);
 
-  // Fetch initial room data from backend
-  const fetchRoomState = async () => {
+  // Fetch room data from backend (with live teammate sync detection)
+  const fetchRoomState = async (silent = false) => {
     try {
       const res = await fetch('/api/game/room/records', {
         credentials: 'include',
@@ -58,8 +58,29 @@ export default function Room4Records({ team, onLogout }) {
       });
       if (res.ok) {
         const data = await res.json();
+        const prevData = roomDataRef.current;
         setRoomData(data);
         roomDataRef.current = data;
+
+        // Detect teammate actions and show tactical sync notification
+        if (silent && prevData) {
+          const prevFrags = prevData.collected_fragment_ids || [];
+          const nextFrags = data.collected_fragment_ids || [];
+          if (nextFrags.length > prevFrags.length) {
+            showNotification(`Teammate recovered Fragment (${nextFrags.length}/${data.total_fragments_in_room || 12})!`);
+            audioRef.current?.click?.();
+          }
+          if (!prevData.basket_unlocked && data.basket_unlocked) {
+            showNotification('All 12 fragments recovered by team! Archival terminals powered.');
+            audioRef.current?.good?.();
+          }
+          const prevSolved = (prevData.clues || []).filter((c) => c.solved).map((c) => c.id);
+          const nextSolved = (data.clues || []).filter((c) => c.solved && !prevSolved.includes(c.id));
+          if (nextSolved.length > 0) {
+            showNotification(`Teammate verified ${nextSolved[0].title || nextSolved[0].id}! Case dossier updated.`);
+            audioRef.current?.good?.();
+          }
+        }
 
         // If room is completed, animate bulkhead door open
         if (data.is_completed && engineRef.current) {
@@ -67,9 +88,9 @@ export default function Room4Records({ team, onLogout }) {
         }
       }
     } catch (err) {
-      console.error('Failed to load records room state:', err);
+      if (!silent) console.error('Failed to load records room state:', err);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
@@ -175,6 +196,10 @@ export default function Room4Records({ team, onLogout }) {
 
   useEffect(() => {
     fetchRoomState();
+    const interval = setInterval(() => {
+      fetchRoomState(true);
+    }, 2000);
+    return () => clearInterval(interval);
   }, []);
 
   // Flashlight battery decay loop
@@ -340,9 +365,10 @@ export default function Room4Records({ team, onLogout }) {
       return;
     }
 
-    // 2. Check Bulkhead Door (Exit to next room)
+    // 2. Check Bulkhead Door (Exit to next room / Fork 1)
     if (objectId === 'bulkhead_door') {
-      if (currentData?.is_completed) {
+      const clueR207 = currentData?.clues?.find((c) => c.id === 'R2-07') || { id: 'R2-07', requires_resolved: ['R2-03', 'R2-04'] };
+      if (currentData?.is_completed || clueR207?.solved) {
         setIsFork1Open(true);
         engineRef.current?.unlock();
         return;
@@ -364,7 +390,6 @@ export default function Room4Records({ team, onLogout }) {
         return;
       }
       // If not completed, verify prerequisite resolution before opening Bulkhead Keypad (Clue R2-07)
-      const clueR207 = currentData?.clues?.find((c) => c.id === 'R2-07') || { id: 'R2-07', requires_resolved: ['R2-03', 'R2-04'] };
       if (isClueLocked(clueR207, currentData?.clues)) {
         showNotification(getClueLockReason(clueR207, currentData?.clues));
         audioRef.current?.bad?.();
@@ -746,10 +771,10 @@ export default function Room4Records({ team, onLogout }) {
           '✓ Primary Wing B Route Authenticated',
           '✓ Hydraulic Bulkhead Door Unsealed'
         ]}
-        actionLabel="Enter Next Sector (Vault)"
+        actionLabel="Enter Next Sector (Control Room)"
         onProceedToDoor={() => {
           setIsRoomCompleteModalOpen(false);
-          window.dispatchEvent(new CustomEvent('ctc:navigate-room', { detail: 'vault' }));
+          window.dispatchEvent(new CustomEvent('ctc:navigate-room', { detail: 'control' }));
         }}
       />
 
