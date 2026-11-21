@@ -37,8 +37,9 @@ def seed_demo_teams():
                     ON CONFLICT (round) DO NOTHING;
                     """
                 )
-                # Reset failed login lockout state
+                # Reset test sessions and failed login lockout state between test runs
                 cur.execute("UPDATE teams SET failed_logins = 0, locked_until = NULL, is_active = true WHERE name IN ('Team Cipher', 'Shadow Hackers', 'Curse Breakers');")
+                cur.execute("DELETE FROM team_sessions WHERE team_id IN (SELECT id FROM teams WHERE name IN ('Team Cipher', 'Shadow Hackers', 'Curse Breakers'));")
                 for t in demo_teams:
                     salt = bcrypt.gensalt()
                     pw_hash = bcrypt.hashpw(t["password"].encode("utf-8"), salt).decode("utf-8")
