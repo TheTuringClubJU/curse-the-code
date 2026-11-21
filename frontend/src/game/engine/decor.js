@@ -304,6 +304,53 @@ export function buildDecor(E){
     }
   }
  }
+ {
+  // Physical metal flashlight prop resting on study desk
+  const flGrp = grp(2.25, 0.78, -2.75, 0.35)
+  const flBody = mk(new THREE.CylinderGeometry(0.022, 0.018, 0.22, 16), mat({color: 0x1c1e24, m: 0.85, r: 0.35}), 0, 0.02, 0, Math.PI / 2, 0, 0)
+  const flHead = mk(new THREE.CylinderGeometry(0.032, 0.022, 0.06, 16), mat({color: 0x282a32, m: 0.8, r: 0.4}), 0, 0.02, 0.12, Math.PI / 2, 0, 0)
+  const flLens = mk(new THREE.CircleGeometry(0.028, 16), mat({color: 0xffffff, e: 0xffeeaa, ei: 0.4, r: 0.1}), 0, 0.02, 0.151)
+  flGrp.add(flBody, flHead, flLens)
+  flGrp.traverse(o => { o.userData.np = 1 })
+  add(flGrp)
+
+  if (typeof window !== 'undefined' && window.location?.protocol?.startsWith('http')) {
+    try {
+      const flUrl = '/assets/models/bedroom/flashlight_prop.glb'
+      const loader = new GLTFLoader()
+      if (typeof MeshoptDecoder !== 'undefined') loader.setMeshoptDecoder(MeshoptDecoder)
+      loader.load(
+        flUrl,
+        gltf => {
+          if (!gltf?.scene) return
+          const flModel = gltf.scene
+          flModel.name = 'flashlight_prop'
+          flModel.traverse(o => {
+            if (!o.isMesh) return
+            o.userData.np = 1
+            o.castShadow = true
+            o.receiveShadow = true
+          })
+          flModel.scale.setScalar(0.7)
+          flModel.position.set(2.25, 0.785, -2.75)
+          flModel.rotation.set(0, 0.35, 0)
+          add(flModel)
+
+          flGrp.visible = false
+          flGrp.traverse(o => {
+            o.visible = false
+            o.userData.np = 1
+          })
+          E?.bakeShadows?.()
+        },
+        undefined,
+        err => console.warn('[BEDROOM FLASHLIGHT GLB FALLBACK ACTIVE]', err)
+      )
+    } catch (err) {
+      console.warn('[BEDROOM FLASHLIGHT GLB FALLBACK ACTIVE]', err)
+    }
+  }
+ }
  {const wr=X.writingC("DON'T TURN AROUND",{W:1024,H:256,size:92,seed:4});const t=X.tex(wr.c);document.fonts?.ready.then(()=>{wr.redraw();t.needsUpdate=true});S.add(decal(t,2.6,.65,1.45,2.05,D/2-.012,Math.PI,{o:.9}))
   const hp=X.tex(X.handprintC(3));[[2.0,1.35,.06],[2.35,1.1,-.1],[2.2,.75,.2]].forEach(a=>S.add(decal(hp,.26,.39,-W/2+.012,a[1],a[0],Math.PI/2,{rz:a[2],o:.85})))
   const bt=TX.bat();for(let i=0;i<8;i++){const m=decal(bt,.24+R()*.1,.12+R()*.05,W/2-.012,1.9+R()*.55+(i%2)*.1,.55+i*.3,-Math.PI/2,{rz:(R()-.5)*.8});m.material.color.set(0x15121c);m.material.opacity=.95;S.add(m)}}
