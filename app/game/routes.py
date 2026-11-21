@@ -35,53 +35,11 @@ def verify_team_auth(request: Request):
         raise HTTPException(status_code=401, detail='Unauthorized - Invalid or expired session')
     return team_res['team']
 
-def check_room_progression_access(team_id: int, room_id: str):
-    """
-    Enforces sequential progression rules based on Fork resolution (ROUND2_DESIGN.md):
-    - control (Room 5): requires fork_1 resolved with choice 'B'
-    - vault (Room 6): requires fork_2 resolved with choice 'B'
-    """
-    if room_id == "control":
-        conn = get_db_connection()
-        try:
-            with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                cur.execute(
-                    "SELECT choice, is_trap FROM team_forks WHERE team_id = %s AND fork_id = 'fork_1'",
-                    (team_id,)
-                )
-                fork_rows = cur.fetchall()
-                fork_resolved = any(not r["is_trap"] and r["choice"] == "B" for r in fork_rows)
-                if not fork_resolved:
-                    raise HTTPException(
-                        status_code=403,
-                        detail={"code": "ROOM_LOCKED", "message": "Resolve Fork 1 (Route Selection) in The Rotting Archive first."}
-                    )
-        finally:
-            conn.close()
-    elif room_id == "vault":
-        conn = get_db_connection()
-        try:
-            with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                cur.execute(
-                    "SELECT choice, is_trap FROM team_forks WHERE team_id = %s AND fork_id = 'fork_2'",
-                    (team_id,)
-                )
-                fork_rows = cur.fetchall()
-                fork_resolved = any(not r["is_trap"] and r["choice"] == "B" for r in fork_rows)
-                if not fork_resolved:
-                    raise HTTPException(
-                        status_code=403,
-                        detail={"code": "ROOM_LOCKED", "message": "Resolve Fork 2 (Core Airlock) in The Surveillance Morgue first."}
-                    )
-        finally:
-            conn.close()
-
 @router.get("/room/{room_id}")
 @router.get("/room/{room_id}/state")
 def get_room_state(room_id: str, request: Request):
     team = verify_team_auth(request)
     content = get_content_data()
-    check_room_progression_access(team["id"], room_id)
     if room_id == "basement":
         return basement_service.get_room_state(team["id"], content, request)
     
@@ -1278,25 +1236,6 @@ def choose_fork_path(fork_id: str, payload: Dict[str, Any], request: Request):
     cfg = FORK_CONFIG[fork_id]
     if choice not in ["A", "B"]:
         raise HTTPException(status_code=400, detail="Invalid choice. Must be 'A' or 'B'.")
-
-    # If choosing Fork 2, ensure Fork 1 has already been resolved with Choice B
-    if fork_id == "fork_2":
-        conn_pre = get_db_connection()
-        try:
-            with conn_pre.cursor() as cur_pre:
-                cur_pre.execute(
-                    "SELECT choice, is_trap FROM team_forks WHERE team_id = %s AND fork_id = 'fork_1'",
-                    (team["id"],)
-                )
-                f1_rows = cur_pre.fetchall()
-                f1_ok = any(not r[1] and r[0] == "B" for r in f1_rows)
-                if not f1_ok:
-                    raise HTTPException(
-                        status_code=403,
-                        detail={"code": "FORK_LOCKED", "message": "Resolve Fork 1 in The Rotting Archive before choosing Fork 2."}
-                    )
-        finally:
-            conn_pre.close()
 
     conn = get_db_connection()
     try:
