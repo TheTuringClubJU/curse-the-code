@@ -52,7 +52,7 @@ export default function Room3Basement({ team, onLogout, onProceedToLobby, onProc
   const [isSubmitting, setIsSubmitting] = useState(false), [audioMuted, setAudioMuted] = useState(false);
   const [isJumpscareActive, setIsJumpscareActive] = useState(false);
   const jumpscareTriggeredRef = useRef(false);
-  const wasOnStairsRef = useRef(true);
+  const wasOnStairsRef = useRef(false);
   const jumpscareTimerRef = useRef(null);
   const handlePlayerMoveRef = useRef(null);
 

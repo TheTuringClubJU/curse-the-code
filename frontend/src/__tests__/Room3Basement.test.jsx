@@ -406,7 +406,7 @@ describe('Room 3 (The Basement) Comprehensive Test Suite (49 Tests)', () => {
     const drawCalls = scene.children.filter((object) => object.isMesh).length;
     expect(drawCalls).toBeLessThan(250);
   });
-  it('QA-R3-FE-50: basement interior stays walkable without a room door object', () => {
+  it('QA-R3-FE-50: basement interior registers physical collision solids without a room door object', () => {
     const environment = {
       S: new THREE.Scene(),
       add: vi.fn(),
@@ -421,7 +421,7 @@ describe('Room 3 (The Basement) Comprehensive Test Suite (49 Tests)', () => {
     };
     buildBasement(environment);
 
-    expect(environment.solid).not.toHaveBeenCalled();
+    expect(environment.solid).toHaveBeenCalled();
     expect(environment.interact).not.toHaveBeenCalledWith(expect.anything(), 'room_door');
   });
   it('QA-R3-FE-43: test_room3_frame_rate_maintains_60fps', () => {

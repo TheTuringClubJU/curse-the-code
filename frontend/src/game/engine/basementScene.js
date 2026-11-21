@@ -109,9 +109,24 @@ export function buildBasement(E) {
   E._basementBuilt = true;
 
   const { S, add, interact, anim, ref } = E;
+  const solid = E.solid ? E.solid.bind(E) : () => {};
   const roomWidth = E.W ?? 38;
   const roomHeight = E.H ?? 3.8;
   const roomDepth = E.D ?? 7.4;
+
+  // Register physical collision bounding boxes for objects and barriers
+  // 1. Server rack and door frame
+  solid(-5.15, -3.75, -1.65, -0.55);
+  // 2. Triple CRT containment console desk workstation
+  solid(0.65, 3.35, -3.6, -0.85);
+  // 3. Mechanics toolbox workbench table
+  solid(3.75, 4.95, 0.1, 0.9);
+  // 4. Wooden crates and storage barrels
+  solid(-3.77, -2.21, -3.55, -2.0);
+  // 5. Staircase base wedge (prevents clipping inside concrete stair foundation)
+  solid(13.5, 19.0, -3.8, 3.8);
+  // 6. Far west chamber boundary
+  solid(-19.0, -14.8, -3.8, 3.8);
 
   // Authentic Survival-Horror Palettes: Aged Iron, Tarnished Steel, Oxidized Red, Phosphor Green
   const darkSteel = mat({ c: 0x16181c, m: 0.55, r: 0.65 });

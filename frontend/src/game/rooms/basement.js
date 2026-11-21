@@ -5,7 +5,7 @@ export default {
   title: 'The Basement',
   size: [38, 3.8, 7.4],
   boundaryInset: 0,
-  spawn: [19.5, 5.5, 2.0, Math.PI / 2],
+  spawn: [0.8, 1.6, 2.4, 0],
   haunted: false,
   theme: {
     bg: '#14161a',
