@@ -216,6 +216,7 @@ export function buildVaultScene(E) {
   // ── 3. Calibrated Survival-Horror Lighting Rig (+Sightline Rim Pools) ─────
   const lightEntries = [];
   const registerLight = (light) => {
+    light.intensity = Number((light.intensity * 1.01).toFixed(4));
     lightEntries.push({ light, base: light.intensity });
     S.add(light);
     return light;
@@ -572,7 +573,7 @@ export function buildVaultScene(E) {
   coreGroup.add(leadedVessel);
 
   // Interior specimen glow lamp inside the cracked vessel
-  const coreInnerLamp = new THREE.PointLight(0xff343e, 3.6, 5.8, 1.6);
+  const coreInnerLamp = new THREE.PointLight(0xff343e, 3.636, 5.8, 1.6);
   coreInnerLamp.position.set(0, 1.68, 0);
   coreGroup.add(coreInnerLamp);
 
@@ -948,14 +949,14 @@ export function buildVaultScene(E) {
     targetHeight: 1.35,
     albedoLift: 0.38,
     onReady: (root) => {
-      const chLight = new THREE.PointLight(0xffa844, 2.4, 7.5);
+      const chLight = new THREE.PointLight(0xffa844, 2.424, 7.5);
       chLight.position.set(-15.15, 3.1, 0);
       S.add(chLight);
       // Subtle chandelier sway and flickering candlelight
       anim((t) => {
         root.rotation.z = Math.sin(t * 1.1) * 0.025;
         root.rotation.x = Math.cos(t * 0.95) * 0.02;
-        chLight.intensity = 2.4 + Math.sin(t * 7.3) * 0.28 + Math.cos(t * 13.1) * 0.15;
+        chLight.intensity = 2.424 + Math.sin(t * 7.3) * 0.28 + Math.cos(t * 13.1) * 0.15;
       });
       // Dark iron suspension chain anchor up to ceiling
       const chainGeo = new THREE.CylinderGeometry(0.022, 0.022, 1.45, 6);
@@ -1423,7 +1424,7 @@ export function buildVaultScene(E) {
         fleshRoot.scale.set(s, s, s);
       }
       if (!ref._lightsOverridden) {
-        coreLight.intensity = 2.9 + beat * 1.6;
+        coreLight.intensity = (2.9 + beat * 1.6) * 1.01;
       }
     }
 
