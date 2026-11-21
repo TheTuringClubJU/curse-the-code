@@ -172,12 +172,34 @@ export default function Room1Bedroom({ team, onLogout, onTransitionToRoom2 }) {
         onTarget: (targetId) => {
           activeTargetRef.current = targetId;
           if (targetId) {
+            const labels = {
+              nightstand: 'Inspect Bedside Nightstand',
+              chair: 'Inspect Rocking Chair',
+              desk: 'Inspect Study Desk',
+              notebook: 'Inspect School Notebook',
+              diary: 'Inspect Leather Diary',
+              bed: 'Inspect Four-Poster Bed',
+              clock: 'Inspect Torsion Pendulum Clock',
+              wardrobe: 'Inspect Antique Wardrobe',
+              bookshelf: 'Inspect Bookcase',
+              portrait: 'Inspect Victorian Portrait',
+              poster: 'Inspect Celestial Poster',
+              musicbox: 'Inspect Music Box',
+              candle: 'Inspect Candlestick',
+              photo_frame: 'Inspect Framed Photo',
+              mirror: 'Inspect Baroque Mirror',
+              trunk: 'Inspect trunk',
+              pillow: 'Inspect Silk Pillows',
+              lamp: 'Inspect Parlor Lamp'
+            };
             if (targetId === 'room_door' || targetId === 'door') {
               if (roomDataRef.current?.is_completed) {
                 setActiveHoverPrompt('Step into Corridor / Enter Room 2');
               } else {
                 setActiveHoverPrompt('Inspect Locked Bedroom Door');
               }
+            } else if (labels[targetId]) {
+              setActiveHoverPrompt(labels[targetId]);
             } else {
               setActiveHoverPrompt(`Inspect ${targetId.replace('_', ' ')}`);
             }
