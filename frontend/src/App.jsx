@@ -43,35 +43,15 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    const verifyAndNavigateRound2Vault = async () => {
-      try {
-        const token = localStorage.getItem('ctc_token') || '';
-        const headers = token ? { 'x-session-token': token } : {};
-        const [recRes, forkRes] = await Promise.all([
-          fetch('/api/game/room/records', { credentials: 'include', headers }),
-          fetch('/api/game/fork/fork_1/status', { credentials: 'include', headers }),
-        ]);
-        const recData = recRes.ok ? await recRes.json() : null;
-        const forkData = forkRes.ok ? await forkRes.json() : null;
-        const r207 = recData?.clues?.find?.((c) => c.id === 'R2-07');
-        const unlocked = Boolean(
-          (recData?.is_completed || r207?.solved) && forkData?.resolved
-        );
-        setRound2VaultUnlocked(unlocked);
-        if (unlocked) {
-          changeRoom('vault');
-        }
-      } catch {
-        setRound2VaultUnlocked(false);
-      }
-    };
-
     const handleNavigateRoom = (event) => {
       const target = event?.detail;
       if (target === 'vault') {
-        verifyAndNavigateRound2Vault();
+        setRound2VaultUnlocked(true);
+        setInRoom5(false);
+        changeRoom('vault');
       } else if (target === 'control') {
         setInRoom5(true);
+        setRound2VaultUnlocked(false);
         changeRoom('control');
       } else if (typeof target === 'string' && target) {
         changeRoom(target);
@@ -115,58 +95,97 @@ export default function App() {
       .finally(() => setCheckingAuth(false));
   }, [isAdminRoute]);
 
-  // Determine Round 2 backend unlock status for Room 6 (The Anointing Vault)
+  // Live synchronization of Round 1 room progression across teammates
   useEffect(() => {
-    if (!team || isAdminRoute || roundStatus !== 'live' || currentRoundNum !== 2) {
-      setRound2VaultUnlocked(false);
-      return;
-    }
+    if (!team || isAdminRoute || roundStatus !== 'live' || currentRoundNum !== 1) return;
+    let cancelled = false;
+
+    const syncRound1 = async () => {
+      try {
+        const bRes = await fetch('/api/game/room/basement', { credentials: 'include' });
+        if (bRes.ok) {
+          const bData = await bRes.json();
+          if (!cancelled) {
+            if (bData.is_completed) {
+              setCurrentRoom('lobby');
+              return;
+            }
+            setCurrentRoom('basement');
+            return;
+          }
+        }
+        const sRes = await fetch('/api/game/room/study', { credentials: 'include' });
+        if (!cancelled && sRes.ok) {
+          setCurrentRoom('study');
+          return;
+        }
+        if (!cancelled) {
+          setCurrentRoom('bedroom');
+        }
+      } catch {
+        // Keep current room on transient network error
+      }
+    };
+
+    syncRound1();
+    const interval = setInterval(syncRound1, 2500);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [team, isAdminRoute, roundStatus, currentRoundNum]);
+
+  // Live synchronization of Round 2 room progression (Room 4 -> Room 5 -> Room 6) across teammates
+  useEffect(() => {
+    if (!team || isAdminRoute || roundStatus !== 'live' || currentRoundNum !== 2) return;
     let cancelled = false;
     const token = localStorage.getItem('ctc_token') || '';
     const headers = token ? { 'x-session-token': token } : {};
-    Promise.all([
-      fetch('/api/game/room/records', { credentials: 'include', headers }).then((r) => (r.ok ? r.json() : null)),
-      fetch('/api/game/fork/fork_1/status', { credentials: 'include', headers }).then((r) => (r.ok ? r.json() : null)),
-    ])
-      .then(([recData, forkData]) => {
-        if (cancelled) return;
-        const r207 = recData?.clues?.find?.((c) => c.id === 'R2-07');
-        const unlocked = Boolean(
-          (recData?.is_completed || r207?.solved) && forkData?.resolved
-        );
-        setRound2VaultUnlocked(unlocked);
-      })
-      .catch(() => {
-        if (!cancelled) setRound2VaultUnlocked(false);
-      });
+
+    const syncRound2 = async () => {
+      try {
+        // 1. Check if Fork 2 is resolved -> Room 6 (Vault)
+        const fork2Res = await fetch('/api/game/fork/fork_2/status', { credentials: 'include', headers });
+        if (!cancelled && fork2Res.ok) {
+          const fork2Data = await fork2Res.json();
+          if (fork2Data?.resolved) {
+            setRound2VaultUnlocked(true);
+            setInRoom5(false);
+            setCurrentRoom('vault');
+            return;
+          }
+        }
+
+        // 2. Check if Fork 1 is resolved -> Room 5 (Control)
+        const fork1Res = await fetch('/api/game/fork/fork_1/status', { credentials: 'include', headers });
+        if (!cancelled && fork1Res.ok) {
+          const fork1Data = await fork1Res.json();
+          if (fork1Data?.resolved) {
+            setInRoom5(true);
+            setRound2VaultUnlocked(false);
+            setCurrentRoom('control');
+            return;
+          }
+        }
+
+        // 3. Otherwise default to initial Room 4 (The Rotting Archive)
+        if (!cancelled) {
+          setInRoom5(false);
+          setRound2VaultUnlocked(false);
+          setCurrentRoom('records');
+        }
+      } catch {
+        // Keep current room on transient network error
+      }
+    };
+
+    syncRound2();
+    const interval = setInterval(syncRound2, 2500);
     return () => {
       cancelled = true;
+      clearInterval(interval);
     };
   }, [team, isAdminRoute, roundStatus, currentRoundNum]);
-  useEffect(() => {
-    if (!team || isAdminRoute) return;
-    fetch('/api/game/room/basement', { credentials: 'include' })
-      .then((res) => {
-        if (res.ok) {
-          return res.json().then((data) => {
-            if (data.is_completed) {
-              setCurrentRoom('lobby');
-            } else {
-              setCurrentRoom('basement');
-            }
-          });
-        } else {
-          return fetch('/api/game/room/study', { credentials: 'include' }).then((r2) => {
-            if (r2.ok) {
-              setCurrentRoom('study');
-            } else {
-              setCurrentRoom('bedroom');
-            }
-          });
-        }
-      })
-      .catch(() => setCurrentRoom('bedroom'));
-  }, [team, isAdminRoute]);
 
   // Fast poll lobby/game status when team is logged in
   useEffect(() => {
@@ -185,54 +204,23 @@ export default function App() {
             setCurrentRoundNum(data.current_round || 1);
           }
         } else {
-          if (isMounted) setRoundStatus(prev => prev || 'pending');
+          if (isMounted) setRoundStatus((prev) => prev || 'pending');
         }
       } catch (err) {
         console.error('State polling error:', err);
-        if (isMounted) setRoundStatus(prev => prev || 'pending');
+        if (isMounted) setRoundStatus((prev) => prev || 'pending');
       }
     };
 
     // Always execute the initial state check immediately from DB
     checkState();
 
-    // Pause continuous fast polling while actively playing Room 1 or Room 4 to free bandwidth for interactions
-    if (roundStatus === 'live' && (currentRoundNum === 1 || currentRoundNum === 2)) return;
-
     const interval = setInterval(checkState, 3000);
     return () => {
       isMounted = false;
       clearInterval(interval);
     };
-  }, [team, isAdminRoute, roundStatus, currentRoundNum]);
-
-  // Verify Round 2 progression forward from Room 4 (Records) to Room 5 (Control)
-  useEffect(() => {
-    if (!team || isAdminRoute || roundStatus !== 'live' || currentRoundNum !== 2 || inRoom5) return;
-    let cancelled = false;
-    const checkFork1 = async () => {
-      try {
-        const res = await fetch('/api/game/fork/fork_1/status', {
-          credentials: 'include',
-          headers: { 'x-session-token': localStorage.getItem('ctc_token') || '' },
-        });
-        if (res.ok) {
-          const data = await res.json();
-          if (!cancelled && data?.resolved) {
-            setInRoom5(true);
-          }
-        }
-      } catch {
-        // ignore network transient errors
-      }
-    };
-    checkFork1();
-    const interval = setInterval(checkFork1, 4000);
-    return () => {
-      cancelled = true;
-      clearInterval(interval);
-    };
-  }, [team, isAdminRoute, roundStatus, currentRoundNum, inRoom5]);
+  }, [team, isAdminRoute]);
 
   const handleLoginSuccess = (authenticatedTeam) => {
     setRoundStatus(null);
@@ -292,11 +280,6 @@ export default function App() {
     return <UserLogin onLoginSuccess={handleLoginSuccess} />;
   }
 
-  // Direct Room 3 entry points (frontend routing only)
-  if (window.location.pathname === '/basement' || window.location.pathname === '/room3') {
-    return <Room3Basement team={team} onLogout={handleLogout} />;
-  }
-
   // When Round 1 is live, display Room 1 (Bedroom), Room 2 (Study), or Room 3 (Basement)
   if (roundStatus === 'live' && currentRoundNum === 1) {
     if (currentRoom === 'lobby') {
@@ -333,16 +316,11 @@ export default function App() {
   }
 
   // When Round 2 is live, display Room 4 (The Rotting Archive), Room 5 (The Surveillance Morgue), or Room 6 (The Anointing Vault)
-  // Room 6 only opens once backend confirms R2-07 is solved and Fork 1 is resolved (no direct URL bypass)
   if (roundStatus === 'live' && currentRoundNum === 2) {
-    const wantsVault =
-      currentRoom === 'vault' ||
-      window.location.pathname === '/vault' ||
-      window.location.pathname === '/room6';
-    if (wantsVault && round2VaultUnlocked) {
+    if (currentRoom === 'vault' && round2VaultUnlocked) {
       return <Room6Vault team={team} onLogout={handleLogout} />;
     }
-    if (inRoom5 || currentRoom === 'control' || window.location.pathname === '/control' || window.location.pathname === '/room5') {
+    if (inRoom5 || currentRoom === 'control') {
       return <Room5Control team={team} onLogout={handleLogout} />;
     }
     return <Room4Records team={team} onLogout={handleLogout} />;

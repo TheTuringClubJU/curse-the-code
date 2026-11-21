@@ -38,8 +38,8 @@ export default function Room1Bedroom({ team, onLogout, onTransitionToRoom2 }) {
   const [flashOverlay, setFlashOverlay] = useState({ color: '#c40414', opacity: 0, visible: false });
   const doorScareCountRef = useRef(0);
 
-  // Fetch initial room data from backend
-  const fetchRoomState = async () => {
+  // Fetch room data from backend (with live teammate sync detection)
+  const fetchRoomState = async (silent = false) => {
     try {
       const res = await fetch('/api/game/room/bedroom', {
         credentials: 'include',
@@ -49,8 +49,29 @@ export default function Room1Bedroom({ team, onLogout, onTransitionToRoom2 }) {
       });
       if (res.ok) {
         const data = await res.json();
+        const prevData = roomDataRef.current;
         setRoomData(data);
         roomDataRef.current = data;
+
+        // Detect teammate actions and show live sync toast
+        if (silent && prevData) {
+          const prevFrags = prevData.collected_fragment_ids || [];
+          const nextFrags = data.collected_fragment_ids || [];
+          if (nextFrags.length > prevFrags.length) {
+            showNotification(`Teammate recovered a photo fragment (${nextFrags.length}/${data.total_fragments_in_room || 4})!`);
+            audioRef.current?.click?.();
+          }
+          if (!prevData.basket_unlocked && data.basket_unlocked) {
+            showNotification('All photo pieces assembled by team!');
+            audioRef.current?.good?.();
+          }
+          const prevSolved = (prevData.clues || []).filter((c) => c.solved).map((c) => c.id);
+          const nextSolved = (data.clues || []).filter((c) => c.solved && !prevSolved.includes(c.id));
+          if (nextSolved.length > 0) {
+            showNotification(`Teammate solved ${nextSolved[0].title || nextSolved[0].id}!`);
+            audioRef.current?.good?.();
+          }
+        }
 
         // If room is completed, animate door open
         if (data.is_completed && engineRef.current) {
@@ -58,9 +79,9 @@ export default function Room1Bedroom({ team, onLogout, onTransitionToRoom2 }) {
         }
       }
     } catch (err) {
-      console.error('Failed to load room state:', err);
+      if (!silent) console.error('Failed to load room state:', err);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
@@ -152,6 +173,10 @@ export default function Room1Bedroom({ team, onLogout, onTransitionToRoom2 }) {
 
   useEffect(() => {
     fetchRoomState();
+    const interval = setInterval(() => {
+      fetchRoomState(true);
+    }, 2000);
+    return () => clearInterval(interval);
   }, []);
 
   // Initialize Three.js 3D Engine
