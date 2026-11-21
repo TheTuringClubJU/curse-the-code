@@ -106,7 +106,7 @@ const EVIDENCE_DETAILS_MAP = {
   ER09: { clue: 'Personnel Index — S. Vance', part: 'Doc I', hiding: 'Card Catalog (Drawer 29)' },
   ER10: { clue: 'Shredded Document Scrap', part: 'Doc J', hiding: 'Waste Basket (Under Desk)' },
   XR01: { clue: 'Decoy (Vent Dust Filter)', part: 'Decoy', hiding: 'Ventilation Conduit (Behind Damaged Grille)' },
-  XR02: { clue: 'Decoy (Empty Box Flap)', part: 'Decoy', hiding: 'Filing Cabinet A (Top Drawer)' }
+  XR02: { clue: 'Decoy (Empty Box Flap)', part: 'Decoy', hiding: 'Ventilation Conduit (Duct Recess)' }
 };
 
 function getFragmentImage(ev) {

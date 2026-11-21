@@ -483,9 +483,13 @@ def get_room_basket(room_id: str, request: Request):
     room_evidence = target_room.get("evidence", [])
     total_in_room = len(room_evidence)
     is_basket_unlocked = bool(room_status and room_status["is_basket_unlocked"])
+    all_genuine_collected = False
+    if room_id == "records":
+        non_decoy_ids = {ev["id"] for ev in room_evidence if not ev.get("is_decoy")}
+        all_genuine_collected = bool(non_decoy_ids and non_decoy_ids.issubset(set(collected_ids)))
     
-    # Auto-unlock if all collected (or room has no fragments like vault)
-    if not is_basket_unlocked and (total_in_room == 0 or len(collected_ids) >= total_in_room):
+    # Auto-unlock if all collected, or all genuine non-decoy collected in records
+    if not is_basket_unlocked and (total_in_room == 0 or len(collected_ids) >= total_in_room or all_genuine_collected):
         conn = get_db_connection()
         try:
             with conn.cursor() as cur:
