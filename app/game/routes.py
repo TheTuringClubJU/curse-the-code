@@ -165,10 +165,13 @@ def get_room_state(room_id: str, request: Request):
                 c_idx = room_seq.index(c["id"])
                 if c_idx > 0:
                     prev_id = room_seq[c_idx - 1]
-                    prev_solved = team_clues.get(prev_id, {}).get("solved", False)
-                    if not prev_solved:
+                    prev_info = team_clues.get(prev_id, {})
+                    prev_clue = next((cl for cl in content.get("clues", []) if cl["id"] == prev_id), {})
+                    prev_max = prev_clue.get("attempts_max", 3)
+                    prev_resolved = bool(prev_info.get("solved") or (prev_max is not None and prev_info.get("attempts", 0) >= prev_max))
+                    if not prev_resolved:
                         is_locked = True
-                        lock_reason = f"Previous clue '{prev_id}' in this sequence must be solved first."
+                        lock_reason = f"Previous clue '{prev_id}' in this sequence must be resolved first."
 
             c_unlock = c.get("unlock", {}).get("requires_resolved", [])
             if not is_locked and c_unlock:
@@ -730,14 +733,17 @@ def submit_clue_answer(clue_id: str, payload: Dict[str, Any], request: Request):
             try:
                 with conn_pre.cursor(cursor_factory=RealDictCursor) as cur_pre:
                     cur_pre.execute(
-                        "SELECT solved FROM team_clues WHERE team_id = %s AND clue_id = %s",
+                        "SELECT solved, attempts FROM team_clues WHERE team_id = %s AND clue_id = %s",
                         (team["id"], prev_id)
                     )
                     prev_row = cur_pre.fetchone()
-                    if not (prev_row and prev_row["solved"]):
+                    prev_clue = next((cl for cl in content.get("clues", []) if cl["id"] == prev_id), {})
+                    prev_max = prev_clue.get("attempts_max", 3)
+                    prev_resolved = bool(prev_row and (prev_row["solved"] or (prev_max is not None and prev_row["attempts"] >= prev_max)))
+                    if not prev_resolved:
                         raise HTTPException(
                             status_code=403,
-                            detail={"code": "CLUE_LOCKED", "message": f"Previous clue '{prev_id}' in this sequence must be solved first."}
+                            detail={"code": "CLUE_LOCKED", "message": f"Previous clue '{prev_id}' in this sequence must be resolved first."}
                         )
             finally:
                 conn_pre.close()
