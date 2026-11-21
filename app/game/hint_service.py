@@ -93,8 +93,8 @@ CLUE_HINT_DETAILS = {
     "R1-09": {
         "title": "Intercom Clearance Relay",
         "location_prop": "Wall-mounted intercom console beside the containment door (intercom).",
-        "puzzle_type": "Physical Relay QR Card Authorization",
-        "guidance": "Scan the physical emergency clearance QR card provided at your station to retrieve the clearance token for the intercom."
+        "puzzle_type": "Physical Relay QR Card Authorization / Frequency Channel Alignment",
+        "guidance": "Scan the physical emergency clearance QR card provided at your station, or match the emergency beacon frequency channel (920 Hz / Channel 92 -> QR92) to retrieve the clearance token for the intercom."
     },
     "R1-10": {
         "title": "The Family's Final Note",
