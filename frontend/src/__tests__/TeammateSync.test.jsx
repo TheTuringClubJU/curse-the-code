@@ -94,11 +94,16 @@ describe('Dual-Device Real-Time Teammate Synchronization Suite', () => {
         study_unlocked: false,
         basement_unlocked: false,
         basement_completed: false,
+        r207_solved: false,
+        fail_network: false,
       };
 
       vi.mocked(checkAuthStatus).mockResolvedValue({ ok: true, team: mockTeam });
 
       vi.stubGlobal('fetch', vi.fn(async (url) => {
+        if (appState.fail_network) {
+          throw new Error('Network transient failure');
+        }
         if (url === '/api/lobby/state') {
           return {
             ok: true,
@@ -136,7 +141,14 @@ describe('Dual-Device Real-Time Teammate Synchronization Suite', () => {
           return { ok: true, json: async () => ({ room_id: 'bedroom' }) };
         }
         if (url === '/api/game/room/records') {
-          return { ok: true, json: async () => ({ room_id: 'records' }) };
+          return {
+            ok: true,
+            json: async () => ({
+              room_id: 'records',
+              is_completed: false,
+              clues: [{ id: 'R2-07', solved: appState.r207_solved }],
+            }),
+          };
         }
         return { ok: true, json: async () => ({}) };
       }));
@@ -206,6 +218,95 @@ describe('Dual-Device Real-Time Teammate Synchronization Suite', () => {
 
       expect(screen.getByText('Study room')).toBeInTheDocument();
       expect(screen.queryByText('Bedroom room')).toBeNull();
+    });
+
+    it('syncs Round 1 Study -> Basement progression: Player 2 moves to Basement when Study completes', async () => {
+      appState.current_round = 1;
+      appState.study_unlocked = true;
+      appState.basement_unlocked = false;
+
+      await act(async () => {
+        render(<App />);
+      });
+
+      expect(screen.getByText('Study room')).toBeInTheDocument();
+
+      // Teammate finishes Study -> Basement unlocked
+      appState.basement_unlocked = true;
+
+      await act(async () => {
+        vi.advanceTimersByTime(2600);
+      });
+
+      expect(screen.getByText('Basement room')).toBeInTheDocument();
+      expect(screen.queryByText('Study room')).toBeNull();
+    });
+
+    it('syncs Round 1 Basement -> Lobby progression: Player 2 moves to Lobby when Basement is cleared', async () => {
+      appState.current_round = 1;
+      appState.study_unlocked = true;
+      appState.basement_unlocked = true;
+      appState.basement_completed = false;
+
+      await act(async () => {
+        render(<App />);
+      });
+
+      expect(screen.getByText('Basement room')).toBeInTheDocument();
+
+      // Teammate finishes Basement room
+      appState.basement_completed = true;
+
+      await act(async () => {
+        vi.advanceTimersByTime(2600);
+      });
+
+      expect(screen.getByText('Waiting lobby')).toBeInTheDocument();
+      expect(screen.queryByText('Basement room')).toBeNull();
+    });
+
+    it('retains current room safely during transient network error or 500 status without crash', async () => {
+      appState.current_round = 2;
+      appState.fork1_resolved = false;
+
+      await act(async () => {
+        render(<App />);
+      });
+
+      expect(screen.getByText(/ROOM 4: THE ROTTING ARCHIVE/i)).toBeInTheDocument();
+
+      // Transient network drop
+      appState.fail_network = true;
+
+      await act(async () => {
+        vi.advanceTimersByTime(5000);
+      });
+
+      // App stays intact in Room 4 and doesn't crash
+      expect(screen.getByText(/ROOM 4: THE ROTTING ARCHIVE/i)).toBeInTheDocument();
+    });
+
+    it('syncs Round 2 Records -> Vault direct transition when both Fork 1 and Fork 2 are resolved', async () => {
+      appState.current_round = 2;
+      appState.fork1_resolved = false;
+      appState.fork2_resolved = false;
+
+      await act(async () => {
+        render(<App />);
+      });
+
+      expect(screen.getByText(/ROOM 4: THE ROTTING ARCHIVE/i)).toBeInTheDocument();
+
+      // Teammate resolves both forks on Device 1
+      appState.fork1_resolved = true;
+      appState.fork2_resolved = true;
+
+      await act(async () => {
+        vi.advanceTimersByTime(2600);
+      });
+
+      expect(screen.getByText('Vault room')).toBeInTheDocument();
+      expect(screen.queryByText(/ROOM 4: THE ROTTING ARCHIVE/i)).toBeNull();
     });
   });
 
