@@ -17,8 +17,13 @@ EVENT_LOG: List[Dict[str, Any]] = []
 from app.db import get_db_connection
 
 def seed_demo_teams():
-    # Helper to sync teams from database into memory
+    # Helper to seed demo teams into memory or database if empty
     TEAMS_DB.clear()
+    demo_teams = [
+        {"name": "Team Cipher", "password": "password123"},
+        {"name": "Shadow Hackers", "password": "halloweennight"},
+        {"name": "Curse Breakers", "password": "secretpass"}
+    ]
     
     conn = get_db_connection()
     if conn:
@@ -32,25 +37,41 @@ def seed_demo_teams():
                     ON CONFLICT (round) DO NOTHING;
                     """
                 )
-                cur.execute("SELECT id, name, password_hash, members, contact, is_active, failed_logins, locked_until FROM teams;")
-                existing_teams = cur.fetchall()
-                for r in existing_teams:
-                    TEAMS_DB[r[1].lower()] = {
-                        "id": r[0],
-                        "name": r[1],
-                        "password_hash": r[2],
-                        "members": r[3],
-                        "contact": r[4],
-                        "is_active": r[5],
-                        "disqualified_reason": None,
-                        "failed_logins": r[6],
-                        "locked_until": r[7],
-                    }
+                # Reset test sessions and failed login lockout state between test runs
+                cur.execute("UPDATE teams SET failed_logins = 0, locked_until = NULL, is_active = true WHERE name IN ('Team Cipher', 'Shadow Hackers', 'Curse Breakers');")
+                cur.execute("DELETE FROM team_sessions WHERE team_id IN (SELECT id FROM teams WHERE name IN ('Team Cipher', 'Shadow Hackers', 'Curse Breakers'));")
+                for t in demo_teams:
+                    salt = bcrypt.gensalt()
+                    pw_hash = bcrypt.hashpw(t["password"].encode("utf-8"), salt).decode("utf-8")
+                    cur.execute(
+                        """
+                        INSERT INTO teams (name, password_hash, members, contact)
+                        VALUES (%s, %s, %s, %s)
+                        ON CONFLICT (name) DO NOTHING;
+                        """,
+                        (t["name"], pw_hash, ['Member 1', 'Member 2'], 'team@cursethecode.local')
+                    )
                 conn.commit()
         except Exception as e:
-            print("Error syncing teams from DB:", e)
+            print("Error seeding teams to DB:", e)
         finally:
             conn.close()
+
+    for t in demo_teams:
+        salt = bcrypt.gensalt()
+        pw_hash = bcrypt.hashpw(t["password"].encode("utf-8"), salt).decode("utf-8")
+        t_key = t["name"].lower()
+        TEAMS_DB[t_key] = {
+            "id": len(TEAMS_DB) + 1,
+            "name": t["name"],
+            "password_hash": pw_hash,
+            "members": ["Member 1", "Member 2"],
+            "contact": "team@cursethecode.local",
+            "is_active": True,
+            "disqualified_reason": None,
+            "failed_logins": 0,
+            "locked_until": None,
+        }
 
 seed_demo_teams()
 
