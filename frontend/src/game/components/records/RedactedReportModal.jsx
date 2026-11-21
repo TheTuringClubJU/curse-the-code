@@ -214,7 +214,7 @@ export default function RedactedReportModal({
                 </label>
                 <input
                   type="text"
-                  placeholder="2001-02-10"
+                  placeholder="YYYY-MM-DD"
                   value={dateInput}
                   onChange={(e) => setDateInput(e.target.value)}
                   className="w-full bg-[#0d0b09] border border-[#6b583c] focus:border-[#c47a00] px-3 py-1.5 text-xs text-[#f3ead0] rounded outline-none"
@@ -228,7 +228,7 @@ export default function RedactedReportModal({
                 </label>
                 <input
                   type="text"
-                  placeholder="COMET"
+                  placeholder="ENTER CODEWORD"
                   value={wordInput}
                   onChange={(e) => setWordInput(e.target.value)}
                   className="w-full bg-[#0d0b09] border border-[#6b583c] focus:border-[#c47a00] px-3 py-1.5 text-xs text-[#f3ead0] rounded uppercase outline-none"

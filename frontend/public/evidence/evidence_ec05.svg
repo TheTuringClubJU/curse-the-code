@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 580 440" width="100%" height="100%">
+    <defs>
+        <radialGradient id="paperV" cx="50%" cy="50%" r="70%"><stop offset="60%" stop-color="#e8ede8"/><stop offset="100%" stop-color="#b8ccb8"/></radialGradient>
+    </defs>
+    <rect width="580" height="440" fill="url(#paperV)" rx="5"/>
+    <rect width="564" height="424" x="8" y="8" fill="none" stroke="#3a5a3a" stroke-width="1.5" opacity="0.4" rx="4"/>
+
+    <!-- Header -->
+    <text x="60" y="52" font-family="Courier, monospace" font-size="13" font-weight="bold" letter-spacing="2" fill="#1a3a1a">DELTA CONTROL — CABLE TRENCH SCHEMATIC</text>
+    <text x="60" y="70" font-family="Courier, monospace" font-size="10" letter-spacing="1" fill="#3a5a3a">SUBSURFACE WIRING MAP // SECTOR 5 CONTROL ROOM</text>
+    <line x1="60" y1="85" x2="520" y2="85" stroke="#3a5a3a" stroke-width="1.2" opacity="0.5"/>
+
+    <!-- Simple schematic diagram -->
+    <!-- Trench outline -->
+    <rect x="80" y="110" width="420" height="120" fill="none" stroke="#1a3a1a" stroke-width="2" rx="4"/>
+    <text x="290" y="130" font-family="Courier, monospace" font-size="10" fill="#3a5a3a" text-anchor="middle">CABLE TRENCH — CONTROL ROOM FLOOR SECTION</text>
+    <!-- Cable lines -->
+    <line x1="100" y1="150" x2="480" y2="150" stroke="#c47a00" stroke-width="2.5" stroke-dasharray="12 4"/>
+    <line x1="100" y1="168" x2="480" y2="168" stroke="#4a7a8a" stroke-width="1.5" stroke-dasharray="8 3"/>
+    <line x1="100" y1="184" x2="480" y2="184" stroke="#4a7a8a" stroke-width="1.5" stroke-dasharray="8 3"/>
+    <line x1="100" y1="200" x2="480" y2="200" stroke="#8a4a4a" stroke-width="2" stroke-dasharray="6 6"/>
+    <!-- Labels -->
+    <text x="90" y="148" font-family="Courier, monospace" font-size="8" fill="#c47a00">HF-TX</text>
+    <text x="90" y="166" font-family="Courier, monospace" font-size="8" fill="#4a7a8a">CTRL-A</text>
+    <text x="90" y="182" font-family="Courier, monospace" font-size="8" fill="#4a7a8a">CTRL-B</text>
+    <text x="90" y="198" font-family="Courier, monospace" font-size="8" fill="#8a4a4a">PWR</text>
+
+    <!-- Annotation -->
+    <text x="60" y="265" font-family="Courier, monospace" font-size="11" fill="#2a4a2a">HF-TX cable routes from RELAY RACK to RADIO CONSOLE.</text>
+    <text x="60" y="283" font-family="Courier, monospace" font-size="11" fill="#2a4a2a">Splice junction at node J-5 feeds both TX and monitoring.</text>
+    <text x="60" y="301" font-family="Courier, monospace" font-size="11" fill="#2a4a2a">NOTE: Post-shutdown, HF-TX line remained LIVE.</text>
+    <text x="60" y="319" font-family="Courier, monospace" font-size="11" fill="#2a4a2a">Source: BDG-9001 continued broadcasting on 7.420 MHz.</text>
+
+    <!-- Handwritten circle annotation -->
+    <ellipse cx="380" cy="150" rx="30" ry="18" fill="none" stroke="#a31818" stroke-width="1.5" opacity="0.7"/>
+    <text x="420" y="145" font-family="Georgia, serif" font-size="10" fill="#a31818">still live!</text>
+
+    <!-- Footer -->
+    <line x1="60" y1="385" x2="520" y2="385" stroke="#3a5a3a" stroke-width="0.8" opacity="0.4"/>
+    <text x="60" y="405" font-family="Courier, monospace" font-size="10" fill="#3a5a3a">RECORD ID: EC05 — CABLE TRENCH SCHEMATIC</text>
+    <text x="520" y="405" font-family="Courier, monospace" font-size="9" fill="#5a7a5a" text-anchor="end">SUBSTATION DELTA // CTRL-04</text>
+</svg>
+

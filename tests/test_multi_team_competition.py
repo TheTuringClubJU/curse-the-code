@@ -208,10 +208,10 @@ def test_05_team_alpha_human_prop_exploration_and_basket_unlock():
         "archive_shelves",
         "clerk_desk",
         "card_catalog",
-        "vent_grate",
-        "clerk_desk",
+        "card_catalog",
         "waste_basket",
-        "archive_shelves"
+        "vent_grate",
+        "vent_grate"
     ]
 
     for p in props_sequence:
@@ -286,8 +286,8 @@ def test_07_team_beta_experiences_clue_burnout_penalty_and_fork_trap():
         "filing_cabinet_b", "filing_cabinet_b",
         "archive_shelves", "archive_shelves",
         "clerk_desk", "card_catalog",
-        "vent_grate", "clerk_desk",
-        "waste_basket", "archive_shelves"
+        "card_catalog", "waste_basket",
+        "vent_grate", "vent_grate"
     ]
     for p in props:
         client.post("/api/game/room/records/search", json={"object_id": p}, headers=beta["headers"])

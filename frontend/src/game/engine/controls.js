@@ -16,13 +16,26 @@ export function setupControls({
   getSolids,
   roomSize,
   spawn,
+  controlMode = false,
   isInputBlocked = () => false
 }) {
   const [W, H, D] = roomSize;
-  let px = spawn[0], pz = spawn[2] ?? spawn[1], yaw = spawn[3] ?? 0, pitch = 0;
+  let px = spawn[0];
+  let pz = controlMode ? (spawn[1] ?? 0) : (spawn[2] ?? spawn[1]);
+  let yaw = controlMode ? (spawn[2] ?? 0) : (spawn[3] ?? 0);
+  let pitch = 0;
+  let targetYaw = yaw;
+  let targetPitch = 0;
+  let sensitivity = 1.0;
+  let inputPaused = false;
+  let overrideActive = false;
+  let overrideYaw = 0;
+  let overridePitch = 0;
   let walk = 0, lastStep = 0;
   let currentTarget = null;
   const activeKeys = new Set();
+
+  const isBlocked = () => isInputBlocked() || (controlMode && inputPaused);
 
   // Pointer lock status
   const checkPointerLocked = () => !!(
@@ -32,7 +45,8 @@ export function setupControls({
   );
 
   const requestLock = () => {
-    if(isInputBlocked())return;
+    if (isBlocked()) return;
+    if (controlMode) inputPaused = false;
     try {
       const targetEl = canvas || document.body;
       if (targetEl && targetEl.requestPointerLock) {
@@ -45,6 +59,12 @@ export function setupControls({
   };
 
   const unlock = () => {
+    if (controlMode) {
+      activeKeys.clear();
+      isPointerDown = false;
+      prevClientX = null;
+      prevClientY = null;
+    }
     try { document.exitPointerLock?.(); } catch (e) {}
   };
 
@@ -127,61 +147,120 @@ export function setupControls({
 
   // Mouse Look: Continuous 360 rotation
   let prevClientX = null, prevClientY = null;
+  let downClientX = null, downClientY = null;
   let isPointerDown = false;
+  let dragMoved = false;
+  let lastLockChangeAt = 0;
+  const pointerNDC = { x: 0, y: 0 };
+  const clampDelta = (v) => Math.max(-75, Math.min(75, v));
+
+  let cachedRect = controlMode ? (canvas?.getBoundingClientRect?.() || null) : null;
+  const refreshRect = () => {
+    cachedRect = canvas?.getBoundingClientRect?.() || null;
+  };
+  if (controlMode) window.addEventListener('resize', refreshRect, { passive: true });
+
+  const updatePointerNDC = (e) => {
+    if (!cachedRect || !cachedRect.width || !cachedRect.height) refreshRect();
+    if (!cachedRect || !cachedRect.width || !cachedRect.height || e.clientX === undefined || e.clientY === undefined) return;
+    pointerNDC.x = ((e.clientX - cachedRect.left) / cachedRect.width) * 2 - 1;
+    pointerNDC.y = -(((e.clientY - cachedRect.top) / cachedRect.height) * 2 - 1);
+  };
 
   const onMouseDown = (e) => {
-    if(isInputBlocked())return;
+    if (isBlocked()) return;
+    if (controlMode && !checkPointerLocked()) updatePointerNDC(e);
     if (e.button === 0) {
       isPointerDown = true;
+      dragMoved = false;
+      downClientX = e.clientX;
+      downClientY = e.clientY;
       prevClientX = e.clientX;
       prevClientY = e.clientY;
     }
   };
 
-  const onMouseUp = () => {
+  const onMouseUp = (e) => {
+    if (e.button === 2) {
+      const onCanvas = checkPointerLocked() || e.target === canvas || canvas?.contains?.(e.target);
+      const t = currentTarget;
+      if (onCanvas && t && !isBlocked()) {
+        e.preventDefault?.();
+        e.stopPropagation?.();
+        onInteract?.(t);
+      }
+      return;
+    }
     isPointerDown = false;
     prevClientX = null;
     prevClientY = null;
+    downClientX = null;
+    downClientY = null;
   };
 
   const onMouseMove = (e) => {
-    if(isInputBlocked()){prevClientX=prevClientY=null;return;}
+    if (isBlocked()) {
+      prevClientX = prevClientY = null;
+      return;
+    }
     const locked = checkPointerLocked();
+    if (controlMode && !locked) updatePointerNDC(e);
     let mx = 0, my = 0;
 
     if (locked) {
       mx = e.movementX ?? 0;
       my = e.movementY ?? 0;
-    } else {
-      // Unlocked: if moving mouse or dragging, calculate delta
+      if (controlMode && performance.now() - lastLockChangeAt < 80 && (Math.abs(mx) > 45 || Math.abs(my) > 45)) {
+        return;
+      }
+    } else if (!controlMode || isPointerDown) {
+      // Unlocked: drag-to-look in controlMode, or free move look in Rooms 1-4
       if (e.clientX !== undefined && prevClientX !== null) {
         mx = e.clientX - prevClientX;
         my = e.clientY - prevClientY;
+        if (downClientX !== null && Math.hypot(e.clientX - downClientX, e.clientY - downClientY) > (controlMode ? 4 : 5)) {
+          dragMoved = true;
+        }
       }
+      prevClientX = e.clientX;
+      prevClientY = e.clientY;
+    } else {
       prevClientX = e.clientX;
       prevClientY = e.clientY;
     }
 
     if (mx !== 0 || my !== 0) {
-      // Invert sign of delta for smooth camera yaw
-      yaw -= mx * 0.0035;
-      pitch = Math.max(-1.45, Math.min(1.45, pitch - my * 0.0035));
+      if (controlMode) {
+        const cmx = clampDelta(mx);
+        const cmy = clampDelta(my);
+        const sens = (locked ? 0.0024 : 0.0058) * sensitivity;
+        targetYaw -= cmx * sens;
+        targetPitch = Math.max(-1.45, Math.min(1.45, targetPitch - cmy * sens));
+      } else {
+        const scale = 0.0035 * sensitivity;
+        yaw -= mx * scale;
+        pitch = Math.max(-1.45, Math.min(1.45, pitch - my * scale));
+      }
     }
   };
 
   // Key Listeners (WASD + E)
   const onKeyDown = (e) => {
-    if(isInputBlocked()){activeKeys.clear();return;}
+    if (isBlocked()) {
+      activeKeys.clear();
+      return;
+    }
     const tag = (e.target?.tagName || document.activeElement?.tagName || '').toUpperCase();
     if (tag === 'INPUT' || tag === 'TEXTAREA' || e.target?.isContentEditable) {
       return;
     }
     const isE = e.code === 'KeyE' || e.key === 'e' || e.key === 'E';
     if (isE && !e.repeat) {
-      const t = currentTarget || window.__lastAimTarget;
+      const t = currentTarget || (controlMode ? null : window.__lastAimTarget);
       if (t) {
         e.preventDefault();
         e.stopPropagation();
+        if (controlMode) e.stopImmediatePropagation?.();
         onInteract?.(t);
         return;
       }
@@ -203,14 +282,24 @@ export function setupControls({
     activeKeys.clear();
     prevClientX = null;
     prevClientY = null;
+    downClientX = null;
+    downClientY = null;
     isPointerDown = false;
+    dragMoved = false;
   };
 
   const onPointerLockChange = () => {
+    lastLockChangeAt = performance.now();
     prevClientX = null;
     prevClientY = null;
-    if (!checkPointerLocked()) {
+    if (!controlMode && !checkPointerLocked()) {
       activeKeys.clear();
+    }
+  };
+
+  const onContextMenu = (e) => {
+    if (checkPointerLocked() || e.target === canvas || canvas?.contains?.(e.target)) {
+      e.preventDefault();
     }
   };
 
@@ -221,35 +310,74 @@ export function setupControls({
   };
 
   const onWindowClick = (e) => {
-    if(isInputBlocked())return;
+    if (isBlocked()) return;
+    if (controlMode) {
+      if (e.button !== 0) return;
+      if (e.target === canvas || canvas?.contains?.(e.target)) {
+        if (dragMoved) {
+          dragMoved = false;
+          return;
+        }
+        if (!checkPointerLocked()) {
+          requestLock();
+        }
+      }
+      return;
+    }
+
     const isGameTarget = e.target === canvas || 
       canvas?.contains?.(e.target) || 
       canvas?.parentElement?.contains?.(e.target) ||
       e.target?.tagName === 'CANVAS';
 
     if (isGameTarget) {
-      requestLock();
-      const t = currentTarget || window.__lastAimTarget;
-      if (t) {
+      if (!checkPointerLocked()) {
+        requestLock();
+        dragMoved = false;
+        return;
+      }
+      const t = currentTarget;
+      if (t && !dragMoved) {
         onInteract?.(t);
       }
     }
+    dragMoved = false;
   };
 
   // Attach global event listeners
   window.addEventListener('keydown', onKeyDown, { capture: true, passive: false });
   window.addEventListener('keyup', onKeyUp, { capture: true, passive: true });
   window.addEventListener('mousedown', onMouseDown, { passive: true });
-  window.addEventListener('mouseup', onMouseUp, { passive: true });
+  window.addEventListener('mouseup', onMouseUp, { passive: false });
   window.addEventListener('mousemove', onMouseMove, { passive: true });
   window.addEventListener('click', onWindowClick, { passive: true });
+  window.addEventListener('contextmenu', onContextMenu);
   window.addEventListener('blur', onWindowBlur);
   document.addEventListener('pointerlockchange', onPointerLockChange);
   document.addEventListener('visibilitychange', onVisibilityChange);
 
   // Per-frame physics
   const update = (dt) => {
-    if(isInputBlocked()){activeKeys.clear();return {px,pz,yaw,pitch,walk,isMoving:false};}
+    if (controlMode) {
+      if (overrideActive) {
+        const snapAlpha = 1 - Math.exp(-26 * dt);
+        const dYaw = Math.atan2(Math.sin(overrideYaw - yaw), Math.cos(overrideYaw - yaw));
+        yaw += dYaw * snapAlpha;
+        pitch += (overridePitch - pitch) * snapAlpha;
+        targetYaw = yaw;
+        targetPitch = pitch;
+        return { px, pz, yaw, pitch, walk, isMoving: false };
+      }
+      if (inputPaused) {
+        return { px, pz, yaw, pitch, walk, isMoving: false };
+      }
+      const rotAlpha = 1 - Math.exp(-52 * dt);
+      yaw += (targetYaw - yaw) * rotAlpha;
+      pitch += (targetPitch - pitch) * rotAlpha;
+    } else if (isInputBlocked()) {
+      activeKeys.clear();
+      return { px, pz, yaw, pitch, walk, isMoving: false };
+    }
     const moveF = (activeKeys.has('KeyW') || activeKeys.has('w') || activeKeys.has('ArrowUp')) ? 1 : 0;
     const moveB = (activeKeys.has('KeyS') || activeKeys.has('s') || activeKeys.has('ArrowDown')) ? 1 : 0;
     const moveR = (activeKeys.has('KeyD') || activeKeys.has('d') || activeKeys.has('ArrowRight')) ? 1 : 0;
@@ -261,7 +389,7 @@ export function setupControls({
     let isMoving = false;
     if (f !== 0 || s !== 0) {
       const isShift = activeKeys.has('ShiftLeft') || activeKeys.has('ShiftRight');
-      const speed = isShift ? 3.4 : 2.4;
+      const speed = controlMode ? (isShift ? 4.0 : 2.9) : (isShift ? 3.4 : 2.4);
       const l = Math.hypot(f, s);
       const sp = (speed * dt) / l;
 
@@ -302,18 +430,24 @@ export function setupControls({
   const setTarget = (id) => {
     if (id !== currentTarget) {
       currentTarget = id;
-      if (id) window.__lastAimTarget = id;
+      window.__lastAimTarget = id || null;
       onTargetChange?.(id);
     }
   };
 
   const dispose = () => {
+    currentTarget = null;
+    window.__lastAimTarget = null;
     window.removeEventListener('keydown', onKeyDown, { capture: true });
     window.removeEventListener('keyup', onKeyUp, { capture: true });
     window.removeEventListener('mousedown', onMouseDown);
     window.removeEventListener('mouseup', onMouseUp);
     window.removeEventListener('mousemove', onMouseMove);
     window.removeEventListener('click', onWindowClick);
+    window.removeEventListener('contextmenu', onContextMenu);
+    if (controlMode) {
+      window.removeEventListener('resize', refreshRect);
+    }
     window.removeEventListener('blur', onWindowBlur);
     document.removeEventListener('pointerlockchange', onPointerLockChange);
     document.removeEventListener('visibilitychange', onVisibilityChange);
@@ -324,11 +458,42 @@ export function setupControls({
     update,
     setTarget,
     getTarget: () => currentTarget,
+    setPaused: (paused) => {
+      inputPaused = Boolean(paused);
+      if (inputPaused) {
+        activeKeys.clear();
+        isPointerDown = false;
+        dragMoved = false;
+      }
+    },
+    setCameraOverride: (active, nextYaw = null, nextPitch = null) => {
+      overrideActive = Boolean(active);
+      if (overrideActive) {
+        activeKeys.clear();
+        isPointerDown = false;
+        dragMoved = false;
+        if (typeof nextYaw === 'number' && !Number.isNaN(nextYaw)) overrideYaw = nextYaw;
+        if (typeof nextPitch === 'number' && !Number.isNaN(nextPitch)) overridePitch = nextPitch;
+      }
+    },
+    setSensitivity: (s) => {
+      sensitivity = Math.max(0.3, Math.min(2.5, Number(s) || 1.0));
+    },
+    isSprinting: () => (
+      (activeKeys.has('ShiftLeft') || activeKeys.has('ShiftRight'))
+      && (activeKeys.has('KeyW') || activeKeys.has('KeyA') || activeKeys.has('KeyS') || activeKeys.has('KeyD') || activeKeys.has('ArrowUp') || activeKeys.has('ArrowDown'))
+    ),
+    getPointerNDC: () => (checkPointerLocked() ? { x: 0, y: 0 } : pointerNDC),
     requestLock,
     unlock,
     isLocked: checkPointerLocked,
-    setView: (x, z, y, p = 0) => { px = x; pz = z; yaw = y; pitch = p; },
-    getPos: () => ({ x: px, z: pz, yaw, pitch }),
+    setView: (x, z, y, p = 0) => {
+      px = x;
+      pz = z;
+      yaw = targetYaw = y;
+      pitch = targetPitch = p;
+    },
+    getPos: () => ({ x: px, z: pz, yaw: controlMode ? targetYaw : yaw, pitch: controlMode ? targetPitch : pitch }),
     resetInput: onWindowBlur,
     dispose
   };

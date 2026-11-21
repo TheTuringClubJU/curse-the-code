@@ -1,6 +1,15 @@
 // Procedural texture library (canvas based, tileable where noted). No external assets.
 import * as THREE from 'three'
-export const cv=(w,h)=>{const c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d',{willReadFrequently:true});return c}
+export const cv=(w,h)=>{
+ const c=document.createElement('canvas');c.width=w;c.height=h;
+ const g=c.getContext('2d',{willReadFrequently:true});
+ if(g&&!g.fill){
+  const noop=()=>{},grad=()=>({addColorStop:noop});
+  Object.assign(g,{fill:noop,closePath:noop,save:noop,restore:noop,translate:noop,rotate:noop,scale:noop,ellipse:noop,roundRect:noop,quadraticCurveTo:noop,bezierCurveTo:noop,createLinearGradient:grad,createImageData:(iw,ih)=>({data:new Uint8ClampedArray(iw*ih*4)}),getImageData:(ix,iy,iw,ih)=>({data:new Uint8ClampedArray(iw*ih*4)}),putImageData:noop});
+  c.getContext=()=>g;
+ }
+ return c;
+}
 const clamp=(x,a=0,b=1)=>x<a?a:x>b?b:x,sm=t=>t*t*(3-2*t),mix=(a,b,t)=>a+(b-a)*t,ss=(a,b,x)=>sm(clamp((x-a)/(b-a)))
 const hash=(x,y,s)=>{let h=(Math.imul(x|0,374761393)+Math.imul(y|0,668265263)+Math.imul(s|0,1442695041))|0;h=Math.imul(h^(h>>>13),1274126177);h^=h>>>16;return(h>>>0)/4294967296}
 export function rng(seed){let a=seed|0;return()=>{a=(a+0x6D2B79F5)|0;let t=Math.imul(a^(a>>>15),1|a);t=(t+Math.imul(t^(t>>>7),61|t))^t;return((t^(t>>>14))>>>0)/4294967296}}
@@ -18,46 +27,46 @@ export function woodC(base,dark,seed=1,{w=256,h=256,fy=48}={}){const RF=Math.max
  return pix(w,h,(u,v,o,x,y)=>{const wp=(fbm(u,v,2,3,3,seed)-.5)*.35,st=fbm(u,v+wp*.2,3,fy,4,seed+3),rg=.5+.5*Math.sin((RF*v+wp*2+fbm(u,v,3,3,2,seed+9)*.8)*Math.PI*2)
   const t=clamp(.28+.55*st+.22*rg-.12+(hash(x,y,seed)-.5)*.06);for(let k=0;k<3;k++)o[k]=mix(dark[k],base[k],t)})}
 export function woodBump(seed=1,{w=512,h=512,fy=64}={}){return pix(w,h,(u,v,o)=>{const s=fbm(u,v,3,fy,4,seed+3);const t=255*(.3+.7*s);o[0]=o[1]=o[2]=t})}
-// ---------- floor planks ----------
+// ---------- floor planks (aged, darkened floorboards) ----------
 export function floorPlanks(){const W=512,H=512,N=8,cm=cv(W,H),cb=cv(W,H),gm=cm.getContext('2d'),gb=cb.getContext('2d'),im=gm.createImageData(W,H),ib=gb.createImageData(W,H),d=im.data,e=ib.data
- for(let y=0;y<H;y++){const v=y/H,pi=Math.floor(v*N),pv=v*N-pi,off=hash(pi,0,3),tone=.55+.45*hash(pi,1,9);for(let x=0;x<W;x++){const u=x/W,ju=(u+off)%1
-  const gr=fbm(u,v,4,96,3,pi+5),ring=.5+.5*Math.sin((v*N*7+gr*3)*6.283),t=clamp(.25+.5*gr+.2*ring)*tone,gap=ss(0,.07,pv)*ss(0,.07,1-pv),jt=ss(0,.012,ju)*ss(0,.012,1-ju),dirt=.65+.5*fbm(u,v,3,3,3,31),k=gap*jt*dirt,i=(y*W+x)*4
-  d[i]=(28+(96-28)*t)*k*.95;d[i+1]=(19+(70-19)*t)*k*.95;d[i+2]=(15+(52-15)*t)*k*.95;d[i+3]=255;const hh=255*(.35+.5*t)*gap*jt;e[i]=e[i+1]=e[i+2]=hh;e[i+3]=255}}
+ for(let y=0;y<H;y++){const v=y/H,pi=Math.floor(v*N),pv=v*N-pi,off=hash(pi,0,3),tone=.45+.48*hash(pi,1,9);for(let x=0;x<W;x++){const u=x/W,ju=(u+off)%1
+  const gr=fbm(u,v,4,96,3,pi+5),ring=.5+.5*Math.sin((v*N*7+gr*3)*6.283),t=clamp(.2+.5*gr+.2*ring)*tone,gap=ss(0,.085,pv)*ss(0,.085,1-pv),jt=ss(0,.016,ju)*ss(0,.016,1-ju),dirt=.56+.5*fbm(u,v,3,3,3,31),k=gap*jt*dirt,i=(y*W+x)*4
+  d[i]=(28+(94-28)*t)*k*.9;d[i+1]=(16+(60-16)*t)*k*.88;d[i+2]=(12+(42-12)*t)*k*.86;d[i+3]=255;const hh=255*(.3+.55*t)*gap*jt;e[i]=e[i+1]=e[i+2]=hh;e[i+3]=255}}
  gm.putImageData(im,0,0);gb.putImageData(ib,0,0);return{map:cm,bump:cb}}
-// ---------- wallpaper (tile) ----------
-export function wallpaper(){const S=512,c=cv(S,S),g=c.getContext('2d');g.fillStyle='#2e2756';g.fillRect(0,0,S,S)
- for(let i=0;i<8;i++){g.fillStyle=i%2?'rgba(255,255,255,.04)':'rgba(0,0,0,.12)';g.fillRect(i*S/8,0,S/8,S)}
- const motif=(cx,cy,sc)=>{g.save();g.translate(cx,cy);g.scale(sc,sc);g.fillStyle='rgba(125,105,205,.30)';g.strokeStyle='rgba(165,145,240,.30)';g.lineWidth=2
+// ---------- wallpaper (aged weathered Gothic damask) ----------
+export function wallpaper(){const S=512,c=cv(S,S),g=c.getContext('2d');g.fillStyle='#1d1526';g.fillRect(0,0,S,S)
+ for(let i=0;i<8;i++){g.fillStyle=i%2?'rgba(95,38,54,.11)':'rgba(6,3,12,.22)';g.fillRect(i*S/8,0,S/8,S)}
+ const motif=(cx,cy,sc)=>{g.save();g.translate(cx,cy);g.scale(sc,sc);g.fillStyle='rgba(86,32,52,.32)';g.strokeStyle='rgba(155,115,155,.18)';g.lineWidth=2
   for(let k=0;k<4;k++){g.save();g.rotate(k*Math.PI/2);g.beginPath();g.moveTo(0,-8);g.bezierCurveTo(28,-40,32,-90,0,-124);g.bezierCurveTo(-32,-90,-28,-40,0,-8);g.fill();g.stroke();g.restore()}
   for(let k=0;k<4;k++){g.save();g.rotate(k*Math.PI/2+Math.PI/4);g.beginPath();g.ellipse(0,-64,10,30,0,0,7);g.fill();g.restore()}
   g.beginPath();g.arc(0,0,13,0,7);g.fill();g.stroke();g.restore()}
  ;[[S/2,S/2],[0,0],[S,0],[0,S],[S,S]].forEach(p=>motif(p[0],p[1],.92))
- g.strokeStyle='rgba(170,150,245,.14)';g.lineWidth=2;g.beginPath();g.moveTo(S/2,0);g.lineTo(S,S/2);g.lineTo(S/2,S);g.lineTo(0,S/2);g.closePath();g.stroke()
- const im=g.getImageData(0,0,S,S),d=im.data;for(let y=0;y<S;y++)for(let x=0;x<S;x++){const u=x/S,v=y/S,n=fbm(u,v,6,6,4,5),s=fbm(u,v,2,24,3,8),k=.68+.42*n-.2*s,i=(y*S+x)*4
-  d[i]=d[i]*k+(n>.62?10:0);d[i+1]=d[i+1]*k;d[i+2]=d[i+2]*k*.97}
+ g.strokeStyle='rgba(140,100,140,.14)';g.lineWidth=2;g.beginPath();g.moveTo(S/2,0);g.lineTo(S,S/2);g.lineTo(S/2,S);g.lineTo(0,S/2);g.closePath();g.stroke()
+ const im=g.getImageData(0,0,S,S),d=im.data;for(let y=0;y<S;y++)for(let x=0;x<S;x++){const u=x/S,v=y/S,n=fbm(u,v,6,6,4,5),s=fbm(u,v,2,24,3,8),peel=ss(.71,.79,fbm(u,v,9,9,3,19)),k=.58+.44*n-.22*s,i=(y*S+x)*4
+  let R=d[i]*k+(n>.6?12:0),G=d[i+1]*k*.94,B=d[i+2]*k*.9
+  R=mix(R,48,peel*.48);G=mix(G,40,peel*.48);B=mix(B,34,peel*.48)
+  d[i]=R;d[i+1]=G;d[i+2]=B}
  g.putImageData(im,0,0);return c}
-// ---------- decals (transparent, one per wall): stains, mould, cracks, peeling ----------
-export function wallDecal(seed,W=512,H=256,{leaks=4,mold=1}={}){const r=rng(seed),lx=[];for(let i=0;i<leaks;i++)lx.push(.06+r()*.88)
- const c=pix(W,H,(u,v,o)=>{const bot=ss(.72,1,v),top=1-ss(0,.14,v),edge=Math.max(ss(.9,1,u),1-ss(0,.08,u))
-  let lk=0;for(let k=0;k<lx.length;k++){const dx=Math.abs(u-lx[k]+(vnoise(u,v,3,12,seed+k)-.5)*.06),wd=.012+.035*Math.sqrt(v);lk+=(1-ss(0,wd,dx))*Math.pow(1-v,.55)*(.55+.45*vnoise(u,v,2,10,seed))}
-  const mt=fbm(u,v,5,3,2,seed+2),mot=Math.max(0,mt-.5)*.5
-  const m=ss(.52,.72,fbm(u,v,26,13,3,seed+7))*Math.max(Math.max(bot,top*.9),edge*.8)*mold
-  let a=clamp(bot*.55+top*.4+edge*.3+mot+lk*.5+m*.7),R=14+lk*42,G=10+lk*30,B=12+lk*16;R=mix(R,8,m);G=mix(G,16,m);B=mix(B,9,m);o[0]=R;o[1]=G;o[2]=B;o[3]=a*255})
+// ---------- decals (transparent, one per wall): natural damp stains, mould, subtle cracks ----------
+export function wallDecal(seed,W=512,H=256,{leaks=6,mold=1.2}={}){const r=rng(seed),lx=[];for(let i=0;i<leaks;i++)lx.push(.06+r()*.88)
+ const c=pix(W,H,(u,v,o)=>{const bot=ss(.68,1,v),top=1-ss(0,.16,v),edge=Math.max(ss(.88,1,u),1-ss(0,.1,u))
+  let lk=0;for(let k=0;k<lx.length;k++){const dx=Math.abs(u-lx[k]+(vnoise(u,v,3,12,seed+k)-.5)*.06),wd=.012+.035*Math.sqrt(v);lk+=(1-ss(0,wd,dx))*Math.pow(1-v,.5)*(.6+.4*vnoise(u,v,2,10,seed))}
+  const mt=fbm(u,v,5,3,2,seed+2),mot=Math.max(0,mt-.46)*.55
+  const m=ss(.5,.72,fbm(u,v,26,13,3,seed+7))*Math.max(Math.max(bot,top*.9),edge*.85)*mold
+  let a=clamp(bot*.6+top*.45+edge*.35+mot+lk*.55+m*.7),R=16+lk*38,G=10+lk*24,B=10+lk*14
+  R=mix(R,8,m);G=mix(G,15,m);B=mix(B,8,m);o[0]=R;o[1]=G;o[2]=B;o[3]=a*255})
  const g=c.getContext('2d');g.lineCap='round'
- const crack=(x,y,ang,len,w,depth)=>{if(depth>3||len<8)return;g.beginPath();g.moveTo(x,y);let px=x,py=y,a=ang;const seg=Math.floor(len/9);for(let i=0;i<seg;i++){a+=(r()-.5)*.9;px+=Math.cos(a)*9;py+=Math.sin(a)*9;g.lineTo(px,py);if(r()<.14)crack(px,py,a+(r()<.5?-1:1)*(.5+r()*.7),len*.5,w*.6,depth+1)}
-  g.strokeStyle='rgba(6,4,8,.85)';g.lineWidth=w;g.stroke();g.strokeStyle='rgba(200,190,230,.10)';g.lineWidth=w*.5;g.translate(1,1);g.stroke();g.setTransform(1,0,0,1,0,0)}
- for(let i=0;i<3;i++)crack(r()*W,i%2?0:H*.55,Math.PI/2+(r()-.5)*.8,180+r()*180,2.2,0)
- for(let i=0;i<0;i++){const x=r()*W,y=H*(.3+r()*.4),rr=60+r()*70;g.save();g.beginPath();g.moveTo(x,y);for(let k=0;k<9;k++){const a=k/9*6.283,q=rr*(.55+r()*.6);g.lineTo(x+Math.cos(a)*q,y+Math.sin(a)*q*.8)}g.closePath();g.clip()
-  const gr=g.createRadialGradient(x,y,5,x,y,rr);gr.addColorStop(0,'rgba(140,128,104,1)');gr.addColorStop(1,'rgba(88,78,66,1)');g.fillStyle=gr;g.fillRect(x-rr*1.4,y-rr*1.4,rr*2.8,rr*2.8);g.restore()
-  g.strokeStyle='rgba(205,196,170,.55)';g.lineWidth=2;g.beginPath();g.moveTo(x-rr*.5,y-rr*.55);for(let k=0;k<7;k++)g.lineTo(x-rr*.5+k*rr*.16,y-rr*.55+(k%2?5:-2)+k*3);g.stroke()}
+ const crack=(x,y,ang,len,w,depth)=>{if(depth>3||len<8)return;g.beginPath();g.moveTo(x,y);let px=x,py=y,a=ang;const seg=Math.floor(len/9);for(let i=0;i<seg;i++){a+=(r()-.5)*.9;px+=Math.cos(a)*9;py+=Math.sin(a)*9;g.lineTo(px,py);if(r()<.16)crack(px,py,a+(r()<.5?-1:1)*(.5+r()*.7),len*.55,w*.65,depth+1)}
+  g.strokeStyle='rgba(6,4,8,.82)';g.lineWidth=w;g.stroke();g.strokeStyle='rgba(160,130,140,.1)';g.lineWidth=w*.5;g.translate(1,1);g.stroke();g.setTransform(1,0,0,1,0,0)}
+ for(let i=0;i<4;i++)crack(r()*W,i%2?0:H*.5,Math.PI/2+(r()-.5)*.8,160+r()*160,2.2,0)
  return c}
 // ---------- ceiling ----------
-export function ceiling(){const W=512,H=384,rs=rng(7),st=[];for(let i=0;i<4;i++)st.push([.15+rs()*.7,.15+rs()*.7,.08+rs()*.1])
- return pix(W,H,(u,v,o)=>{const n=fbm(u,v,8,6,4,3),w2=(fbm(u,v,6,6,2,9)-.5)*.55;let t=.26+.3*n,ring=0,tint=0
+export function ceiling(){const W=512,H=384,rs=rng(7),st=[];for(let i=0;i<6;i++)st.push([.12+rs()*.76,.12+rs()*.76,.09+rs()*.12])
+ return pix(W,H,(u,v,o)=>{const n=fbm(u,v,8,6,4,3),w2=(fbm(u,v,6,6,2,9)-.5)*.55;let t=.2+.28*n,ring=0,tint=0
   for(const s of st){const d=Math.hypot((u-s[0])*1.33,v-s[1])/s[2]+w2;ring+=Math.exp(-Math.pow((d-1)*5,2));tint+=1-ss(.2,1,d)}
-  const edge=Math.max(ss(.88,1,u),1-ss(0,.12,u),ss(.86,1,v),1-ss(0,.14,v)),m=edge>.05?ss(.5,.7,fbm(u,v,22,16,3,12))*edge:0
-  let R=60*t*3.3+tint*14-ring*10,G=56*t*3.3+tint*8-ring*10,B=74*t*3.3-tint*6-ring*14
-  R=R+(10-R)*m*.8-edge*10;G=G+(18-G)*m*.8-edge*10;B=B+(10-B)*m*.8-edge*10;o[0]=R;o[1]=G;o[2]=B})}
+  const edge=Math.max(ss(.85,1,u),1-ss(0,.15,u),ss(.84,1,v),1-ss(0,.16,v)),m=edge>.04?ss(.45,.68,fbm(u,v,22,16,3,12))*edge:0
+  let R=52*t*3.1+tint*18-ring*10,G=44*t*3.0+tint*6-ring*10,B=56*t*3.0-tint*8-ring*14
+  R=R+(10-R)*m*.85-edge*12;G=G+(16-G)*m*.85-edge*12;B=B+(10-B)*m*.85-edge*12;o[0]=R;o[1]=G;o[2]=B})}
 // ---------- fabrics ----------
 export function quilt(){const S=256,c=pix(S,S,(u,v,o)=>{const n=fbm(u,v,10,10,3,2),w=.5+.5*Math.sin(u*S*2.2)*Math.sin(v*S*2.2),st=fbm(u,v,3,3,3,77),k=.55+.5*n+.06*w
   o[0]=70*k-(st>.62?18:0);o[1]=40*k-(st>.62?14:0);o[2]=110*k-(st>.62?30:0)})
@@ -170,3 +179,202 @@ export function beamC(){return pix(256,64,(u,v,o)=>{const e=Math.pow(Math.sin(v*
 export function posterScene(){const c=posterCanvas(),g=c.getContext('2d'),W=420,H=600
  const im=g.getImageData(0,0,W,H),d=im.data;for(let y=0;y<H;y++)for(let x=0;x<W;x++){const e=Math.min(x,W-1-x,y,H-1-y),i=(y*W+x)*4,n=fbm(x/W,y/H,8,10,4,3);if(e<26){const k=.55+.45*n,b=e<5?.55:1;d[i]=120*k*b;d[i+1]=108*k*b;d[i+2]=96*k*b}else{const s=Math.max(0,n-.6)*40;d[i]+=s;d[i+1]+=s*.8;d[i+2]+=s*.6}}
  g.putImageData(im,0,0);g.strokeStyle='rgba(120,110,130,.25)';g.lineWidth=2;g.beginPath();g.moveTo(0,H/2);g.lineTo(W,H/2+4);g.moveTo(W/2,0);g.lineTo(W/2+6,H);g.stroke();return c}
+
+// ---------- Visceral Blood Splatter / Pool & Drips ----------
+export function bloodSplatterC(seed=1,{drips=true}={}){
+ const S=512,c=cv(S,S),g=c.getContext('2d'),r=rng(seed),cx=S/2,cy=drips?S*.42:S/2
+ // Coagulated main arterial pool
+ for(let b=0;b<7;b++){
+  const bx=cx+(r()-.5)*110,by=cy+(r()-.5)*90,rx=48+r()*72,ry=42+r()*66
+  const gr=g.createRadialGradient(bx,by,4,bx,by,Math.max(rx,ry))
+  gr.addColorStop(0,'rgba(128,4,8,.96)');gr.addColorStop(.55,'rgba(82,3,6,.88)');gr.addColorStop(.85,'rgba(44,2,4,.55)');gr.addColorStop(1,'rgba(28,1,2,0)')
+  g.fillStyle=gr;g.beginPath();g.ellipse(bx,by,rx,ry,r()*3.14,0,7);g.fill()
+ }
+ // Radial arterial droplets & spatter streaks
+ for(let i=0;i<64;i++){
+  const a=r()*6.283,dist=45+r()*185,x=cx+Math.cos(a)*dist,y=cy+Math.sin(a)*dist,rad=2+r()*12
+  g.fillStyle=`rgba(${70+Math.floor(r()*65)},3,6,${.55+r()*.4})`
+  g.beginPath();g.ellipse(x,y,rad*(1+r()*.8),rad*.65,a,0,7);g.fill()
+ }
+ if(drips){
+  g.lineCap='round'
+  for(let i=0;i<14;i++){
+   const x=cx-120+r()*240,y0=cy+(r()-.3)*55,len=55+r()*(S-y0-20),w=2+r()*4.5
+   g.strokeStyle=`rgba(${68+Math.floor(r()*50)},3,5,${.75+r()*.22})`;g.lineWidth=w
+   g.beginPath();g.moveTo(x,y0);g.bezierCurveTo(x+(r()-.5)*8,y0+len*.4,x+(r()-.5)*8,y0+len*.75,x+(r()-.5)*4,y0+len);g.stroke()
+   g.fillStyle='rgba(95,4,8,.92)';g.beginPath();g.arc(x,y0+len,w*.75,0,7);g.fill()
+  }
+ }
+ if(g.getImageData){
+  const im=g.getImageData(0,0,S,S),d=im.data
+  for(let y=0;y<S;y++)for(let x=0;x<S;x++){const n=fbm(x/S,y/S,12,12,3,seed+5);d[(y*S+x)*4+3]*=clamp(.45+.75*n)}
+  g.putImageData(im,0,0)
+ }
+ return c
+}
+
+// ---------- Subtle Dark Aged Claw Gouges (tapered organic scratches, not bright neon stripes) ----------
+export function clawMarksC(seed=1){
+ const S=512,c=cv(S,S),g=c.getContext('2d'),r=rng(seed)
+ g.lineCap='round'
+ // Faint dark grime smudge behind the scratches
+ const bg=g.createRadialGradient(S/2,S/2,12,S/2,S/2,160)
+ bg.addColorStop(0,'rgba(24,4,6,.28)');bg.addColorStop(.65,'rgba(14,4,5,.12)');bg.addColorStop(1,'rgba(0,0,0,0)')
+ g.fillStyle=bg;g.fillRect(0,0,S,S)
+ const count=4
+ for(let i=0;i<count;i++){
+  const t=(i-(count-1)/2)
+  const x0=118+t*32+(r()-.5)*10,y0=110+Math.abs(t)*22+(r()-.5)*14
+  const x1=S-122+t*26+(r()-.5)*12,y1=S-115-Math.abs(t)*18+(r()-.5)*14
+  const mx=(x0+x1)/2+(r()-.5)*16,my=(y0+y1)/2+(r()-.5)*16
+  // Tapered scratch via thin dark charcoal shadow + subtle splinter highlight + dried dark-crimson seam
+  const steps=26
+  for(let s=0;s<steps;s++){
+   const f0=s/steps,f1=(s+1)/steps
+   const pt=f=>[(1-f)*(1-f)*x0+2*(1-f)*f*mx+f*f*x1,(1-f)*(1-f)*y0+2*(1-f)*f*my+f*f*y1]
+   const [ax,ay]=pt(f0),[bx,by]=pt(f1)
+   const taper=Math.sin(Math.PI*((f0+f1)*.5))
+   if(taper<.08)continue
+   g.strokeStyle=`rgba(12,6,8,${.78*taper})`;g.lineWidth=1.5+4.2*taper
+   g.beginPath();g.moveTo(ax,ay);g.lineTo(bx,by);g.stroke()
+   g.strokeStyle=`rgba(62,6,9,${.65*taper})`;g.lineWidth=.8+1.8*taper
+   g.beginPath();g.moveTo(ax+1.2,ay+1.2);g.lineTo(bx+1.2,by+1.2);g.stroke()
+  }
+ }
+ if(g.getImageData){
+  const im=g.getImageData(0,0,S,S),d=im.data
+  for(let y=0;y<S;y++)for(let x=0;x<S;x++){const n=fbm(x/S,y/S,18,18,3,seed+13);d[(y*S+x)*4+3]*=clamp(.48+.68*n)}
+  g.putImageData(im,0,0)
+ }
+ return c
+}
+
+// ---------- Gothic Pointed Arch & Stone Decay Wall Overlay ----------
+export function gothicArchC(seed=1){
+ const W=512,H=512,c=cv(W,H),g=c.getContext('2d'),r=rng(seed)
+ // Dark weathered Gothic pointed arch moulding & stone ribs
+ g.strokeStyle='rgba(12,8,14,.82)';g.lineWidth=14
+ g.beginPath();g.moveTo(36,H);g.lineTo(36,H*.38);g.quadraticCurveTo(36,48,W/2,24);g.quadraticCurveTo(W-36,48,W-36,H*.38);g.lineTo(W-36,H);g.stroke()
+ g.strokeStyle='rgba(92,72,88,.32)';g.lineWidth=4
+ g.beginPath();g.moveTo(42,H);g.lineTo(42,H*.38);g.quadraticCurveTo(42,56,W/2,32);g.quadraticCurveTo(W-42,56,W-42,H*.38);g.lineTo(W-42,H);g.stroke()
+ // Inner trefoil /lancet ribs
+ for(let k=-1;k<=1;k+=2){
+  const cx=W/2+k*110
+  g.strokeStyle='rgba(14,9,16,.68)';g.lineWidth=7
+  g.beginPath();g.moveTo(cx-75,H);g.lineTo(cx-75,H*.48);g.quadraticCurveTo(cx-75,H*.2,cx,H*.14);g.quadraticCurveTo(cx+75,H*.2,cx+75,H*.48);g.lineTo(cx+75,H);g.stroke()
+ }
+ // Rosette circle at apex
+ g.strokeStyle='rgba(16,10,18,.75)';g.lineWidth=8;g.beginPath();g.arc(W/2,H*.25,46,0,7);g.stroke()
+ g.strokeStyle='rgba(120,14,20,.45)';g.lineWidth=2.5;g.beginPath();g.arc(W/2,H*.25,38,0,7);g.stroke()
+ // Blood seepage from arch apex
+ for(let i=0;i<8;i++){
+  const bx=W/2+(r()-.5)*90,by=H*.25+(r()-.5)*40,bl=40+r()*140
+  g.strokeStyle=`rgba(${88+Math.floor(r()*45)},5,8,.72)`;g.lineWidth=1.8+r()*2.4
+  g.beginPath();g.moveTo(bx,by);g.lineTo(bx+(r()-.5)*6,by+bl);g.stroke()
+ }
+ return c
+}
+
+// ---------- Central Ritual Altar Circle & Octagram/Pentagram Star (Imitating Reference Photo) ----------
+export function ritualAltarFloorC(seed=1){
+ const S=1024,c=cv(S,S),g=c.getContext('2d'),r=rng(seed),cx=S/2,cy=S/2
+ // Subtle dark scorched ritual aura on floor
+ const bg=g.createRadialGradient(cx,cy,30,cx,cy,490)
+ bg.addColorStop(0,'rgba(42,6,8,.62)');bg.addColorStop(.38,'rgba(26,8,8,.42)');bg.addColorStop(.82,'rgba(12,6,6,.22)');bg.addColorStop(1,'rgba(0,0,0,0)')
+ g.fillStyle=bg;g.fillRect(0,0,S,S)
+
+ // Blood pools inside & around the inner sacrificial circle (matching reference photo)
+ const drawBloodPool=(px,py,rx,ry,alpha=.88)=>{
+  const gr=g.createRadialGradient(px,py,4,px,py,Math.max(rx,ry))
+  gr.addColorStop(0,`rgba(110,4,8,${alpha})`);gr.addColorStop(.65,`rgba(68,2,5,${alpha*.85})`);gr.addColorStop(1,'rgba(30,1,2,0)')
+  g.fillStyle=gr;g.beginPath();if(g.ellipse)g.ellipse(px,py,rx,ry,r()*3.14,0,7);else g.arc(px,py,(rx+ry)*.5,0,7);g.fill()
+ }
+ drawBloodPool(cx-95,cy-105,64,52,.92)
+ drawBloodPool(cx+28,cy+18,82,74,.85)
+ drawBloodPool(cx+135,cy-75,44,36,.75)
+ drawBloodPool(cx-120,cy+115,48,38,.78)
+
+ // Hand-drawn weathered chalk/salt line helper with warm candlelight glow
+ g.lineCap='round';g.lineJoin='round'
+ const chalkLine=(x0,y0,x1,y1,w=6.5)=>{
+  // Warm amber outer glow
+  g.strokeStyle='rgba(255,195,110,.26)';g.lineWidth=w*2.6
+  g.beginPath();g.moveTo(x0,y0);g.lineTo(x1,y1);g.stroke()
+  // Crisp chalk core with slight organic jitter
+  g.strokeStyle='rgba(248,238,218,.94)';g.lineWidth=w
+  g.beginPath();g.moveTo(x0,y0)
+  const segs=18
+  for(let i=1;i<=segs;i++){
+   const t=i/segs,jx=(r()-.5)*2.4,jy=(r()-.5)*2.4
+   g.lineTo(mix(x0,x1,t)+jx,mix(y0,y1,t)+jy)
+  }
+  g.stroke()
+ }
+ const chalkRing=(R,w=6.5)=>{
+  g.strokeStyle='rgba(255,190,105,.24)';g.lineWidth=w*2.5
+  g.beginPath();g.arc(cx,cy,R,0,7);g.stroke()
+  g.strokeStyle='rgba(248,238,218,.94)';g.lineWidth=w
+  g.beginPath()
+  for(let i=0;i<=120;i++){
+   const a=i/120*Math.PI*2,q=R+(r()-.5)*2.6
+   const x=cx+Math.cos(a)*q,y=cy+Math.sin(a)*q
+   i?g.lineTo(x,y):g.moveTo(x,y)
+  }
+  g.stroke()
+ }
+
+ // Outer ritual circle + secondary rim (like reference image)
+ const R_OUT=452,R_MID=434,R_IN=168,R_IN2=150
+ chalkRing(R_OUT,7.5)
+ chalkRing(R_MID,3.8)
+ // Inner sacrificial altar ring
+ chalkRing(R_IN,6.5)
+ chalkRing(R_IN2,3.2)
+
+ // 8-pointed geometric ritual star (octagram: two intersecting squares + star chords matching the photo)
+ const N=8,pts=[]
+ for(let i=0;i<N;i++){
+  const a=i/N*Math.PI*2-Math.PI/2
+  pts.push([cx+Math.cos(a)*R_OUT,cy+Math.sin(a)*R_OUT])
+ }
+ // Connect step-3 octagram star chords ({8/3} star polygon)
+ for(let i=0;i<N;i++){
+  const p0=pts[i],p1=pts[(i+3)%N]
+  chalkLine(p0[0],p0[1],p1[0],p1[1],6.2)
+ }
+ // Connect step-2 dual squares ({8/2}) for the dense geometric web seen in reference photo
+ for(let i=0;i<N;i++){
+  const p0=pts[i],p1=pts[(i+2)%N]
+  chalkLine(p0[0],p0[1],p1[0],p1[1],4.8)
+ }
+ // Radial spokes from inner circle to outer vertices
+ for(let i=0;i<N;i++){
+  const a=i/N*Math.PI*2-Math.PI/2
+  chalkLine(cx+Math.cos(a)*R_IN,cy+Math.sin(a)*R_IN,pts[i][0],pts[i][1],3.5)
+ }
+
+ // Occult runes & sigil ticks around the inner and outer rings
+ g.strokeStyle='rgba(242,226,198,.82)';g.lineWidth=3
+ for(let i=0;i<36;i++){
+  const a=i/36*Math.PI*2,rx=cx+Math.cos(a)*(R_IN+16),ry=cy+Math.sin(a)*(R_IN+16)
+  g.beginPath();g.moveTo(rx-6,ry-6);g.lineTo(rx+6,ry+6);g.moveTo(rx+6,ry-4);g.lineTo(rx-4,ry+6);g.stroke()
+ }
+ // Warm pools of candlelight glow at the 8 star vertices
+ for(let i=0;i<N;i++){
+  const [vx,vy]=pts[i]
+  const cg=g.createRadialGradient(vx,vy,2,vx,vy,76)
+  cg.addColorStop(0,'rgba(255,235,175,.85)');cg.addColorStop(.35,'rgba(255,165,60,.42)');cg.addColorStop(1,'rgba(255,100,10,0)')
+  g.fillStyle=cg;g.beginPath();g.arc(vx,vy,76,0,7);g.fill()
+ }
+
+ // Weathering grain pass so lines look chalky on aged floor tiles/wood
+ if(g.getImageData){
+  const im=g.getImageData(0,0,S,S),d=im.data
+  for(let y=0;y<S;y++)for(let x=0;x<S;x++){
+   const n=fbm(x/S,y/S,48,48,3,seed+11)
+   d[(y*S+x)*4+3]*=n>.32?1:.45+n*1.1
+  }
+  g.putImageData(im,0,0)
+ }
+ return c
+}

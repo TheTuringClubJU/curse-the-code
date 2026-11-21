@@ -55,6 +55,8 @@ export default function Room3Basement({ team, onLogout, onProceedToLobby, onProc
   const wasOnStairsRef = useRef(false);
   const jumpscareTimerRef = useRef(null);
   const handlePlayerMoveRef = useRef(null);
+  const [flashOverlay, setFlashOverlay] = useState({ color: '#c40414', opacity: 0, visible: false });
+  const doorScareCountRef = useRef(0);
 
   const previewRoomData = {
     title: 'The Basement',
@@ -114,7 +116,10 @@ export default function Room3Basement({ team, onLogout, onProceedToLobby, onProc
     if(objectId==='room_door'){
       if(data?.is_completed){ setIsCompleteOpen(true); engineRef.current?.unlock(); }
       else if (onProceedToStudy) { onProceedToStudy(); }
-      else showNotification('The backward passage leads to the Study. The subterranean vault remains sealed.');
+      else {
+        audioRef.current?.slam?.(3, 2.95);
+        showNotification('The backward passage leads to the Study. The subterranean vault remains sealed.');
+      }
       return;
     }
     try {
@@ -312,7 +317,7 @@ export default function Room3Basement({ team, onLogout, onProceedToLobby, onProc
     try{ 
       engineRef.current=createEngine(mountRef.current,basementConfig,{
         audio:audioRef.current,
-        onFlash:()=>{},
+        onFlash:(color,opacity=0.78,durationMs=200)=>{setFlashOverlay({color,opacity,visible:true});setTimeout(()=>setFlashOverlay(prev=>({...prev,visible:false})),durationMs||200);},
         onTarget:(id)=>{activeTargetRef.current=id;setHoverPrompt(id?`Inspect ${id.replaceAll('_',' ')}`:null);},
         onInteract:(id)=>handleInteractRef.current?.(id),
         onLock:()=>{},
@@ -390,8 +395,19 @@ export default function Room3Basement({ team, onLogout, onProceedToLobby, onProc
     return () => { cancelled = true; clearTimeout(retryTimer); clearInterval(tickTimer); };
   }, []);
 
+  const isAnyModalOpen = Boolean(
+    isBasketOpen ||
+    isCaseFilesOpen ||
+    isPhotoPuzzleOpen ||
+    activeClue ||
+    isCompleteOpen ||
+    isDossierOpen ||
+    isHintOpen
+  );
+
   return <div className="basement-room relative w-full h-screen overflow-hidden bg-[#14161a] select-none font-mono">
-    <div ref={mountRef} onClick={()=>isStarted&&engineRef.current?.lock()} className="absolute inset-0" />
+    <div ref={mountRef} onClick={() => { if (isStarted && engineRef.current && !isAnyModalOpen) engineRef.current.lock(); }} className="absolute inset-0" />
+    {flashOverlay.visible && <div className="pointer-events-none fixed inset-0 z-40 transition-opacity duration-75" style={{ backgroundColor: flashOverlay.color, opacity: flashOverlay.opacity }} />}
     {!isStarted && (
       <div 
         className="fixed inset-0 z-[100] bg-black select-none flex items-center justify-start p-8 sm:p-16 overflow-hidden bg-cover bg-right sm:bg-center"

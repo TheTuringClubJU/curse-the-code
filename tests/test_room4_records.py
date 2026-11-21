@@ -195,12 +195,12 @@ def test_r4_17_search_seq3_er03_now_unlocked(auth_headers):
     assert res.json()["found"] is True
     assert res.json()["fragment_id"] == "ER03"
 
-def test_r4_18_search_decoy_fragment_xr01_without_sequence_block(auth_headers):
-    # XR01 has seq=None in waste_basket, unconstrained by chain sequence
+def test_r4_18_search_waste_basket_locked_before_seq10(auth_headers):
+    # waste_basket contains ER10 (seq=10), strictly locked before ER09
     res = client.post("/api/game/room/records/search", json={"object_id": "waste_basket"}, headers=auth_headers)
     assert res.status_code == 200
-    assert res.json()["found"] is True
-    assert res.json()["fragment_id"] == "XR01"
+    assert res.json()["found"] is False
+    assert res.json().get("locked") is True
 
 # 3. Basket Unlocking & Secret Evidence
 def test_r4_19_partial_fragments_keeps_basket_sealed(auth_headers):

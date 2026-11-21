@@ -6,6 +6,7 @@ import HauntedNightScenery from './HauntedNightScenery';
 import { ambientSound } from './ambientAudio';
 import Round1DossierModal from '../game/components/Round1DossierModal';
 import Round1StoryBookModal from './Round1StoryBookModal';
+import Round2DossierModal from '../game/components/Round2DossierModal';
 
 export default function Lobby({ team, onLogout }) {
   const [lobbyState, setLobbyState] = useState({
@@ -31,6 +32,9 @@ export default function Lobby({ team, onLogout }) {
       if (lobbyState.current_round === 1 && (e.key === 's' || e.key === 'S' || e.code === 'KeyS')) {
         e.preventDefault();
         setIsStoryBookOpen((prev) => !prev);
+      } else if (lobbyState.current_round === 2 && (e.key === 's' || e.key === 'S' || e.code === 'KeyS')) {
+        e.preventDefault();
+        setIsDossierOpen((prev) => !prev);
       }
     };
     window.addEventListener('keydown', handleKey);
@@ -143,7 +147,19 @@ export default function Lobby({ team, onLogout }) {
 
         {/* Audio and Sign Out Controls */}
         <div className="flex items-center gap-2.5">
-          {!isRound2 && (
+          {isRound2 ? (
+            <button
+              onClick={() => setIsDossierOpen(true)}
+              className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded border border-[#852834]/80 text-[#fecdd3] bg-[#220c13]/85 hover:bg-[#38121d] transition shadow-[0_0_12px_rgba(180,40,60,0.3)]"
+              title="Open Sub-Station Delta Storyline & Directives (Press S)"
+            >
+              <Book className="w-3.5 h-3.5 text-[#fb7185]" />
+              <span className="hidden sm:inline">Story & Protocol</span>
+              <kbd className="px-1 py-0.2 text-[9px] bg-black/60 rounded border border-[#fb7185]/40 text-[#fecdd3]">
+                S
+              </kbd>
+            </button>
+          ) : (
             <button
               onClick={() => setIsStoryBookOpen(true)}
               className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded border border-[#852834]/80 text-[#fecdd3] bg-[#220c13]/85 hover:bg-[#38121d] transition shadow-[0_0_12px_rgba(180,40,60,0.3)]"
@@ -159,7 +175,7 @@ export default function Lobby({ team, onLogout }) {
           <button
             onClick={() => setIsDossierOpen(true)}
             className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded border border-[#c47a00]/70 text-[#ffd68a] bg-[#241708]/80 hover:bg-[#38230b] transition shadow-[0_0_10px_rgba(196,122,0,0.25)]"
-            title="Open Field Dossier & Round 1 Rules (Press R)"
+            title={isRound2 ? "Open Archival Rules Dossier (Press R)" : "Open Field Dossier & Round 1 Rules (Press R)"}
           >
             <BookOpen className="w-3.5 h-3.5 text-[#ff9d54]" />
             <span className="hidden sm:inline">Rules Dossier</span>
@@ -262,17 +278,23 @@ export default function Lobby({ team, onLogout }) {
       </footer>
 
       {/* Ancient Rules Dossier Parchment Modal */}
-      <Round1DossierModal
-        isOpen={isDossierOpen}
-        onClose={() => setIsDossierOpen(false)}
-      />
-
-      {/* Haunted Story Book Modal (Round 1 Lore only) */}
-      {!isRound2 && (
-        <Round1StoryBookModal
-          isOpen={isStoryBookOpen}
-          onClose={() => setIsStoryBookOpen(false)}
+      {isRound2 ? (
+        <Round2DossierModal
+          isOpen={isDossierOpen}
+          onClose={() => setIsDossierOpen(false)}
+          isLobby={true}
         />
+      ) : (
+        <>
+          <Round1DossierModal
+            isOpen={isDossierOpen}
+            onClose={() => setIsDossierOpen(false)}
+          />
+          <Round1StoryBookModal
+            isOpen={isStoryBookOpen}
+            onClose={() => setIsStoryBookOpen(false)}
+          />
+        </>
       )}
     </div>
   );

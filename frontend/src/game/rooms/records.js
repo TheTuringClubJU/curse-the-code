@@ -2,8 +2,8 @@
 export default {
   id: 'records',
   title: 'The Rotting Archive',
-  size: [10, 3.2, 8],
-  spawn: [0, 2.6, 0],
+  size: [12, 3.2, 10],
+  spawn: [0, 2.6, 3.6],
   haunted: true,
   theme: {
     bg: '#020103',
