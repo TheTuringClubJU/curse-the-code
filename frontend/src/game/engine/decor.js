@@ -1,5 +1,7 @@
 // Decor: rug, beams, lights, pumpkins, candles, bats, spider, webs, portrait, frames, poster, clock, decals, light shafts, outside view.
 import {THREE,X,TX,RoundedBoxGeometry,BufferGeometryUtils,mat,wm,lathe,bgeo,tube} from './kit.js'
+import {GLTFLoader} from 'three/examples/jsm/loaders/GLTFLoader.js'
+import {MeshoptDecoder} from 'three/examples/jsm/libs/meshopt_decoder.module.js'
 import {mk,grp,buildDoll,pumpkinMesh} from './scene.js'
 const spr=(map,sc,op=1,blend=true)=>{const s=new THREE.Sprite(new THREE.SpriteMaterial({map,transparent:true,opacity:op,depthWrite:false,fog:false,blending:blend?THREE.AdditiveBlending:THREE.NormalBlending}));s.scale.set(sc,sc,1);s.userData.np=1;s.userData.ns=1;return s}
 const decal=(map,w,h,x,y,z,ry,o={})=>{const m=new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshStandardMaterial({map,transparent:true,depthWrite:false,roughness:o.r??.88,metalness:o.m??0,emissive:o.e??0x000000,emissiveMap:o.em??null,emissiveIntensity:o.ei??0,polygonOffset:true,polygonOffsetFactor:o.pf??-2,opacity:o.o??1}));m.position.set(x,y,z);m.rotation.set(o.rx||0,ry,o.rz||0);m.userData.np=1;m.userData.ns=1;return m}
@@ -205,10 +207,103 @@ export function buildDecor(E){
  ;[[1.15,1.55,.28,0],[1.85,1.45,-.1,1],[2.5,1.6,.12,2]].forEach(([z,y,rz,i])=>{const g=grp(3.965,y,z,-Math.PI/2),w=.3,h=.38;g.add(mk(new THREE.BoxGeometry(w+.06,.035,.03),gold,0,h/2+.015,0),mk(new THREE.BoxGeometry(w+.06,.035,.03),gold,0,-h/2-.015,0),mk(new THREE.BoxGeometry(.035,h,.03),gold,-w/2-.015,0,0),mk(new THREE.BoxGeometry(.035,h,.03),gold,w/2+.015,0,0),mk(new THREE.PlaneGeometry(w,h),mat({map:TX.photo(i),r:.4}),0,0,.008));g.rotation.z=rz*.3;g.traverse(o=>o.userData.np=1);add(g)})
  {const g=grp(.9,1.6,-2.975);const pt=X.tex(X.posterScene());g.add(mk(new THREE.BoxGeometry(.9,1.3,.006),mat({color:0x3a3228,r:1}),0,0,0),mk(new THREE.PlaneGeometry(.9,1.3),mat({map:pt,r:.9}),0,0,.0035))
   ;[[-.4,.6,.5],[.4,.6,-.5],[-.4,-.6,-.5],[.4,-.6,.5]].forEach(c=>g.add(mk(new THREE.BoxGeometry(.12,.04,.004),mat({color:0xb8aa80,t:1,o:.55,r:.6}),c[0],c[1],.006,0,0,c[2])));interact(g,'poster');add(g)}
- {const g=grp(2.7,2.3,-2.95);g.add(mk(new THREE.CylinderGeometry(.3,.3,.05,48),mat({map:TX.clockFace(),r:.5}),0,0,.01,Math.PI/2,0,0).rotateX(0))
-  const c0=g.children[0];c0.material=[mat({color:0x2a1a12,r:.6}),mat({map:TX.clockFace(),r:.5}),mat({color:0x2a1a12,r:.6})];c0.rotation.x=Math.PI/2;c0.rotation.y=Math.PI;const clkHit=new THREE.Mesh(new THREE.BoxGeometry(0.7,0.7,0.2),new THREE.MeshBasicMaterial({colorWrite:false,depthWrite:false}));g.add(clkHit);interact(g,'clock');g.add(mk(new THREE.TorusGeometry(.31,.035,12,48),wm('ebony'),0,0,.03));g.add(mk(new THREE.CylinderGeometry(.012,.012,.02,8),brass,0,0,.075,Math.PI/2,0,0))
-  const hands=[.2,.14].map(l=>{const p=new THREE.Group();p.position.z=.045;const hd=mk(new THREE.BoxGeometry(.014,l,.006),new THREE.MeshStandardMaterial({color:0x0a0a0a}),0,l/2,0);p.add(hd);g.add(p);return p})
-  add(g);anim(()=>{const d=new Date();hands[0].rotation.z=-(d.getMinutes()/60+d.getSeconds()/3600)*Math.PI*2;hands[1].rotation.z=-((d.getHours()%12)/12+d.getMinutes()/720)*Math.PI*2})}
+ {
+  // Carved mantel shelf on north wall above desk for the torsion pendulum clock
+  const shelf = grp(2.7, 1.74, -2.85)
+  const darkWood = wm('ebony')
+  shelf.add(
+    mk(bgeo(0.48, 0.04, 0.30, 1.4), darkWood, 0, 0, 0),
+    mk(bgeo(0.05, 0.14, 0.22, 1.4), wm('dark'), -0.17, -0.09, -0.03),
+    mk(bgeo(0.05, 0.14, 0.22, 1.4), wm('dark'), 0.17, -0.09, -0.03)
+  )
+  shelf.traverse(o => { o.userData.np = 1 })
+  add(shelf)
+
+  // Procedural fallback clock until torsion pendulum GLB finishes loading
+  const g = grp(2.7, 1.76, -2.84)
+  const c0 = mk(new THREE.CylinderGeometry(.14, .14, .04, 36), [mat({color:0x2a1a12,r:.6}), mat({map:TX.clockFace(),r:.5}), mat({color:0x2a1a12,r:.6})], 0, .20, .02)
+  c0.rotation.x = Math.PI / 2
+  c0.rotation.y = Math.PI
+  const clkHit = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.48, 0.35), new THREE.MeshBasicMaterial({colorWrite:false, depthWrite:false}))
+  clkHit.position.set(0, 0.20, 0)
+  g.add(c0, clkHit, mk(new THREE.TorusGeometry(.145, .016, 10, 36), brass, 0, .20, .04), mk(new THREE.CylinderGeometry(.15, .16, .04, 24), darkWood, 0, .02, 0))
+  const hands = [.10, .07].map(l => {
+    const p = new THREE.Group()
+    p.position.set(0, .20, .05)
+    const hd = mk(new THREE.BoxGeometry(.009, l, .004), new THREE.MeshStandardMaterial({color:0x0a0a0a}), 0, l / 2, 0)
+    p.add(hd)
+    g.add(p)
+    return p
+  })
+  interact(g, 'clock')
+  add(g)
+  anim(() => {
+    if (!g.visible) return
+    const d = new Date()
+    hands[0].rotation.z = -(d.getMinutes() / 60 + d.getSeconds() / 3600) * Math.PI * 2
+    hands[1].rotation.z = -((d.getHours() % 12) / 12 + d.getMinutes() / 720) * Math.PI * 2
+  })
+
+  if (typeof window !== 'undefined' && window.location?.protocol?.startsWith('http')) {
+    try {
+      const clockUrl = '/assets/models/bedroom/torsion_pendulum_clock_-_animation.glb'
+      const loader = new GLTFLoader()
+      if (typeof MeshoptDecoder !== 'undefined') loader.setMeshoptDecoder(MeshoptDecoder)
+      loader.load(
+        clockUrl,
+        gltf => {
+          if (!gltf?.scene) return
+          const clockModel = gltf.scene
+          clockModel.name = 'torsion_pendulum_clock'
+          clockModel.traverse(o => {
+            if (!o.isMesh) return
+            o.castShadow = true
+            o.receiveShadow = true
+            const mats = Array.isArray(o.material) ? o.material : [o.material]
+            mats.forEach(m => {
+              if (!m) return
+              if (m.name === 'Basic_Glass' || (m.transmission !== undefined && m.transmission > 0)) {
+                m.transparent = true
+                m.opacity = 0.30
+                m.roughness = 0.08
+                m.metalness = 0.05
+                m.depthWrite = false
+                m.side = THREE.DoubleSide
+              } else if (m.name === 'Gold') {
+                m.metalness = 0.88
+                m.roughness = 0.32
+                m.side = THREE.DoubleSide
+              }
+            })
+          })
+          clockModel.scale.setScalar(1.45)
+          clockModel.position.set(2.7, 1.76, -2.84)
+          clockModel.rotation.set(0, 0, 0)
+          interact(clockModel, 'clock')
+          add(clockModel)
+
+          g.visible = false
+          g.traverse(o => {
+            o.visible = false
+            o.userData.np = 1
+          })
+
+          if (gltf.animations?.length > 0) {
+            const mixer = new THREE.AnimationMixer(clockModel)
+            const action = mixer.clipAction(gltf.animations[0])
+            action.play()
+            anim((t, dt) => mixer.update(dt || 0.016))
+          }
+          E?.bakeShadows?.()
+        },
+        undefined,
+        err => console.warn('[BEDROOM CLOCK GLB FALLBACK ACTIVE]', err)
+      )
+    } catch (err) {
+      console.warn('[BEDROOM CLOCK GLB FALLBACK ACTIVE]', err)
+    }
+  }
+ }
  {const wr=X.writingC("DON'T TURN AROUND",{W:1024,H:256,size:92,seed:4});const t=X.tex(wr.c);document.fonts?.ready.then(()=>{wr.redraw();t.needsUpdate=true});S.add(decal(t,2.6,.65,1.45,2.05,D/2-.012,Math.PI,{o:.9}))
   const hp=X.tex(X.handprintC(3));[[2.0,1.35,.06],[2.35,1.1,-.1],[2.2,.75,.2]].forEach(a=>S.add(decal(hp,.26,.39,-W/2+.012,a[1],a[0],Math.PI/2,{rz:a[2],o:.85})))
   const bt=TX.bat();for(let i=0;i<8;i++){const m=decal(bt,.24+R()*.1,.12+R()*.05,W/2-.012,1.9+R()*.55+(i%2)*.1,.55+i*.3,-Math.PI/2,{rz:(R()-.5)*.8});m.material.color.set(0x15121c);m.material.opacity=.95;S.add(m)}}
