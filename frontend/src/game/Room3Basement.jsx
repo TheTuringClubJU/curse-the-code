@@ -32,6 +32,11 @@ function mapBasementEvidence(evidenceList) {
   }));
 }
 
+function isClueResolved(clueList, clueId) {
+  const c = clueList?.find(item => item.id === clueId);
+  return Boolean(c && (c.solved || (c.attempts || 0) >= (c.attempts_max || 3)));
+}
+
 export default function Room3Basement({ team, onLogout, onProceedToLobby, onProceedToStudy, previewMode = false }) {
   const mountRef = useRef(null), engineRef = useRef(null), audioRef = useRef(null);
   const roomDataRef = useRef(null), activeTargetRef = useRef(null), handleInteractRef = useRef(null);
@@ -119,9 +124,26 @@ export default function Room3Basement({ team, onLogout, onProceedToLobby, onProc
     } catch(e){ console.error('Search failed:',e); }
     const clue=data?.clues?.find(c=>c.object_id===objectId);
     if(clue){
-      if(clue.id==='R1-FIN'){ const required=['R1-09','R1-10']; const ready=required.every(id=>data.clues.find(c=>c.id===id)?.solved); if(!ready){showNotification('Final terminal locked. Solve R1-09 and R1-10 first.');return;} }
-      if(!data?.basket_unlocked && clue.id!=='R1-FIN'){showNotification('The evidence lock is sealed. Recover all 5 basement fragments first.');return;}
-      if(!clue.solved && (clue.attempts || 0) >= (clue.attempts_max || 3)){ showNotification('Maximum attempts exhausted for this clue.'); return; }
+      if(!data?.basket_unlocked){
+        showNotification('The evidence lock is sealed. Recover all 5 basement fragments first.');
+        return;
+      }
+      if(clue.is_locked){
+        showNotification(clue.lock_reason || 'This clue is locked.');
+        return;
+      }
+      if(clue.id==='R1-10' && !isClueResolved(data?.clues, 'R1-09')){
+        showNotification('Previous clue "R1-09" in this sequence must be solved first.');
+        return;
+      }
+      if(clue.id==='R1-FIN' && (!isClueResolved(data?.clues, 'R1-09') || !isClueResolved(data?.clues, 'R1-10'))){
+        showNotification('Final terminal locked. Solve R1-09 and R1-10 first.');
+        return;
+      }
+      if(!clue.solved && (clue.attempts || 0) >= (clue.attempts_max || 3)){
+        showNotification('Maximum attempts exhausted for this clue.');
+        return;
+      }
       setActiveClue(clue); engineRef.current?.unlock();
     }
   };
@@ -314,10 +336,15 @@ export default function Room3Basement({ team, onLogout, onProceedToLobby, onProc
       const data=await res.json().catch(()=>({detail:'Invalid server response'}));
       if(res.ok){await fetchRoomState();if(data.room_completed){engineRef.current?.openDoor?.();setIsCompleteOpen(true);}return data;}
       if(res.status===429)return {correct:false,message:'Submission is temporarily rate limited.'};
-      if([401,403].includes(res.status))return {correct:false,message:'Your session is no longer authorized.'};
+      if(res.status===401)return {correct:false,message:'Your session is no longer authorized.'};
+      if(res.status===403) {
+        const msg = typeof data?.detail === 'object' ? (data?.detail?.message || data?.detail?.code) : data?.detail;
+        return {correct:false, message: msg || 'Action not permitted.'};
+      }
       if(res.status===404)return {correct:false,message:'This clue is unavailable.'};
       if(res.status===500)return {correct:false,message:'The server could not process this submission.'};
-      return {correct:false,message:data.detail||'Submission failed'};
+      const fallbackMsg = (typeof data?.detail === 'object' ? data?.detail?.message : data?.detail) || 'Submission failed';
+      return {correct:false,message:fallbackMsg};
     }catch(e){return {correct:false,message:e?.name==='AbortError'?'Submission timed out.':'Server communication error'};}
     finally{clearTimeout(timeout);submittingRef.current=false;setIsSubmitting(false);}
   };
@@ -369,7 +396,7 @@ export default function Room3Basement({ team, onLogout, onProceedToLobby, onProc
       <div 
         className="fixed inset-0 z-[100] bg-black select-none flex items-center justify-start p-8 sm:p-16 overflow-hidden bg-cover bg-right sm:bg-center"
         style={{
-          backgroundImage: "url('/preview-basement.jpg')",
+          background: 'radial-gradient(ellipse at 70% 50%, #1c0e15 0%, #0d070f 50%, #060608 100%)',
           backgroundColor: '#060608'
         }}
       >
@@ -431,7 +458,37 @@ export default function Room3Basement({ team, onLogout, onProceedToLobby, onProc
     {notification&&<div className="absolute top-20 left-1/2 -translate-x-1/2 z-[80] bg-black/60 backdrop-blur-none border border-white/50 px-5 py-3 rounded-lg text-xs font-mono text-white shadow-none drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">{notification}</div>}
     {isStarted&&<HUD roomTitle={roomData?.title||'The Basement'} totalFragments={5} collectedCount={roomData?.collected_fragment_ids?.length||0} basketUnlocked={Boolean(roomData?.basket_unlocked)} isRoomCompleted={Boolean(roomData?.is_completed)} completedMessage="ROOM 3 COMPLETE • BASEMENT SECTOR PURGED" photoCount={roomData?.photo_pieces_collected||0} cluesSolved={roomClues.filter(c=>c.solved).length} totalClues={2} onOpenBasket={()=>{setIsBasketOpen(true);engineRef.current?.unlock();}} onOpenCaseFiles={()=>{setIsCaseFilesOpen(true);engineRef.current?.unlock();}} onOpenPhotoPuzzle={()=>{setIsPhotoPuzzleOpen(true);engineRef.current?.unlock();}} onOpenRules={()=>{setIsDossierOpen(true);engineRef.current?.unlock();}} onOpenDossier={()=>{setIsDossierOpen(true);engineRef.current?.unlock();}} onOpenHints={()=>{setIsHintOpen(true);engineRef.current?.unlock();}} onLogout={onLogout} audioMuted={audioMuted} onToggleAudio={()=>{const v=!audioMuted;audioRef.current?.setMuted(v);setAudioMuted(v);}} activeHoverPrompt={hoverPrompt} />}
     <BasketModal isOpen={isBasketOpen} onClose={()=>{setIsBasketOpen(false);engineRef.current?.lock();}} evidence={roomData?.evidence||[]} collectedIds={roomData?.collected_fragment_ids||[]} basketUnlocked={Boolean(roomData?.basket_unlocked)} totalInRoom={5} roomTitle="The Basement" />
-    <CaseFilesModal isOpen={isCaseFilesOpen} onClose={()=>{setIsCaseFilesOpen(false);engineRef.current?.lock();}} clues={clues} basketUnlocked={Boolean(roomData?.basket_unlocked)} onOpenClue={clue=>{setIsCaseFilesOpen(false);if(clue.id==='R1-FIN'&&!clues.filter(c=>c.id==='R1-09'||c.id==='R1-10').every(c=>c.solved)){showNotification('Final terminal locked.');return;}setActiveClue(clue);engineRef.current?.unlock();}} />
+    <CaseFilesModal
+      isOpen={isCaseFilesOpen}
+      onClose={()=>{setIsCaseFilesOpen(false);engineRef.current?.lock();}}
+      clues={clues}
+      basketUnlocked={Boolean(roomData?.basket_unlocked)}
+      onOpenClue={clue => {
+        setIsCaseFilesOpen(false);
+        if (!roomData?.basket_unlocked) {
+          showNotification('The evidence lock is sealed. Recover all 5 basement fragments first.');
+          return;
+        }
+        if (clue.is_locked) {
+          showNotification(clue.lock_reason || 'This clue is locked.');
+          return;
+        }
+        if (clue.id === 'R1-10' && !isClueResolved(clues, 'R1-09')) {
+          showNotification('Previous clue "R1-09" in this sequence must be solved first.');
+          return;
+        }
+        if (clue.id === 'R1-FIN' && (!isClueResolved(clues, 'R1-09') || !isClueResolved(clues, 'R1-10'))) {
+          showNotification('Final terminal locked. Solve R1-09 and R1-10 first.');
+          return;
+        }
+        if (!clue.solved && (clue.attempts || 0) >= (clue.attempts_max || 3)) {
+          showNotification('Maximum attempts exhausted for this clue.');
+          return;
+        }
+        setActiveClue(clue);
+        engineRef.current?.unlock();
+      }}
+    />
     <PhotoPuzzleModal isOpen={isPhotoPuzzleOpen} onClose={()=>{setIsPhotoPuzzleOpen(false);engineRef.current?.lock();}} photoCount={roomData?.photo_pieces_collected||0} requiredPieces={10} />
     <IntercomQrModal isOpen={Boolean(activeClue?.id==='R1-09')} {...clueModalProps}/>
     <ServerRackNoteModal isOpen={Boolean(activeClue?.id==='R1-10')} {...clueModalProps}/>

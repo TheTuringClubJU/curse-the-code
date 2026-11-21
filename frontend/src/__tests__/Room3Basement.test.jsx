@@ -591,4 +591,112 @@ describe('Room 3 (The Basement) Comprehensive Test Suite (49 Tests)', () => {
 
     vi.useRealTimers();
   });
+
+  it('QA-R3-FE-57: sequential clue gating prevents opening R1-10 when R1-09 is unsolved', async () => {
+    render(<Room3Basement team={mockTeam} onLogout={vi.fn()} />);
+    fireEvent.click(await screen.findByText(/CLICK TO ENTER BASEMENT/i));
+    await waitFor(() => expect(screen.getByText(basementContent.title)).toBeInTheDocument());
+
+    // Interacting with rack_door when R1-09 is not solved
+    await act(async () => {
+      await activeEngineInstance?.callbacks?.onInteract('rack_door');
+    });
+
+    expect(await screen.findByText(/Previous clue "R1-09" in this sequence must be solved first/i)).toBeInTheDocument();
+    expect(screen.queryByText(/SERVER RACK \/ MARGIN NOTE/i)).not.toBeInTheDocument();
+  });
+
+  it('QA-R3-FE-58: sequential clue gating prevents opening R1-FIN when prerequisites are unresolved', async () => {
+    render(<Room3Basement team={mockTeam} onLogout={vi.fn()} />);
+    fireEvent.click(await screen.findByText(/CLICK TO ENTER BASEMENT/i));
+    await waitFor(() => expect(screen.getByText(basementContent.title)).toBeInTheDocument());
+
+    // Interacting with containment_console when R1-09 & R1-10 are not resolved
+    await act(async () => {
+      await activeEngineInstance?.callbacks?.onInteract('containment_console');
+    });
+
+    expect(await screen.findByText(/Final terminal locked. Solve R1-09 and R1-10 first/i)).toBeInTheDocument();
+    expect(screen.queryByText(/CONTAINMENT TERMINAL • PHASE/i)).not.toBeInTheDocument();
+  });
+
+  it('QA-R3-FE-59: sealed evidence basket blocks opening any clues', async () => {
+    global.fetch = vi.fn().mockImplementation((url) => {
+      if (url.includes('/api/game/room/basement')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () => Promise.resolve({
+            ...initialState,
+            basket_unlocked: false,
+            fragments_found: 2,
+            collected_fragment_ids: ['EK04', 'EK05']
+          })
+        });
+      }
+      return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve({}) });
+    });
+
+    render(<Room3Basement team={mockTeam} onLogout={vi.fn()} />);
+    fireEvent.click(await screen.findByText(/CLICK TO ENTER BASEMENT/i));
+    await waitFor(() => expect(screen.getByText(basementContent.title)).toBeInTheDocument());
+
+    // Try interacting with intercom
+    await act(async () => {
+      await activeEngineInstance?.callbacks?.onInteract('intercom');
+    });
+
+    expect(await screen.findByText(/The evidence lock is sealed. Recover all 5 basement fragments first/i)).toBeInTheDocument();
+    expect(screen.queryByText(/WALL INTERCOM/i)).not.toBeInTheDocument();
+  });
+
+  it('QA-R3-FE-60: clue submission preserves 403 CLUE_LOCKED server detail message', async () => {
+    global.fetch = vi.fn().mockImplementation((url) => {
+      if (url.includes('/api/game/room/basement')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () => Promise.resolve({
+            ...initialState,
+            clues: [
+              { ...clueContent['R1-09'], solved: true, attempts: 1, attempts_max: 3 },
+              { ...clueContent['R1-10'], solved: false, attempts: 0, attempts_max: 3 },
+              { ...clueContent['R1-FIN'], solved: false, attempts: 0, attempts_max: 3 }
+            ]
+          })
+        });
+      }
+      if (url.includes('/api/game/clue/R1-10/submit')) {
+        return Promise.resolve({
+          ok: false,
+          status: 403,
+          json: () => Promise.resolve({
+            detail: {
+              code: 'CLUE_LOCKED',
+              message: "Previous clue 'R1-09' in this sequence must be solved first."
+            }
+          })
+        });
+      }
+      return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve({}) });
+    });
+
+    render(<Room3Basement team={mockTeam} onLogout={vi.fn()} />);
+    fireEvent.click(await screen.findByText(/CLICK TO ENTER BASEMENT/i));
+    await waitFor(() => expect(screen.getByText(basementContent.title)).toBeInTheDocument());
+
+    // Open R1-10 modal since R1-09 is solved
+    await act(async () => {
+      await activeEngineInstance?.callbacks?.onInteract('rack_door');
+    });
+
+    expect(await screen.findByText(/SERVER RACK \/ MARGIN NOTE/i)).toBeInTheDocument();
+
+    // Submit answer which triggers 403
+    fireEvent.change(screen.getByLabelText(/One word/i), { target: { value: 'TEST' } });
+    fireEvent.click(screen.getByText(/SUBMIT DECRYPTION/i));
+
+    expect(await screen.findByText(/Previous clue 'R1-09' in this sequence must be solved first/i)).toBeInTheDocument();
+    expect(screen.queryByText(/Your session is no longer authorized/i)).not.toBeInTheDocument();
+  });
 });

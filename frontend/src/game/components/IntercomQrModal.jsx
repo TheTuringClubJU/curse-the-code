@@ -16,7 +16,8 @@ export default function IntercomQrModal({ isOpen, onClose, clue, onSubmitAnswer,
       <p className="text-sm mb-3">{stage?.prompt || clue?.scene_text || ''}</p>
       <input aria-label={field?.label || 'Authorization passcode'} value={answer} onChange={e=>setAnswer(e.target.value.toUpperCase())} disabled={isSubmitting || exhausted || clue?.solved} className="w-full bg-black border border-red-500/30 rounded px-4 py-3 tracking-[.25em]" placeholder={field?.placeholder || ''} />
       {feedback && <p className="text-sm mt-3 text-red-200">{feedback}</p>}
-      <button disabled={isSubmitting} onClick={submit} className="mt-4 w-full bg-red-700 hover:bg-red-600 py-3 rounded font-bold">AUTHENTICATE</button>
+      {exhausted && <p className="text-sm mt-3 text-red-200">Maximum attempts exhausted for this clue.</p>}
+      <button disabled={isSubmitting || exhausted || clue?.solved} onClick={submit} className="mt-4 w-full bg-red-700 hover:bg-red-600 py-3 rounded font-bold disabled:opacity-50">AUTHENTICATE</button>
     </div>
   </div>;
 }
