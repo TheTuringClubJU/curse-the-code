@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 580 440" width="100%" height="100%">
+    <defs>
+        <radialGradient id="paperV" cx="50%" cy="50%" r="70%"><stop offset="60%" stop-color="#ede8e0"/><stop offset="100%" stop-color="#c8bfaa"/></radialGradient>
+    </defs>
+    <rect width="580" height="440" fill="url(#paperV)" rx="5"/>
+    <rect width="564" height="424" x="8" y="8" fill="none" stroke="#6a7a5a" stroke-width="1.5" opacity="0.4" rx="4"/>
+
+    <!-- Header -->
+    <text x="60" y="52" font-family="Courier, monospace" font-size="14" font-weight="bold" letter-spacing="2" fill="#2b2d1a">DELTA CONTROL — EQUIPMENT REQUISITION FORM</text>
+    <text x="60" y="70" font-family="Courier, monospace" font-size="10" letter-spacing="1" fill="#5a6a4a">COMMUNICATIONS EQUIPMENT DIVISION // FORM EQ-83</text>
+    <line x1="60" y1="85" x2="520" y2="85" stroke="#5a6a4a" stroke-width="1.2" opacity="0.5"/>
+
+    <!-- Form fields -->
+    <text x="60" y="118" font-family="Courier, monospace" font-size="12" font-weight="bold" fill="#3a4a2a">REQ NO:</text><text x="175" y="118" font-family="Courier, monospace" font-size="12" fill="#2b2d1a">EQ-83-REL-002</text>
+    <text x="60" y="140" font-family="Courier, monospace" font-size="12" font-weight="bold" fill="#3a4a2a">DATE:</text><text x="175" y="140" font-family="Courier, monospace" font-size="12" fill="#2b2d1a">12 AUG 1983</text>
+    <text x="60" y="162" font-family="Courier, monospace" font-size="12" font-weight="bold" fill="#3a4a2a">ITEM:</text><text x="175" y="162" font-family="Courier, monospace" font-size="12" fill="#2b2d1a">R-390A COMMUNICATIONS RECEIVER x2</text>
+    <text x="60" y="184" font-family="Courier, monospace" font-size="12" font-weight="bold" fill="#3a4a2a">DESTINATION:</text><text x="175" y="184" font-family="Courier, monospace" font-size="12" fill="#2b2d1a">RELAY RACK B — CONTROL ROOM SECTOR 5</text>
+    <text x="60" y="206" font-family="Courier, monospace" font-size="12" font-weight="bold" fill="#3a4a2a">AUTHORISED:</text><text x="175" y="206" font-family="Courier, monospace" font-size="12" fill="#2b2d1a">M. CORVIN — RESEARCH DIV</text>
+    <text x="60" y="228" font-family="Courier, monospace" font-size="12" font-weight="bold" fill="#3a4a2a">PURPOSE:</text><text x="175" y="228" font-family="Courier, monospace" font-size="12" fill="#2b2d1a">HF SIGNAL MONITORING POST-EVAC PERIOD</text>
+
+    <!-- Annotation -->
+    <text x="60" y="275" font-family="Courier, monospace" font-size="11" fill="#5a4a2a" font-style="italic">Note: Requisition filed 2 days BEFORE official shutdown date.</text>
+    <text x="60" y="293" font-family="Courier, monospace" font-size="11" fill="#5a4a2a" font-style="italic">Why was monitoring equipment ordered if facility closing?</text>
+
+    <!-- Stamp -->
+    <g transform="translate(380, 44) rotate(8)">
+        <rect x="0" y="0" width="140" height="38" fill="none" stroke="#a31818" stroke-width="2" stroke-dasharray="4 2" rx="3" opacity="0.8"/>
+        <text x="70" y="24" font-family="Courier, monospace" font-size="10" font-weight="900" fill="#a31818" text-anchor="middle" letter-spacing="1">APPROVED</text>
+    </g>
+
+    <!-- Footer -->
+    <line x1="60" y1="385" x2="520" y2="385" stroke="#5a6a4a" stroke-width="0.8" opacity="0.4"/>
+    <text x="60" y="405" font-family="Courier, monospace" font-size="10" fill="#5a6a4a">RECORD ID: EC02 — RELAY RACK FRAGMENT B</text>
+    <text x="520" y="405" font-family="Courier, monospace" font-size="9" fill="#7a8a6a" text-anchor="end">SUBSTATION DELTA // CTRL-04</text>
+</svg>
+

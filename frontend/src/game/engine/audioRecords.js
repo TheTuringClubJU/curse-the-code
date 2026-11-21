@@ -307,19 +307,51 @@ export class GameAudioRecords {
     }, 15);
   }
 
-  // Player footsteps in puddle water
+  // Player footsteps in puddle water with echoing cavernous stone slap-back reverb
   step(v = 1) {
     if (!this.ctx) return;
     const o = this.master;
     // Splash transient
-    this.burst(1200, 2.5, 0.08, 0.12 * v, o, 400, 'bandpass');
-    // Wet thud
-    this.burst(180, 1.2, 0.14, 0.22 * v, o, 90, 'lowpass');
-    // Secondary splash droplets
-    if (Math.random() < 0.4) {
+    this.burst(1100, 2.2, 0.09, 0.16 * v, o, 380, 'bandpass');
+    // Heavy wet stone heel impact
+    this.burst(160, 1.4, 0.16, 0.28 * v, o, 75, 'lowpass');
+    // Stone cavern slap-back echo into convolver reverb
+    this.burst(650, 3.5, 0.12, 0.18 * v, this.verb, 300, 'bandpass');
+    // Secondary droplet splash
+    if (Math.random() < 0.5) {
       setTimeout(() => {
-        this.osc('sine', rnd(1200, 2000), rnd(800, 1400), 0.04, 0.06 * v, this.verb);
-      }, 40);
+        this.osc('sine', rnd(1100, 1800), rnd(700, 1200), 0.05, 0.08 * v, this.verb);
+      }, 35);
+    }
+  }
+
+  // Rushing creature attack sprint footsteps + horrifying vocal screech (Reference 2)
+  creatureSprintRushing(startX, startZ, targetX, targetZ, durationMs = 800) {
+    this.ensureActive();
+    if (!this.ctx) return;
+    const steps = 9;
+    const interval = durationMs / steps;
+
+    // Guttural demonic inhalation / screech
+    this.screamingStinger(1.1);
+    this.whisperRaspy('behind', startX, startZ);
+
+    for (let i = 0; i < steps; i++) {
+      const frac = i / (steps - 1);
+      const delay = i * interval * (1 - frac * 0.35); // Accelerating tempo!
+      setTimeout(() => {
+        if (!this.ctx) return;
+        const curX = startX + (targetX - startX) * frac;
+        const curZ = startZ + (targetZ - startZ) * frac;
+        const d = this.spat(curX, curZ, 2.0 + frac * 1.5);
+        if (!d) return;
+
+        // Heavy slamming thud + puddle splash
+        const vol = 0.5 + frac * 0.8;
+        this.burst(130, 1.2, 0.2, vol, d, 55, 'lowpass');
+        this.burst(1400, 3.0, 0.14, vol * 0.6, d, 450, 'bandpass');
+        this.burst(800, 2.5, 0.18, vol * 0.5, this.verb, 350, 'bandpass');
+      }, delay);
     }
   }
 
@@ -392,27 +424,50 @@ export class GameAudioRecords {
     this.burst(4500, 5.0, 0.35, 0.6, this.verb, 800);
   }
 
-  // JS-02: Document Head-Turn / Screaming Stinger
+  // JS-02: Document Head-Turn / Screaming Stinger (Horrific Multi-Layered Banshee & Entity Shriek)
   screamingStinger(intensity = 1) {
     this.ensureActive();
     if (!this.ctx) return;
     const c = this.ctx;
+    const t = c.currentTime;
     const g = c.createGain();
-    g.gain.value = 0.55 * intensity;
+    g.gain.value = Math.min(1.4, 0.82 * intensity);
     g.connect(this.master);
     g.connect(this.verb);
 
-    const w = this.dist(40);
+    const w = this.dist(90);
     w.connect(g);
 
-    // Dissonant clustered microtonal sawtooth shrieks
-    [466.2, 493.9, 587.3, 622.3, 739.9, 880.0].forEach((freq, idx) => {
-      this.osc('sawtooth', freq, freq * (idx % 2 ? 1.08 : 0.92), 1.6, 0.45, w);
+    // 1. Dissonant clustered microtonal sawtooth + square shrieks with chaotic FM vocal-cord tear
+    [311.1, 466.2, 493.9, 587.3, 622.3, 739.9, 880.0, 1244.5, 1661.2].forEach((freq, idx) => {
+      const o = this.osc(idx % 2 ? 'sawtooth' : 'square', freq * 0.9, freq * (idx % 2 ? 1.32 : 0.78), 1.65, 0.52, w);
+      if (o) {
+        const fm = c.createOscillator();
+        const fg = c.createGain();
+        fm.frequency.value = 32 + idx * 4.5;
+        fg.gain.value = 78 + idx * 15;
+        fm.connect(fg);
+        fg.connect(o.frequency);
+        fm.start(t);
+        fm.stop(t + 1.68);
+      }
     });
 
-    // Visceral sub bass drop
-    this.osc('sine', 95, 24, 2.2, 1.5, g);
-    this.burst(1100, 1.0, 1.2, 0.9, g, 150, 'lowpass');
+    // 2. High-formant banshee scream sweep
+    const sbp = c.createBiquadFilter();
+    sbp.type = 'bandpass';
+    sbp.Q.value = 3.0;
+    sbp.frequency.setValueAtTime(1050, t);
+    sbp.frequency.exponentialRampToValueAtTime(2480, t + 0.16);
+    sbp.frequency.exponentialRampToValueAtTime(1280, t + 1.45);
+    sbp.connect(w);
+    this.osc('sawtooth', 840, 2240, 1.45, 0.88, sbp);
+    this.osc('sawtooth', 895, 2360, 1.45, 0.78, sbp);
+
+    // 3. Visceral sub bass chest-slam drop & tearing noise
+    this.osc('sine', 118, 20, 2.2, 1.85, g);
+    this.burst(1100, 1.0, 1.3, 1.15, w, 150, 'lowpass');
+    this.burst(2800, 1.8, 1.15, 1.05, w, 920, 'bandpass');
   }
 
   // JS-03: Sudden Blackout Surge (fluorescent pop + electrical spark + heart pounding)

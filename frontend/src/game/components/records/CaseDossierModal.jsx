@@ -1,5 +1,38 @@
 import React from 'react';
 
+export function isClueLocked(clue, allClues = []) {
+  if (!clue) return false;
+  if (clue.is_locked === true || clue.locked === true) return true;
+  const requiresResolved = clue.requires_resolved || clue.unlock?.requires_resolved;
+  if (Array.isArray(requiresResolved) && requiresResolved.length > 0) {
+    const allPrereqsResolved = requiresResolved.every((reqId) => {
+      const parent = allClues.find((c) => c.id === reqId);
+      if (!parent) return false;
+      const maxAtt = parent.attempts_max || 3;
+      return Boolean(parent.solved || (parent.attempts >= maxAtt));
+    });
+    if (!allPrereqsResolved) return true;
+  }
+  return false;
+}
+
+export function getClueLockReason(clue, allClues = []) {
+  if (clue?.lock_reason) return clue.lock_reason;
+  const requiresResolved = clue?.requires_resolved || clue?.unlock?.requires_resolved;
+  if (Array.isArray(requiresResolved) && requiresResolved.length > 0) {
+    const unmet = requiresResolved.filter((reqId) => {
+      const parent = allClues.find((c) => c.id === reqId);
+      if (!parent) return true;
+      const maxAtt = parent.attempts_max || 3;
+      return !parent.solved && (parent.attempts < maxAtt);
+    });
+    if (unmet.length > 0) {
+      return `Prerequisite clue(s) (${unmet.join(', ')}) must be resolved first.`;
+    }
+  }
+  return 'Previous clues in sequence must be resolved first.';
+}
+
 export default function CaseDossierModal({
   isOpen,
   onClose,
@@ -62,6 +95,10 @@ export default function CaseDossierModal({
             const isSolved = Boolean(clue.solved);
             const attemptsLeft = Math.max(0, (clue.attempts_max || 3) - (clue.attempts || 0));
             const isLockedOut = attemptsLeft <= 0 && !isSolved;
+            const isLocked = !isSolved && (!basketUnlocked || isClueLocked(clue, displayClues));
+            const lockReason = !basketUnlocked
+              ? 'Arcane seal active: Recover all room fragments across the 7 props to unseal this case file.'
+              : getClueLockReason(clue, displayClues);
 
             return (
               <div
@@ -71,6 +108,8 @@ export default function CaseDossierModal({
                     ? 'bg-[#122417] border-emerald-700/60 shadow-[0_0_15px_rgba(16,185,129,0.15)]'
                     : isLockedOut
                     ? 'bg-[#241414] border-red-800/60 opacity-60'
+                    : isLocked
+                    ? 'bg-[#151214] border-red-950/60 opacity-80'
                     : 'bg-[#181d22] border-[#36424e] hover:border-[#c47a00]/80 shadow'
                 }`}
               >
@@ -88,6 +127,11 @@ export default function CaseDossierModal({
                     <p className="text-xs text-[#8ca0b0] mt-1 max-w-xl">
                       {clue.scene_text || 'Archival terminal located in records sub-basement.'}
                     </p>
+                    {isLocked && !isSolved && (
+                      <p className="text-[11px] text-amber-500/90 mt-1.5 font-mono">
+                        {lockReason}
+                      </p>
+                    )}
                   </div>
 
                   <div className="text-right">
@@ -98,6 +142,10 @@ export default function CaseDossierModal({
                     ) : isLockedOut ? (
                       <span className="px-2 py-0.5 bg-red-950 text-red-400 border border-red-700 rounded text-[11px] font-bold">
                         LOCKOUT (0/3)
+                      </span>
+                    ) : isLocked ? (
+                      <span className="px-2 py-0.5 bg-red-950/70 text-red-400 border border-red-800/80 rounded text-[11px] font-bold">
+                        LOCKED
                       </span>
                     ) : (
                       <span className="px-2 py-0.5 bg-[#252016] text-[#ffd68a] border border-[#c47a00]/60 rounded text-[11px] font-bold">
@@ -115,9 +163,13 @@ export default function CaseDossierModal({
 
                   <button
                     onClick={() => onOpenClue(clue)}
-                    className="px-4 py-1 bg-[#28323c] hover:bg-[#c47a00] hover:text-black text-xs font-bold text-[#ffd68a] rounded transition border border-[#445260] hover:border-[#ffd68a]"
+                    className={`px-4 py-1 text-xs font-bold rounded transition border ${
+                      isLocked
+                        ? 'bg-[#1a1515] hover:bg-[#261717] text-red-400/80 border-red-900/50 hover:border-red-600'
+                        : 'bg-[#28323c] hover:bg-[#c47a00] hover:text-black text-[#ffd68a] border-[#445260] hover:border-[#ffd68a]'
+                    }`}
                   >
-                    ACCESS TERMINAL ➔
+                    {isLocked ? '[LOCKED // SEALED]' : 'ACCESS TERMINAL ➔'}
                   </button>
                 </div>
               </div>

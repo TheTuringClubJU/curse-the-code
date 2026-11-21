@@ -199,12 +199,13 @@ export default function Fork1Modal({
               </span>
               <p className="text-xs text-[#dcd2be] mt-1 font-serif">
                 "SUB-STATION DELTA — ROUTE SELECTION REQUIRED.<br />
-                ONE CORRIDOR ADVANCES INTO THE PRIMARY CONTROL CORE. THE OTHER TERMINATES IN SEALED QUARANTINE."
+                ONE CORRIDOR ADVANCES INTO THE PRIMARY CONTROL CORE. THE OTHER TERMINATES IN SEALED QUARANTINE.<br />
+                ONLY THE ROUTE AUTHORIZED UNDER THE AUTHENTIC INCIDENT DIRECTIVE REMAINS ENERGIZED."
               </p>
             </div>
 
             <p className="text-xs text-[#9a886c] text-center max-w-xl mx-auto">
-              Cross-reference Room 4 archival documents: check the Requisition Form &amp; Shutdown Forgery notice to deduce which wing remained active.
+              Cross-reference Room 4 archival documents: check the Incident Report copies to deduce which project codeword and shutdown date were verified genuine, and which was the planted forgery.
             </p>
           </div>
 
@@ -236,11 +237,11 @@ export default function Fork1Modal({
 
                 <div className="text-base font-bold text-[#f3ead0] font-mono">
                   AUXILIARY WING<br />
-                  <span className="text-xs text-[#a0885c]">SUB-STATION 11 QUARANTINE</span>
+                  <span className="text-xs text-[#a0885c]">CODENAME: TALLOW // 1996-12-03 (SECTOR 14-C)</span>
                 </div>
 
                 <p className="text-xs text-[#8a7651]">
-                  Heavy rusted iron archway. Faint cold draft and water seepage beneath the sill.
+                  Emergency auxiliary bypass route. Marked with the December 3 directive from incident report copy B. Stagnant air and heavy rust encrust the iron bars.
                 </p>
               </div>
 
@@ -266,19 +267,17 @@ export default function Fork1Modal({
             >
               <div className="space-y-3">
                 <div className="flex items-center justify-between text-xs font-bold">
-                  <span className="text-emerald-400">ARCHWAY B</span>
-                  <span className="text-emerald-400 flex items-center gap-1">
-                    <CheckCircle2 className="w-3.5 h-3.5" /> OPERATIONAL FEED
-                  </span>
+                  <span className="text-amber-400">ARCHWAY B</span>
+                  <span className="text-zinc-500">[STANDBY]</span>
                 </div>
 
                 <div className="text-base font-bold text-[#f3ead0] font-mono">
                   PRIMARY WING<br />
-                  <span className="text-xs text-[#a0885c]">MAIN VAULT CONTROL FEED</span>
+                  <span className="text-xs text-[#a0885c]">CODENAME: VESPER // 1996-08-15 (MAIN VAULT FEED)</span>
                 </div>
 
                 <p className="text-xs text-[#8a7651]">
-                  Reinforced conduit archway. Low electrical hum vibrating through iron pipe fittings.
+                  Sub-station primary conduit line. Marked with the verified August 15 directive from incident report copy A. Faint power hum vibrates along the conduit wall.
                 </p>
               </div>
 

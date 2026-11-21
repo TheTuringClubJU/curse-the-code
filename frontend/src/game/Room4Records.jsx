@@ -8,9 +8,11 @@ import RedactedReportModal from './components/records/RedactedReportModal.jsx';
 import MicrofilmViewerModal from './components/records/MicrofilmViewerModal.jsx';
 import EpochTimelineModal from './components/records/EpochTimelineModal.jsx';
 import BulkheadKeypadModal from './components/records/BulkheadKeypadModal.jsx';
-import CaseDossierModal from './components/records/CaseDossierModal.jsx';
+import CaseDossierModal, { isClueLocked, getClueLockReason } from './components/records/CaseDossierModal.jsx';
 import Fork1Modal from './components/records/Fork1Modal.jsx';
 import RoomCompleteModal from './components/RoomCompleteModal.jsx';
+import HintModal from './components/HintModal.jsx';
+import Round2DossierModal from './components/Round2DossierModal.jsx';
 import './game.css';
 import './records.css';
 
@@ -29,6 +31,8 @@ export default function Room4Records({ team, onLogout }) {
   const [isBasketOpen, setIsBasketOpen] = useState(false);
   const [isCaseDossierOpen, setIsCaseDossierOpen] = useState(false);
   const [isFork1Open, setIsFork1Open] = useState(false);
+  const [isHintOpen, setIsHintOpen] = useState(false);
+  const [isRulesDossierOpen, setIsRulesDossierOpen] = useState(false);
   const [isRoomCompleteModalOpen, setIsRoomCompleteModalOpen] = useState(false);
   const [activeClueModal, setActiveClueModal] = useState(null); // 'R2-02' | 'R2-03' | 'R2-04' | 'R2-07' | null
   const [activeHoverPrompt, setActiveHoverPrompt] = useState(null);
@@ -41,6 +45,7 @@ export default function Room4Records({ team, onLogout }) {
   const [isFlashlightOn, setIsFlashlightOn] = useState(true);
   const [glassCrackLevel, setGlassCrackLevel] = useState(0);
   const [flashOverlay, setFlashOverlay] = useState({ color: '#000', opacity: 0, visible: false });
+  const doorScareCountRef = useRef(0);
 
   // Fetch initial room data from backend
   const fetchRoomState = async () => {
@@ -81,6 +86,8 @@ export default function Room4Records({ team, onLogout }) {
         setIsBasketOpen(false);
         setIsCaseDossierOpen(false);
         setIsFork1Open(false);
+        setIsHintOpen(false);
+        setIsRulesDossierOpen(false);
         setActiveClueModal(null);
         engineRef.current?.lock();
         return;
@@ -113,6 +120,30 @@ export default function Room4Records({ team, onLogout }) {
       if (e.key === 'c' || e.key === 'C' || e.code === 'KeyC') {
         e.preventDefault();
         setIsCaseDossierOpen((prev) => {
+          const next = !prev;
+          if (next) engineRef.current?.unlock();
+          else engineRef.current?.lock();
+          return next;
+        });
+        return;
+      }
+
+      // H Key - Toggle Guidance / Hints
+      if (e.key === 'h' || e.key === 'H' || e.code === 'KeyH') {
+        e.preventDefault();
+        setIsHintOpen((prev) => {
+          const next = !prev;
+          if (next) engineRef.current?.unlock();
+          else engineRef.current?.lock();
+          return next;
+        });
+        return;
+      }
+
+      // R Key - Toggle Round 2 Rules & Investigation Dossier
+      if (e.key === 'r' || e.key === 'R' || e.code === 'KeyR') {
+        e.preventDefault();
+        setIsRulesDossierOpen((prev) => {
           const next = !prev;
           if (next) engineRef.current?.unlock();
           else engineRef.current?.lock();
@@ -187,20 +218,37 @@ export default function Room4Records({ team, onLogout }) {
         onTarget: (targetId) => {
           activeTargetRef.current = targetId;
           if (targetId) {
+            const currentData = roomDataRef.current;
             if (targetId === 'room_door' || targetId === 'door') {
               setActiveHoverPrompt('Sealed Archival Entrance Hatch');
             } else if (targetId === 'bulkhead_door') {
-              if (roomDataRef.current?.is_completed) {
+              if (currentData?.is_completed) {
                 setActiveHoverPrompt('Pass Through Unsealed Bulkhead ➔ Enter Room 5');
-              } else if (!roomDataRef.current?.basket_unlocked) {
+              } else if (!currentData?.basket_unlocked) {
                 setActiveHoverPrompt('Inspect Sealed Bulkhead Door (12 Fragments Required)');
               } else {
-                setActiveHoverPrompt('Operate Sealed Bulkhead Keypad (Clue R2-07)');
+                const clueR207 = currentData?.clues?.find((c) => c.id === 'R2-07') || { id: 'R2-07', requires_resolved: ['R2-03', 'R2-04'] };
+                if (isClueLocked(clueR207, currentData?.clues)) {
+                  setActiveHoverPrompt(`[LOCKED] Bulkhead Keypad: ${getClueLockReason(clueR207, currentData?.clues)}`);
+                } else {
+                  setActiveHoverPrompt('Operate Sealed Bulkhead Keypad (Clue R2-07)');
+                }
               }
-            } else if (recordsConfig.interact[targetId]?.label) {
-              setActiveHoverPrompt(recordsConfig.interact[targetId].label);
             } else {
-              setActiveHoverPrompt(`Inspect ${targetId.replace(/_/g, ' ')}`);
+              const matchingClue = currentData?.clues?.find((c) => c.object_id === targetId);
+              if (matchingClue) {
+                if (!currentData?.basket_unlocked) {
+                  setActiveHoverPrompt(`[SEALED] ${matchingClue.title} (Recover 12 fragments first)`);
+                } else if (isClueLocked(matchingClue, currentData?.clues)) {
+                  setActiveHoverPrompt(`[LOCKED] ${matchingClue.title}: ${getClueLockReason(matchingClue, currentData?.clues)}`);
+                } else {
+                  setActiveHoverPrompt(`[E] Operate ${matchingClue.title} Terminal`);
+                }
+              } else if (recordsConfig.interact[targetId]?.label) {
+                setActiveHoverPrompt(recordsConfig.interact[targetId].label);
+              } else {
+                setActiveHoverPrompt(`Inspect ${targetId.replace(/_/g, ' ')}`);
+              }
             }
           } else {
             setActiveHoverPrompt(null);
@@ -268,6 +316,18 @@ export default function Room4Records({ team, onLogout }) {
 
     // 1. Check Entrance Door
     if (objectId === 'room_door' || objectId === 'door') {
+      const now = Date.now();
+      const ds = typeof doorScareCountRef.current === 'object' ? doorScareCountRef.current : { count: doorScareCountRef.current || 0, lastAt: 0 };
+      const shouldScare = ds.count > 0 && (now - ds.lastAt) >= 45000 && Math.random() < 0.25;
+      ds.count += 1;
+      if (shouldScare) ds.lastAt = now;
+      doorScareCountRef.current = ds;
+      if (shouldScare) {
+        engineRef.current?.triggerDoorScare?.();
+        audioRef.current?.screamingStinger?.(1.4);
+      } else {
+        audioRef.current?.drawerSlam?.(0, 0);
+      }
       showNotification('The heavy iron entrance hatch sealed behind you. You cannot retreat. Find a way forward.');
       return;
     }
@@ -288,11 +348,28 @@ export default function Room4Records({ team, onLogout }) {
         return;
       }
       if (!currentData?.basket_unlocked) {
+        const now = Date.now();
+        const ds = typeof doorScareCountRef.current === 'object' ? doorScareCountRef.current : { count: doorScareCountRef.current || 0, lastAt: 0 };
+        const shouldScare = ds.count > 0 && (now - ds.lastAt) >= 45000 && Math.random() < 0.25;
+        ds.count += 1;
+        if (shouldScare) ds.lastAt = now;
+        doorScareCountRef.current = ds;
+        if (shouldScare) {
+          engineRef.current?.triggerDoorScare?.();
+          audioRef.current?.screamingStinger?.(1.38);
+        } else {
+          audioRef.current?.drawerSlam?.(0, 0);
+        }
         showNotification('Arcane seal unbroken: Recover all 12 fragments in this room to unseal the archival terminals and power the bulkhead keypad.');
         return;
       }
-      // If not completed, open Bulkhead Keypad (Clue R2-07)
-      const clueR207 = currentData?.clues?.find((c) => c.id === 'R2-07') || { id: 'R2-07' };
+      // If not completed, verify prerequisite resolution before opening Bulkhead Keypad (Clue R2-07)
+      const clueR207 = currentData?.clues?.find((c) => c.id === 'R2-07') || { id: 'R2-07', requires_resolved: ['R2-03', 'R2-04'] };
+      if (isClueLocked(clueR207, currentData?.clues)) {
+        showNotification(getClueLockReason(clueR207, currentData?.clues));
+        audioRef.current?.bad?.();
+        return;
+      }
       setActiveClueModal('R2-07');
       engineRef.current?.unlock();
       return;
@@ -303,6 +380,11 @@ export default function Room4Records({ team, onLogout }) {
     if (matchingClue) {
       if (!currentData?.basket_unlocked) {
         showNotification('Arcane seal unbroken. Recover all 12 room fragments across the 7 storage props to unseal this case file.');
+        return;
+      }
+      if (isClueLocked(matchingClue, currentData?.clues)) {
+        showNotification(getClueLockReason(matchingClue, currentData?.clues));
+        audioRef.current?.bad?.();
         return;
       }
       setActiveClueModal(matchingClue.id);
@@ -416,6 +498,7 @@ export default function Room4Records({ team, onLogout }) {
     isBasketOpen ||
     isCaseDossierOpen ||
     isFork1Open ||
+    isHintOpen ||
     isRoomCompleteModalOpen ||
     Boolean(activeClueModal);
 
@@ -460,6 +543,7 @@ export default function Room4Records({ team, onLogout }) {
             <li><b>E</b> Search props / operate terminal</li>
             <li><b>B</b> Open Evidence Basket (12 fragments)</li>
             <li><b>C</b> View Case Files & Clues Dossier</li>
+            <li><b>H</b> Request Field Guidance & Hints</li>
             <li><b>F</b> Toggle heavy-duty flashlight</li>
             <li><b>M</b> Mute / unmute 18.98Hz horror audio</li>
             <li><b>1 - 5</b> Manual Jumpscare triggers (Drawer, Blackout, Phantom, Stalker, Burst)</li>
@@ -502,6 +586,14 @@ export default function Room4Records({ team, onLogout }) {
             setIsCaseDossierOpen(true);
             engineRef.current?.unlock();
           }}
+          onOpenHints={() => {
+            setIsHintOpen(true);
+            engineRef.current?.unlock();
+          }}
+          onOpenRules={() => {
+            setIsRulesDossierOpen(true);
+            engineRef.current?.unlock();
+          }}
           onLogout={onLogout}
           audioMuted={audioMuted}
           onToggleAudio={toggleAudio}
@@ -535,14 +627,29 @@ export default function Room4Records({ team, onLogout }) {
         totalFragments={roomData?.total_fragments_in_room || 12}
         collectedCount={roomData?.collected_fragment_ids?.length || 0}
         onOpenClue={(clue) => {
-          setIsCaseDossierOpen(false);
           if (!roomData?.basket_unlocked) {
             showNotification('Arcane seal active: Gather all 12 room fragments to inspect this clue terminal.');
             return;
           }
+          if (isClueLocked(clue, roomClues)) {
+            showNotification(getClueLockReason(clue, roomClues));
+            return;
+          }
+          setIsCaseDossierOpen(false);
           setActiveClueModal(clue.id);
           engineRef.current?.unlock();
         }}
+      />
+
+      {/* Field Guidance & Hints Modal (Press H) */}
+      <HintModal
+        isOpen={isHintOpen}
+        onClose={() => {
+          setIsHintOpen(false);
+          engineRef.current?.lock();
+        }}
+        roomId="records"
+        roomTitle={roomData?.title || 'The Rotting Archive'}
       />
 
       {/* Clue R2-02: Redacted Incident Report */}
@@ -631,11 +738,29 @@ export default function Room4Records({ team, onLogout }) {
           setIsRoomCompleteModalOpen(false);
           engineRef.current?.lock();
         }}
+        roomLabel="ROOM 4 CLEARED"
+        title="The Rotting Archive Completed!"
+        description="Primary Wing B is authenticated and the hydraulic bulkhead is unsealed. Proceed onward into the sealed depths."
+        rewards={[
+          '✓ Archive Case Files Resolved (R2-02 – R2-07)',
+          '✓ Primary Wing B Route Authenticated',
+          '✓ Hydraulic Bulkhead Door Unsealed'
+        ]}
+        actionLabel="Enter Next Sector (Vault)"
         onProceedToDoor={() => {
           setIsRoomCompleteModalOpen(false);
-          engineRef.current?.lock();
-          showNotification('The heavy hydraulic bulkhead is unsealed. Step through the doorway into Room 5.');
+          window.dispatchEvent(new CustomEvent('ctc:navigate-room', { detail: 'vault' }));
         }}
+      />
+
+      {/* Round 2 Rules & Investigation Dossier (Press R) */}
+      <Round2DossierModal
+        isOpen={isRulesDossierOpen}
+        onClose={() => {
+          setIsRulesDossierOpen(false);
+          engineRef.current?.lock();
+        }}
+        isLobby={false}
       />
     </div>
   );

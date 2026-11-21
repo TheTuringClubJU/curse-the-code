@@ -1,0 +1,1033 @@
+/* ============================================================
+   control.css — Room 5: The Surveillance Morgue
+   Tactile Forensic Desk, Pinned Corkboard & RE2R Translucent UI
+   ============================================================ */
+
+:root {
+  --font-re-display: 'Cormorant Garamond', 'Cinzel', Georgia, serif;
+  --font-re-ui: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-re-typewriter: 'Courier Prime', 'IBM Plex Mono', 'Courier New', monospace;
+  --font-re-dossier: 'Courier Prime', 'Courier New', monospace;
+  --font-re-mono: 'IBM Plex Mono', 'Courier New', monospace;
+}
+
+.font-re-display {
+  font-family: var(--font-re-display);
+  letter-spacing: 0.14em;
+}
+
+.font-re-typewriter {
+  font-family: var(--font-re-typewriter);
+  letter-spacing: 0.03em;
+}
+
+.font-re-dossier {
+  font-family: var(--font-re-dossier);
+}
+
+/* ── 0. Physical Forensic Tabletop, Corkboard & Pinned Papers (Inspo Match) ── */
+.desk-surface {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  overflow-y: auto;
+  background:
+    radial-gradient(ellipse 68% 58% at 78% 12%, rgba(255, 224, 162, 0.22) 0%, rgba(120, 74, 34, 0.14) 36%, rgba(10, 8, 7, 0.94) 76%),
+    repeating-linear-gradient(90deg, rgba(28, 18, 11, 0.35) 0px, rgba(28, 18, 11, 0.35) 2px, rgba(16, 10, 7, 0.55) 2px, rgba(16, 10, 7, 0.55) 18px),
+    rgba(8, 6, 5, 0.92);
+  backdrop-filter: blur(7px);
+}
+
+.corkboard-surface {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: flex;
+  flex-direction: column;
+  padding: 22px;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 50% 35%, rgba(62, 42, 26, 0.45) 0%, rgba(14, 10, 8, 0.96) 78%),
+    radial-gradient(rgba(180, 140, 96, 0.06) 1px, transparent 1px);
+  background-size: 100% 100%, 14px 14px;
+  backdrop-filter: blur(8px);
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  background: radial-gradient(ellipse at 50% 25%, rgba(28, 22, 16, 0.72) 0%, rgba(6, 6, 6, 0.92) 78%);
+  backdrop-filter: blur(7px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  overflow-y: auto;
+}
+
+.modal-panel {
+  position: relative;
+  background: linear-gradient(180deg, #161312 0%, #0b0a09 100%);
+  border: 1px solid rgba(196, 162, 101, 0.2);
+  border-radius: 14px;
+  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.96), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  padding: 22px 26px;
+  max-height: 90vh;
+  overflow: hidden;
+  color: #ece6d9;
+}
+
+.paper-tape-modal,
+.spectrogram-modal {
+  border-color: rgba(196, 162, 101, 0.22);
+}
+
+.modal-header {
+  position: relative;
+  z-index: 2;
+}
+
+.modal-close-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 34px;
+  height: 30px;
+  padding: 0 14px;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(18, 16, 15, 0.9);
+  color: #e6e2da;
+  font-family: var(--font-re-ui, 'Inter', sans-serif);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+
+.modal-close-btn:hover {
+  background: rgba(138, 34, 34, 0.42);
+  border-color: rgba(208, 156, 98, 0.5);
+  color: #ffffff;
+}
+
+/* Masking tape strip (Images 4 & 5) */
+.masking-tape {
+  background: linear-gradient(90deg, rgba(226, 205, 154, 0.72), rgba(210, 188, 134, 0.82), rgba(226, 205, 154, 0.72));
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.35);
+}
+
+/* Green engineering grid sheet pinned to wooden desk (Image 5 exact inspo!) */
+.green-grid-sheet {
+  position: relative;
+  background-color: #a9cdb2;
+  background-image:
+    linear-gradient(to right, rgba(46, 98, 64, 0.18) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(46, 98, 64, 0.18) 1px, transparent 1px);
+  background-size: 18px 18px;
+  color: #162119;
+  box-shadow:
+    inset 0 0 36px rgba(24, 48, 30, 0.16),
+    0 18px 48px rgba(0, 0, 0, 0.72);
+}
+
+/* Pinned cream ruled index card (Images 4 & 5) */
+.ruled-index-card {
+  position: relative;
+  background:
+    linear-gradient(180deg, transparent 25px, rgba(168, 48, 48, 0.28) 26px, transparent 27px),
+    repeating-linear-gradient(180deg, transparent 0px, transparent 23px, rgba(72, 108, 148, 0.18) 23px, rgba(72, 108, 148, 0.18) 24px),
+    linear-gradient(180deg, #f6efe0 0%, #ebe0c6 100%);
+  color: #211a14;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.55);
+}
+
+/* Manila file folder (Image 3) */
+.manila-dossier {
+  background:
+    radial-gradient(circle at 80% 15%, rgba(255, 240, 200, 0.18), transparent 55%),
+    linear-gradient(180deg, #e7d19f 0%, #d8be85 100%);
+  color: #231910;
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.6);
+}
+
+.re-dossier-paper {
+  background:
+    repeating-linear-gradient(
+      0deg,
+      rgba(62, 42, 20, 0.04) 0px,
+      rgba(62, 42, 20, 0.04) 1px,
+      transparent 1px,
+      transparent 24px
+    ),
+    radial-gradient(circle at 85% 15%, rgba(255, 240, 200, 0.25), transparent 55%),
+    linear-gradient(180deg, #f2e8d2 0%, #e6d7b8 60%, #dcc8a2 100%);
+  color: #1c150f;
+  box-shadow:
+    inset 0 0 28px rgba(72, 46, 16, 0.16),
+    0 16px 42px rgba(0, 0, 0, 0.65);
+}
+
+.re-stamp-badge {
+  display: inline-block;
+  border: 2px solid #991b1b;
+  color: #991b1b;
+  font-family: var(--font-re-display);
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  padding: 2px 8px;
+  font-size: 10px;
+  text-transform: uppercase;
+  transform: rotate(-3deg);
+  opacity: 0.88;
+}
+
+.push-pin {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #f87171, #991b1b 72%, #450a0a);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.65);
+}
+
+/* ── 1. Muted Workstation Phosphor Utilities (No blinding lime slop) ── */
+.phosphor-glow {
+  box-shadow: 0 2px 18px rgba(0, 0, 0, 0.65);
+}
+
+.phosphor-text {
+  color: #e4ded0;
+}
+
+.phosphor-text-dim {
+  color: #a69f91;
+}
+
+/* ── 2. CRT Scanlines Overlay ────────────────────────────── */
+.crt-scanlines {
+  position: relative;
+}
+
+.crt-scanlines::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.05) 0px,
+    rgba(0, 0, 0, 0.05) 1px,
+    transparent 1px,
+    transparent 2px
+  );
+  z-index: 10;
+  border-radius: inherit;
+}
+
+/* Full-screen scanlines variant */
+.crt-scanlines-full {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.055) 0px,
+    rgba(0, 0, 0, 0.055) 1px,
+    transparent 1px,
+    transparent 2px
+  );
+  z-index: 5;
+  border-radius: inherit;
+}
+
+/* ── 3. Blinking Block Cursor ────────────────────────────── */
+.blink-cursor::after {
+  content: '█';
+  display: inline-block;
+  color: #c8a25a;
+  text-shadow: 0 0 6px rgba(200, 162, 90, 0.35);
+  animation: blink-block 1.1s step-end infinite;
+  margin-left: 1px;
+}
+
+@keyframes blink-block {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+.blink-cursor-span {
+  display: inline-block;
+  width: 9px;
+  height: 1.1em;
+  background: #c8a25a;
+  box-shadow: 0 0 6px rgba(200, 162, 90, 0.35);
+  vertical-align: text-bottom;
+  animation: blink-block 1.1s step-end infinite;
+  margin-left: 2px;
+}
+
+/* ── 4. Paper Tape Texture ───────────────────────────────── */
+.paper-tape {
+  background:
+    repeating-linear-gradient(
+      0deg,
+      rgba(0,0,0,0.04) 0px,
+      rgba(0,0,0,0.04) 1px,
+      transparent 1px,
+      transparent 24px
+    ),
+    linear-gradient(
+      180deg,
+      #f9f0d8 0%,
+      #f5ead0 15%,
+      #f2e4c8 40%,
+      #efe0be 65%,
+      #ecdabf 85%,
+      #e8d4b4 100%
+    );
+  box-shadow:
+    inset 0 2px 6px rgba(80, 50, 10, 0.18),
+    inset 0 -2px 6px rgba(80, 50, 10, 0.12),
+    2px 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.paper-tape-hole-strip {
+  background: repeating-linear-gradient(
+    90deg,
+    transparent 0px,
+    transparent 20px,
+    rgba(0,0,0,0.12) 20px,
+    rgba(0,0,0,0.12) 22px,
+    transparent 22px,
+    transparent 42px
+  );
+}
+
+/* ── 5. CRT Bezel ────────────────────────────────────────── */
+.crt-bezel {
+  background: #0e0d0c;
+  border: 2px solid #26221e;
+  border-radius: 12px;
+  box-shadow:
+    inset 0 0 28px rgba(0, 0, 0, 0.92),
+    inset 0 1px 0 rgba(212, 188, 140, 0.08),
+    0 8px 26px rgba(0, 0, 0, 0.85),
+    0 0 0 1px #090807;
+}
+
+/* ── 6. Oscilloscope Tube ────────────────────────────────── */
+.oscilloscope-tube {
+  position: relative;
+  border-radius: 50%;
+  background: #090807;
+  box-shadow:
+    inset 0 0 40px rgba(0, 0, 0, 0.95),
+    inset 0 0 16px rgba(138, 28, 28, 0.16),
+    0 0 22px rgba(0, 0, 0, 0.85),
+    0 0 0 4px #1d1916,
+    0 0 0 8px #0c0a09,
+    0 0 0 12px #050404;
+  overflow: hidden;
+}
+
+.oscilloscope-tube canvas {
+  display: block;
+  border-radius: 50%;
+}
+
+/* Tube inner glow ring */
+.oscilloscope-tube::before {
+  content: '';
+  position: absolute;
+  inset: 4px;
+  border-radius: 50%;
+  border: 1px solid rgba(196, 162, 101, 0.12);
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* Tube glass shine */
+.oscilloscope-tube::after {
+  content: '';
+  position: absolute;
+  top: 8%;
+  left: 12%;
+  width: 30%;
+  height: 20%;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(255,255,255,0.06) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 3;
+  transform: rotate(-20deg);
+}
+
+/* ── 7. Terminal Input Field ─────────────────────────────── */
+.terminal-input {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #efe7d6;
+  font-family: 'IBM Plex Mono', 'Courier New', monospace;
+  font-size: 14px;
+  caret-color: #c8a25a;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.85);
+  width: 100%;
+}
+
+.terminal-input::placeholder {
+  color: rgba(214, 200, 174, 0.35);
+}
+
+.terminal-input-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 10px 14px;
+  background: rgba(12, 11, 10, 0.82);
+}
+
+.terminal-input-line .prompt-symbol {
+  color: #c8a25a;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+  font-family: monospace;
+  font-size: 14px;
+  white-space: nowrap;
+  user-select: none;
+}
+
+/* ── 8. Physical Toggle Switch ───────────────────────────── */
+.terminal-toggle {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.terminal-toggle .toggle-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px;
+  color: #b7aa92;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.terminal-toggle select {
+  appearance: none;
+  -webkit-appearance: none;
+  background: #141210;
+  color: #e6dcc6;
+  border: 1px solid rgba(196, 162, 101, 0.35);
+  border-radius: 9999px;
+  padding: 4px 26px 4px 12px;
+  font-family: 'IBM Plex Mono', 'Courier New', monospace;
+  font-size: 11px;
+  cursor: pointer;
+  outline: none;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.6);
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6'><path d='M0 0l5 6 5-6z' fill='%23c4a265'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  min-width: 108px;
+}
+
+.terminal-toggle select option {
+  background: #12100e;
+  color: #e6dcc6;
+}
+
+.terminal-toggle select:focus {
+  border-color: #c4a265;
+  box-shadow: 0 0 10px rgba(196, 162, 101, 0.22);
+}
+
+/* ── 9. CRT Table Rows ───────────────────────────────────── */
+.crt-table-row {
+  transition: background 0.12s ease, color 0.12s ease;
+  cursor: default;
+}
+
+.crt-table-row:hover {
+  background: rgba(154, 42, 42, 0.22) !important;
+  color: #f4eee1 !important;
+}
+
+.crt-table-row.target-row {
+  animation: target-pulse 2.5s ease-in-out infinite;
+}
+
+@keyframes target-pulse {
+  0%, 100% { text-shadow: 0 0 6px rgba(196, 162, 101, 0.45); }
+  50% { text-shadow: 0 0 12px rgba(196, 162, 101, 0.75); }
+}
+
+/* ── 10. Paper Tape Scroll Container ─────────────────────── */
+.tape-scroll-container {
+  overflow: hidden;
+  position: relative;
+  user-select: none;
+  cursor: grab;
+}
+
+.tape-scroll-container:active {
+  cursor: grabbing;
+}
+
+.tape-scroll-inner {
+  transition: none;
+}
+
+/* ── 11. Typewriter / Monospace Helpers ──────────────────── */
+.font-teletype {
+  font-family: 'Courier New', 'Lucida Console', monospace;
+  letter-spacing: 0.03em;
+}
+
+.font-terminal {
+  font-family: 'IBM Plex Mono', 'Courier New', monospace;
+  letter-spacing: 0.05em;
+}
+
+/* ── 12. CRT Modal Shell ─────────────────────────────────── */
+.crt-modal-shell {
+  background: #0b0a09;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  box-shadow:
+    0 18px 60px rgba(0, 0, 0, 0.92),
+    inset 0 0 50px rgba(0, 0, 0, 0.6);
+}
+
+/* ── 13. Scrub Dial ──────────────────────────────────────── */
+.scrub-dial {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #2c2824, #141210 70%, #090807);
+  border: 3px solid #241f1b;
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.85),
+    inset 0 1px 3px rgba(212, 188, 140, 0.14),
+    0 0 0 1px #050404;
+  cursor: grab;
+  position: relative;
+  user-select: none;
+}
+
+.scrub-dial:active {
+  cursor: grabbing;
+}
+
+.scrub-dial .dial-marker {
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  width: 3px;
+  height: 10px;
+  background: #c8a25a;
+  border-radius: 9999px;
+  transform-origin: bottom center;
+  margin-left: -1.5px;
+  box-shadow: 0 0 6px rgba(200, 162, 90, 0.65);
+}
+
+/* ── 14. Frequency Band Buttons ──────────────────────────── */
+.freq-band-btn {
+  font-family: var(--font-re-ui, 'Inter', sans-serif);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  padding: 6px 16px;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: linear-gradient(90deg, rgba(28, 25, 23, 0.95), rgba(14, 12, 11, 0.88));
+  color: #b4a994;
+  cursor: pointer;
+  transition: all 0.16s ease;
+  user-select: none;
+}
+
+.freq-band-btn:hover {
+  border-color: rgba(196, 162, 101, 0.45);
+  color: #f3ede0;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.55);
+}
+
+.freq-band-btn.active {
+  background: linear-gradient(90deg, rgba(132, 34, 34, 0.88), rgba(40, 14, 14, 0.92));
+  color: #f6efe0;
+  border-color: rgba(208, 148, 86, 0.55);
+  box-shadow: 0 4px 16px rgba(120, 24, 24, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.14);
+}
+
+/* ── 15. VM Tab Buttons ──────────────────────────────────── */
+.vm-tab-btn {
+  font-family: var(--font-re-ui, 'Inter', sans-serif);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  padding: 7px 22px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(16, 14, 13, 0.9);
+  color: #9e9380;
+  cursor: pointer;
+  border-radius: 9999px;
+  transition: all 0.15s ease;
+  user-select: none;
+  margin-right: 6px;
+}
+
+.vm-tab-btn:hover {
+  background: rgba(34, 28, 24, 0.95);
+  color: #f3ede0;
+  border-color: rgba(196, 162, 101, 0.42);
+}
+
+.vm-tab-btn.active {
+  background: linear-gradient(90deg, rgba(132, 34, 34, 0.88), rgba(44, 15, 15, 0.94));
+  color: #f7f0e3;
+  border-color: rgba(208, 156, 98, 0.58);
+  box-shadow: 0 4px 14px rgba(120, 24, 24, 0.36);
+  z-index: 2;
+  position: relative;
+}
+
+/* ── 16. Scroll-to-End Indicator ─────────────────────────── */
+@keyframes bounce-down {
+  0%, 100% { transform: translateY(0); opacity: 0.7; }
+  50% { transform: translateY(4px); opacity: 1; }
+}
+
+.scroll-indicator {
+  animation: bounce-down 1.4s ease-in-out infinite;
+}
+
+/* ── 17. Waveform Canvas Strip ───────────────────────────── */
+.waveform-strip {
+  border: 1px solid rgba(196, 162, 101, 0.22);
+  background: #0c0a09;
+  border-radius: 10px;
+  box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.85);
+}
+
+/* ── 18. Digit Reveal Pulse ──────────────────────────────── */
+@keyframes digit-flash {
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 1; filter: brightness(1.4); }
+}
+
+.digit-reveal {
+  animation: digit-flash 0.9s ease-in-out infinite;
+}
+
+/* ── 19. Control Room Vignette (CRT version) ─────────────── */
+.crt-vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, transparent 55%, rgba(8, 4, 4, 0.8) 100%);
+  z-index: 1;
+  border-radius: inherit;
+}
+
+/* ── 20. Fade-in animation ───────────────────────────────── */
+@keyframes fade-in-fast {
+  from { opacity: 0; transform: translate(-50%, 4px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+.animate-fade-in-fast {
+  animation: fade-in-fast 0.25s ease-out forwards;
+}
+
+/* ── 21. Terminal response flash ─────────────────────────── */
+@keyframes terminal-flash {
+  0% { background-color: rgba(196, 162, 101, 0.14); }
+  100% { background-color: transparent; }
+}
+
+.terminal-response-ok {
+  animation: terminal-flash 0.6s ease-out forwards;
+  color: #e6d7b8;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.85);
+}
+
+.terminal-response-err {
+  color: #ef6f6f;
+  text-shadow: 0 0 8px rgba(180, 42, 42, 0.45);
+}
+
+/* ── 22. Unified Action Button (Smoked Obsidian & Antique Brass/Oxblood Pill) ─ */
+.re-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 20px 7px 8px;
+  border: 1px solid rgba(216, 178, 110, 0.28);
+  border-radius: 9999px;
+  background: linear-gradient(135deg, rgba(31, 20, 19, 0.94) 0%, rgba(19, 13, 12, 0.96) 100%);
+  color: #f6efe2;
+  font-family: var(--font-re-ui, 'Space Grotesk', sans-serif);
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.52), inset 0 1px 0 rgba(255, 224, 174, 0.12);
+  cursor: pointer;
+  transition: all 0.16s ease;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.re-btn:hover {
+  background: linear-gradient(135deg, rgba(114, 29, 29, 0.95) 0%, rgba(56, 15, 16, 0.96) 100%);
+  border-color: rgba(232, 194, 124, 0.62);
+  color: #fff9ee;
+  box-shadow: 0 8px 26px rgba(128, 28, 28, 0.42), inset 0 1px 0 rgba(255, 235, 195, 0.22);
+}
+
+.re-btn:active {
+  transform: scale(0.97);
+}
+
+.re-btn-circle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 6px;
+  border-radius: 9999px;
+  background: linear-gradient(145deg, #e7c687 0%, #bd9349 100%);
+  color: #1c120b;
+  font-family: var(--font-re-ui, 'Space Grotesk', sans-serif);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.65);
+  flex-shrink: 0;
+}
+
+/* ── 23. Open Aged Leather Field Journal & Polaroid Spread (Uniform Archival Type) ── */
+.font-journal-typewriter,
+.font-journal-editorial,
+.font-journal-tech,
+.font-journal-hand {
+  font-family: 'Courier Prime', 'Courier New', monospace;
+  letter-spacing: 0.01em;
+}
+
+.journal-desk-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  overflow-y: auto;
+  background:
+    radial-gradient(ellipse 56% 48% at 10% 8%, rgba(255, 206, 134, 0.25) 0%, rgba(128, 78, 36, 0.14) 36%, rgba(18, 14, 12, 0.94) 74%),
+    radial-gradient(circle at 88% 84%, rgba(36, 26, 20, 0.55) 0%, rgba(10, 8, 7, 0.98) 70%),
+    #110d0b;
+  backdrop-filter: blur(7px);
+}
+
+.journal-leather-cover {
+  position: relative;
+  border-radius: 12px;
+  padding: 10px 11px;
+  background: linear-gradient(135deg, #4b2b1a 0%, #311a0f 48%, #22120a 100%);
+  border: 1px solid rgba(112, 70, 42, 0.45);
+  box-shadow:
+    0 30px 80px rgba(0, 0, 0, 0.88),
+    0 6px 18px rgba(0, 0, 0, 0.72),
+    inset 0 1px 0 rgba(255, 212, 165, 0.16),
+    inset 0 -3px 8px rgba(0, 0, 0, 0.6);
+}
+
+.journal-pages-shell {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr;
+  border-radius: 5px;
+  overflow: hidden;
+  background: linear-gradient(180deg, #ede2c9 0%, #dfd0b0 100%);
+  box-shadow:
+    0 0 0 1px rgba(48, 28, 14, 0.42),
+    inset 0 0 28px rgba(72, 46, 18, 0.14);
+}
+
+@media (min-width: 768px) {
+  .journal-pages-shell {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.journal-page {
+  position: relative;
+  background:
+    radial-gradient(ellipse at 25% 18%, rgba(255, 250, 236, 0.45) 0%, transparent 58%),
+    linear-gradient(180deg, #ede2cb 0%, #e4d6b8 65%, #dac8a2 100%);
+  color: #2e241b;
+  min-height: 410px;
+}
+
+.journal-page-left {
+  box-shadow: inset -18px 0 28px -14px rgba(34, 18, 8, 0.28);
+}
+
+.journal-page-right {
+  box-shadow: inset 18px 0 28px -14px rgba(34, 18, 8, 0.28);
+}
+
+.journal-spine-crease {
+  pointer-events: none;
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .journal-spine-crease {
+    display: block;
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    width: 34px;
+    transform: translateX(-50%);
+    z-index: 6;
+    background: linear-gradient(
+      90deg,
+      rgba(56, 32, 14, 0) 0%,
+      rgba(48, 26, 10, 0.16) 36%,
+      rgba(22, 11, 4, 0.44) 50%,
+      rgba(48, 26, 10, 0.15) 64%,
+      rgba(56, 32, 14, 0) 100%
+    );
+  }
+}
+
+.journal-double-rule {
+  border-top: 1px solid rgba(76, 62, 46, 0.48);
+  border-bottom: 1px solid rgba(76, 62, 46, 0.28);
+  height: 4px;
+}
+
+.journal-vertical-watermark {
+  position: absolute;
+  top: 20px;
+  bottom: 20px;
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  white-space: nowrap;
+  font-family: 'Cinzel', Georgia, serif;
+  font-weight: 700;
+  font-size: 32px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: transparent;
+  -webkit-text-stroke: 1px rgba(102, 86, 66, 0.14);
+  user-select: none;
+  pointer-events: none;
+  line-height: 1;
+}
+
+.journal-polaroid {
+  position: relative;
+  background: linear-gradient(180deg, #f4f1ea 0%, #eae3d4 72%, #dfd6c1 100%);
+  padding: 11px 11px 30px 11px;
+  border-radius: 2px;
+  border: 1px solid rgba(82, 68, 48, 0.28);
+  box-shadow:
+    0 16px 34px rgba(18, 10, 4, 0.46),
+    0 3px 8px rgba(0, 0, 0, 0.26),
+    inset 0 0 14px rgba(110, 88, 56, 0.12);
+}
+
+.journal-torn-strip {
+  position: relative;
+  background: linear-gradient(178deg, rgba(64, 62, 60, 0.94) 0%, rgba(44, 42, 40, 0.96) 100%);
+  color: #e6dfd3;
+  clip-path: polygon(
+    0% 5%, 6% 0%, 14% 4%, 25% 1%, 38% 5%, 52% 0%, 66% 4%, 81% 1%, 94% 4%, 100% 0%,
+    98% 28%, 100% 56%, 97% 84%, 100% 97%,
+    89% 100%, 73% 96%, 57% 100%, 41% 96%, 24% 100%, 10% 97%, 0% 100%,
+    2% 72%, 0% 42%
+  );
+  box-shadow: 0 5px 14px rgba(0, 0, 0, 0.34);
+}
+
+.journal-desk-letter {
+  position: absolute;
+  background: linear-gradient(180deg, #d7d2c7 0%, #beb6a6 100%);
+  color: #3a342c;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  pointer-events: none;
+}
+
+.journal-ticket-stub {
+  position: absolute;
+  background: linear-gradient(180deg, #2d7c46 0%, #1d5730 100%);
+  color: #0e1d12;
+  border-radius: 3px;
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.45);
+  pointer-events: none;
+}
+
+/* ── 24. Surveillance Multi-CRT Desk Wall & Smooth Zoom (Inspo #3) ─────── */
+.cctv-station-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse 80% 55% at 50% 38%, rgba(44, 118, 86, 0.28) 0%, rgba(12, 26, 22, 0.94) 68%, rgba(5, 9, 8, 0.99) 100%),
+    linear-gradient(180deg, #101d1a 0%, #070d0b 100%);
+}
+
+.cctv-crt-housing {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: 10px;
+  border-radius: 24px;
+  background: linear-gradient(155deg, rgba(40, 48, 45, 0.92) 0%, rgba(20, 26, 24, 0.96) 55%, rgba(12, 16, 15, 0.98) 100%);
+  box-shadow:
+    0 20px 44px rgba(0, 0, 0, 0.72),
+    0 0 28px rgba(74, 222, 128, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.25s ease;
+  cursor: pointer;
+}
+
+.cctv-crt-housing:hover {
+  transform: translateY(-3px) scale(1.015);
+  box-shadow:
+    0 24px 48px rgba(0, 0, 0, 0.8),
+    0 0 38px rgba(74, 222, 128, 0.26);
+}
+
+.cctv-crt-housing.is-selected {
+  box-shadow:
+    0 0 0 2px rgba(134, 239, 172, 0.45),
+    0 18px 42px rgba(74, 222, 128, 0.28);
+}
+
+.cctv-crt-screen {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border-radius: 18px;
+  background: #06120c;
+  box-shadow: inset 0 0 32px rgba(0, 0, 0, 0.85);
+}
+
+.cctv-phosphor-feed {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: sepia(100%) hue-rotate(86deg) saturate(195%) brightness(0.95) contrast(1.18);
+  transition: transform 0.4s ease, filter 0.3s ease;
+}
+
+.cctv-scanline-mask {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  background:
+    repeating-linear-gradient(
+      0deg,
+      rgba(0, 0, 0, 0.28) 0px,
+      rgba(0, 0, 0, 0.28) 1px,
+      transparent 1px,
+      transparent 3px
+    ),
+    radial-gradient(ellipse at center, transparent 52%, rgba(0, 10, 6, 0.62) 100%);
+}
+
+@keyframes cctvZoomIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.76);
+    filter: blur(2px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes cctvWallFadeIn {
+  0% {
+    opacity: 0;
+    transform: scale(1.06);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.cctv-zoom-enter {
+  animation: cctvZoomIn 0.34s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.cctv-wall-enter {
+  animation: cctvWallFadeIn 0.3s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.cctv-desk-surface {
+  background:
+    linear-gradient(180deg, rgba(16, 30, 26, 0.92) 0%, rgba(10, 18, 16, 0.98) 100%);
+  border-top: 2px solid rgba(94, 152, 124, 0.28);
+  box-shadow: 0 -18px 42px rgba(0, 0, 0, 0.85);
+}
+
+/* ── Poppy-style Jumpscare VHS Tear & Chase Panic Pulse ─────────────────── */
+@keyframes jumpscareThrash {
+  0%   { transform: translate(0, 0) scale(1); filter: contrast(1.25) saturate(1.6); }
+  20%  { transform: translate(-5px, 4px) scale(1.025); filter: contrast(1.5) saturate(2.1); }
+  40%  { transform: translate(6px, -4px) scale(1.015); filter: contrast(1.15) saturate(1.4); }
+  60%  { transform: translate(-4px, -5px) scale(1.03); filter: contrast(1.55) saturate(2.2); }
+  80%  { transform: translate(4px, 3px) scale(1.01); filter: contrast(1.3) saturate(1.7); }
+  100% { transform: translate(0, 0) scale(1); filter: contrast(1.25) saturate(1.6); }
+}
+
+.jumpscare-nightmare-fx {
+  animation: jumpscareThrash 0.11s steps(2, end) infinite;
+  background:
+    repeating-linear-gradient(
+      0deg,
+      rgba(255, 24, 24, 0.08) 0px,
+      rgba(0, 0, 0, 0.18) 2px,
+      transparent 3px,
+      transparent 7px
+    ),
+    radial-gradient(circle at center, transparent 22%, rgba(156, 8, 8, 0.58) 66%, rgba(18, 0, 0, 0.96) 100%);
+}
+
+@keyframes chaseHeartbeatPulse {
+  0%, 100% { opacity: 0.42; }
+  35%      { opacity: 0.88; }
+  65%      { opacity: 0.56; }
+}
+
+.chase-panic-vignette {
+  animation: chaseHeartbeatPulse 0.65s ease-in-out infinite;
+  background:
+    radial-gradient(circle at center, transparent 48%, rgba(135, 12, 12, 0.44) 84%, rgba(30, 2, 2, 0.86) 100%);
+}

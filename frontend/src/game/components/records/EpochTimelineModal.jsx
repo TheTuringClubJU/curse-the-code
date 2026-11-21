@@ -184,7 +184,7 @@ export default function EpochTimelineModal({
                 </label>
                 <input
                   type="text"
-                  placeholder="PLANET"
+                  placeholder="ENTER KEYWORD"
                   value={keywordInput}
                   onChange={(e) => setKeywordInput(e.target.value.toUpperCase())}
                   className="w-full bg-black border border-[#424c56] focus:border-[#788896] px-3 py-1.5 text-xs text-[#f0f4f8] rounded uppercase tracking-widest outline-none font-bold"
