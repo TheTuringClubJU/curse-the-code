@@ -123,10 +123,28 @@ export function buildBasement(E) {
   solid(3.75, 4.95, 0.1, 0.9);
   // 4. Wooden crates and storage barrels
   solid(-3.77, -2.21, -3.55, -2.0);
-  // 5. Staircase base wedge (prevents clipping inside concrete stair foundation)
-  solid(13.5, 19.0, -3.8, 3.8);
+  // 5. East boundary: exit door, doorframe wall partition, and staircase structure
+  solid(12.2, 19.0, -3.8, 3.8);
   // 6. Far west chamber boundary
   solid(-19.0, -14.8, -3.8, 3.8);
+
+  // Dedicated Containment Door interaction target (matches door portal at X=12.35, Z=[-2.4, -0.9])
+  const doorTarget = new THREE.Mesh(
+    new THREE.BoxGeometry(0.25, 2.4, 1.6),
+    new THREE.MeshBasicMaterial({ visible: false })
+  );
+  doorTarget.position.set(12.35, 1.2, -1.65);
+  doorTarget.userData.id = 'room_door';
+  add(doorTarget);
+
+  // Dedicated Storage Crates fail-safe interaction volume (Cube030_Wood_0 bounds)
+  const cratesHitBox = new THREE.Mesh(
+    new THREE.BoxGeometry(1.6, 2.0, 1.6),
+    new THREE.MeshBasicMaterial({ visible: false })
+  );
+  cratesHitBox.position.set(-2.99, 0.95, -2.77);
+  cratesHitBox.userData.id = 'barrels';
+  add(cratesHitBox);
 
   // Authentic Survival-Horror Palettes: Aged Iron, Tarnished Steel, Oxidized Red, Phosphor Green
   const darkSteel = mat({ c: 0x16181c, m: 0.55, r: 0.65 });
@@ -209,16 +227,16 @@ export function buildBasement(E) {
             delete child.userData.np;
             child.userData.id = 'pipes';
           }
-          // Tag built-in storage boxes / crates in basement.glb
-          else if (name.includes('box') || name.includes('wood') || name.includes('barrel') || name.includes('crate')) {
+          // Tag built-in storage boxes / crates in basement.glb (exclude giant room occluder Cube022)
+          else if ((name.includes('wood') || name.includes('crate') || name.includes('barrel')) && !name.includes('cube022')) {
             delete child.userData.np;
             child.userData.id = 'barrels';
           }
         }
       });
 
-      S.add(basementGlbScene);
-      S.remove(fallbackRoom); // Remove procedural backup shell
+      add(basementGlbScene);
+      E.retire?.(fallbackRoom); // Remove procedural backup shell completely from pick and scene
       E.bakeShadows?.();
     })
     .catch((err) => {
@@ -229,6 +247,16 @@ export function buildBasement(E) {
   // 3. OBJECT: FLOOR SEAL (XK01 Decoy) — Subterranean Vault Hatch
   // Center floor focal point foreshadowing Round 2 ("What Was Sealed Below")
   // --------------------------------------------------------------------------
+  // Dedicated ritual circle floor target disc (2.6m diameter) ensures aiming anywhere
+  // inside the circle/bones reliably picks floor_seal without rays falling through bone gaps.
+  const sealHitDisc = new THREE.Mesh(
+    new THREE.CylinderGeometry(1.3, 1.3, 0.12, 32),
+    new THREE.MeshBasicMaterial({ visible: false })
+  );
+  sealHitDisc.position.set(0, 0.04, 0);
+  sealHitDisc.userData.id = 'floor_seal';
+  add(sealHitDisc);
+
   const floorSealProc = new THREE.Group();
   floorSealProc.position.set(0, 0.02, 0);
   floorSealProc.add(cylinder(1.0, 1.0, 0.04, 32, agedIron, 0, 0.02, 0));
@@ -248,7 +276,7 @@ export function buildBasement(E) {
       sealGLB.position.set(0, 0.015, 0);
       interact(sealGLB, 'floor_seal');
       add(sealGLB);
-      S.remove(floorSealProc);
+      E.retire?.(floorSealProc);
     })
     .catch((err) => {
       console.warn('[BASEMENT] floor_seal.glb failed; using procedural hatch', err);
@@ -278,9 +306,29 @@ export function buildBasement(E) {
       gradeModel(consoleGLB);
       consoleGLB.scale.set(1.05, 1.05, 1.05);
       consoleGLB.position.set(consoleX, 0, consoleGlbZ);
-      interact(consoleGLB, 'containment_console');
+      // Only tag actual workstation surfaces, CRT screens, dials, and control panels.
+      // Exclude cabin walls, linoleum floor, decals, and lower base plates so downward raycasts
+      // towards the floor or floor seal never pick containment_console.
+      consoleGLB.traverse((child) => {
+        if (child.isMesh) {
+          const name = child.name || '';
+          const isBaseOrCabin = name.startsWith('Cabin_') ||
+                                name.startsWith('UnderConsole_') ||
+                                name.includes('Decals_M_Decals') ||
+                                name.includes('Linoleum') ||
+                                name.includes('MetalPainted_DarkBlue') ||
+                                name.includes('Hatch_Left');
+          if (isBaseOrCabin) {
+            child.userData.np = 1;
+            delete child.userData.id;
+          } else {
+            delete child.userData.np;
+            child.userData.id = 'containment_console';
+          }
+        }
+      });
       add(consoleGLB);
-      S.remove(consoleProc);
+      E.retire?.(consoleProc);
     })
     .catch((err) => {
       console.warn('[BASEMENT] containment_console.glb failed; using procedural console', err);
@@ -311,7 +359,7 @@ export function buildBasement(E) {
       rackGLB.rotation.y = Math.PI / 2;
       interact(rackGLB, 'server_rack');
       add(rackGLB);
-      S.remove(rackProc);
+      E.retire?.(rackProc);
     })
     .catch((err) => {
       console.warn('[BASEMENT] server_rack.glb failed; using procedural rack', err);
@@ -360,7 +408,7 @@ export function buildBasement(E) {
       intercomGLB.rotation.y = 0; // facing forward into the room
       interact(intercomGLB, 'intercom');
       add(intercomGLB);
-      S.remove(intercomProc);
+      E.retire?.(intercomProc);
     })
     .catch((err) => {
       console.warn('[BASEMENT] intercom.glb failed; using procedural intercom', err);
@@ -393,7 +441,7 @@ export function buildBasement(E) {
       toolboxGLB.rotation.y = 0.35;
       interact(toolboxGLB, 'toolbox');
       add(toolboxGLB);
-      S.remove(toolboxProc);
+      E.retire?.(toolboxProc);
     })
     .catch((err) => {
       console.warn('[BASEMENT] toolbox.glb failed; using procedural toolbox', err);
