@@ -415,7 +415,7 @@ export default function ManualDiffModal({
               value={answer}
               onChange={(e) => setAnswer(e.target.value)}
               disabled={clue.solved || isExhausted || isSubmitting}
-              placeholder={field.placeholder || 'Enter tampered step digits (e.g. 26)'}
+              placeholder={field.placeholder || 'Enter tampered step digits (e.g. 13)'}
               aria-label={field.label || 'Tampered steps'}
               className="w-full px-4 py-2.5 rounded-[2px] bg-[#090706] border border-[#5c4529] focus:border-[#d8b26e] outline-none font-re-typewriter text-sm tracking-[0.14em] text-[#f5e7cf] placeholder:text-[#665947]"
             />

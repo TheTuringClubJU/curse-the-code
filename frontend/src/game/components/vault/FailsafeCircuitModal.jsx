@@ -636,7 +636,7 @@ export default function FailsafeCircuitModal({
               value={answer}
               onChange={(e) => setAnswer(e.target.value)}
               disabled={clue.solved || isExhausted || isSubmitting}
-              placeholder={stage.fields?.[0]?.placeholder || `Current lamp code: ${evalResult.code}`}
+              placeholder={stage.fields?.[0]?.placeholder || '4-DIGIT CODE'}
               aria-label={stage.fields?.[0]?.label || 'Authorization code'}
               className="w-full px-4 py-2.5 rounded-xl bg-[#090705] border border-[#523d24] focus:border-[#f59e0b] outline-none font-re-typewriter text-sm tracking-[0.26em] text-[#fef3c7]"
             />

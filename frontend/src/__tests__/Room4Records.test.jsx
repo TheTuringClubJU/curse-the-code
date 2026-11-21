@@ -740,7 +740,7 @@ describe('Room 4 (The Rotting Archive) Comprehensive Test Suite (QA-R4-FE-01 to 
       );
     });
 
-    const input = screen.getByPlaceholderText('2001-02-10');
+    const input = screen.getByPlaceholderText(/YYYY-MM-DD|2001-02-10/);
     fireEvent.keyDown(input, { key: 'f', code: 'KeyF' });
     expect(mockAudioInstance.click).not.toHaveBeenCalled();
   });
@@ -836,7 +836,7 @@ describe('Room 4 (The Rotting Archive) Comprehensive Test Suite (QA-R4-FE-01 to 
       );
     });
 
-    const input = screen.getByPlaceholderText('PLANET');
+    const input = screen.getByPlaceholderText(/ENTER KEYWORD|PLANET/);
     fireEvent.change(input, { target: { value: 'planet' } });
     expect(input.value).toBe('PLANET');
   });
