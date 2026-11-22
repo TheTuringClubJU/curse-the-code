@@ -20,6 +20,20 @@ export default function RedactedReportModal({
   const [dateInput, setDateInput] = useState('');
   const [wordInput, setWordInput] = useState('');
   const [submitFeedback, setSubmitFeedback] = useState(null);
+  const onCloseRef = React.useRef(onClose);
+  onCloseRef.current = onClose;
+
+  React.useEffect(() => {
+    if (!isOpen) return undefined;
+    const onKey = (e) => {
+      if (e.key === 'Escape') {
+        e.stopPropagation();
+        onCloseRef.current?.();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [isOpen]);
 
   const payload = clue.payload || {};
   const copies = payload.copies || [];

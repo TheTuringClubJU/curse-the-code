@@ -1,12 +1,29 @@
 import {DoubleSide} from 'three';
+
+function readLowDetailPref(queryParam, storageKey, defaultLow = false) {
+ const query = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+ if (query?.has(queryParam)) return query.get(queryParam) === 'low';
+ try {
+  const saved = localStorage.getItem(storageKey);
+  if (saved === 'low') return true;
+  if (saved === 'balanced') return false;
+ } catch { /* query still selects the mode */ }
+ return Boolean(defaultLow);
+}
+
 // Room-owned preferences; other rooms keep their existing renderer and assets.
 export function isStudyLowDetail(){
- const query=new URLSearchParams(window.location.search);
- if(query.has('studyQuality'))return query.get('studyQuality')==='low';
- try{return localStorage.getItem('ctc.study.quality')==='low';}catch{return false;}
+ return readLowDetailPref('studyQuality', 'ctc.study.quality', false);
 }
 export function studyQualityUrl(low){const url=new URL(window.location.href);url.searchParams.set('studyQuality',low?'low':'balanced');return url.href;}
 export function rememberStudyQuality(low){try{localStorage.setItem('ctc.study.quality',low?'low':'balanced');}catch{/* query still selects the mode */}}
+
+export function isBedroomLowDetail(){
+ const hwCores = typeof navigator !== 'undefined' && Number(navigator.hardwareConcurrency) > 0 ? Number(navigator.hardwareConcurrency) : 8;
+ const devMem = typeof navigator !== 'undefined' && Number(navigator.deviceMemory) > 0 ? Number(navigator.deviceMemory) : 8;
+ return readLowDetailPref('bedroomQuality', 'ctc.bedroom.quality', hwCores <= 4 || devMem <= 4);
+}
+export function rememberBedroomQuality(low){try{localStorage.setItem('ctc.bedroom.quality',low?'low':'balanced');}catch{/* ignore storage failures */}}
 
 // A single transmissive lens forces Three.js to redraw the entire room into a
 // multisampled refraction buffer every frame. Tinted alpha is sufficient here.

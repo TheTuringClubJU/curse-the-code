@@ -81,4 +81,27 @@ describe('Lobby Component', () => {
       expect(screen.getByText(/Results are being finalised by the curators/i)).toBeInTheDocument();
     });
   });
+
+  it('renders elimination state when Round 2 is live and team is not qualified', async () => {
+    global.fetch = vi.fn().mockImplementation(() =>
+      Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({
+          ok: true,
+          current_round: 2,
+          round_status: 'live',
+          round_title: 'The Archive',
+          round_subtitle: 'Round 2',
+          is_qualified_r2: false
+        })
+      })
+    );
+
+    render(<Lobby team={mockTeam} onLogout={vi.fn()} />);
+
+    await waitFor(() => {
+      expect(screen.getByText(/Your investigation ends at Hollow House/i)).toBeInTheDocument();
+      expect(screen.getByText(/NOT QUALIFIED FOR ROUND 2/i)).toBeInTheDocument();
+    });
+  });
 });

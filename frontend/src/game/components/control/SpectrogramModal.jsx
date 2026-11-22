@@ -221,24 +221,35 @@ export default function SpectrogramModal({ isOpen, onClose, onSubmit, clueState 
     return () => clearInterval(id);
   }, []);
 
-  // Reset on open & close on Escape
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+  const prevOpenRef = useRef(false);
+
+  // Reset state strictly once when modal opens (never on background sync re-renders)
+  useEffect(() => {
+    if (isOpen && !prevOpenRef.current) {
+      setVmTab('VM-A');
+      setBand('MID');
+      setScrubPos(0);
+      setInputValue('');
+      setErrorMsg('');
+      setSubmitted(false);
+    }
+    prevOpenRef.current = Boolean(isOpen);
+  }, [isOpen]);
+
+  // Close on Escape
   useEffect(() => {
     if (!isOpen) return undefined;
-    setVmTab('VM-A');
-    setBand('MID');
-    setScrubPos(0);
-    setInputValue('');
-    setErrorMsg('');
-    setSubmitted(false);
     const onKey = (e) => {
       if (e.key === 'Escape') {
         e.stopPropagation();
-        onClose();
+        onCloseRef.current?.();
       }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [isOpen, onClose]);
+  }, [isOpen]);
 
   // Redraw canvas when params change
   useEffect(() => {
