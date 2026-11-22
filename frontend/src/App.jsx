@@ -25,6 +25,7 @@ export default function App() {
   const [currentRoom, setCurrentRoom] = useState('bedroom');
   const [inRoom5, setInRoom5] = useState(false);
   const [round2VaultUnlocked, setRound2VaultUnlocked] = useState(false);
+  const [isQualifiedR2, setIsQualifiedR2] = useState(false);
 
   const changeRoom = (newRoom) => {
     localStorage.setItem('ctc_current_room', newRoom);
@@ -135,7 +136,7 @@ export default function App() {
 
   // Live synchronization of Round 2 room progression (Room 4 -> Room 5 -> Room 6) across teammates
   useEffect(() => {
-    if (!team || isAdminRoute || roundStatus !== 'live' || currentRoundNum !== 2) return;
+    if (!team || isAdminRoute || roundStatus !== 'live' || currentRoundNum !== 2 || !isQualifiedR2) return;
     let cancelled = false;
     const token = localStorage.getItem('ctc_token') || '';
     const headers = token ? { 'x-session-token': token } : {};
@@ -200,6 +201,7 @@ export default function App() {
           if (isMounted) {
             setRoundStatus(data.round_status || 'pending');
             setCurrentRoundNum(data.current_round || 1);
+            setIsQualifiedR2(data.is_qualified_r2 !== undefined ? Boolean(data.is_qualified_r2) : true);
           }
         } else {
           if (isMounted) setRoundStatus((prev) => prev || 'pending');
@@ -224,6 +226,7 @@ export default function App() {
     setRoundStatus(null);
     setCurrentRoom('bedroom');
     setInRoom5(false);
+    setIsQualifiedR2(false);
     setTeam(authenticatedTeam);
   };
 
@@ -234,6 +237,7 @@ export default function App() {
     setRoundStatus(null);
     setCurrentRoom('bedroom');
     setInRoom5(false);
+    setIsQualifiedR2(false);
   };
 
   const handleAdminLogout = async () => {
@@ -315,6 +319,9 @@ export default function App() {
 
   // When Round 2 is live, display Room 4 (The Rotting Archive), Room 5 (The Surveillance Morgue), or Room 6 (The Anointing Vault)
   if (roundStatus === 'live' && currentRoundNum === 2) {
+    if (!isQualifiedR2) {
+      return <Lobby team={team} onLogout={handleLogout} />;
+    }
     if (currentRoom === 'vault' && round2VaultUnlocked) {
       return <Room6Vault team={team} onLogout={handleLogout} />;
     }

@@ -237,6 +237,13 @@ def get_hint_status(team_id: int, room_id: Optional[str] = None) -> Dict[str, An
                     live_r = cur.fetchone()
                     target_round = live_r["round"] if live_r else 1
 
+            if target_round == 2:
+                cur.execute("SELECT 1 FROM team_rounds WHERE team_id = %s AND round = 2", (team_id,))
+                if not cur.fetchone():
+                    if room_id and room_id in ("records", "control", "vault"):
+                        raise HTTPException(status_code=403, detail="Access denied: Your team has not qualified for Round 2.")
+                    target_round = 1
+
             budget = ROUND_HINT_BUDGET.get(target_round, DEFAULT_ROUND_HINT_BUDGET)
 
             cur.execute(
@@ -313,6 +320,11 @@ def request_hint(
                 raise HTTPException(400, f"Invalid room_id '{room_id}'")
 
             round_num = ROOM_TO_ROUND.get(room_id, 1)
+            if round_num == 2 or room_id in ("records", "control", "vault"):
+                cur.execute("SELECT 1 FROM team_rounds WHERE team_id = %s AND round = 2", (team_id,))
+                if not cur.fetchone():
+                    raise HTTPException(status_code=403, detail="Access denied: Your team has not qualified for Round 2.")
+
             budget = ROUND_HINT_BUDGET.get(round_num, DEFAULT_ROUND_HINT_BUDGET)
 
             # 2. Check if the specific target_id requested is ALREADY unlocked

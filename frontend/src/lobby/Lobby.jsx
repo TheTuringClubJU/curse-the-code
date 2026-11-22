@@ -94,28 +94,45 @@ export default function Lobby({ team, onLogout }) {
   }, []);
 
   const isRound2 = lobbyState.current_round === 2;
+  const isRound2Eliminated = isRound2 && !lobbyState.is_qualified_r2 && (lobbyState.round_status === 'live' || lobbyState.round_status === 'completed');
 
   // Theming configuration
-  const theme = isRound2 ? {
-    accentColor: '#8f7bff',
-    accentText: 'text-[#8f7bff]',
-    glowClass: 'purple-glow',
-    subtitle: 'RECORDS ARCHIVE • TRANSMISSION STANDBY',
-    tag: 'ROUND 2 INTERMISSION',
-    primaryMsg: 'Results are being finalised by the curators.',
-    secondaryMsg: lobbyState.is_qualified_r2 
-      ? 'Your team is shortlisted. Stand by for archive decryption clearance.' 
-      : 'Reviewing clue submissions and qualification cutoff...',
-    statusPill: 'FINALISING ARCHIVE RESULTS'
-  } : {
-    accentColor: '#ff7a1a',
-    accentText: 'text-[#ff7a1a]',
-    glowClass: 'pumpkin-glow',
-    subtitle: 'HOLLOW HOUSE • MIDNIGHT GATEWAY',
-    tag: 'ROUND 1 • PRE-EVENT GATHERING',
-    primaryMsg: 'Waiting for the organisers to start Round 1',
-    secondaryMsg: 'The front iron gates remain bolted. Study your team and prepare your minds.',
-    statusPill: 'ORGANISERS PREPARING THE GATES'
+  let theme;
+  if (isRound2Eliminated) {
+    theme = {
+      accentColor: '#ef4444',
+      accentText: 'text-red-400',
+      glowClass: 'shadow-[0_0_30px_rgba(239,68,68,0.25)]',
+      subtitle: 'SUB-STATION DELTA • RESTRICTED ACCESS',
+      tag: 'INVESTIGATION CONCLUDED',
+      primaryMsg: 'Your investigation ends at Hollow House.',
+      secondaryMsg: 'Your team did not meet the qualification threshold for Round 2. Thank you for participating in Curse the Code.',
+      statusPill: 'NOT QUALIFIED FOR ROUND 2'
+    };
+  } else if (isRound2) {
+    theme = {
+      accentColor: '#8f7bff',
+      accentText: 'text-[#8f7bff]',
+      glowClass: 'purple-glow',
+      subtitle: 'RECORDS ARCHIVE • TRANSMISSION STANDBY',
+      tag: 'ROUND 2 INTERMISSION',
+      primaryMsg: 'Results are being finalised by the curators.',
+      secondaryMsg: lobbyState.is_qualified_r2 
+        ? 'Your team is shortlisted. Stand by for archive decryption clearance.' 
+        : 'Reviewing clue submissions and qualification cutoff...',
+      statusPill: 'FINALISING ARCHIVE RESULTS'
+    };
+  } else {
+    theme = {
+      accentColor: '#ff7a1a',
+      accentText: 'text-[#ff7a1a]',
+      glowClass: 'pumpkin-glow',
+      subtitle: 'HOLLOW HOUSE • MIDNIGHT GATEWAY',
+      tag: 'ROUND 1 • PRE-EVENT GATHERING',
+      primaryMsg: 'Waiting for the organisers to start Round 1',
+      secondaryMsg: 'The front iron gates remain bolted. Study your team and prepare your minds.',
+      statusPill: 'ORGANISERS PREPARING THE GATES'
+    };
   };
 
   return (
@@ -233,13 +250,13 @@ export default function Lobby({ team, onLogout }) {
 
           {/* Pulsing Status Pill */}
           <div className="mb-4 px-3.5 py-1.5 rounded-lg bg-[#140e21] border border-[#3a2a55] text-xs tracking-widest uppercase flex items-center gap-2 text-gray-300">
-            <span className={`w-2 h-2 rounded-full ${isRound2 ? 'bg-[#8f7bff]' : 'bg-[#ff7a1a]'} animate-ping`} />
+            <span className={`w-2 h-2 rounded-full ${isRound2Eliminated ? 'bg-red-500' : isRound2 ? 'bg-[#8f7bff]' : 'bg-[#ff7a1a]'} animate-ping`} />
             <span>{theme.statusPill}</span>
           </div>
 
           {/* Primary & Secondary Atmospheric Waiting Messages */}
           <div className="space-y-2 max-w-md">
-            <p className="text-base sm:text-lg text-[#ff7a1a] font-elite">
+            <p className={`text-base sm:text-lg ${isRound2Eliminated ? 'text-red-400' : 'text-[#ff7a1a]'} font-elite`}>
               {theme.primaryMsg}
             </p>
             <p className="text-xs sm:text-sm text-gray-400 leading-relaxed font-mono">

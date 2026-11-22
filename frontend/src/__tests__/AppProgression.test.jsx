@@ -67,3 +67,14 @@ it('keeps Round 2 routing even at the former Study URL', async () => {
   expect(await screen.findByText('Archive room')).toBeInTheDocument();
   expect(screen.queryByText('Study room')).toBeNull();
 });
+it('blocks non-qualified teams from entering Round 2 rooms and keeps them in Lobby', async () => {
+  state.current_round=2;state.round_status='live';state.is_qualified_r2=false;
+  window.history.replaceState({},'','/');render(<App/>);
+  expect(await screen.findByText('Waiting lobby')).toBeInTheDocument();
+  expect(screen.queryByText('Archive room')).toBeNull();
+});
+it('allows qualified teams to enter Round 2 rooms when Round 2 is live', async () => {
+  state.current_round=2;state.round_status='live';state.is_qualified_r2=true;
+  window.history.replaceState({},'','/');render(<App/>);
+  expect(await screen.findByText('Archive room')).toBeInTheDocument();
+});
