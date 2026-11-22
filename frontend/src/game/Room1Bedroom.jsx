@@ -52,6 +52,8 @@ export default function Room1Bedroom({ team, onLogout, onTransitionToRoom2 }) {
     isHintOpen ||
     isRoomCompleteModalOpen
   );
+  const isAnyModalOpenRef = useRef(isAnyModalOpen);
+  isAnyModalOpenRef.current = isAnyModalOpen;
 
   // Suspend 3D render loop when any modal is open (matching Room 2 Study zero-lag behavior)
   useEffect(() => {
@@ -213,6 +215,7 @@ export default function Room1Bedroom({ team, onLogout, onTransitionToRoom2 }) {
   useEffect(() => {
     fetchRoomState();
     const interval = setInterval(() => {
+      if (isAnyModalOpenRef.current || document.hidden) return;
       fetchRoomState(true);
     }, 2000);
     return () => clearInterval(interval);
@@ -641,7 +644,7 @@ export default function Room1Bedroom({ team, onLogout, onTransitionToRoom2 }) {
                     : 'border-[#3b2a59] text-[#a292cc] hover:text-[#ff9f5a]'
                 }`}
               >
-                Low (Potato PCs)
+                Performance
               </button>
             </div>
 
@@ -727,9 +730,9 @@ export default function Room1Bedroom({ team, onLogout, onTransitionToRoom2 }) {
                     ? 'bg-[#ff7a1a]/30 text-[#ffd8bc] font-bold border border-[#ff7a1a]/60'
                     : 'text-[#a292cc] hover:text-[#ff9f5a]'
                 }`}
-                title="Low detail mode for older / low-spec PCs"
+                title="Performance mode for smoother rendering on lower-spec hardware"
               >
-                Low (Potato PCs)
+                Performance
               </button>
             </div>
           }

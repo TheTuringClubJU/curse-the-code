@@ -414,6 +414,7 @@ export function createEngine(el, room, h) {
   const loop = now => {
     if (halt) return;
     raf = requestAnimationFrame(loop);
+    if (uiPaused) return;
     let dt, frameMs;
     if (room.id === 'control') {
       if (E._paused && now - lastPausedRender < 80) return;

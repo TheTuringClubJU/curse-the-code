@@ -125,8 +125,6 @@ export default function HintModal({
           hintStatusRef.current = next;
           return next;
         });
-        // Silent sync in background without blocking UI
-        fetchStatus({ silent: true });
       } else {
         setErrorMsg(data.detail?.message || data.detail || 'Unable to dispatch hint at this time.');
       }
@@ -140,6 +138,9 @@ export default function HintModal({
   const remaining = hintStatus?.hints_remaining ?? 15;
   const totalPenalty = hintStatus?.total_penalty_seconds ?? 0;
   const unlockedHints = hintStatus?.unlocked_hints || [];
+  const archiveHints = unlockedHints.filter(
+    (h) => !latestHint || h.target_id !== latestHint.target_id
+  );
 
   const ui = isControlRoom
     ? {
@@ -454,13 +455,13 @@ export default function HintModal({
               <div className="text-center py-6 text-xs font-mono text-gray-500">
                 Loading hint archives...
               </div>
-            ) : unlockedHints.length === 0 ? (
+            ) : archiveHints.length === 0 ? (
               <div className={ui.emptyArchiveClass}>
-                No hints unlocked yet. Solve cleanly to claim full 100 points!
+                {latestHint ? 'Prior hints will archive here upon unlocking new clues.' : 'No hints unlocked yet. Solve cleanly to claim full 100 points!'}
               </div>
             ) : (
               <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
-                {unlockedHints.map((hint, idx) => (
+                {archiveHints.map((hint, idx) => (
                   <div
                     key={hint.id || idx}
                     className={ui.historyCardClass}
