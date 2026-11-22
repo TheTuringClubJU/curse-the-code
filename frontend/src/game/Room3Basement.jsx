@@ -88,9 +88,21 @@ export default function Room3Basement({ team, onLogout, onProceedToLobby, onProc
       const res = await fetch('/api/game/room/basement', { credentials:'include', headers:{'x-session-token':localStorage.getItem('ctc_token')||''} });
       if(res.ok){
         const data=await res.json();
+        const prevData = roomDataRef.current;
         const mappedData = { ...data, evidence: mapBasementEvidence(data.evidence) };
         setRoomData(mappedData);
         roomDataRef.current=mappedData;
+
+        // Live Teammate Hint Sync detection
+        if (prevData && data.hint_sync) {
+          const prevUsed = Number(prevData.hint_sync?.hints_used || 0);
+          const nextUsed = Number(data.hint_sync.hints_used || 0);
+          if (nextUsed > prevUsed) {
+            const target = data.hint_sync.latest_target_id || 'this chamber';
+            showNotification(`Teammate unlocked a hint (${target}). Press H to view!`);
+          }
+        }
+
         if(data.is_completed) engineRef.current?.openDoor?.();
       }
       else if ([401,403,404,429,500].includes(res.status)) return;

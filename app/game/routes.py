@@ -119,8 +119,13 @@ def get_room_state(room_id: str, request: Request):
 
             # Lightweight hint sync state for live teammate detection
             cur.execute(
-                "SELECT COUNT(*) as hints_used, MAX(target_id) as latest_target_id FROM team_hints WHERE team_id = %s AND round = %s",
-                (team["id"], target_room.get("round", 1))
+                """
+                SELECT COUNT(*) as hints_used,
+                       (SELECT target_id FROM team_hints WHERE team_id = %s AND round = %s ORDER BY id DESC LIMIT 1) as latest_target_id
+                FROM team_hints
+                WHERE team_id = %s AND round = %s
+                """,
+                (team["id"], target_room.get("round", 1), team["id"], target_room.get("round", 1))
             )
             hint_row = cur.fetchone()
             hint_sync = {

@@ -41,6 +41,7 @@ export default function Room6Vault({ team, onLogout }) {
   const crackTimerRef = useRef(null);
   const lastApiRemRef = useRef(null);
   const localRemRef = useRef(null);
+  const roomDataRef = useRef(null);
 
   const [roomData, setRoomData] = useState({
     room_id: 'vault',
@@ -127,14 +128,29 @@ export default function Room6Vault({ team, onLogout }) {
       });
       if (!res.ok) return null;
       const data = await res.json();
+      const prevData = roomDataRef.current;
       const clues = Array.isArray(data.clues) ? data.clues : [];
       cluesRef.current = clues;
-      setRoomData({
+      const nextRoomData = {
         room_id: data.room_id || 'vault',
         title: data.title || 'The Anointing Vault',
         clues,
         is_completed: Boolean(data.is_completed),
-      });
+        hint_sync: data.hint_sync,
+      };
+      setRoomData(nextRoomData);
+      roomDataRef.current = nextRoomData;
+
+      // Live Teammate Hint Sync detection
+      if (prevData && data.hint_sync) {
+        const prevUsed = Number(prevData.hint_sync?.hints_used || 0);
+        const nextUsed = Number(data.hint_sync.hints_used || 0);
+        if (nextUsed > prevUsed) {
+          const target = data.hint_sync.latest_target_id || 'this chamber';
+          showNotice(`Teammate unlocked a hint (${target}). Press H to view!`);
+          audioRef.current?.click?.();
+        }
+      }
 
       if (data.is_completed) {
         vaultRestoredRef.current = true;
