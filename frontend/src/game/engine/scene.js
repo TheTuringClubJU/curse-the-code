@@ -126,7 +126,7 @@ export function buildBedroom(E) {
         vis.add(rb(1.84, .21, 2.64, .06, mat({ map: TX.sheet2(), r: .95 }), 0, .58, 0))
         vis.add(mk(drapeGeo(1.84, 1.95, .38, 3), mat({ map: TX.quilt(), r: .98, side: THREE.DoubleSide }), 0, .7, .42))
         g.add(trackVisual(vis))
-        g.add(hitbox(2.1, 1.1, 3.0, 0, 0.55, 0))
+        g.add(hitbox(2.1, 0.72, 3.0, 0, 0.36, 0))
         interact(g, 'bed'); add(g); solid(-0.22, 1.85, -2.90, 0.12)
 
         // Pillow (EB08) at head of GLB bed - plush Victorian silk bed pillows (NEVER hidden on GLB load)
@@ -165,7 +165,7 @@ export function buildBedroom(E) {
         dg.add(rb(.5, .03, .34, .006, lc, 0, 0, 0, 2), mk(new THREE.BoxGeometry(.012, .034, .34), mat({ map: TX.leather('red'), r: .65 }), 0, .003, 0))
             ;[[-1, L], [1, R2]].forEach(([s, t]) => { const p = mk(new THREE.PlaneGeometry(.225, .315), mat({ map: t, r: .95 }), s * .118, .0285, 0, -Math.PI / 2, 0, -s * .05); dg.add(p); dg.add(mk(new THREE.BoxGeometry(.225, .014, .315), mat({ color: 0xcfc4a6, r: 1 }), s * .118, .02, 0, 0, 0, -s * .05)) })
         dg.add(mk(new THREE.BoxGeometry(.012, .002, .3), mat({ color: 0x7a1212, r: .6 }), .01, .034, .02))
-        dg.add(hitbox(0.55, 0.25, 0.45, 0, 0.05, 0))
+        dg.add(hitbox(0.60, 0.35, 0.50, 0, 0.15, 0))
         interact(dg, 'diary'); add(dg)
     }
 
