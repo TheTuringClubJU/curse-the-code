@@ -3,9 +3,9 @@ const boxes = [];
 export default {
   id: 'basement',
   title: 'The Basement',
-  size: [38, 3.8, 7.4],
+  size: [8.4, 3.4, 10.0],
   boundaryInset: 0,
-  spawn: [0.8, 1.6, 2.4, 0],
+  spawn: [0, 1.6, 3.8, 0],
   haunted: false,
   theme: {
     bg: '#14161a',
@@ -20,8 +20,8 @@ export default {
   window: null,
   audio: {
     tick: false,
-    every: [3600, 3600],
-    whisperCooldown: 3600,
+    every: [12, 22],
+    whisperCooldown: 30,
     voices: []
   },
   interact: {
@@ -35,8 +35,11 @@ export default {
     wall_monitor: { label: 'Read Quarantine Monitor' },
     fuse_box: { label: 'Check Breaker Fuse Box' },
     pipes: { label: 'Inspect Overhead Pipes' },
-    barrels: { label: 'Search Storage Crates' },
-    room_door: { label: 'Operate Containment Door' }
+    barrels: { label: 'Search Storage Barrels' },
+    room_door: { label: 'Operate Containment Door' },
+    flavor_valve: { label: 'Turn Steam Pressure Valve' },
+    flavor_breaker: { label: 'Throw Emergency Knife Switch' },
+    flavor_grate: { label: 'Peer Into Drainage Grate' }
   },
   boxes
 };
