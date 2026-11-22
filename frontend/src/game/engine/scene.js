@@ -1,4 +1,4 @@
-// Haunted bedroom: GLB shell integration (abandoned_mansion_bedroom.glb) + aligned interactive props, collisions & procedural fallbacks.
+// Haunted bedroom: GLB shell integration (abandoned_mansion_bedroom.glb) + clean story props, dark atmosphere & aligned collisions.
 import {THREE,X,TX,RoundedBoxGeometry,mat,wm,lathe,bgeo,curtainGeo,tube,drapeGeo} from './kit.js'
 import {GLTFLoader} from 'three/examples/jsm/loaders/GLTFLoader.js'
 import {MeshoptDecoder} from 'three/examples/jsm/libs/meshopt_decoder.module.js'
@@ -12,6 +12,16 @@ const hitbox=(w,h,d,x=0,y=0,z=0)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(
 
 export function buildBedroom(E){
  const {S,add,solid,anim,interact,W,H,D,win,ref}=E
+ // Enforce dark horror atmosphere across engine base lighting and fog
+ if(S){
+  S.background=new THREE.Color(0x05030a)
+  S.fog=new THREE.FogExp2(0x05030a,0.075)
+  S.traverse((o)=>{
+   if(o.isHemisphereLight)o.intensity=0.20
+   if(o.isDirectionalLight)o.intensity=0.38
+  })
+ }
+
  // Snapshot procedural room shell created in engine.js so it can be hidden once GLB shell loads
  const procShell=S?S.children.filter(o=>o.isMesh):[]
  const procFurnitureVisuals=[]
@@ -44,16 +54,16 @@ export function buildBedroom(E){
   pilGrp.add(hitbox(1.7,0.45,0.95,0,0.05,0))
   interact(pilGrp,'pillow');add(pilGrp)
 
-  // Diary (R1-01 - Clue 1) kept visible on top of the GLB bed mattress
-  const dg=grp(0.85,0.84,-0.95,.2),lc=mat({map:TX.leather('red'),r:.7}),L=X.tex(X.paperPage(['Dad has been sleeping at his desk.'],'Test day 1')),R2=X.tex(X.paperPage(['Rex turned 5 today. This is test page two.'],'Test day 2'))
-  dg.add(rb(.5,.03,.34,.006,lc,0,0,0,2),mk(new THREE.BoxGeometry(.012,.034,.34),mat({map:TX.leather('red'),r:.6}),0,.003,0))
+  // Diary (R1-01 - Clue 1) lying flat on center of GLB bed mattress
+  const dg=grp(0.82,0.82,-1.25,.25),lc=mat({map:TX.leather('red'),r:.75}),L=X.tex(X.paperPage(['Dad has been sleeping at his desk.'],'Test day 1')),R2=X.tex(X.paperPage(['Rex turned 5 today. This is test page two.'],'Test day 2'))
+  dg.add(rb(.5,.03,.34,.006,lc,0,0,0,2),mk(new THREE.BoxGeometry(.012,.034,.34),mat({map:TX.leather('red'),r:.65}),0,.003,0))
   ;[[-1,L],[1,R2]].forEach(([s,t])=>{const p=mk(new THREE.PlaneGeometry(.225,.315),mat({map:t,r:.95}),s*.118,.0285,0,-Math.PI/2,0,-s*.05);dg.add(p);dg.add(mk(new THREE.BoxGeometry(.225,.014,.315),mat({color:0xcfc4a6,r:1}),s*.118,.02,0,0,0,-s*.05))})
   dg.add(mk(new THREE.BoxGeometry(.012,.002,.3),mat({color:0x7a1212,r:.6}),.01,.034,.02))
   dg.add(hitbox(0.55,0.25,0.45,0,0.05,0))
   interact(dg,'diary');add(dg)
  }
 
- // 2. Nightstand (GLB bedside table left of bed at (-0.85, 0, -2.45)) + musicbox + candle + photo_frame on top
+ // 2. Nightstand (GLB bedside table left of bed at (-0.85, 0, -2.45)) + musicbox, candle, photo_frame & GLB lamp
  {const g=grp(-0.85,0,-2.45)
   const vis=new THREE.Group()
   ;[[-.28,-.19],[.28,-.19],[-.28,.19],[.28,.19]].forEach(p=>vis.add(bx(.05,.14,.05,dark,p[0],.07,p[1],{vert:true})))
@@ -63,36 +73,45 @@ export function buildBedroom(E){
   g.add(hitbox(1.0,1.1,0.9,0,0.55,0))
   interact(g,'nightstand');add(g);solid(-1.35,-0.33,-2.92,-1.98)
 
-  // Music box (EB07) visible on top of GLB nightstand
-  const mb=grp(-0.82,1.09,-2.42,.12),bw=mat({map:TX.wood('ebony'),bump:TX.wood('ebony'),bs:.5,r:.5,c:0x9a7060})
-  mb.add(rb(.3,.1,.2,.012,bw,0,.05,0,3),bx(.31,.012,.21,gold,0,.099,0),bx(.31,.012,.21,gold,0,.004,0))
-  mb.add(mk(new THREE.PlaneGeometry(.27,.17),mat({color:0x5a0f1a,r:1}),0,.1005,0,-Math.PI/2,0,0))
-  const lid=grp(0,.1,-.1);lid.add(rb(.3,.022,.2,.008,bw,0,0,.1,2),bx(.31,.01,.21,gold,0,.012,.1));lid.rotation.x=-1.75;mb.add(lid)
-  mb.add(mk(new THREE.CylinderGeometry(.045,.05,.022,20),brass,.0,.112,.0),bx(.15,.006,.012,gold,-.05,.108,.06))
-  const bl=grp(0,.125,0);bl.add(mk(new THREE.CylinderGeometry(.006,.006,.05,8),brass,0,.025,0));const bd=lathe([[.0,0],[.018,.02],[.01,.07],[.012,.1],[0,.11]],12);bl.add(mk(bd,mat({color:0xe6dccd,r:.35}),0,.01,0))
-  bl.add(mk(new THREE.SphereGeometry(.013,12,10),mat({map:TX.doll(),r:.3}),0,.125,0,0,Math.PI*.5,0))
-  bl.add(mk(new THREE.ConeGeometry(.045,.025,18,1,true),mat({color:0xe2b7c6,r:.8,side:THREE.DoubleSide}),0,.075,0))
-  ;[-1,1].forEach(s=>bl.add(mk(new THREE.CylinderGeometry(.003,.003,.05,6),mat({color:0xe6dccd}),s*.022,.1,0,0,0,s*.9)));mb.add(bl)
-  mb.add(hitbox(0.45,0.35,0.35,0,0.12,0))
+  // Music box (EB07) on open right half of GLB nightstand surface
+  const mb=grp(-0.55,1.10,-2.35,.18),bw=mat({map:TX.wood('ebony'),bump:TX.wood('ebony'),bs:.5,r:.5,c:0x9a7060})
+  mb.add(rb(.28,.09,.18,.01,bw,0,.045,0,3),bx(.29,.01,.19,gold,0,.09,0),bx(.29,.01,.19,gold,0,.004,0))
+  mb.add(mk(new THREE.PlaneGeometry(.25,.15),mat({color:0x5a0f1a,r:1}),0,.092,0,-Math.PI/2,0,0))
+  const lid=grp(0,.09,-.09);lid.add(rb(.28,.02,.18,.008,bw,0,0,.09,2),bx(.29,.01,.19,gold,0,.01,.09));lid.rotation.x=-1.75;mb.add(lid)
+  mb.add(mk(new THREE.CylinderGeometry(.04,.045,.02,20),brass,0,.102,0),bx(.14,.006,.01,gold,-.04,.098,.05))
+  const bl=grp(0,.115,0);bl.add(mk(new THREE.CylinderGeometry(.005,.005,.045,8),brass,0,.022,0));const bd=lathe([[.0,0],[.016,.018],[.009,.065],[.01,.09],[0,.1]],12);bl.add(mk(bd,mat({color:0xe6dccd,r:.35}),0,.01,0))
+  bl.add(mk(new THREE.SphereGeometry(.012,12,10),mat({map:TX.doll(),r:.3}),0,.115,0,0,Math.PI*.5,0))
+  bl.add(mk(new THREE.ConeGeometry(.04,.022,18,1,true),mat({color:0xe2b7c6,r:.8,side:THREE.DoubleSide}),0,.07,0))
+  ;[-1,1].forEach(s=>bl.add(mk(new THREE.CylinderGeometry(.003,.003,.045,6),mat({color:0xe6dccd}),s*.02,.09,0,0,0,s*.9)));mb.add(bl)
+  mb.add(hitbox(0.4,0.35,0.35,0,0.12,0))
   interact(mb,'musicbox');add(mb);anim((t)=>{bl.rotation.y=t*.45})
 
-  // Candle (EB03) visible on top of GLB nightstand
-  const cg=grp(-1.14,1.09,-2.35);cg.add(mk(lathe([[0,0],[.05,0],[.05,.012],[.02,.03],[.016,.05],[.03,.056],[0,.056]],16),brass,0,0,0))
+  // Candle (EB03) on GLB nightstand surface with dim warm flame light
+  const cg=grp(-0.85,1.10,-2.32);cg.add(mk(lathe([[0,0],[.05,0],[.05,.012],[.02,.03],[.016,.05],[.03,.056],[0,.056]],16),brass,0,0,0))
   const wax=mat({color:0xd8cfb8,r:.55,e:0x201408,ei:.3});cg.add(mk(new THREE.CylinderGeometry(.017,.019,.17,16),wax,0,.14,0),mk(new THREE.CylinderGeometry(.022,.02,.02,16),wax,0,.065,0))
   for(let i=0;i<4;i++)cg.add(mk(new THREE.CylinderGeometry(.0055,.007,.05+i*.015,8),wax,Math.cos(i*1.7)*.018,.16-i*.015,Math.sin(i*1.7)*.018))
   const fl=new THREE.Sprite(new THREE.SpriteMaterial({map:TX.flame(),blending:THREE.AdditiveBlending,depthWrite:false,transparent:true,fog:false}));fl.position.set(0,.29,0);fl.userData.np=1;cg.add(fl)
-  const gl=new THREE.Sprite(new THREE.SpriteMaterial({map:TX.glow('w'),blending:THREE.AdditiveBlending,depthWrite:false,transparent:true,fog:false,opacity:.7}));gl.scale.set(.5,.5,1);gl.position.set(0,.3,0);gl.userData.np=1;cg.add(gl)
-  cg.add(hitbox(0.3,0.5,0.3,0,0.15,0))
+  const gl=new THREE.Sprite(new THREE.SpriteMaterial({map:TX.glow('w'),blending:THREE.AdditiveBlending,depthWrite:false,transparent:true,fog:false,opacity:.55}));gl.scale.set(.42,.42,1);gl.position.set(0,.3,0);gl.userData.np=1;cg.add(gl)
+  cg.add(hitbox(0.3,0.48,0.3,0,0.15,0))
   interact(cg,'candle');add(cg)
-  const pl=new THREE.PointLight(0xffa850,1.4,3.5,2);pl.position.set(-1.14,1.40,-2.35);S.add(pl);E.lightRig(pl,1.4,E.flick(2,.25));anim(t=>{const f=E.flick(2,.3)(t);fl.scale.set(.05*(.9+.2*f),.11*(.85+.3*f),1);gl.material.opacity=.45*f*E.lightScale()})
+  const pl=new THREE.PointLight(0xff9840,0.9,2.8,2);pl.position.set(-0.85,1.40,-2.32);S.add(pl);E.lightRig(pl,0.9,E.flick(2,.25));anim(t=>{const f=E.flick(2,.3)(t);fl.scale.set(.05*(.9+.2*f),.11*(.85+.3*f),1);gl.material.opacity=.4*f*E.lightScale()})
 
-  // Photo frame (XB01) visible on top of GLB nightstand
-  const pf=grp(-0.48,1.09,-2.62,-.25);pf.add(bx(.14,.19,.02,gold,0,.1,0),mk(new THREE.PlaneGeometry(.1,.15),mat({map:TX.photo(0),r:.5}),0,.1,.0125));pf.add(bx(.03,.12,.01,dark,0,.07,-.02));pf.rotation.x=-.15
+  // Photo frame (XB01 decoy) on back-right corner of GLB nightstand surface
+  const pf=grp(-0.42,1.10,-2.60,-.35);pf.add(bx(.14,.19,.02,gold,0,.1,0),mk(new THREE.PlaneGeometry(.1,.15),mat({map:TX.photo(0),r:.5}),0,.1,.0125));pf.add(bx(.03,.12,.01,dark,0,.07,-.02));pf.rotation.x=-.15
   pf.add(hitbox(0.3,0.35,0.2,0,0.1,0))
   interact(pf,'photo_frame');add(pf)
+
+  // Lamp hitbox aligned over the GLB's 3D bedside lamp at (-1.15, 1.10, -2.62); procedural lamp mesh hides on GLB load
+  const lg=grp(-1.15,1.10,-2.62)
+  const lampVis=new THREE.Group()
+  lampVis.add(mk(lathe([[0,0],[.08,0],[.08,.02],[.03,.05],[.02,.2],[.025,.3],[.015,.36],[0,.37]],20),mat({color:0x1a1a1e,m:.7,r:.35}),0,0,0))
+  lampVis.add(mk(new THREE.CylinderGeometry(.1,.17,.2,28,1,true),mat({map:TX.shade(),side:THREE.DoubleSide,r:.9}),0,.44,0))
+  lg.add(trackVisual(lampVis))
+  lg.add(hitbox(0.55,0.75,0.55,0,0.35,0))
+  interact(lg,'lamp');add(lg)
  }
 
- // 3. West vanity desk (GLB (-3.36, 0, 0.0)) + mirror above + notebook & lamp on top
+ // 3. West vanity desk (GLB (-3.36, 0, 0.0)) + mirror above + notebook lying flat on vanity top
  {const g=grp(-3.36,0,0.0,Math.PI/2)
   const vis=new THREE.Group()
   vis.add(bx(1.8,.06,.8,worn,0,.75,0),bx(1.84,.025,.84,dark,0,.725,0))
@@ -116,23 +135,32 @@ export function buildBedroom(E){
   mg.add(hitbox(0.9,1.1,0.35,0,0,0))
   interact(mg,'mirror');add(mg,{noShadow:true})
 
-  // School notebook stack (R1-02 - Clue 2) visible on GLB West vanity desk
-  const bk=(w,h,d,c,x,y,z,ry)=>{const m=rb(w,h,d,.008,mat({map:TX.leather(c),r:.7}),x,y,z,2);m.rotation.y=ry;return m}
-  const cl=grp(-3.28,1.10,-0.52,Math.PI/2);cl.add(bk(.26,.04,.19,'red',0,.02,0,.1),bk(.24,.035,.17,'green',0,.0575,0,-.15),bk(.22,.04,.16,'blue',0,.095,.0,.3),bk(.2,.03,.15,'dark',0,.13,0,-.05))
+  // School notebook stack (R1-02 - Clue 2) resting cleanly on GLB West vanity desk top
+  const bk=(w,h,d,c,x,y,z,ry)=>{const m=rb(w,h,d,.008,mat({map:TX.leather(c),r:.75}),x,y,z,2);m.rotation.y=ry;return m}
+  const cl=grp(-3.12,1.10,-0.65,Math.PI/2);cl.add(bk(.26,.04,.19,'red',0,.02,0,.1),bk(.24,.035,.17,'green',0,.0575,0,-.15),bk(.22,.04,.16,'blue',0,.095,.0,.3),bk(.2,.03,.15,'dark',0,.13,0,-.05))
   cl.add(hitbox(0.42,0.32,0.36,0,0.08,0))
   interact(cl,'notebook');add(cl)
-
-  // Parlor lamp visible on GLB West vanity desk
-  const lg=grp(-3.28,1.10,0.58)
-  lg.add(hitbox(0.7,0.85,0.7,0,0.35,0))
-  lg.add(mk(lathe([[0,0],[.08,0],[.08,.02],[.03,.05],[.02,.2],[.025,.3],[.015,.36],[0,.37]],20),mat({color:0x1a1a1e,m:.7,r:.35}),0,0,0))
-  const shade=mk(new THREE.CylinderGeometry(.1,.17,.2,28,1,true),mat({map:TX.shade(),side:THREE.DoubleSide,e:0xffc67a,ei:.9,r:.9}),0,.44,0);lg.add(shade);E.lampMats.push(shade.material)
-  lg.add(mk(new THREE.SphereGeometry(.035,12,10),new THREE.MeshBasicMaterial({color:0xfff0c8}),0,.44,0))
-  const lh=new THREE.Sprite(new THREE.SpriteMaterial({map:TX.glow('w'),blending:THREE.AdditiveBlending,depthWrite:false,transparent:true,fog:false,opacity:.55}));lh.scale.set(1.3,1.3,1);lh.position.set(0,.45,0);lh.userData.np=1;lg.add(lh);E.lampGlow=lh;interact(lg,'lamp');add(lg)
  }
 
- // 4. North-West GLB cabinet collision solid (sits underneath the torsion pendulum clock)
- solid(-3.85,-2.92,-2.90,-1.08)
+ // 4. North-West GLB Armchair (Chair EB12 + Doll EK01 seated neatly on the GLB armchair cushion)
+ {const chGrp=grp(-3.25,0,-2.05)
+  const yaw=grp(0,0,0,Math.PI/2),pv=grp(0,0,0,0);yaw.add(pv)
+  ;[-1,1].forEach(s=>{const pts=[];for(let i=0;i<=10;i++){const z=-.5+i*.1;pts.push([s*.27,.03+.2*Math.pow(z/.5,2)*.8,z])}pv.add(mk(tube(pts,.016,24,8),worn))
+   pv.add(bx(.035,.4,.035,worn,s*.26,.25,.2,{vert:true}),bx(.035,.5,.035,worn,s*.26,.3,-.2,{vert:true}),bx(.03,.2,.03,worn,s*.27,.56,.15,{vert:true}),bx(.04,.03,.44,worn,s*.27,.67,.0))})
+  pv.add(bx(.54,.04,.46,dark,0,.45,0),bx(.5,.03,.03,worn,0,.2,.2),bx(.5,.03,.03,worn,0,.2,-.2))
+  const back=grp(0,.46,-.22);back.rotation.x=-.14;back.add(bx(.035,.55,.035,worn,-.24,.28,0,{vert:true}),bx(.035,.55,.035,worn,.24,.28,0,{vert:true}),bx(.54,.08,.03,worn,0,.56,0),bx(.5,.03,.03,worn,0,.1,0));for(let i=0;i<6;i++)back.add(mk(new THREE.CylinderGeometry(.011,.011,.46,8),worn,-.2+i*.08,.3,0));pv.add(back)
+  chGrp.add(trackVisual(yaw))
+  chGrp.add(hitbox(1.1,1.1,1.1,0,0.55,0))
+  ref.chair={yaw,pv}
+  interact(chGrp,'chair');add(chGrp);solid(-3.75,-2.80,-2.60,-1.55)
+
+  // Porcelain Doll (EK01) seated upright on the GLB armchair's Y=0.52m seat cushion facing into the room (+X)
+  const dg=buildDoll(1.4)
+  dg.position.set(-3.18,0.52,-2.05)
+  dg.rotation.y=Math.PI/2
+  ref.doll={g:dg,head:dg.userData.head}
+  interact(dg,'doll');add(dg)
+ }
 
  // 5. North-East Tall Wardrobe (GLB (2.95, 0, -2.42))
  {const g=grp(2.95,0,-2.42,Math.PI/2),dk=wm('ebony',{r:.6}),inner=new THREE.MeshStandardMaterial({color:0x020103,roughness:1,side:THREE.BackSide})
@@ -151,38 +179,32 @@ export function buildBedroom(E){
   interact(g,'wardrobe');add(g);solid(2.08,3.90,-2.92,-1.92)
  }
 
- // 6. Leather Trunk (EB01) placed on open floor at foot of GLB bed
- {const g=grp(0.82,0,0.52,0),lt=mat({map:TX.leather('dark'),r:.6,c:0xb09080});g.add(bx(.8,.025,.55,lt,0,.0125,0),bx(.8,.2,.025,lt,0,.12,.2625),bx(.8,.2,.025,lt,0,.12,-.2625),bx(.025,.2,.55,lt,-.3875,.12,0),bx(.025,.2,.55,lt,.3875,.12,0))
-  g.add(mk(new THREE.PlaneGeometry(.75,.5),mat({color:0x3a1020,r:1}),0,.03,0,-Math.PI/2,0,0))
-  const cw=mat({map:TX.sheet2(),bump:TX.sheet2(),bs:2,r:1,c:0x4a5578}),cw2=mat({map:TX.sheet(),bump:TX.sheet(),bs:2,r:1,c:0x6a4552});g.add(rb(.5,.07,.38,.03,cw,-.1,.07,.0,4),rb(.46,.06,.34,.03,cw2,-.08,.135,.01,4));const ro=rb(.4,.07,.32,.03,mat({map:TX.quilt(),r:1}),.1,.19,.0,4);ro.rotation.y=.2;g.add(ro)
-  g.add(mk(tube([[.15,.2,.1],[.3,.15,.22],[.34,.08,.36],[.36,.03,.46]],.032,16,8),cw2));g.add(mk(tube([[-.2,.15,-.1],[-.34,.12,-.1],[-.5,.02,-.05]],.028,12,8),cw))
-  const lidp=grp(0,.22,-.2625);lidp.add(bx(.8,.03,.55,lt,0,0,.275),bx(.8,.02,.025,lt,0,-.01,.55),bx(.025,.02,.55,lt,-.3875,-.01,.275),bx(.025,.02,.55,lt,.3875,-.01,.275),mk(new THREE.PlaneGeometry(.74,.5),mat({color:0x3a1020,r:1,side:2}),0,-.017,.275,Math.PI/2,0,0))
-  lidp.rotation.x=-1.9;g.add(lidp);[-.25,.25].forEach(x=>g.add(bx(.06,.04,.015,brass,x,.18,.275)));interact(g,'trunk');add(g);solid(0.38,1.26,0.22,0.82)}
+ // 6. Clean dark antique wooden footlocker chest (Trunk EB01) at the foot of the GLB bed
+ {const g=grp(0.82,0,0.42,0)
+  const woodDark=wm('dark'),trimEbony=wm('ebony')
+  // Chest base + banded sides + fitted arched/beveled slightly-unlatched lid (no weird tubes/cloth props)
+  g.add(bx(.84,.30,.52,woodDark,0,.15,0))
+  g.add(bx(.86,.04,.54,trimEbony,0,.02,0),bx(.86,.04,.54,trimEbony,0,.29,0))
+  ;[-.32,0,.32].forEach(x=>g.add(bx(.04,.31,.53,trimEbony,x,.155,0)))
+  const lid=grp(0,.30,-.26)
+  lid.add(bx(.84,.08,.52,woodDark,0,.04,.26),bx(.86,.03,.54,trimEbony,0,.02,.26))
+  lid.rotation.x=-0.12
+  g.add(lid)
+  ;[-.22,.22].forEach(x=>g.add(bx(.05,.06,.02,brass,x,.27,.265)))
+  g.add(bx(.07,.08,.025,brass,0,.26,.265))
+  interact(g,'trunk');add(g);solid(0.38,1.26,0.12,0.72)
+ }
 
- // 7. Rocking Chair (EB12) & Doll (EK01) in open East-Center floor
- {const yaw=grp(2.65,0,-0.50,-Math.PI/2-0.25),pv=grp(0,0,0,0);yaw.add(pv)
-  ;[-1,1].forEach(s=>{const pts=[];for(let i=0;i<=10;i++){const z=-.5+i*.1;pts.push([s*.27,.03+.2*Math.pow(z/.5,2)*.8,z])}pv.add(mk(tube(pts,.016,24,8),worn))
-   pv.add(bx(.035,.4,.035,worn,s*.26,.25,.2,{vert:true}),bx(.035,.5,.035,worn,s*.26,.3,-.2,{vert:true}),bx(.03,.2,.03,worn,s*.27,.56,.15,{vert:true}),bx(.04,.03,.44,worn,s*.27,.67,.0))})
-  pv.add(bx(.54,.04,.46,dark,0,.45,0),bx(.5,.03,.03,worn,0,.2,.2),bx(.5,.03,.03,worn,0,.2,-.2))
-  const back=grp(0,.46,-.22);back.rotation.x=-.14;back.add(bx(.035,.55,.035,worn,-.24,.28,0,{vert:true}),bx(.035,.55,.035,worn,.24,.28,0,{vert:true}),bx(.54,.08,.03,worn,0,.56,0),bx(.5,.03,.03,worn,0,.1,0));for(let i=0;i<6;i++)back.add(mk(new THREE.CylinderGeometry(.011,.011,.46,8),worn,-.2+i*.08,.3,0));pv.add(back)
-  const dg=buildDoll(1.5);dg.position.set(0,.47,.02);pv.add(dg);ref.doll={g:dg,head:dg.userData.head};ref.chair={yaw,pv}
-  interact(yaw,'chair');interact(dg,'doll');add(yaw);solid(2.25,3.05,-0.90,-0.10)
-  anim((t)=>{const a=ref.chairRock??1;pv.rotation.x=Math.sin(t*1.9)*.09*a+Math.sin(t*.7)*.01})}
-
- // 8. South Wall Bookcase / Cabinet (GLB (-0.60, 0, 2.66)) — keeps row of visible antique books on top
- {const g=grp(-0.60,0,2.66,Math.PI),br=wm('ebony',{r:.6})
+ // 7. South Wall Bookcase / Sideboard Cabinet (Bookshelf EB10) — no skull or colorful blocks
+ {const g=grp(-0.60,0,2.60,Math.PI),br=wm('ebony',{r:.6})
   const vis=new THREE.Group()
   vis.add(bx(.04,1.15,.34,br,-.6,.575,0),bx(.04,1.15,.34,br,.6,.575,0),bx(1.28,.05,.36,br,0,1.16,0),bx(1.2,1.1,.02,wm('dark'),0,.575,-.16),bx(1.2,.12,.34,br,0,.06,0))
-  vis.add(bx(1.16,.028,.32,wm('worn'),0,.58,0))
   g.add(trackVisual(vis))
-  // Keep antique books & skull visible resting cleanly on top of the GLB South cabinet (Y = 1.16)
-  const cols=['red','green','blue','dark'],r=X.rng(4)
-  let x=-.55;while(x<.5){const w=.025+r()*.035,h=.17+r()*.1,lean=r()<.1,col=cols[Math.floor(r()*4)];const bkMesh=bx(w,h,.2,mat({map:TX.leather(col),r:.65}),x+w/2,1.16+h/2,0);if(lean){bkMesh.rotation.z=.25;bkMesh.position.y-=.01}g.add(bkMesh);x+=w+.002}
-  const sk=buildSkull(1);sk.position.set(-.3,1.16,.06);sk.rotation.y=.4;g.add(sk)
   g.add(hitbox(2.5,1.45,0.65,0,0.72,0))
-  interact(g,'bookshelf');add(g);solid(-1.88,0.70,2.35,2.95)}
+  interact(g,'bookshelf');add(g);solid(-1.88,0.70,2.30,2.95)
+ }
 
- // 9. East Wall Draped Window (GLB (3.80, 0, 1.65, -Math.PI/2))
+ // 8. East Wall Draped Window (GLB (3.80, 0, 1.65, -Math.PI/2))
  if(win){const wz=win.z,wy0=win.y0,wy1=win.y1,wh=wy1-wy0,fr=wm('dark'),X0=W/2
   const g=grp(X0,0,wz,-Math.PI/2)
   const vis=new THREE.Group()
@@ -193,9 +215,10 @@ export function buildBedroom(E){
   g.add(hitbox(2.3,2.1,0.6,0,1.5,0))
   interact(g,'window');add(g)}
 
- // 10. Bedroom Exit Door (hinged door at (2.45, 0, 2.88, Math.PI) + GLB South-West door hitbox at (-3.82, 0, 2.05))
+ // 9. Bedroom Exit Door (procedural hinged fallback door + neon trim hide when GLB loads; hitboxes stay over GLB South-West door & South doorway)
  {const g=grp(2.45,0,2.88,Math.PI),dk=wm('dark')
-  g.add(bx(.1,2.2,.07,wm('ebony'),-.5,1.1,0),bx(.1,2.2,.07,wm('ebony'),.5,1.1,0),bx(1.1,.1,.07,wm('ebony'),0,2.2,0))
+  const vis=new THREE.Group()
+  vis.add(bx(.1,2.2,.07,wm('ebony'),-.5,1.1,0),bx(.1,2.2,.07,wm('ebony'),.5,1.1,0),bx(1.1,.1,.07,wm('ebony'),0,2.2,0))
   const doorHinge=grp(-0.45,0,0),doorLeaf=grp(0.45,0,0)
   doorLeaf.add(bx(.9,2.1,.05,dk,0,1.05,0))
   for(const y of [1.6,.55])for(const x of [-.22,.22])doorLeaf.add(bx(.3,.7,.02,wm('worn'),x,y,.03),bx(.3,.66,.012,dk,x,y,.04))
@@ -203,14 +226,15 @@ export function buildBedroom(E){
   doorLeaf.add(mk(tube([[.28,1.4,.04],[.2,1.36,.05],[.12,1.4,.04],[.04,1.35,.05]],.007,20,5),brass))
   const boltMat=mat({color:0x1c1a24,m:0.9,r:0.2})
   doorLeaf.add(bx(0.16,0.04,0.03,boltMat,0.4,1.8,0.035),bx(0.16,0.04,0.03,boltMat,0.4,0.35,0.035))
-  doorHinge.add(doorLeaf);g.add(doorHinge)
+  doorHinge.add(doorLeaf);vis.add(doorHinge)
+  g.add(trackVisual(vis))
   g.add(hitbox(1.1,2.2,0.35,0,1.1,0))
-  interact(g,'room_door');add(g);solid(1.85,3.05,2.68,3.0)
+  interact(g,'room_door');add(g)
   ref.roomDoor={hinge:doorHinge,isOpen:false,angle:0}
   anim(()=>{if(ref.roomDoor){const targetAngle=ref.roomDoor.isOpen?1.55:0;ref.roomDoor.angle+=(targetAngle-ref.roomDoor.angle)*0.05;ref.roomDoor.hinge.rotation.y=-ref.roomDoor.angle}})
-  const ls=mk(new THREE.PlaneGeometry(.88,.012),new THREE.MeshBasicMaterial({color:0xff9a3a,transparent:true,opacity:.5,blending:THREE.AdditiveBlending,fog:false,depthWrite:false}),2.45,.008,2.85,-Math.PI/2,0,0);ls.userData.np=1;S.add(ls)
+  const ls=mk(new THREE.PlaneGeometry(.88,.012),new THREE.MeshBasicMaterial({color:0xff9a3a,transparent:true,opacity:.4,blending:THREE.AdditiveBlending,fog:false,depthWrite:false}),2.45,.008,2.85,-Math.PI/2,0,0);ls.userData.np=1;trackVisual(ls);S.add(ls)
 
-  // Secondary raycast hitbox aligned to the GLB's South-West door leaf
+  // Raycast hitbox aligned directly to the GLB's real South-West exit door leaf
   const swDoor=grp(-3.82,0,2.05)
   swDoor.add(hitbox(0.45,2.2,1.25,0,1.1,0))
   interact(swDoor,'room_door');add(swDoor)
@@ -241,6 +265,9 @@ export function buildBedroom(E){
     const mats=Array.isArray(o.material)?o.material:[o.material]
     mats.forEach((m)=>{
      if(!m)return
+     m.color.setRGB(0.42,0.39,0.48)
+     m.roughness=Math.max(m.roughness??0.75,0.78)
+     m.metalness=Math.min(m.metalness??0.1,0.2)
      m.side=THREE.DoubleSide
      m.needsUpdate=true
     })
@@ -257,13 +284,12 @@ export function buildBedroom(E){
   if(typeof E.loadGLB==='function'){
    E.loadGLB(shellUrl).then(onShellLoaded).catch((err)=>console.warn('[BEDROOM SHELL GLB FALLBACK ACTIVE]',err))
   }else{
-   try{
+   const readyP=typeof MeshoptDecoder!=='undefined'&&MeshoptDecoder.ready?MeshoptDecoder.ready:Promise.resolve()
+   readyP.then(()=>{
     const loader=new GLTFLoader()
     if(typeof MeshoptDecoder!=='undefined')loader.setMeshoptDecoder(MeshoptDecoder)
     loader.load(shellUrl,onShellLoaded,undefined,(err)=>console.warn('[BEDROOM SHELL GLB FALLBACK ACTIVE]',err))
-   }catch(err){
-    console.warn('[BEDROOM SHELL GLB FALLBACK ACTIVE]',err)
-   }
+   }).catch((err)=>console.warn('[BEDROOM SHELL GLB FALLBACK ACTIVE]',err))
   }
  }
 }

@@ -1,8 +1,21 @@
-// Procedural horror audio: drone + wind + heartbeat + spatial creaks/whispers + scare stingers. Voice lines (optional) loaded from /audio.
+// Procedural horror audio + real room audio tracks: ambient scary night + jumpscare scream MP3 + spatial creaks/whispers.
 const SC=[523.25,587.33,659.25,783.99,880,1046.5],rnd=(a,b)=>a+Math.random()*(b-a),pick=a=>a[Math.floor(Math.random()*a.length)]
 export class GameAudio{
- constructor(){this.ctx=null;this.muted=false;this.vol=.85;this.busy=0;this.lastW=0;this.L={x:0,z:0,yaw:0};this.voices={}}
- start(cfg={}){if(this.ctx)return;const c=this.ctx=new (window.AudioContext||window.webkitAudioContext)();this.cfg=cfg
+ constructor(){this.ctx=null;this.muted=false;this.vol=.85;this.busy=0;this.lastW=0;this.L={x:0,z:0,yaw:0};this.voices={};this.screamAudio=null;this.nightAudio=null}
+ start(cfg={}){if(this.ctx){if(this.ctx.state==='suspended')this.ctx.resume?.().catch?.(()=>{});return}
+  if(typeof window!=='undefined'&&typeof Audio!=='undefined'){
+   try{
+    this.screamAudio=new Audio('/assets/audio/bedroom/scary_scream.mp3')
+    this.screamAudio.preload='auto'
+    this.screamAudio.volume=this.muted?0:Math.min(1,0.95*this.vol)
+    this.nightAudio=new Audio('/assets/audio/bedroom/scary_night.mp3')
+    this.nightAudio.preload='auto'
+    this.nightAudio.loop=true
+    this.nightAudio.volume=this.muted?0:0.32*this.vol
+    this.nightAudio.play?.()?.catch?.(()=>{})
+   }catch(_){}
+  }
+  const c=this.ctx=new (window.AudioContext||window.webkitAudioContext)();if(c.state==='suspended')c.resume?.().catch?.(()=>{});this.cfg=cfg
   this.master=c.createGain();this.master.gain.value=this.muted?0:this.vol;this.comp=c.createDynamicsCompressor();this.comp.threshold.value=-12;this.comp.ratio.value=6
   this.an=c.createAnalyser();this.an.fftSize=256;this.master.connect(this.comp);this.comp.connect(this.an);this.an.connect(c.destination)
   const len=c.sampleRate*3.1,ir=c.createBuffer(2,len,c.sampleRate);for(let ch=0;ch<2;ch++){const d=ir.getChannelData(ch);for(let i=0;i<len;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/len,2.9)}
@@ -29,7 +42,7 @@ export class GameAudio{
  tick(){if(!this.ctx)return;const [x,z]=this.cfg.clock||[0,0],d=this.spat(x,z,.9);this.burst(2400,9,.035,.7,d);this.osc('sine',180,120,.05,.12,d)}
  step(v=1){if(!this.ctx)return;const o=this.master;this.burst(260,1,.09,.07*v,o,180,'lowpass');if(Math.random()<.12)this.osc('sawtooth',120,70,.35,.012,this.verb)}
  creak(x,z,v=.5){const d=this.spat(x,z,v),f=rnd(110,190);const bp=this.ctx.createBiquadFilter();bp.type='bandpass';bp.frequency.value=700;bp.Q.value=5;bp.connect(d);this.osc('sawtooth',f,f*rnd(.55,1.5),rnd(.5,.9),.14,bp)}
- whisper(name,x,z){if(!this.ctx)return;const now=Date.now()/1000,d=this.spat(x,z,name&&this.voices[name]?1.5:.6);const b=this.voices[name];if(b){const s=this.ctx.createBufferSource();s.buffer=b;s.connect(d);s.start();return}
+ whisper(name,x,z){if(!this.ctx)return;const d=this.spat(x,z,name&&this.voices[name]?1.5:.6);const b=this.voices[name];if(b){const s=this.ctx.createBufferSource();s.buffer=b;s.connect(d);s.start();return}
   for(let i=0;i<7;i++)setTimeout(()=>this.burst(rnd(1400,3200),3,rnd(.15,.4),.18,d,rnd(900,3200)),i*rnd(180,380))}
  event(){if(!this.ctx)return;const r=Math.random(),ax=rnd(-4,4),az=rnd(-3,3)
   if(r<.28)this.creak(ax,az,.55)
@@ -41,18 +54,19 @@ export class GameAudio{
  note(f,t,d,v=.15,dest){const c=this.ctx;dest=dest||this.master;[1,2].forEach((m,i)=>{const o=c.createOscillator(),g=c.createGain();o.frequency.value=f*m;g.gain.setValueAtTime(v/(i+1),t);g.gain.linearRampToValueAtTime(0.0001,t+d+.06);o.connect(g);g.connect(dest);o.start(t);o.stop(t+d+.1)})}
  playMorse(m,unit,done){if(!this.ctx)return;let t=this.ctx.currentTime+.1,i=0,u=unit/1000
   for(const ch of m){if(ch===' '){t+=4*u;continue}const d=(ch==='.'?1:3)*u;this.note(SC[i++%6],t,d);t+=d+u}return setTimeout(done,(t-this.ctx.currentTime)*1000)}
- // ---- scare sounds (intense, visceral & horrific) ----
+ playScreamClip(){if(this.screamAudio){try{this.screamAudio.currentTime=0;this.screamAudio.volume=this.muted?0:Math.min(1,0.95*this.vol);this.screamAudio.play?.()?.catch?.(()=>{})}catch(_){}}}
+ // ---- scare sounds (real scream MP3 + impact synth) ----
  thump(x,z){if(!this.ctx)return;const d=this.spat(x,z,1.9);this.osc('sine',98,28,.42,1.25,d);this.burst(700,.7,.22,1.1,d,260,'lowpass');this.burst(3600,6,.45,.28,d)}
  bang(x,z){if(!this.ctx)return;const d=this.spat(x,z,2.1),w=this.dist(80);w.connect(d);this.burst(460,.5,.85,1.45,w,95,'lowpass');this.osc('sine',88,22,1.0,1.35,d);this.burst(2400,1.2,.2,.95,d);setTimeout(()=>this.osc('sine',46,24,2.4,.35,this.verb),50)}
  slam(x,z){if(!this.ctx)return;const d=this.spat(x,z,2.2),w=this.dist(70);w.connect(d);this.burst(340,.6,.6,1.5,w,85,'lowpass');this.osc('sine',125,30,.58,1.35,d);this.burst(1400,2.5,.25,1.05,d);this.burst(5200,6,.3,.42,d)}
- screech(x,z){if(!this.ctx)return;const c=this.ctx,d=this.spat(x??this.L.x,z??this.L.z,2.0),w=this.dist(75),bp=c.createBiquadFilter();bp.type='bandpass';bp.frequency.value=1850;bp.Q.value=1.4;w.connect(bp);bp.connect(d)
+ screech(x,z){this.playScreamClip();if(!this.ctx)return;if(this.ctx.state==='suspended')this.ctx.resume?.().catch?.(()=>{});const c=this.ctx,d=this.spat(x??this.L.x,z??this.L.z,2.0),w=this.dist(75),bp=c.createBiquadFilter();bp.type='bandpass';bp.frequency.value=1850;bp.Q.value=1.4;w.connect(bp);bp.connect(d)
   const o=this.osc('sawtooth',620,2350,.95,.75,w),o2=this.osc('square',665,2680,.95,.62,w),o3=this.osc('sawtooth',940,1920,.95,.55,w)
   const lf=c.createOscillator(),lg=c.createGain();lf.frequency.value=36;lg.gain.value=145;lf.connect(lg);lg.connect(o.frequency);lg.connect(o2.frequency);lg.connect(o3.frequency);lf.start();lf.stop(c.currentTime+1.05)
   this.burst(2600,2.2,.85,.85,w,1200,'bandpass')}
  stinger(v=1){if(!this.ctx)return;const c=this.ctx,g=c.createGain();g.gain.value=.58*v;g.connect(this.master);g.connect(this.verb);const w=this.dist(65);w.connect(g)
   ;[233.1,246.9,311.1,329.6,466.2,622.3,932.3].forEach((f,i)=>this.osc(i%2?'sawtooth':'square',f*(i>4?1.15:1),f*(i%2?.92:1.12),1.65,.48,w))
   this.osc('sine',92,22,1.65,1.45,g);this.burst(1200,.8,1.15,.95,w,180,'lowpass');this.burst(3400,2.5,.7,.65,w,1400,'bandpass')}
- jumpscareSting(v=1.35){if(!this.ctx)return;const c=this.ctx,t=c.currentTime,g=c.createGain();g.gain.value=Math.min(1.5,.75*v);g.connect(this.master);g.connect(this.verb)
+ jumpscareSting(v=1.35){this.playScreamClip();if(!this.ctx)return;if(this.ctx.state==='suspended')this.ctx.resume?.().catch?.(()=>{});const c=this.ctx,t=c.currentTime,g=c.createGain();g.gain.value=Math.min(1.5,.75*v);g.connect(this.master);g.connect(this.verb)
   const w=this.dist(95);w.connect(g)
   // 1. Sub-bass chest-slam impact
   this.osc('sine',115,20,1.4,1.6,g);this.osc('triangle',78,24,1.1,1.2,w)
@@ -72,6 +86,6 @@ export class GameAudio{
  click(){if(this.ctx)this.note(900,this.ctx.currentTime,.03,.08)}
  good(){if(this.ctx)[660,880,1320].forEach((f,i)=>this.note(f,this.ctx.currentTime+i*.12,.2,.1))}
  bad(){if(!this.ctx)return;this.osc('sawtooth',110,70,.3,.1,this.master);this.burst(300,1,.25,.3,this.master)}
- apply(){if(this.master)this.master.gain.value=this.muted?0:this.vol}
+ apply(){if(this.master)this.master.gain.value=this.muted?0:this.vol;if(this.nightAudio)this.nightAudio.volume=this.muted?0:0.32*this.vol;if(this.screamAudio)this.screamAudio.volume=this.muted?0:Math.min(1,0.95*this.vol)}
  setMuted(m){this.muted=m;this.apply()} setVol(v){this.vol=v;this.apply()}
- dispose(){clearInterval(this.iv);clearInterval(this.hb);clearTimeout(this.st);this.ctx?.close();this.ctx=null;this.busy=0}}
+ dispose(){clearInterval(this.iv);clearInterval(this.hb);clearTimeout(this.st);if(this.nightAudio){try{this.nightAudio.pause?.();this.nightAudio.src=''}catch(_){}this.nightAudio=null}if(this.screamAudio){try{this.screamAudio.pause?.();this.screamAudio.src=''}catch(_){}this.screamAudio=null}this.ctx?.close();this.ctx=null;this.busy=0}}

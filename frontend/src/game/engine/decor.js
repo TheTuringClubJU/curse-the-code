@@ -170,26 +170,21 @@ export function buildRoomBloodAndClaws(E,{W=8,H=3,D=6,seed=1,gothicArches=true}=
  }
 }
 export function buildDecor(E){
- const {S,add,anim,glow,interact,cam,W,H,D}=E,R=X.rng(12),gold=mat({map:TX.metal(),m:.7,r:.45,c:0xe0b878}),brass=mat({map:TX.brass(),m:.85,r:.4,c:0xd8b070})
+ const {S,add,anim,interact,cam,W,H,D}=E,R=X.rng(12),gold=mat({map:TX.metal(),m:.7,r:.45,c:0xe0b878}),brass=mat({map:TX.brass(),m:.85,r:.4,c:0xd8b070})
 
- // Subtle atmospheric ceiling point light & ambient glow (kept clean without party clutter)
- {const g=grp(0,0,.2);g.add(mk(new THREE.CylinderGeometry(.006,.006,.7,6),new THREE.MeshBasicMaterial({color:0x050505}),0,H-.35,0),mk(lathe([[0,0],[.02,0],[.025,.05],[.015,.08],[0,.08]],12),mat({color:0x151515,m:.8,r:.4}),0,H-.76,0))
-  const bm=mat({color:0xffffff,e:0xcfd0ff,ei:1.2,r:.2});const bulb=mk(new THREE.SphereGeometry(.05,20,16),bm,0,H-.8,0);bulb.userData.np=1;g.add(bulb);glow(bm,1.2,E.flick(7,.5));add(g)
-  const l=new THREE.PointLight(0xa99bff,4,10,2);l.position.set(0,H-.85,.2);S.add(l);E.lightRig(l,4,E.flick(7,.4));const hs=spr(TX.glow('v'),1.0,.6);hs.position.set(0,H-.8,.2);S.add(hs);anim(t=>hs.material.opacity=.5*E.flick(7,.5)(t)*E.lightScale())}
-
- // Portrait (R1-04 + XB02) positioned on North wall above the GLB nightstand
- {const g=grp(-0.85,1.85,-2.86),fr=gold;g.add(mk(new THREE.BoxGeometry(.74,.06,.05),fr,0,.4,0),mk(new THREE.BoxGeometry(.74,.06,.05),fr,0,-.4,0),mk(new THREE.BoxGeometry(.06,.86,.05),fr,-.34,0,0),mk(new THREE.BoxGeometry(.06,.86,.05),fr,.34,0,0))
-  g.add(mk(new THREE.PlaneGeometry(.62,.775),mat({map:TX.portrait(),r:.5}),0,0,.012));const pm=new THREE.MeshBasicMaterial({color:0x06080a}),ps=[];[-1,1].forEach(s=>{const p=mk(new THREE.CircleGeometry(.0105,14),pm,s*.0638,.0647,.0135);p.userData.np=1;g.add(p);ps.push(p)})
+ // Portrait (R1-04 + XB02) flush on North wall above GLB nightstand
+ {const g=grp(-0.75,1.82,-2.88),fr=gold;g.add(mk(new THREE.BoxGeometry(.74,.06,.05),fr,0,.4,0),mk(new THREE.BoxGeometry(.74,.06,.05),fr,0,-.4,0),mk(new THREE.BoxGeometry(.06,.86,.05),fr,-.34,0,0),mk(new THREE.BoxGeometry(.06,.86,.05),fr,.34,0,0))
+  g.add(mk(new THREE.PlaneGeometry(.62,.775),mat({map:TX.portrait(),r:.55}),0,0,.012));const pm=new THREE.MeshBasicMaterial({color:0x06080a}),ps=[];[-1,1].forEach(s=>{const p=mk(new THREE.CircleGeometry(.0105,14),pm,s*.0638,.0647,.0135);p.userData.np=1;g.add(p);ps.push(p)})
   const ptHit=new THREE.Mesh(new THREE.BoxGeometry(0.9,1.1,0.2),new THREE.MeshBasicMaterial({colorWrite:false,depthWrite:false}));ptHit.castShadow=false;ptHit.userData.ns=1;g.add(ptHit);interact(g,'portrait');add(g);anim(()=>{const dx=cam.position.x-g.position.x,dy=cam.position.y-g.position.y,dz=cam.position.z-g.position.z,d=Math.hypot(dx,dy,dz)||1;ps.forEach((p,i)=>{p.position.x=(i?1:-1)*.0638+Math.max(-1,Math.min(1,dx/d*1.6))*.011;p.position.y=.0647+Math.max(-1,Math.min(1,dy/d*1.6))*.007})})}
 
- // Poster (R1-03) positioned on South wall above the GLB bookcase cabinet
- {const g=grp(-0.60,1.95,2.86,Math.PI);const pt=X.tex(X.posterScene());g.add(mk(new THREE.BoxGeometry(.9,1.3,.006),mat({color:0x3a3228,r:1}),0,0,0),mk(new THREE.PlaneGeometry(.9,1.3),mat({map:pt,r:.9}),0,0,.0035))
+ // Poster (R1-03) flush on South wall above GLB sideboard cabinet
+ {const g=grp(-0.45,1.85,2.88,Math.PI);const pt=X.tex(X.posterScene());g.add(mk(new THREE.BoxGeometry(.9,1.3,.006),mat({color:0x3a3228,r:1}),0,0,0),mk(new THREE.PlaneGeometry(.9,1.3),mat({map:pt,r:.9}),0,0,.0035))
   ;[[-.4,.6,.5],[.4,.6,-.5],[-.4,-.6,-.5],[.4,-.6,.5]].forEach(c=>g.add(mk(new THREE.BoxGeometry(.12,.04,.004),mat({color:0xb8aa80,t:1,o:.55,r:.6}),c[0],c[1],.006,0,0,c[2])));interact(g,'poster');add(g)}
 
- // Torsion Pendulum Clock (EB09) sitting on top of the GLB North-West cabinet facing into the room (+X)
+ // Torsion Pendulum Clock (EB09) resting flat on GLB South sideboard cabinet facing North into the room
  {
   const darkWood=wm('ebony')
-  const g=grp(-3.32,1.36,-1.95,Math.PI/2)
+  const g=grp(-1.35,1.12,2.50,Math.PI)
   const c0=mk(new THREE.CylinderGeometry(.14,.14,.04,36),[mat({color:0x2a1a12,r:.6}),mat({map:TX.clockFace(),r:.5}),mat({color:0x2a1a12,r:.6})],0,.20,.02)
   c0.rotation.x=Math.PI/2
   c0.rotation.y=Math.PI
@@ -214,117 +209,67 @@ export function buildDecor(E){
   })
 
   if(typeof window!=='undefined'&&window.location?.protocol?.startsWith('http')){
-    try{
-      const clockUrl='/assets/models/bedroom/torsion_pendulum_clock_-_animation.glb'
-      const loader=new GLTFLoader()
-      if(typeof MeshoptDecoder!=='undefined')loader.setMeshoptDecoder(MeshoptDecoder)
-      loader.load(
-        clockUrl,
-        gltf=>{
-          if(!gltf?.scene)return
-          const clockModel=gltf.scene
-          clockModel.name='torsion_pendulum_clock'
-          clockModel.traverse(o=>{
-            if(!o.isMesh)return
-            o.castShadow=true
-            o.receiveShadow=true
-            const mats=Array.isArray(o.material)?o.material:[o.material]
-            mats.forEach(m=>{
-              if(!m)return
-              if(m.name==='Basic_Glass'||(m.transmission!==undefined&&m.transmission>0)){
-                m.transparent=true
-                m.opacity=0.30
-                m.roughness=0.08
-                m.metalness=0.05
-                m.depthWrite=false
-                m.side=THREE.DoubleSide
-              }else if(m.name==='Gold'){
-                m.metalness=0.88
-                m.roughness=0.32
-                m.side=THREE.DoubleSide
-              }
-            })
-          })
-          clockModel.scale.setScalar(1.45)
-          clockModel.position.set(-3.32,1.36,-1.95)
-          clockModel.rotation.set(0,Math.PI/2,0)
-          interact(clockModel,'clock')
-          add(clockModel)
-
-          g.visible=false
-          g.traverse(o=>{
-            o.visible=false
-            o.userData.np=1
-          })
-
-          if(gltf.animations?.length>0){
-            const mixer=new THREE.AnimationMixer(clockModel)
-            const action=mixer.clipAction(gltf.animations[0])
-            action.play()
-            anim((t,dt)=>mixer.update(dt||0.016))
+    const clockUrl='/assets/models/bedroom/torsion_pendulum_clock_-_animation.glb'
+    const onClockLoaded=gltf=>{
+      if(!gltf?.scene)return
+      const clockModel=gltf.scene
+      clockModel.name='torsion_pendulum_clock'
+      clockModel.traverse(o=>{
+        if(!o.isMesh)return
+        o.castShadow=true
+        o.receiveShadow=true
+        const mats=Array.isArray(o.material)?o.material:[o.material]
+        mats.forEach(m=>{
+          if(!m)return
+          if(m.name==='Basic_Glass'||(m.transmission!==undefined&&m.transmission>0)){
+            m.transparent=true
+            m.opacity=0.30
+            m.roughness=0.08
+            m.metalness=0.05
+            m.depthWrite=false
+            m.side=THREE.DoubleSide
+          }else if(m.name==='Gold'){
+            m.metalness=0.88
+            m.roughness=0.32
+            m.side=THREE.DoubleSide
           }
-          E?.bakeShadows?.()
-        },
-        undefined,
-        err=>console.warn('[BEDROOM CLOCK GLB FALLBACK ACTIVE]',err)
-      )
-    }catch(err){
-      console.warn('[BEDROOM CLOCK GLB FALLBACK ACTIVE]',err)
+        })
+      })
+      clockModel.scale.setScalar(1.45)
+      clockModel.position.set(-1.35,1.12,2.50)
+      clockModel.rotation.set(0,Math.PI,0)
+      interact(clockModel,'clock')
+      add(clockModel)
+
+      g.visible=false
+      g.traverse(o=>{
+        o.visible=false
+        o.userData.np=1
+      })
+
+      if(gltf.animations?.length>0){
+        const mixer=new THREE.AnimationMixer(clockModel)
+        const action=mixer.clipAction(gltf.animations[0])
+        action.play()
+        anim((t,dt)=>mixer.update(dt||0.016))
+      }
+      E?.bakeShadows?.()
+    }
+    if(typeof E.loadGLB==='function'){
+      E.loadGLB(clockUrl).then(onClockLoaded).catch(err=>console.warn('[BEDROOM CLOCK GLB FALLBACK ACTIVE]',err))
+    }else{
+      const readyP=typeof MeshoptDecoder!=='undefined'&&MeshoptDecoder.ready?MeshoptDecoder.ready:Promise.resolve()
+      readyP.then(()=>{
+        const loader=new GLTFLoader()
+        if(typeof MeshoptDecoder!=='undefined')loader.setMeshoptDecoder(MeshoptDecoder)
+        loader.load(clockUrl,onClockLoaded,undefined,err=>console.warn('[BEDROOM CLOCK GLB FALLBACK ACTIVE]',err))
+      }).catch(err=>console.warn('[BEDROOM CLOCK GLB FALLBACK ACTIVE]',err))
     }
   }
  }
 
- {
-  // Physical metal flashlight prop resting on the GLB West vanity desk
-  const flGrp=grp(-3.28,1.10,0.08,0.35)
-  const flBody=mk(new THREE.CylinderGeometry(0.022,0.018,0.22,16),mat({color:0x1c1e24,m:0.85,r:0.35}),0,0.02,0,Math.PI/2,0,0)
-  const flHead=mk(new THREE.CylinderGeometry(0.032,0.022,0.06,16),mat({color:0x282a32,m:0.8,r:0.4}),0,0.02,0.12,Math.PI/2,0,0)
-  const flLens=mk(new THREE.CircleGeometry(0.028,16),mat({color:0xffffff,e:0xffeeaa,ei:0.4,r:0.1}),0,0.02,0.151)
-  flGrp.add(flBody,flHead,flLens)
-  flGrp.traverse(o=>{o.userData.np=1})
-  add(flGrp)
-
-  if(typeof window!=='undefined'&&window.location?.protocol?.startsWith('http')){
-    try{
-      const flUrl='/assets/models/bedroom/flashlight_prop.glb'
-      const loader=new GLTFLoader()
-      if(typeof MeshoptDecoder!=='undefined')loader.setMeshoptDecoder(MeshoptDecoder)
-      loader.load(
-        flUrl,
-        gltf=>{
-          if(!gltf?.scene)return
-          const flModel=gltf.scene
-          flModel.name='flashlight_prop'
-          flModel.traverse(o=>{
-            if(!o.isMesh)return
-            o.userData.np=1
-            o.castShadow=true
-            o.receiveShadow=true
-          })
-          flModel.scale.setScalar(0.7)
-          flModel.position.set(-3.28,1.105,0.08)
-          flModel.rotation.set(0,0.35,0)
-          add(flModel)
-
-          flGrp.visible=false
-          flGrp.traverse(o=>{
-            o.visible=false
-            o.userData.np=1
-          })
-          E?.bakeShadows?.()
-        },
-        undefined,
-        err=>console.warn('[BEDROOM FLASHLIGHT GLB FALLBACK ACTIVE]',err)
-      )
-    }catch(err){
-      console.warn('[BEDROOM FLASHLIGHT GLB FALLBACK ACTIVE]',err)
-    }
-  }
- }
-
- // Subtle blue atmospheric bounce light & floating dust motes
- {const f=new THREE.PointLight(0x6a78ff,1.6,8,2);f.position.set(.4,2.3,1.2);S.add(f)}
- {const n=220,p=[];for(let i=0;i<n;i++)p.push(-W/2+R()*W*.85,.2+R()*(H-.3),-D/2+R()*D*.85);const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(p,3));const pts=new THREE.Points(g,new THREE.PointsMaterial({size:.035,map:TX.dust(),color:0xcdbfff,transparent:true,opacity:.55,depthWrite:false,blending:THREE.AdditiveBlending}));S.add(pts)
+ // Dim floating dust motes in the darkness
+ {const n=200,p=[];for(let i=0;i<n;i++)p.push(-W/2+R()*W*.85,.2+R()*(H-.3),-D/2+R()*D*.85);const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(p,3));const pts=new THREE.Points(g,new THREE.PointsMaterial({size:.032,map:TX.dust(),color:0x9b8ec4,transparent:true,opacity:.32,depthWrite:false,blending:THREE.AdditiveBlending}));S.add(pts)
   anim((t,dt)=>{const a=g.attributes.position;for(let i=0;i<a.count;i++){a.setY(i,(a.getY(i)+dt*.025-.2+H)%(H-.2)+.2);a.setX(i,a.getX(i)+Math.sin(t*.4+i)*.0006)}a.needsUpdate=true})}
 }
 

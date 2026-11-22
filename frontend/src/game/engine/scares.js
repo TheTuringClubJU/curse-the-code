@@ -1,4 +1,4 @@
-// Jump-scare director: clown jumpscare at balanced intervals. In debug/play mode keys 1-5 or J trigger it directly.
+// Jump-scare director: animated 3D Clown Springtrap jumpscare at balanced intervals. Press J or 1-5 to trigger directly.
 import * as THREE from 'three'
 import * as X from './tex.js'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
@@ -11,12 +11,10 @@ function buildClownTexture() {
   const g = base.getContext('2d')
   if (!g) return base
   const cx = base.width / 2
-  // Pale cracked greasepaint highlights
   g.fillStyle = 'rgba(245, 240, 236, 0.25)'
   g.beginPath()
   g.ellipse(cx, 285, 92, 132, 0, 0, Math.PI * 2)
   g.fill()
-  // Crimson diamond clown eye markings & sinister smears
   g.fillStyle = 'rgba(175, 10, 18, 0.88)'
   ;[-1, 1].forEach((s) => {
     const ex = cx + s * 50
@@ -37,7 +35,6 @@ function buildClownTexture() {
     g.fill()
     g.fillStyle = 'rgba(175, 10, 18, 0.88)'
   })
-  // Smeared crimson grin extending up the cheeks
   g.strokeStyle = 'rgba(165, 8, 12, 0.95)'
   g.lineWidth = 14
   g.lineCap = 'round'
@@ -45,7 +42,6 @@ function buildClownTexture() {
   g.moveTo(cx - 88, 378)
   g.quadraticCurveTo(cx, 480, cx + 88, 378)
   g.stroke()
-  // Painted bulbous crimson clown nose
   g.fillStyle = '#cc0b14'
   g.beginPath()
   g.arc(cx, 332, 24, 0, Math.PI * 2)
@@ -58,14 +54,14 @@ export function createScares(E, h) {
   const A = () => h.audio
   const flash = (c, a, ms) => h.onFlash?.(c, a, ms)
 
-  // Clown jumpscare rig attached to camera
+  // Clown jumpscare rig attached directly to camera
   const clownPivot = new THREE.Group()
   clownPivot.visible = false
   clownPivot.userData.np = 1
   cam.add(clownPivot)
 
   const clownGroup = new THREE.Group()
-  clownGroup.position.set(0, -0.05, -1.55)
+  clownGroup.position.set(0, -0.02, -1.68)
   clownGroup.userData.np = 1
 
   const faceTex = X.tex(buildClownTexture(), {})
@@ -86,63 +82,87 @@ export function createScares(E, h) {
 
   clownPivot.add(clownGroup)
 
-  // Asynchronously load 3D animated Clown jumpscare model with procedural fallback
+  // Wait for MeshoptDecoder.ready before loading compressed 3D animated Clown model
   let clownModel = null
   let clownMixer = null
   let clownAction = null
 
-  if (typeof window !== 'undefined' && window.location?.protocol?.startsWith('http')) {
-    try {
-      const loader = new GLTFLoader()
-      if (typeof MeshoptDecoder !== 'undefined') loader.setMeshoptDecoder(MeshoptDecoder)
-      loader.load(
-        '/assets/models/bedroom/clown_springtrap_jumpscare.glb',
-        (gltf) => {
-          if (!gltf?.scene) return
-          clownModel = gltf.scene
-          clownModel.name = 'clown_springtrap_jumpscare'
-          clownModel.traverse((o) => {
-            if (!o.isMesh) return
-            o.userData.np = 1
-            o.userData.ns = 1
-            o.frustumCulled = false
-            const mats = Array.isArray(o.material) ? o.material : [o.material]
-            mats.forEach((m) => {
-              if (!m) return
-              m.fog = false
-              m.depthWrite = false
-              if (m.name?.includes('Eyes') || o.name?.includes('Eyes')) {
-                m.emissive = new THREE.Color(0xff1100)
-                m.emissiveIntensity = 2.5
-              }
-            })
-          })
+  const setupLoadedClown = (gltf) => {
+    if (!gltf?.scene) return
+    clownModel = gltf.scene
+    clownModel.name = 'clown_springtrap_jumpscare'
+    clownModel.traverse((o) => {
+      if (!o.isMesh) return
+      o.userData.np = 1
+      o.userData.ns = 1
+      o.frustumCulled = false
+      const mats = Array.isArray(o.material) ? o.material : [o.material]
+      mats.forEach((m) => {
+        if (!m) return
+        m.fog = false
+        m.depthWrite = true
+        m.depthTest = true
+        m.side = THREE.DoubleSide
+        if (m.name?.includes('Eyes') || o.name?.includes('Eyes')) {
+          m.emissive = new THREE.Color(0xff1100)
+          m.emissiveIntensity = 2.8
+        }
+        m.needsUpdate = true
+      })
+    })
 
-          clownModel.scale.setScalar(0.72)
-          clownModel.position.set(0, -0.75, 0)
-          clownGroup.add(clownModel)
+    // Align head/eyes at local Y ≈ 1.18m directly to camera eye height Y ≈ 0
+    clownModel.scale.setScalar(0.85)
+    clownModel.position.set(0, -1.02, 0)
+    clownModel.rotation.set(0, 0, 0)
+    clownGroup.add(clownModel)
 
-          // 3D model takes over from procedural 2D face fallback
-          faceMesh.visible = false
-          noseMesh.visible = false
+    // Swap from 2D procedural face fallback to 3D clown
+    faceMesh.visible = false
+    noseMesh.visible = false
 
-          if (gltf.animations?.length > 0) {
-            clownMixer = new THREE.AnimationMixer(clownModel)
-            clownAction = clownMixer.clipAction(gltf.animations[0])
-            clownAction.setLoop(THREE.LoopOnce)
-            clownAction.clampWhenFinished = true
-          }
-        },
-        undefined,
-        (err) => console.warn('[BEDROOM CLOWN GLB FALLBACK ACTIVE]', err)
-      )
-    } catch (err) {
-      console.warn('[BEDROOM CLOWN GLB FALLBACK ACTIVE]', err)
+    if (gltf.animations?.length > 0) {
+      clownMixer = new THREE.AnimationMixer(clownModel)
+      clownAction = clownMixer.clipAction(gltf.animations[0])
+      clownAction.setLoop(THREE.LoopOnce)
+      clownAction.clampWhenFinished = true
+      clownAction.timeScale = 0.85
     }
   }
 
+  if (typeof window !== 'undefined' && window.location?.protocol?.startsWith('http')) {
+    const clownUrl = '/assets/models/bedroom/clown_springtrap_jumpscare.glb'
+    if (typeof E.loadGLB === 'function') {
+      E.loadGLB(clownUrl)
+        .then(setupLoadedClown)
+        .catch((err) => console.warn('[BEDROOM CLOWN GLB FALLBACK ACTIVE]', err))
+    } else {
+      const readyP = typeof MeshoptDecoder !== 'undefined' && MeshoptDecoder.ready
+        ? MeshoptDecoder.ready
+        : Promise.resolve()
+      readyP
+        .then(() => {
+          const loader = new GLTFLoader()
+          if (typeof MeshoptDecoder !== 'undefined') loader.setMeshoptDecoder(MeshoptDecoder)
+          loader.load(
+            clownUrl,
+            setupLoadedClown,
+            undefined,
+            (err) => console.warn('[BEDROOM CLOWN GLB FALLBACK ACTIVE]', err)
+          )
+        })
+        .catch((err) => console.warn('[BEDROOM CLOWN GLB FALLBACK ACTIVE]', err))
+    }
+  }
+
+  // Bright camera-mounted key light + red underlight so the 3D clown pops clearly in the dark room
+  const scareKeyLight = new THREE.PointLight(0xfff0e8, 0, 6.0)
+  scareKeyLight.position.set(0, 0.12, -0.25)
+  scareKeyLight.visible = false
+  cam.add(scareKeyLight)
+
   const scareLight = new THREE.PointLight(0xff2200, 0, 5.0)
-  scareLight.position.set(0, 0, -0.4)
+  scareLight.position.set(0, -0.25, -0.45)
   scareLight.visible = false
   cam.add(scareLight)
 
@@ -151,43 +171,52 @@ export function createScares(E, h) {
       cond: () => true,
       start() {
         clownPivot.visible = true
+        scareKeyLight.visible = true
+        scareKeyLight.intensity = 12.0
         scareLight.visible = true
         scareLight.intensity = 10.0
-        clownGroup.position.set(0, -0.05, -1.55)
+        clownGroup.position.set(0, -0.02, -1.68)
         clownGroup.rotation.set(0, 0, 0)
         clownGroup.scale.setScalar(1.0)
         if (clownAction) {
+          clownAction.timeScale = 0.85
           clownAction.reset().play()
         }
-        A()?.stinger?.(1.0)
-        A()?.screech?.(E.px(), E.pz())
-        E.shake?.(2.8, 4.2)
-        flash?.('#800000', 0.85, 450)
-        sc.v = 0.05
+        if (A()?.jumpscareSting) {
+          A().jumpscareSting(1.45)
+        } else {
+          A()?.stinger?.(1.0)
+          A()?.screech?.(E.px(), E.pz())
+        }
+        E.shake?.(2.6, 1.75)
+        flash?.('#550000', 0.28, 130)
+        sc.v = 0.2
       },
       upd(t, dt) {
         if (clownMixer) {
           clownMixer.update(dt || 0.016)
         }
-        sc.v = Math.sin(t * 38) > 0 ? 0.85 : 0.06
+        sc.v = Math.sin(t * 38) > 0 ? 0.65 : 0.12
+        scareKeyLight.intensity = 11.5 + Math.sin(t * 42) * 2.5
         scareLight.intensity = 8.0 + Math.sin(t * 45) * 4.0
 
-        const lunge = Math.sin(Math.min(Math.PI * 0.5, t * 3.0)) * 0.82
-        const spasm = Math.sin(t * 26) * 0.035
-        clownGroup.position.z = -1.55 + lunge + spasm
-        clownGroup.position.x = Math.sin(t * 55) * 0.025
-        clownGroup.position.y = -0.05 + Math.cos(t * 45) * 0.025
-        clownGroup.rotation.z = Math.sin(t * 32) * 0.09
-        clownGroup.scale.setScalar(1.0 + Math.min(0.45, t * 0.35))
+        const lunge = Math.sin(Math.min(Math.PI * 0.5, t * 4.5)) * 0.50
+        const spasm = Math.sin(t * 28) * 0.025
+        clownGroup.position.z = -1.68 + lunge + spasm
+        clownGroup.position.x = Math.sin(t * 55) * 0.02
+        clownGroup.position.y = -0.02 + Math.cos(t * 45) * 0.02
+        clownGroup.rotation.z = Math.sin(t * 32) * 0.06
+        clownGroup.scale.setScalar(1.0 + Math.min(0.25, t * 0.18))
 
-        if (t > 4.2) {
+        if (t > 1.75) {
           if (clownAction) {
             clownAction.stop()
           }
           clownPivot.visible = false
+          scareKeyLight.visible = false
           scareLight.visible = false
           sc.v = 1
-          clownGroup.position.set(0, -0.05, -1.55)
+          clownGroup.position.set(0, -0.02, -1.68)
           clownGroup.rotation.set(0, 0, 0)
           clownGroup.scale.setScalar(1.0)
           A()?.heartbeat?.(true)
@@ -199,8 +228,8 @@ export function createScares(E, h) {
   }
 
   let act = null, at = 0
-  // Reduced frequency: first jumpscare strikes ~45s after entering room
-  let nextAt = 45
+  // First jumpscare strikes ~20s after entering room
+  let nextAt = 20
 
   const trigger = () => {
     if (act) return
@@ -217,7 +246,7 @@ export function createScares(E, h) {
   let onKey = null
   if (typeof window !== 'undefined') {
     onKey = (e) => {
-      if (['INPUT', 'TEXTAREA'].includes(e.target?.tagName) || !document.pointerLockElement) return
+      if (['INPUT', 'TEXTAREA'].includes(e.target?.tagName)) return
       if (['1', '2', '3', '4', '5', 'j', 'J'].includes(e.key)) {
         trigger()
       }
@@ -233,20 +262,17 @@ export function createScares(E, h) {
         at += dt
         if (act.upd(at, dt)) {
           act = null
-          // Reduced frequency: subsequent jumpscares trigger every 90-140s
-          nextAt = t + rnd(90, 140)
+          nextAt = t + rnd(70, 110)
         }
         return
       }
-      // Never trigger while a modal is open / player is typing (pointer is unlocked).
-      // Postpone nextAt so closing a modal doesn't immediately ambush the player on frame 1.
-      if (typeof document !== 'undefined' && !document.pointerLockElement) {
+      if (E.isModalOpen?.() || E.paused) {
         if (t >= nextAt) {
-          nextAt = t + rnd(30, 60)
+          nextAt = t + rnd(20, 40)
         }
         return
       }
-      if (t < nextAt || E.paused) return
+      if (t < nextAt) return
       trigger()
     },
     dispose() {
@@ -254,6 +280,7 @@ export function createScares(E, h) {
         try { clownMixer.stopAllAction() } catch (_) {}
       }
       if (clownPivot.parent) clownPivot.parent.remove(clownPivot)
+      if (scareKeyLight.parent) scareKeyLight.parent.remove(scareKeyLight)
       if (scareLight.parent) scareLight.parent.remove(scareLight)
       if (typeof window !== 'undefined' && onKey) {
         window.removeEventListener('keydown', onKey)
