@@ -305,6 +305,26 @@ export default function Room1Bedroom({ team, onLogout, onTransitionToRoom2 }) {
 
       if (res.ok) {
         searchResult = await res.json();
+        // If inspecting chair and nothing was found directly, search doll compartment for folded note EK01
+        if ((!searchResult || !searchResult.found) && objectId === 'chair') {
+          try {
+            const dollRes = await fetch('/api/game/room/bedroom/search', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'x-session-token': localStorage.getItem('ctc_token') || ''
+              },
+              credentials: 'include',
+              body: JSON.stringify({ object_id: 'doll' })
+            });
+            if (dollRes.ok) {
+              const dollData = await dollRes.json();
+              if (dollData && dollData.found) {
+                searchResult = dollData;
+              }
+            }
+          } catch (_) {}
+        }
         if (searchResult && searchResult.message) {
           showNotification(searchResult.message);
         }
