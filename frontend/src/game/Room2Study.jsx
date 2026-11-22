@@ -77,8 +77,8 @@ export default function Room2Study({
     engineRef.current?.unlock();
   };
 
-  // Fetch initial room data from backend
-  const fetchRoomState = async () => {
+  // Fetch room data from backend (with live teammate sync detection)
+  const fetchRoomState = async (silent = false) => {
     try {
       const res = await fetch('/api/game/room/study', {
         credentials: 'include',
@@ -87,17 +87,38 @@ export default function Room2Study({
         }
       });
       if (!res.ok) {
-        throw new Error(res.status === 401 ? 'Your session has expired. Sign in again to continue.' :
-          res.status === 403 ? 'The Study is locked. Complete the previous room before entering.' :
-          'The Study could not connect to the server. Please try again.');
+        if (!silent) {
+          throw new Error(res.status === 401 ? 'Your session has expired. Sign in again to continue.' :
+            res.status === 403 ? 'The Study is locked. Complete the previous room before entering.' :
+            'The Study could not connect to the server. Please try again.');
+        }
+        return;
       }
       if (res.ok) {
         const data = await res.json();
         if (!mountedRef.current) return;
+        const prevData = roomDataRef.current;
         setLoadError(null);
         setRoomData(data);
         roomDataRef.current = data;
         engineRef.current?.setStudyProgress?.({basketUnlocked: Boolean(data.basket_unlocked), completed: Boolean(data.is_completed), collected: data.collected_fragment_ids?.length || 0, total: data.total_fragments_in_room || 16, clues: data.clues?.map(c => ({id: c.id, is_locked: c.is_locked}))});
+
+        // Detect teammate actions and show live sync toast
+        if (silent && prevData) {
+          const prevFrags = prevData.collected_fragment_ids || [];
+          const nextFrags = data.collected_fragment_ids || [];
+          if (nextFrags.length > prevFrags.length) {
+            showNotification(`Teammate discovered a study fragment (${nextFrags.length}/${data.total_fragments_in_room || 16})!`);
+          }
+          if (!prevData.basket_unlocked && data.basket_unlocked) {
+            showNotification('All study fragments recovered by team! Clue desks unsealed.');
+          }
+          const prevSolved = (prevData.clues || []).filter((c) => c.solved).map((c) => c.id);
+          const nextSolved = (data.clues || []).filter((c) => c.solved && !prevSolved.includes(c.id));
+          if (nextSolved.length > 0) {
+            showNotification(`Teammate solved ${nextSolved[0].title || nextSolved[0].id}!`);
+          }
+        }
 
         // If room is completed, animate blast door open
         if (data.is_completed && engineRef.current) {
@@ -105,9 +126,9 @@ export default function Room2Study({
         }
       }
     } catch (err) {
-      if (mountedRef.current) setLoadError(err.message || 'The Study could not connect to the server. Please try again.');
+      if (!silent && mountedRef.current) setLoadError(err.message || 'The Study could not connect to the server. Please try again.');
     } finally {
-      if (mountedRef.current) setLoading(false);
+      if (!silent && mountedRef.current) setLoading(false);
     }
   };
 
@@ -296,8 +317,11 @@ export default function Room2Study({
   useEffect(() => {
     mountedRef.current = true;
     fetchRoomState();
+    const interval = setInterval(() => {
+      fetchRoomState(true);
+    }, 2000);
 
-    if (!mountRef.current) return;
+    if (!mountRef.current) return () => clearInterval(interval);
 
     const audio = new StudyAudio();
     audioRef.current = audio;
