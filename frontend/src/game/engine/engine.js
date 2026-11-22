@@ -452,7 +452,7 @@ export function createEngine(el,room,h){
        v0.set(0, 0);
      }
      ray.setFromCamera(v0, cam);
-     ray.far = room.id === 'control' ? 4.2 : 5.5;
+     ray.far = room.id === 'bedroom' ? 2.4 : room.id === 'control' ? 4.2 : 5.5;
      const hits = studyPicker ? studyPicker.intersect(ray, pick) : ray.intersectObjects(pick, false);
      const hitMesh = hits.find(it => it.object?.userData?.id);
      const id = hitMesh?.object?.userData?.id || null;
