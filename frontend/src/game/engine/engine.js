@@ -28,18 +28,21 @@ export { posterCanvas } from './tex.js'
 export function createEngine(el,room,h){
  const tb0=performance.now()
  const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches,T=room.theme,[W,H,D]=room.size,debug=new URLSearchParams(location.search).has('debug')
- const isVault=room.id==='vault',isStudy=room.id==='study',isControl=room.id==='control'
+ const isVault=room.id==='vault',isStudy=room.id==='study',isControl=room.id==='control',isBedroom=room.id==='bedroom'
  const hwCores=typeof navigator!=='undefined'&&Number(navigator.hardwareConcurrency)>0?Number(navigator.hardwareConcurrency):8
  const devMem=typeof navigator!=='undefined'&&Number(navigator.deviceMemory)>0?Number(navigator.deviceMemory):8
- const isLowSpecControl=isControl&&(hwCores<=4||devMem<=4)
+ const isLowSpec=hwCores<=4||devMem<=4
+ const isLowSpecControl=isControl&&isLowSpec
  const studyLow=isStudy&&isStudyLowDetail()
  const nativeRatio=isStudy
    ? Math.min(devicePixelRatio,studyLow?.85:1)
    : isVault
    ? Math.min(devicePixelRatio,0.72)
+   : isBedroom
+   ? Math.min(devicePixelRatio,isLowSpec?0.72:0.82)
    : Math.min(devicePixelRatio,1.0)
  const R=new THREE.WebGLRenderer({
-   antialias:isControl?!isLowSpecControl:(!studyLow&&!isVault),
+   antialias:isControl?!isLowSpecControl:(isBedroom?!isLowSpec:(!studyLow&&!isVault)),
    stencil:false,
    powerPreference:'high-performance'
  })
@@ -354,7 +357,7 @@ export function createEngine(el,room,h){
  const studyPicker=room.id==='study'?createStudyPicker():null;let lastStudyPick=0;
  const FPS_LIMIT = room.id==='vault' ? 65 : 60;
  const studyQuality=room.id==='study'?createStudyQuality(R,nativeRatio,studyLow):null;
- const FRAME_INTERVAL = 1000 / FPS_LIMIT;
+ const FRAME_INTERVAL = (1000 / (FPS_LIMIT + 2)) - 2.5;
  let lastRenderTime = performance.now();
  let targetFov=72;
  const defaultEco = isLowSpecControl;
