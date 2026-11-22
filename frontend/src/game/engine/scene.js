@@ -180,8 +180,8 @@ export function buildBedroom(E) {
         g.add(hitbox(1.0, 1.1, 0.9, 0, 0.55, 0))
         interact(g, 'nightstand'); add(g); solid(-1.35, -0.33, -2.92, -1.98)
 
-        // Music box (EB07) on open right half of GLB nightstand surface
-        const mb = grp(-0.55, 1.10, -2.35, .18), bw = mat({ map: TX.wood('ebony'), bump: TX.wood('ebony'), bs: .5, r: .5, c: 0x9a7060 })
+        // Music box (EB07) shifted left on GLB nightstand surface to keep framed photo clear
+        const mb = grp(-0.72, 1.10, -2.42, .12), bw = mat({ map: TX.wood('ebony'), bump: TX.wood('ebony'), bs: .5, r: .5, c: 0x9a7060 })
         mb.add(rb(.28, .09, .18, .01, bw, 0, .045, 0, 3), bx(.29, .01, .19, gold, 0, .09, 0), bx(.29, .01, .19, gold, 0, .004, 0))
         mb.add(mk(new THREE.PlaneGeometry(.25, .15), mat({ color: 0x5a0f1a, r: 1 }), 0, .092, 0, -Math.PI / 2, 0, 0))
         const lid = grp(0, .09, -.09); lid.add(rb(.28, .02, .18, .008, bw, 0, 0, .09, 2), bx(.29, .01, .19, gold, 0, .01, .09)); lid.rotation.x = -1.75; mb.add(lid)
@@ -190,22 +190,22 @@ export function buildBedroom(E) {
         bl.add(mk(new THREE.SphereGeometry(.012, 12, 10), mat({ map: TX.doll(), r: .3 }), 0, .115, 0, 0, Math.PI * .5, 0))
         bl.add(mk(new THREE.ConeGeometry(.04, .022, 18, 1, true), mat({ color: 0xe2b7c6, r: .8, side: THREE.DoubleSide }), 0, .07, 0))
             ;[-1, 1].forEach(s => bl.add(mk(new THREE.CylinderGeometry(.003, .003, .045, 6), mat({ color: 0xe6dccd }), s * .02, .09, 0, 0, 0, s * .9))); mb.add(bl)
-        mb.add(hitbox(0.4, 0.35, 0.35, 0, 0.12, 0))
+        mb.add(hitbox(0.32, 0.35, 0.28, 0, 0.12, 0))
         interact(mb, 'musicbox'); add(mb); anim((t) => { bl.rotation.y = t * .45 })
 
         // Candle (EB03) on GLB nightstand surface with dim warm flame light
-        const cg = grp(-0.85, 1.10, -2.32); cg.add(mk(lathe([[0, 0], [.05, 0], [.05, .012], [.02, .03], [.016, .05], [.03, .056], [0, .056]], 16), brass, 0, 0, 0))
+        const cg = grp(-0.98, 1.10, -2.28); cg.add(mk(lathe([[0, 0], [.05, 0], [.05, .012], [.02, .03], [.016, .05], [.03, .056], [0, .056]], 16), brass, 0, 0, 0))
         const wax = mat({ color: 0xd8cfb8, r: .55, e: 0x201408, ei: .3 }); cg.add(mk(new THREE.CylinderGeometry(.017, .019, .17, 16), wax, 0, .14, 0), mk(new THREE.CylinderGeometry(.022, .02, .02, 16), wax, 0, .065, 0))
         for (let i = 0; i < 4; i++)cg.add(mk(new THREE.CylinderGeometry(.0055, .007, .05 + i * .015, 8), wax, Math.cos(i * 1.7) * .018, .16 - i * .015, Math.sin(i * 1.7) * .018))
         const fl = new THREE.Sprite(new THREE.SpriteMaterial({ map: TX.flame(), blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, fog: false })); fl.position.set(0, .29, 0); fl.userData.np = 1; cg.add(fl)
         const gl = new THREE.Sprite(new THREE.SpriteMaterial({ map: TX.glow('w'), blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, fog: false, opacity: .55 })); gl.scale.set(.42, .42, 1); gl.position.set(0, .3, 0); gl.userData.np = 1; cg.add(gl)
-        cg.add(hitbox(0.3, 0.48, 0.3, 0, 0.15, 0))
+        cg.add(hitbox(0.25, 0.48, 0.25, 0, 0.15, 0))
         interact(cg, 'candle'); add(cg)
-        const pl = new THREE.PointLight(0xff9840, 0.16, 1.8, 2); pl.position.set(-0.85, 1.40, -2.32); S.add(pl); E.lightRig(pl, 0.16, E.flick(2, .25)); anim(t => { const f = E.flick(2, .3)(t); fl.scale.set(.05 * (.9 + .2 * f), .11 * (.85 + .3 * f), 1); gl.material.opacity = .22 * f * E.lightScale() })
+        const pl = new THREE.PointLight(0xff9840, 0.16, 1.8, 2); pl.position.set(-0.98, 1.40, -2.28); S.add(pl); E.lightRig(pl, 0.16, E.flick(2, .25)); anim(t => { const f = E.flick(2, .3)(t); fl.scale.set(.05 * (.9 + .2 * f), .11 * (.85 + .3 * f), 1); gl.material.opacity = .22 * f * E.lightScale() })
 
-        // Photo frame (XB01 decoy) on back-right corner of GLB nightstand surface
-        const pf = grp(-0.42, 1.10, -2.60, -.35); pf.add(bx(.14, .19, .02, gold, 0, .1, 0), mk(new THREE.PlaneGeometry(.1, .15), mat({ map: TX.photo(0), r: .5 }), 0, .1, .0125)); pf.add(bx(.03, .12, .01, dark, 0, .07, -.02)); pf.rotation.x = -.15
-        pf.add(hitbox(0.3, 0.35, 0.2, 0, 0.1, 0))
+        // Photo frame (XB01 decoy) placed clearly on front-right of GLB nightstand surface
+        const pf = grp(-0.42, 1.10, -2.30, -.25); pf.add(bx(.14, .19, .02, gold, 0, .1, 0), mk(new THREE.PlaneGeometry(.1, .15), mat({ map: TX.photo(0), r: .5 }), 0, .1, .0125)); pf.add(bx(.03, .12, .01, dark, 0, .07, -.02)); pf.rotation.x = -.15
+        pf.add(hitbox(0.30, 0.35, 0.25, 0, 0.1, 0))
         interact(pf, 'photo_frame'); add(pf)
 
         // Lamp hitbox aligned over the GLB's 3D bedside lamp at (-1.15, 1.10, -2.62); procedural lamp mesh hides on GLB load
