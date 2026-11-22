@@ -241,15 +241,15 @@ export function buildBedroom(E) {
         vis.add(bx(1.2, .5, .02, dark, -.2, .46, -.36))
         g.add(trackVisual(vis))
 
-        // Desk Hitbox specifically over the carved study desk (Drawers & Top from Z:[-1.12, -0.04])
-        const deskBox = hitbox(1.08, 0.96, 0.90, 0.58, 0.48, 0.05)
+        // Desk Hitbox specifically over the carved study desk (Drawers & Top spanning Z:[-1.18, +0.08])
+        const deskBox = hitbox(1.26, 0.95, 0.90, 0.55, 0.475, 0.035)
         g.add(deskBox)
         interact(deskBox, 'desk')
-        add(g); solid(-3.85, -2.92, -1.08, 1.08)
+        add(g); solid(-3.85, -2.90, -1.20, 0.65)
 
-        // Wooden Desk Chair (GLB chair with red seat cushion from Z:[+0.02, +0.70]) - Chair EB12 target
-        const deskChairGrp = grp(-3.30, 0, 0.36, Math.PI / 2)
-        const deskChairBox = hitbox(0.68, 1.25, 0.70, 0, 0.62, 0.06)
+        // Wooden Desk Chair (GLB carved high-back chair at Z:[+0.12, +0.58]) - Chair EB12 target
+        const deskChairGrp = grp(-3.25, 0, 0.35, Math.PI / 2)
+        const deskChairBox = hitbox(0.46, 1.20, 0.60, 0, 0.60, 0)
         deskChairGrp.add(deskChairBox)
         interact(deskChairGrp, 'chair')
         add(deskChairGrp)
