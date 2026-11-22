@@ -1,9 +1,9 @@
-// Room config: haunted Halloween bedroom (blue/violet theme). Scene detail lives in src/scene.js + src/decor.js.
+// Room config: haunted Halloween bedroom (GLB-integrated interior + dark gothic atmosphere). Scene detail lives in scene.js + decor.js.
 export default {
   id: 'bedroom',
   title: "Lena's Bedroom",
   size: [8, 3, 6],
-  spawn: [0.8, 1.8, 0],
+  spawn: [0.8, 1.8, 1.45],
   haunted: true,
   theme: {
     bg: '#140d26',
@@ -15,14 +15,14 @@ export default {
     lamp: '#ffcf8a',
     moon: '#9db8ff'
   },
-  window: { z: -0.8, w: 1.6, y0: 1, y1: 2.3 },
-  lamp: { pos: [3.0, 1.3, -2.5], shadow: true },
-  clock: { pos: [2.7, 1.76, -2.84] },
+  window: { z: 1.65, w: 2.0, y0: 0.7, y1: 2.4 },
+  lamp: { pos: [-3.15, 1.55, 0.58], shadow: true },
+  clock: { pos: [-3.32, 1.36, -1.95] },
   audio: {
     tick: true,
     every: [16, 38],
     whisperCooldown: 50,
-    clock: [2.7, -2.84],
+    clock: [-3.32, -1.95],
     voices: ['seeyou', 'getout', 'behind', 'rex']
   },
   interact: {
