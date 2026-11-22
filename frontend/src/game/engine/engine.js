@@ -88,13 +88,16 @@ export function createEngine(el, room, h) {
   };
   const rnd = (a, b) => a + Math.random() * (b - a)
   const flick = (seed, amt = .3) => t => 1 - amt * Math.abs(Math.sin(t * (6.3 + seed % 5) + seed) * Math.sin(t * (2.9 + seed % 3) + seed * 1.7)) - .04 * Math.abs(Math.sin(t * 31 + seed))
-  let tl = performance.now(); const E = {
+  let tl = performance.now();
+  const retire = (root) => { if (!root) return; root.traverse(m => { const i = pick.indexOf(m); if (i >= 0) pick.splice(i, 1); const list = byId[m.userData?.id]; if (list) { const j = list.indexOf(m); if (j >= 0) list.splice(j, 1); } }); root.visible = false; S.remove(root); };
+  const E = {
     lap: n => { if (debug) { const t = performance.now(); console.info('[ctc] lap', n, Math.round(t - tl)); tl = t } }, S, cam, W, H, D, win: room.window, ref, sc, lampMats: [], lampGlow: null, flick, lightScale: () => sc.v, audio: h.audio, _pick: pick, _byId: byId, _visualById: visualById, _solids: solids,
     anim: f => anims.push(f),
     solid: (x0, x1, z0, z1) => { const box = { x0, x1, z0, z1 }; solids.push(box); return box; },
     removeSolid: box => { const i = solids.indexOf(box); if (i !== -1) solids.splice(i, 1); },
     glow: (m, b, f) => rigG.push({ m, b, f: f || flick(Math.floor(Math.random() * 90), .3) }), lightRig: (l, b, f) => rigL.push({ l, b, f }),
     bakeShadows: () => { R.shadowMap.needsUpdate = true; },
+    retire,
     initPMREM: (intensity = 0.28) => {
       if (!pmremGen) {
         pmremGen = new THREE.PMREMGenerator(R);
