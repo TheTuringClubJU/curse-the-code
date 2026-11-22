@@ -2,7 +2,7 @@
 import { THREE, X, TX, RoundedBoxGeometry, mat, wm, lathe, bgeo, curtainGeo, tube, drapeGeo } from './kit.js'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js'
-import { Reflector } from 'three/examples/jsm/objects/Reflector.js'
+import { capStudyTextures, optimizeStudyMaterials } from './studyPerformance.js'
 import { buildDecor } from './decor.js'
 export const mk = (geo, m, x = 0, y = 0, z = 0, rx = 0, ry = 0, rz = 0) => { const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); o.rotation.set(rx, ry, rz); return o }
 export const grp = (x = 0, y = 0, z = 0, ry = 0) => { const g = new THREE.Group(); g.position.set(x, y, z); g.rotation.y = ry; return g }
@@ -245,7 +245,7 @@ export function buildBedroom(E) {
         // Mirror (EB11) aligned to GLB West wall tall cracked mirror at (-3.55, 1.92, -0.49)
         const mg = grp(-3.55, 1.92, -0.49, Math.PI / 2)
         const mvis = new THREE.Group()
-        const geo = new THREE.CircleGeometry(1, 48); const mr = new Reflector(geo, { color: 0x707890, textureWidth: 512, textureHeight: 512, clipBias: .003 }); mr.scale.set(.27, .44, 1); mr.position.z = .006; mr.userData.np = 1; mvis.add(mr)
+        const geo = new THREE.CircleGeometry(1, 32); const mr = mk(geo, mat({ color: 0x1d2330, roughness: 0.16, metalness: 0.78 }), 0, 0, .006); mr.scale.set(.27, .44, 1); mr.userData.np = 1; mvis.add(mr)
         const fr = mk(new THREE.TorusGeometry(1, .1, 12, 56), gold, 0, 0, .02); fr.scale.set(.31, .48, .35); mvis.add(fr)
         const fr2 = mk(new THREE.TorusGeometry(1, .05, 10, 56), mat({ map: TX.wood('ebony'), r: .6 }), 0, 0, .01); fr2.scale.set(.285, .455, .3); mvis.add(fr2)
         const cr = new THREE.Mesh(new THREE.PlaneGeometry(.56, .9), new THREE.MeshBasicMaterial({ map: X.tex(X.crackC(512, 512, 2, { cx: .4, cy: .45, n: 16 }), {}), transparent: true, opacity: .85, depthWrite: false, fog: false })); cr.scale.set(.95, .95, 1); cr.position.z = .012; cr.userData.np = 1; mvis.add(cr)
@@ -278,15 +278,59 @@ export function buildBedroom(E) {
         ref.chair = { yaw, pv }
         interact(chGrp, 'chair'); add(chGrp); solid(3.38, 4.18, 0.20, 1.08)
 
-        // Porcelain Doll (EK01) seated upright on the East armchair cushion facing West into the room
-        const dg = buildDoll(1.25)
-        dg.position.set(3.76, 0.45, 0.66)
-        dg.rotation.y = -Math.PI / 2
+        // Porcelain Doll (EK01) -> creepy_doll_with_braided_hair.glb seated upright on the East armchair cushion facing West
+        const dg = grp(3.76, 0.45, 0.66, -Math.PI / 2)
+        const dollFallback = buildDoll(1.25)
+        dg.add(dollFallback)
         const dollHit = hitbox(0.65, 0.75, 0.65, 0, 0.25, 0)
         dg.add(dollHit)
-        ref.doll = { g: dg, head: dg.userData.head }
+        ref.doll = { g: dg, head: dollFallback.userData.head }
         interact(dg, 'doll')
         add(dg)
+
+        if (typeof window !== 'undefined' && window.location?.protocol?.startsWith('http') && typeof E.loadGLB === 'function') {
+            E.loadGLB('/assets/models/bedroom/creepy_doll_with_braided_hair.glb').then((gltf) => {
+                const model = gltf?.scene
+                if (!model) return
+                model.name = 'creepy_doll_with_braided_hair'
+                model.updateMatrixWorld(true)
+                const b = new THREE.Box3().setFromObject(model)
+                const sz = b.getSize(new THREE.Vector3())
+                const ctr = b.getCenter(new THREE.Vector3())
+                const targetH = 0.56
+                const scFactor = sz.y > 0.001 ? targetH / sz.y : 1
+                model.position.set(-ctr.x, -b.min.y, -ctr.z)
+                model.traverse((o) => {
+                    if (!o.isMesh) return
+                    o.userData.np = 1
+                    o.castShadow = false
+                    o.receiveShadow = false
+                    const mats = Array.isArray(o.material) ? o.material : [o.material]
+                    mats.forEach((m) => {
+                        if (!m) return
+                        if (m.color) m.color.multiplyScalar(0.76)
+                        m.roughness = Math.max(m.roughness ?? 0.65, 0.70)
+                        m.needsUpdate = true
+                    })
+                })
+                optimizeStudyMaterials(model)
+                capStudyTextures(model, E.bedroomLowDetail ? 256 : 512)
+                const norm = new THREE.Group()
+                norm.add(model)
+                norm.scale.setScalar(scFactor)
+                const holder = grp(3.76, 0.45, 0.66, -Math.PI / 2)
+                holder.add(norm)
+                const glbDollHit = hitbox(0.65, 0.75, 0.65, 0, 0.25, 0)
+                holder.add(glbDollHit)
+                interact(glbDollHit, 'doll')
+                E.visualInteract?.(holder, 'doll')
+                add(holder)
+                ref.doll = { g: holder, head: norm }
+                retireObj(dollFallback)
+                if (dollFallback.parent) dollFallback.parent.remove(dollFallback)
+                if (!E.bedroomLowDetail) E?.bakeShadows?.()
+            }).catch((err) => console.warn('[BEDROOM DOLL GLB FALLBACK ACTIVE]', err))
+        }
     }
 
     // 5. North-West Ornate Carved Double Wardrobe (Wardrobe EB06 at (-3.28, 0, -2.06)) + Opening Door & Ghost Rig
@@ -337,20 +381,25 @@ export function buildBedroom(E) {
                 model.position.set(-ctr.x, -b.min.y, -ctr.z)
                 model.traverse((o) => {
                     if (!o.isMesh) return
-                    o.castShadow = true; o.receiveShadow = true
+                    o.userData.np = 1
+                    o.castShadow = false; o.receiveShadow = false
                     const mats = Array.isArray(o.material) ? o.material : [o.material]
                     mats.forEach((m) => { if (m?.color) { m.color.multiplyScalar(0.62); m.roughness = Math.max(m.roughness ?? 0.75, 0.78); m.needsUpdate = true } })
                     o.updateMatrix(); o.matrixAutoUpdate = false
                 })
+                optimizeStudyMaterials(model)
+                capStudyTextures(model, E.bedroomLowDetail ? 256 : 512)
                 const holder = new THREE.Group()
                 holder.position.set(0.82, 0, 0.42)
                 holder.add(model)
+                const trunkHit = hitbox(0.92, 0.50, 0.62, 0, 0.25, 0)
+                holder.add(trunkHit)
                 holder.updateMatrix(); holder.matrixAutoUpdate = false
-                interact(holder, 'trunk')
+                interact(trunkHit, 'trunk')
                 E.visualInteract?.(holder, 'trunk')
                 add(holder)
                 retireObj(trunkFallback)
-                E?.bakeShadows?.()
+                if (!E.bedroomLowDetail) E?.bakeShadows?.()
             }).catch((err) => console.warn('[BEDROOM TRUNK GLB FALLBACK ACTIVE]', err))
         }
     }
@@ -428,8 +477,8 @@ export function buildBedroom(E) {
             shellRoot.traverse((o) => {
                 if (!o.isMesh) return
                 o.userData.np = 1
-                o.castShadow = true
-                o.receiveShadow = true
+                o.castShadow = false
+                o.receiveShadow = false
                 const mats = Array.isArray(o.material) ? o.material : [o.material]
                 mats.forEach((m) => {
                     if (!m) return
@@ -441,7 +490,27 @@ export function buildBedroom(E) {
                     m.needsUpdate = true
                 })
             })
+            optimizeStudyMaterials(shellRoot)
+            capStudyTextures(shellRoot, E.bedroomLowDetail ? 512 : 1024)
             S.add(shellRoot)
+            shellRoot.updateMatrixWorld(true)
+
+            // Register solid collider for South Sideboard Cabinet (beneath torsion pendulum clock)
+            solid(-2.25, -0.45, 2.22, 2.98)
+
+            // Auto-register solid colliders for all interior floor-standing furniture meshes in the GLB shell
+            shellRoot.traverse((o) => {
+                if (!o.isMesh) return
+                const mb = new THREE.Box3().setFromObject(o)
+                const msz = mb.getSize(new THREE.Vector3())
+                if (msz.x > 0.22 && msz.z > 0.22 && msz.x < 4.5 && msz.z < 4.5 && mb.min.y < 0.85 && mb.max.y > 0.25) {
+                    const nearOuterWall = (msz.x < 0.30 && mb.max.y > 2.0) || (msz.z < 0.30 && mb.max.y > 2.0)
+                    if (!nearOuterWall) {
+                        solid(mb.min.x, mb.max.x, mb.min.z, mb.max.z)
+                    }
+                }
+            })
+
             procShell.forEach((m) => { m.visible = false; m.userData.np = 1 })
             procFurnitureVisuals.forEach((obj) => {
                 obj.traverse((o) => {
@@ -450,7 +519,7 @@ export function buildBedroom(E) {
             })
                 ; (E.ref?.procVisuals || []).forEach((obj) => retireObj(obj))
             retireOnGLB.forEach((obj) => retireObj(obj))
-            E?.bakeShadows?.()
+            if (!E.bedroomLowDetail) E?.bakeShadows?.()
         }
         if (typeof E.loadGLB === 'function') {
             E.loadGLB(shellUrl).then(onShellLoaded).catch((err) => console.warn('[BEDROOM SHELL GLB FALLBACK ACTIVE]', err))
