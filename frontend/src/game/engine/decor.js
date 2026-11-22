@@ -177,9 +177,19 @@ export function buildDecor(E){
   g.add(mk(new THREE.PlaneGeometry(.62,.775),mat({map:TX.portrait(),r:.55}),0,0,.012));const pm=new THREE.MeshBasicMaterial({color:0x06080a}),ps=[];[-1,1].forEach(s=>{const p=mk(new THREE.CircleGeometry(.0105,14),pm,s*.0638,.0647,.0135);p.userData.np=1;g.add(p);ps.push(p)})
   const ptHit=new THREE.Mesh(new THREE.BoxGeometry(0.9,1.1,0.2),new THREE.MeshBasicMaterial({colorWrite:false,depthWrite:false}));ptHit.castShadow=false;ptHit.userData.ns=1;g.add(ptHit);interact(g,'portrait');add(g);anim(()=>{const dx=cam.position.x-g.position.x,dy=cam.position.y-g.position.y,dz=cam.position.z-g.position.z,d=Math.hypot(dx,dy,dz)||1;ps.forEach((p,i)=>{p.position.x=(i?1:-1)*.0638+Math.max(-1,Math.min(1,dx/d*1.6))*.011;p.position.y=.0647+Math.max(-1,Math.min(1,dy/d*1.6))*.007})})}
 
- // Poster (R1-03) flush on South wall above GLB sideboard cabinet
- {const g=grp(-0.45,1.85,2.88,Math.PI);const pt=X.tex(X.posterScene());g.add(mk(new THREE.BoxGeometry(.9,1.3,.006),mat({color:0x3a3228,r:1}),0,0,0),mk(new THREE.PlaneGeometry(.9,1.3),mat({map:pt,r:.9}),0,0,.0035))
-  ;[[-.4,.6,.5],[.4,.6,-.5],[-.4,-.6,-.5],[.4,-.6,.5]].forEach(c=>g.add(mk(new THREE.BoxGeometry(.12,.04,.004),mat({color:0xb8aa80,t:1,o:.55,r:.6}),c[0],c[1],.006,0,0,c[2])));interact(g,'poster');add(g)}
+ // Celestial Poster Plaque (R1-03) flush on upper South wall above GLB sideboard (no overlap)
+ {const g=grp(-0.45,2.22,2.90,Math.PI)
+  g.rotation.z=-0.025
+  const posterHit=new THREE.Mesh(new THREE.BoxGeometry(0.78,0.94,0.16),new THREE.MeshBasicMaterial({colorWrite:false,depthWrite:false}))
+  posterHit.castShadow=false;posterHit.userData.ns=1;g.add(posterHit)
+  if(E.loadGLB){
+   E.loadGLB('/assets/models/bedroom/celestial_poster.glb').then(gltf=>{
+    const model=gltf.scene
+    model.traverse(c=>{if(c.isMesh){c.castShadow=true;c.receiveShadow=true}})
+    g.add(model)
+   }).catch(()=>{})
+  }
+  interact(g,'poster');add(g)}
 
  // Torsion Pendulum Clock (EB09) resting flat on GLB South sideboard cabinet facing North into the room
  {
