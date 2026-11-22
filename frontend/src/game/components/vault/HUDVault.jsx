@@ -164,16 +164,14 @@ export default function HUDVault({
               ].map((step) => (
                 <span
                   key={step.code}
-                  className={`inline-flex items-center gap-1.5 ${
-                    step.done ? 'text-emerald-300' : 'text-white/70'
-                  }`}
+                  className={`inline-flex items-center gap-1.5 ${step.done ? 'text-emerald-300' : 'text-white/70'
+                    }`}
                 >
                   <span
-                    className={`w-2 h-2 rounded-full border ${
-                      step.done
-                        ? 'bg-emerald-400 border-emerald-200'
-                        : 'bg-[#2a1216] border-[#b91c1c]/80'
-                    }`}
+                    className={`w-2 h-2 rounded-full border ${step.done
+                      ? 'bg-emerald-400 border-emerald-200'
+                      : 'bg-[#2a1216] border-[#b91c1c]/80'
+                      }`}
                   />
                   <span>{step.code}</span>
                 </span>
@@ -281,11 +279,10 @@ export default function HUDVault({
                   role="tab"
                   aria-selected={systemTab === 'resolution'}
                   onClick={() => setSystemTab('resolution')}
-                  className={`py-1.5 rounded-lg transition cursor-pointer ${
-                    systemTab === 'resolution'
-                      ? 'bg-[#b91c1c]/80 text-white font-bold shadow-sm'
-                      : 'text-white/65 hover:text-white'
-                  }`}
+                  className={`py-1.5 rounded-lg transition cursor-pointer ${systemTab === 'resolution'
+                    ? 'bg-[#b91c1c]/80 text-white font-bold shadow-sm'
+                    : 'text-white/65 hover:text-white'
+                    }`}
                 >
                   Resolution
                 </button>
@@ -294,11 +291,10 @@ export default function HUDVault({
                   role="tab"
                   aria-selected={systemTab === 'controls'}
                   onClick={() => setSystemTab('controls')}
-                  className={`py-1.5 rounded-lg transition cursor-pointer ${
-                    systemTab === 'controls'
-                      ? 'bg-[#b91c1c]/80 text-white font-bold shadow-sm'
-                      : 'text-white/65 hover:text-white'
-                  }`}
+                  className={`py-1.5 rounded-lg transition cursor-pointer ${systemTab === 'controls'
+                    ? 'bg-[#b91c1c]/80 text-white font-bold shadow-sm'
+                    : 'text-white/65 hover:text-white'
+                    }`}
                 >
                   Controls
                 </button>
@@ -326,11 +322,10 @@ export default function HUDVault({
                               if (onSelectQuality) onSelectQuality(opt.id);
                               else onChangeQuality?.();
                             }}
-                            className={`flex flex-col items-center py-1.5 px-2 rounded-lg border text-[10px] font-mono transition cursor-pointer ${
-                              active
-                                ? 'bg-white/15 border-emerald-400/70 text-white font-bold'
-                                : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10'
-                            }`}
+                            className={`flex flex-col items-center py-1.5 px-2 rounded-lg border text-[10px] font-mono transition cursor-pointer ${active
+                              ? 'bg-white/15 border-emerald-400/70 text-white font-bold'
+                              : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10'
+                              }`}
                           >
                             <span>{opt.label}</span>
                             <span className="text-[9px] text-white/55">{opt.sub}</span>
@@ -356,11 +351,10 @@ export default function HUDVault({
                             key={opt.val}
                             type="button"
                             onClick={() => onChangeFpsCap?.(opt.val)}
-                            className={`flex flex-col items-center py-1.5 px-2 rounded-lg border text-[10px] font-mono transition cursor-pointer ${
-                              active
-                                ? 'bg-white/15 border-emerald-400/70 text-white font-bold'
-                                : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10'
-                            }`}
+                            className={`flex flex-col items-center py-1.5 px-2 rounded-lg border text-[10px] font-mono transition cursor-pointer ${active
+                              ? 'bg-white/15 border-emerald-400/70 text-white font-bold'
+                              : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10'
+                              }`}
                           >
                             <span>{opt.label}</span>
                             <span className="text-[9px] text-white/55">{opt.sub}</span>
@@ -605,11 +599,10 @@ export default function HUDVault({
               type="button"
               onClick={triggerTorchToggle}
               title={flashlightOn ? 'Turn Torchlight OFF [F]' : 'Turn Torchlight ON [F]'}
-              className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border text-white transition cursor-pointer ${
-                flashlightOn
-                  ? 'bg-amber-400/20 hover:bg-amber-400/30 border-amber-300/45'
-                  : 'bg-white/10 hover:bg-white/20 border-white/15'
-              }`}
+              className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border text-white transition cursor-pointer ${flashlightOn
+                ? 'bg-amber-400/20 hover:bg-amber-400/30 border-amber-300/45'
+                : 'bg-white/10 hover:bg-white/20 border-white/15'
+                }`}
             >
               {flashlightOn ? (
                 <Flashlight className="w-3 h-3 text-amber-300" />
