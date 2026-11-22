@@ -31,6 +31,7 @@ export default {
   interact: {
     diary: { label: 'Inspect Diary' },
     doll: { label: 'Inspect Porcelain Doll' },
+    painting: { label: 'Inspect Castle Painting' },
     musicbox: { label: 'Listen to Music Box' },
     poster: { label: 'Inspect Poster' },
     clock: { label: 'Inspect Torsion Pendulum Clock' }

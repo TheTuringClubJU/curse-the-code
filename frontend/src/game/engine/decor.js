@@ -320,6 +320,14 @@ export function buildDecor(E) {
     }
   }
 
+  // Large Castle Landscape Painting (XB02 decoy) on South wall above the clock cabinet at (-1.35, 2.05, 2.95)
+  {
+    const g = grp(-1.35, 2.05, 2.95, Math.PI)
+    const paintGlaze = mk(new THREE.BoxGeometry(1.40, 1.10, 0.12), mat({ color: 0x100c14, t: true, o: 0.04, r: 0.8 }), 0, 0, 0.05)
+    paintGlaze.castShadow = false; g.add(paintGlaze)
+    interact(g, 'painting'); add(g)
+  }
+
   // Dim floating dust motes in the darkness
   {
     const n = 200, p = []; for (let i = 0; i < n; i++)p.push(-W / 2 + R() * W * .85, .2 + R() * (H - .3), -D / 2 + R() * D * .85); const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(p, 3)); const pts = new THREE.Points(g, new THREE.PointsMaterial({ size: .032, map: TX.dust(), color: 0x9b8ec4, transparent: true, opacity: .32, depthWrite: false, blending: THREE.AdditiveBlending })); S.add(pts)
