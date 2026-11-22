@@ -19,6 +19,9 @@ export default function Room1Bedroom({ team, onLogout, onTransitionToRoom2 }) {
   const roomDataRef = useRef(null);
   const handleInteractRef = useRef(null);
   const activeTargetRef = useRef(null);
+  const searchBusyRef = useRef(false);
+  const notificationTimerRef = useRef(null);
+  const mountedRef = useRef(true);
 
   // Game state
   const [roomData, setRoomData] = useState(null);
@@ -87,11 +90,14 @@ export default function Room1Bedroom({ team, onLogout, onTransitionToRoom2 }) {
 
   // Direct window listener for Keyboard shortcuts (E = interact, B = basket, C = clues, P = photo)
   useEffect(() => {
+    mountedRef.current = true;
     const handleGlobalKey = (e) => {
       const tag = (e.target?.tagName || document.activeElement?.tagName || '').toUpperCase();
       if (tag === 'INPUT' || tag === 'TEXTAREA' || e.target?.isContentEditable) {
         return;
       }
+
+      if (e.repeat) return;
 
       // E Key - Interact
       if (e.key === 'e' || e.key === 'E' || e.code === 'KeyE') {
@@ -99,6 +105,7 @@ export default function Room1Bedroom({ team, onLogout, onTransitionToRoom2 }) {
         if (target) {
           e.preventDefault();
           e.stopPropagation();
+          e.stopImmediatePropagation();
           handleInteractRef.current?.(target);
           return;
         }
@@ -252,6 +259,10 @@ export default function Room1Bedroom({ team, onLogout, onTransitionToRoom2 }) {
     }
 
     return () => {
+      mountedRef.current = false;
+      if (notificationTimerRef.current) {
+        clearTimeout(notificationTimerRef.current);
+      }
       if (engineRef.current) {
         engineRef.current.dispose();
         engineRef.current = null;
@@ -277,108 +288,114 @@ export default function Room1Bedroom({ team, onLogout, onTransitionToRoom2 }) {
 
   // Handle interacting (E) with an object
   const handleInteract = async (objectId) => {
-    console.info("[ROOM1 HANDLE_INTERACT RUNNING FOR]", objectId);
-    const currentData = roomDataRef.current;
-
-    // Check if this is the Bedroom Exit Door
-    if (objectId === 'room_door' || objectId === 'door') {
-      if (currentData?.is_completed) {
-        if (onTransitionToRoom2) {
-          onTransitionToRoom2();
-        } else {
-          setIsRoomCompleteModalOpen(true);
-          engineRef.current?.unlock();
-        }
-      } else {
-        const now = Date.now();
-        const ds = typeof doorScareCountRef.current === 'object' ? doorScareCountRef.current : { count: doorScareCountRef.current || 0, lastAt: 0 };
-        const shouldScare = ds.count > 0 && (now - ds.lastAt) >= 45000 && Math.random() < 0.25;
-        ds.count += 1;
-        if (shouldScare) ds.lastAt = now;
-        doorScareCountRef.current = ds;
-        if (shouldScare) {
-          engineRef.current?.triggerDoorScare?.();
-          audioRef.current?.jumpscareSting?.(1.4);
-        } else {
-          audioRef.current?.slam?.(0, 0);
-        }
-        const solvedCount = currentData?.clues?.filter(c => c.solved)?.length || 0;
-        showNotification(
-          `The heavy corridor door is locked with four iron deadbolts. Solve all 4 case files in this room to unlock it (${solvedCount}/4 solved).`
-        );
-      }
-      return;
-    }
-
-    // Trigger spectral wardrobe-opening jumpscare when inspecting/opening the antique wardrobe
-    if (objectId === 'wardrobe') {
-      engineRef.current?.triggerWardrobeScare?.();
-    }
-
-    // 1. Search for a hidden fragment first
-    let searchResult = null;
+    if (!objectId || searchBusyRef.current) return;
+    searchBusyRef.current = true;
     try {
-      const res = await fetch('/api/game/room/bedroom/search', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-session-token': localStorage.getItem('ctc_token') || ''
-        },
-        credentials: 'include',
-        body: JSON.stringify({ object_id: objectId })
-      });
+      console.info("[ROOM1 HANDLE_INTERACT RUNNING FOR]", objectId);
+      const currentData = roomDataRef.current;
 
-      if (res.ok) {
-        searchResult = await res.json();
-        // If inspecting chair and nothing was found directly, search doll compartment for folded note EK01
-        if ((!searchResult || !searchResult.found) && objectId === 'chair') {
-          try {
-            const dollRes = await fetch('/api/game/room/bedroom/search', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'x-session-token': localStorage.getItem('ctc_token') || ''
-              },
-              credentials: 'include',
-              body: JSON.stringify({ object_id: 'doll' })
-            });
-            if (dollRes.ok) {
-              const dollData = await dollRes.json();
-              if (dollData && dollData.found) {
-                searchResult = dollData;
+      // Check if this is the Bedroom Exit Door
+      if (objectId === 'room_door' || objectId === 'door') {
+        if (currentData?.is_completed) {
+          if (onTransitionToRoom2) {
+            onTransitionToRoom2();
+          } else {
+            setIsRoomCompleteModalOpen(true);
+            engineRef.current?.unlock();
+          }
+        } else {
+          const now = Date.now();
+          const ds = typeof doorScareCountRef.current === 'object' ? doorScareCountRef.current : { count: doorScareCountRef.current || 0, lastAt: 0 };
+          const shouldScare = ds.count > 0 && (now - ds.lastAt) >= 45000 && Math.random() < 0.25;
+          ds.count += 1;
+          if (shouldScare) ds.lastAt = now;
+          doorScareCountRef.current = ds;
+          if (shouldScare) {
+            engineRef.current?.triggerDoorScare?.();
+            audioRef.current?.jumpscareSting?.(1.4);
+          } else {
+            audioRef.current?.slam?.(0, 0);
+          }
+          const solvedCount = currentData?.clues?.filter(c => c.solved)?.length || 0;
+          showNotification(
+            `The heavy corridor door is locked with four iron deadbolts. Solve all 4 case files in this room to unlock it (${solvedCount}/4 solved).`
+          );
+        }
+        return;
+      }
+
+      // Trigger spectral wardrobe-opening jumpscare when inspecting/opening the antique wardrobe
+      if (objectId === 'wardrobe') {
+        engineRef.current?.triggerWardrobeScare?.();
+      }
+
+      // 1. Search for a hidden fragment first
+      let searchResult = null;
+      try {
+        const res = await fetch('/api/game/room/bedroom/search', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-session-token': localStorage.getItem('ctc_token') || ''
+          },
+          credentials: 'include',
+          body: JSON.stringify({ object_id: objectId })
+        });
+
+        if (res.ok) {
+          searchResult = await res.json();
+          // If inspecting chair and nothing was found directly, search doll compartment for folded note EK01
+          if ((!searchResult || !searchResult.found) && objectId === 'chair') {
+            try {
+              const dollRes = await fetch('/api/game/room/bedroom/search', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'x-session-token': localStorage.getItem('ctc_token') || ''
+                },
+                credentials: 'include',
+                body: JSON.stringify({ object_id: 'doll' })
+              });
+              if (dollRes.ok) {
+                const dollData = await dollRes.json();
+                if (dollData && dollData.found) {
+                  searchResult = dollData;
+                }
               }
-            }
-          } catch (_) {}
+            } catch (_) {}
+          }
+          if (searchResult && searchResult.message) {
+            showNotification(searchResult.message);
+          }
+          if (searchResult.found) {
+            fetchRoomState();
+            return;
+          }
         }
-        if (searchResult && searchResult.message) {
-          showNotification(searchResult.message);
-        }
-        if (searchResult.found) {
-          fetchRoomState();
+      } catch (err) {
+        console.error('Search request failed:', err);
+      }
+
+      // 2. If no fragment was found, check if this is a Clue Entry object (Diary, Notebook, Poster, Portrait)
+      const matchingClue = currentData?.clues?.find((c) => c.object_id === objectId);
+      if (matchingClue) {
+        if (!currentData?.basket_unlocked) {
+          showNotification(
+            "The arcane seal is unbroken. You must recover all 15 room fragments to unseal this case file."
+          );
           return;
         }
+        if (matchingClue.is_locked) {
+          showNotification(
+            matchingClue.lock_reason || "This clue is sealed. Complete the preceding clue in sequence first."
+          );
+          return;
+        }
+        setActiveClue(matchingClue);
+        engineRef.current?.unlock();
       }
-    } catch (err) {
-      console.error('Search request failed:', err);
-    }
-
-    // 2. If no fragment was found, check if this is a Clue Entry object (Diary, Notebook, Poster, Portrait)
-    const matchingClue = currentData?.clues?.find((c) => c.object_id === objectId);
-    if (matchingClue) {
-      if (!currentData?.basket_unlocked) {
-        showNotification(
-          "The arcane seal is unbroken. You must recover all 15 room fragments to unseal this case file."
-        );
-        return;
-      }
-      if (matchingClue.is_locked) {
-        showNotification(
-          matchingClue.lock_reason || "This clue is sealed. Complete the preceding clue in sequence first."
-        );
-        return;
-      }
-      setActiveClue(matchingClue);
-      engineRef.current?.unlock();
+    } finally {
+      searchBusyRef.current = false;
     }
   };
   handleInteractRef.current = handleInteract;
@@ -430,9 +447,15 @@ export default function Room1Bedroom({ team, onLogout, onTransitionToRoom2 }) {
   };
 
   const showNotification = (msg) => {
+    if (!mountedRef.current) return;
+    if (notificationTimerRef.current) {
+      clearTimeout(notificationTimerRef.current);
+    }
     setSystemNotification(msg);
-    setTimeout(() => {
-      setSystemNotification(null);
+    notificationTimerRef.current = setTimeout(() => {
+      if (mountedRef.current) {
+        setSystemNotification(null);
+      }
     }, 4500);
   };
 
