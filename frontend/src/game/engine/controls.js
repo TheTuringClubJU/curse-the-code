@@ -338,7 +338,7 @@ export function setupControls({
         return;
       }
       const t = currentTarget;
-      if (t && !dragMoved) {
+      if (t) {
         onInteract?.(t);
       }
     }

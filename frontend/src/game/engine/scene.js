@@ -205,7 +205,7 @@ export function buildBedroom(E) {
             ;[0, 1, 2].forEach(i => { vis.add(bx(.44, .15, .02, dark, .52, .62 - i * .17, .37), mk(new THREE.SphereGeometry(.016, 10, 8), brass, .52, .62 - i * .17, .395)) })
         vis.add(bx(1.2, .5, .02, dark, -.2, .46, -.36))
         g.add(trackVisual(vis))
-        g.add(hitbox(2.1, 1.1, 0.9, 0, 0.55, 0))
+        g.add(hitbox(2.3, 1.35, 1.15, 0, 0.65, 0.1))
         interact(g, 'desk'); add(g); solid(-3.85, -2.92, -1.08, 1.08)
 
         // Mirror (EB11) aligned to GLB West wall tall cracked mirror at (-3.55, 1.92, -0.49)
