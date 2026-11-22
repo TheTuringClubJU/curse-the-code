@@ -14,26 +14,35 @@ export default function ControlDossierModal({
   const [dossierRecords, setDossierRecords] = useState([]);
   const [copiedDossier, setCopiedDossier] = useState(false);
   const [downloadedDossier, setDownloadedDossier] = useState(false);
+  const onCloseRef = React.useRef(onClose);
+  onCloseRef.current = onClose;
+  const prevOpenRef = React.useRef(false);
 
   useEffect(() => {
-    if (!isOpen) return undefined;
+    if (!isOpen) {
+      prevOpenRef.current = false;
+      return undefined;
+    }
     let cancelled = false;
-    fetch('/api/game/round/2/dossier', {
-      credentials: 'include',
-      headers: { 'x-session-token': localStorage.getItem('ctc_token') || '' },
-    })
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (!cancelled && Array.isArray(data?.records)) {
-          setDossierRecords(data.records.filter((r) => r.room === 'control'));
-        }
+    if (!prevOpenRef.current) {
+      prevOpenRef.current = true;
+      fetch('/api/game/round/2/dossier', {
+        credentials: 'include',
+        headers: { 'x-session-token': localStorage.getItem('ctc_token') || '' },
       })
-      .catch(() => {});
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (!cancelled && Array.isArray(data?.records)) {
+            setDossierRecords(data.records.filter((r) => r.room === 'control'));
+          }
+        })
+        .catch(() => {});
+    }
 
     const onKey = (e) => {
       if (e.key === 'Escape') {
         e.stopPropagation();
-        onClose?.();
+        onCloseRef.current?.();
       }
     };
     window.addEventListener('keydown', onKey);
@@ -41,7 +50,7 @@ export default function ControlDossierModal({
       cancelled = true;
       window.removeEventListener('keydown', onKey);
     };
-  }, [isOpen, onClose]);
+  }, [isOpen]);
 
   if (!isOpen) return null;
 

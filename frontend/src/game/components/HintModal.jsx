@@ -24,8 +24,14 @@ export default function HintModal({
   const [errorMsg, setErrorMsg] = useState(null);
   const [latestHint, setLatestHint] = useState(null);
 
-  const fetchStatus = async () => {
-    setLoading(true);
+  const hintStatusRef = React.useRef(null);
+  const onCloseRef = React.useRef(onClose);
+  onCloseRef.current = onClose;
+
+  const fetchStatus = async ({ silent = false } = {}) => {
+    if (!silent && !hintStatusRef.current) {
+      setLoading(true);
+    }
     setErrorMsg(null);
     try {
       const query = roomId ? `?room_id=${encodeURIComponent(roomId)}` : '';
@@ -37,12 +43,15 @@ export default function HintModal({
       });
       if (res.ok) {
         const data = await res.json();
+        hintStatusRef.current = data;
         setHintStatus(data);
-      } else {
+      } else if (!hintStatusRef.current) {
         setErrorMsg('Failed to load hint status.');
       }
     } catch (e) {
-      setErrorMsg('Network error connecting to hint service.');
+      if (!hintStatusRef.current) {
+        setErrorMsg('Network error connecting to hint service.');
+      }
     } finally {
       setLoading(false);
     }
@@ -50,10 +59,22 @@ export default function HintModal({
 
   useEffect(() => {
     if (isOpen) {
-      fetchStatus();
+      fetchStatus({ silent: Boolean(hintStatusRef.current) });
       setLatestHint(null);
     }
   }, [isOpen, roomId]);
+
+  useEffect(() => {
+    if (!isOpen) return undefined;
+    const onKey = (e) => {
+      if (e.key === 'Escape') {
+        e.stopPropagation();
+        onCloseRef.current?.();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [isOpen]);
 
   const isVault = roomId === 'vault';
   const isControlRoom = roomId === 'control';
@@ -76,7 +97,34 @@ export default function HintModal({
       const data = await res.json();
       if (res.ok && (data.success !== false && (data.success || data.target_id || data.hint_text))) {
         setLatestHint(data);
-        await fetchStatus();
+        // Instant in-memory state update - eliminates second network roundtrip delay
+        setHintStatus((prev) => {
+          const newHint = {
+            id: data.target_id,
+            room_id: data.room_id || roomId,
+            hint_category: data.hint_category,
+            target_id: data.target_id,
+            penalty_seconds: data.penalty_seconds || 0,
+            hint_text: data.hint_text,
+            hint_details: data.hint_details || null,
+            created_at: new Date().toISOString()
+          };
+          const existing = prev?.unlocked_hints || [];
+          const exists = existing.some((h) => h.target_id === data.target_id);
+          const updatedHints = exists ? existing : [...existing, newHint];
+          const next = {
+            ...prev,
+            round: data.round || prev?.round || 1,
+            round_budget: data.round_budget || prev?.round_budget || 15,
+            total_budget: data.total_budget || prev?.total_budget || 15,
+            hints_used: data.hints_used ?? (prev?.hints_used ?? 0) + 1,
+            hints_remaining: data.hints_remaining ?? Math.max(0, (prev?.hints_remaining ?? 15) - 1),
+            total_penalty_seconds: data.total_penalty_seconds ?? (prev?.total_penalty_seconds ?? 0) + (data.penalty_applied || 0),
+            unlocked_hints: updatedHints
+          };
+          hintStatusRef.current = next;
+          return next;
+        });
       } else {
         setErrorMsg(data.detail?.message || data.detail || 'Unable to dispatch hint at this time.');
       }
@@ -90,6 +138,9 @@ export default function HintModal({
   const remaining = hintStatus?.hints_remaining ?? 15;
   const totalPenalty = hintStatus?.total_penalty_seconds ?? 0;
   const unlockedHints = hintStatus?.unlocked_hints || [];
+  const archiveHints = unlockedHints.filter(
+    (h) => !latestHint || h.target_id !== latestHint.target_id
+  );
 
   const ui = isControlRoom
     ? {
@@ -404,13 +455,13 @@ export default function HintModal({
               <div className="text-center py-6 text-xs font-mono text-gray-500">
                 Loading hint archives...
               </div>
-            ) : unlockedHints.length === 0 ? (
+            ) : archiveHints.length === 0 ? (
               <div className={ui.emptyArchiveClass}>
-                No hints unlocked yet. Solve cleanly to claim full 100 points!
+                {latestHint ? 'Prior hints will archive here upon unlocking new clues.' : 'No hints unlocked yet. Solve cleanly to claim full 100 points!'}
               </div>
             ) : (
               <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
-                {unlockedHints.map((hint, idx) => (
+                {archiveHints.map((hint, idx) => (
                   <div
                     key={hint.id || idx}
                     className={ui.historyCardClass}

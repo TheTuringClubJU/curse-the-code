@@ -15,6 +15,20 @@ export default function MicrofilmViewerModal({
   const [codeInput, setCodeInput] = useState('');
   const [submitFeedback, setSubmitFeedback] = useState(null);
   const [stareScare, setStareScare] = useState(false);
+  const onCloseRef = React.useRef(onClose);
+  onCloseRef.current = onClose;
+
+  useEffect(() => {
+    if (!isOpen) return undefined;
+    const onKey = (e) => {
+      if (e.key === 'Escape') {
+        e.stopPropagation();
+        onCloseRef.current?.();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [isOpen]);
 
   const attemptsLeft = Math.max(0, (clue.attempts_max || 3) - (clue.attempts || 0));
   const isSolved = Boolean(clue.solved);

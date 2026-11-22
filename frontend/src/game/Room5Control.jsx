@@ -188,8 +188,11 @@ export default function Room5Control({ team, onLogout }) {
       if (res.ok) {
         const data = await res.json();
         const prevData = roomDataRef.current;
-        setRoomData(data);
-        roomDataRef.current = data;
+        const dataChanged = JSON.stringify(data) !== JSON.stringify(prevData);
+        if (dataChanged) {
+          setRoomData(data);
+          roomDataRef.current = data;
+        }
 
         // Detect teammate actions and show live sync toast
         if (silent && prevData) {
@@ -208,6 +211,17 @@ export default function Room5Control({ team, onLogout }) {
           if (nextSolved.length > 0) {
             showNotification(`Teammate verified ${nextSolved[0].title || nextSolved[0].id}! Next console accessible.`);
             audioRef.current?.good?.();
+          }
+
+          // Live Teammate Hint Sync detection
+          if (data.hint_sync) {
+            const prevUsed = Number(prevData.hint_sync?.hints_used || 0);
+            const nextUsed = Number(data.hint_sync.hints_used || 0);
+            if (nextUsed > prevUsed) {
+              const target = data.hint_sync.latest_target_id || 'this chamber';
+              showNotification(`Teammate unlocked a hint (${target}). Press H to view!`);
+              audioRef.current?.click?.();
+            }
           }
         }
 
@@ -453,6 +467,7 @@ export default function Room5Control({ team, onLogout }) {
   useEffect(() => {
     if (!isStarted) return undefined;
     const iv = setInterval(() => {
+      if (isAnyModalOpenRef.current) return;
       const pos = engineRef.current?.getPos?.();
       const px = typeof pos?.x === 'number' && !Number.isNaN(pos.x) ? Number(pos.x.toFixed(1)) : 0.25;
       const pz = typeof pos?.z === 'number' && !Number.isNaN(pos.z) ? Number(pos.z.toFixed(1)) : 0.25;
@@ -977,6 +992,11 @@ export default function Room5Control({ team, onLogout }) {
     engineRef.current?.lock?.();
   }, []);
 
+  const handleCloseClueModal = useCallback(() => {
+    setActiveClueModal(null);
+    resumeGameplayLock();
+  }, [resumeGameplayLock]);
+
   const handleOpenBasket = useCallback(() => {
     fetchBasketState();
     setIsBasketOpen(true);
@@ -1315,10 +1335,7 @@ export default function Room5Control({ team, onLogout }) {
       {activeClueModal === 'R2-01' && (
         <PersonnelIndexModal
           isOpen={true}
-          onClose={() => {
-            setActiveClueModal(null);
-            resumeGameplayLock();
-          }}
+          onClose={handleCloseClueModal}
           onSubmit={(answer) => handleClueSubmit('R2-01', answer)}
           clueState={getClueState('R2-01')}
           teamName={team?.name || ''}
@@ -1329,10 +1346,7 @@ export default function Room5Control({ team, onLogout }) {
       {activeClueModal === 'R2-05' && (
         <TransmissionArchiveModal
           isOpen={true}
-          onClose={() => {
-            setActiveClueModal(null);
-            resumeGameplayLock();
-          }}
+          onClose={handleCloseClueModal}
           onSubmit={(answer) => handleClueSubmit('R2-05', answer)}
           clueState={getClueState('R2-05')}
         />
@@ -1342,10 +1356,7 @@ export default function Room5Control({ team, onLogout }) {
       {activeClueModal === 'R2-06' && (
         <SpectrogramModal
           isOpen={true}
-          onClose={() => {
-            setActiveClueModal(null);
-            resumeGameplayLock();
-          }}
+          onClose={handleCloseClueModal}
           onSubmit={(answer) => handleClueSubmit('R2-06', answer)}
           clueState={getClueState('R2-06')}
         />

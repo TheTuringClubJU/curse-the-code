@@ -2,6 +2,7 @@
 import { THREE, X, TX, RoundedBoxGeometry, BufferGeometryUtils, mat, wm, lathe, bgeo, tube } from './kit.js'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js'
+import { capStudyTextures, optimizeStudyMaterials } from './studyPerformance.js'
 import { mk, grp, buildDoll, pumpkinMesh } from './scene.js'
 const spr = (map, sc, op = 1, blend = true) => { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map, transparent: true, opacity: op, depthWrite: false, fog: false, blending: blend ? THREE.AdditiveBlending : THREE.NormalBlending })); s.scale.set(sc, sc, 1); s.userData.np = 1; s.userData.ns = 1; return s }
 const decal = (map, w, h, x, y, z, ry, o = {}) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshStandardMaterial({ map, transparent: true, depthWrite: false, roughness: o.r ?? .88, metalness: o.m ?? 0, emissive: o.e ?? 0x000000, emissiveMap: o.em ?? null, emissiveIntensity: o.ei ?? 0, polygonOffset: true, polygonOffsetFactor: o.pf ?? -2, opacity: o.o ?? 1 })); m.position.set(x, y, z); m.rotation.set(o.rx || 0, ry, o.rz || 0); m.userData.np = 1; m.userData.ns = 1; return m }
@@ -211,15 +212,22 @@ export function buildDecor(E) {
         norm.scale.setScalar(0.22)
         norm.traverse(c => {
           if (!c.isMesh) return
-          c.castShadow = true; c.receiveShadow = true
+          c.userData.np = 1
+          c.castShadow = false; c.receiveShadow = false
           const mats = Array.isArray(c.material) ? c.material : [c.material]
           mats.forEach(m => { if (m?.color) { m.color.multiplyScalar(0.68); m.roughness = Math.max(m.roughness ?? 0.8, 0.82); m.needsUpdate = true } })
           c.updateMatrix(); c.matrixAutoUpdate = false
         })
+        optimizeStudyMaterials(norm)
+        capStudyTextures(norm, E.bedroomLowDetail ? 256 : 512)
         const holder = grp(2.35, 1.75, 2.94, 0)
         holder.add(norm)
+        const posterHit = new THREE.Mesh(new THREE.BoxGeometry(0.68, 0.84, 0.14), new THREE.MeshBasicMaterial({ colorWrite: false, depthWrite: false }))
+        posterHit.userData._isHitbox = true
+        posterHit.userData.ns = 1
+        posterHit.userData.id = 'poster'
+        holder.add(posterHit)
         holder.updateMatrix(); holder.matrixAutoUpdate = false
-        interact(holder, 'poster')
         E.visualInteract?.(holder, 'poster')
         add(holder)
         g.visible = false
@@ -228,7 +236,7 @@ export function buildDecor(E) {
           if (E._pick) { const i = E._pick.indexOf(o); if (i !== -1) E._pick.splice(i, 1) }
           if (E._byId) { Object.values(E._byId).forEach(arr => { const j = arr.indexOf(o); if (j !== -1) arr.splice(j, 1) }) }
         })
-        E?.bakeShadows?.()
+        if (!E.bedroomLowDetail) E?.bakeShadows?.()
       }).catch(() => { })
     }
   }
@@ -268,18 +276,25 @@ export function buildDecor(E) {
         clockModel.name = 'torsion_pendulum_clock'
         clockModel.traverse(o => {
           if (!o.isMesh) return
-          o.castShadow = true
-          o.receiveShadow = true
+          o.userData.np = 1
+          o.castShadow = false
+          o.receiveShadow = false
           const mats = Array.isArray(o.material) ? o.material : [o.material]
           mats.forEach(m => {
             if (!m) return
             if (m.name === 'Basic_Glass' || (m.transmission !== undefined && m.transmission > 0)) {
+              // Strip transmission refraction so Three.js never re-renders the whole room per frame
+              m.transmission = 0
+              m.thickness = 0
+              m.clearcoat = 0
               m.transparent = true
-              m.opacity = 0.30
-              m.roughness = 0.08
-              m.metalness = 0.05
+              m.opacity = 0.28
+              m.roughness = 0.12
+              m.metalness = 0.08
               m.depthWrite = false
-              m.side = THREE.DoubleSide
+              m.side = THREE.FrontSide
+              m.forceSinglePass = true
+              m.needsUpdate = true
             } else if (m.name === 'Gold') {
               m.metalness = 0.88
               m.roughness = 0.32
@@ -287,10 +302,17 @@ export function buildDecor(E) {
             }
           })
         })
+        optimizeStudyMaterials(clockModel)
+        capStudyTextures(clockModel, E.bedroomLowDetail ? 256 : 512)
         clockModel.scale.setScalar(1.45)
         clockModel.position.set(-1.35, 1.08, 2.50)
         clockModel.rotation.set(0, Math.PI, 0)
-        interact(clockModel, 'clock')
+        const glbClockHit = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.36, 0.28), new THREE.MeshBasicMaterial({ colorWrite: false, depthWrite: false }))
+        glbClockHit.position.set(0, 0.16, 0)
+        glbClockHit.userData._isHitbox = true
+        glbClockHit.userData.ns = 1
+        glbClockHit.userData.id = 'clock'
+        clockModel.add(glbClockHit)
         add(clockModel)
 
         g.visible = false
@@ -305,7 +327,7 @@ export function buildDecor(E) {
           action.play()
           anim((t, dt) => mixer.update(dt || 0.016))
         }
-        E?.bakeShadows?.()
+        if (!E.bedroomLowDetail) E?.bakeShadows?.()
       }
       if (typeof E.loadGLB === 'function') {
         E.loadGLB(clockUrl).then(onClockLoaded).catch(err => console.warn('[BEDROOM CLOCK GLB FALLBACK ACTIVE]', err))
@@ -328,10 +350,19 @@ export function buildDecor(E) {
     interact(g, 'painting'); add(g)
   }
 
-  // Dim floating dust motes in the darkness
+  // Dim floating dust motes in the darkness (lightweight GPU rotation without CPU buffer re-allocations)
   {
-    const n = 200, p = []; for (let i = 0; i < n; i++)p.push(-W / 2 + R() * W * .85, .2 + R() * (H - .3), -D / 2 + R() * D * .85); const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(p, 3)); const pts = new THREE.Points(g, new THREE.PointsMaterial({ size: .032, map: TX.dust(), color: 0x9b8ec4, transparent: true, opacity: .32, depthWrite: false, blending: THREE.AdditiveBlending })); S.add(pts)
-    anim((t, dt) => { const a = g.attributes.position; for (let i = 0; i < a.count; i++) { a.setY(i, (a.getY(i) + dt * .025 - .2 + H) % (H - .2) + .2); a.setX(i, a.getX(i) + Math.sin(t * .4 + i) * .0006) } a.needsUpdate = true })
+    const n = 60, p = []; for (let i = 0; i < n; i++)p.push(-W / 2 + R() * W * .85, .2 + R() * (H - .3), -D / 2 + R() * D * .85);
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(p, 3));
+    const pts = new THREE.Points(g, new THREE.PointsMaterial({ size: .032, map: TX.dust(), color: 0x9b8ec4, transparent: true, opacity: .32, depthWrite: false, blending: THREE.AdditiveBlending }));
+    pts.visible = !E.bedroomLowDetail;
+    E._bedroomDust = pts;
+    S.add(pts);
+    anim((t) => {
+      if (!pts.visible) return;
+      pts.rotation.y = Math.sin(t * 0.05) * 0.08;
+    });
   }
 }
 
