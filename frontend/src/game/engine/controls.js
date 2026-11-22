@@ -146,14 +146,16 @@ export function setupControls({
   // Ensure initial spawn is not trapped in any collision solid
   resolvePenetration();
 
-  // Mouse Look: Continuous 360 rotation
+  // Mouse Look: Continuous 360 rotation with frame-clamped accumulation (prevents Chromium pointer-lock spikes)
   let prevClientX = null, prevClientY = null;
   let downClientX = null, downClientY = null;
   let isPointerDown = false;
   let dragMoved = false;
   let lastLockChangeAt = 0;
+  let pendingYawDelta = 0;
+  let pendingPitchDelta = 0;
   const pointerNDC = { x: 0, y: 0 };
-  const clampDelta = (v) => Math.max(-75, Math.min(75, v));
+  const clampDelta = (v) => Math.max(-65, Math.min(65, v));
 
   let cachedRect = controlMode ? (canvas?.getBoundingClientRect?.() || null) : null;
   const refreshRect = () => {
@@ -211,14 +213,22 @@ export function setupControls({
     if (locked) {
       mx = e.movementX ?? 0;
       my = e.movementY ?? 0;
-      if (controlMode && performance.now() - lastLockChangeAt < 80 && (Math.abs(mx) > 45 || Math.abs(my) > 45)) {
+      // Reject Chromium/Windows pointer-lock warp spikes (>110px single event or right after lock change)
+      if ((performance.now() - lastLockChangeAt < 120 && (Math.abs(mx) > 40 || Math.abs(my) > 40)) || Math.abs(mx) > 110 || Math.abs(my) > 110) {
         return;
       }
     } else if (!controlMode || isPointerDown) {
       // Unlocked: drag-to-look in controlMode, or free move look in Rooms 1-4
       if (e.clientX !== undefined && prevClientX !== null) {
-        mx = e.clientX - prevClientX;
-        my = e.clientY - prevClientY;
+        const rawDx = e.clientX - prevClientX;
+        const rawDy = e.clientY - prevClientY;
+        if (Math.hypot(rawDx, rawDy) > 160) {
+          prevClientX = e.clientX;
+          prevClientY = e.clientY;
+          return;
+        }
+        mx = rawDx;
+        my = rawDy;
         if (downClientX !== null && Math.hypot(e.clientX - downClientX, e.clientY - downClientY) > (controlMode ? 4 : 5)) {
           dragMoved = true;
         }
@@ -231,17 +241,20 @@ export function setupControls({
     }
 
     if (mx !== 0 || my !== 0) {
-      if (controlMode) {
-        const cmx = clampDelta(mx);
-        const cmy = clampDelta(my);
-        const sens = (locked ? 0.0024 : 0.0058) * sensitivity;
-        targetYaw -= cmx * sens;
-        targetPitch = Math.max(-1.45, Math.min(1.45, targetPitch - cmy * sens));
-      } else {
-        const scale = 0.0035 * sensitivity;
-        yaw -= mx * scale;
-        pitch = Math.max(-1.45, Math.min(1.45, pitch - my * scale));
-      }
+      const cmx = clampDelta(mx);
+      const cmy = clampDelta(my);
+      const sens = controlMode
+        ? (locked ? 0.0024 : 0.0058) * sensitivity
+        : (locked ? 0.0026 : 0.0032) * sensitivity;
+      const maxFrameRad = 0.24;
+      const dY = -cmx * sens;
+      const dP = -cmy * sens;
+      const remY = Math.max(-maxFrameRad, Math.min(maxFrameRad, pendingYawDelta + dY)) - pendingYawDelta;
+      const remP = Math.max(-maxFrameRad, Math.min(maxFrameRad, pendingPitchDelta + dP)) - pendingPitchDelta;
+      pendingYawDelta += remY;
+      pendingPitchDelta += remP;
+      targetYaw += remY;
+      targetPitch = Math.max(-1.45, Math.min(1.45, targetPitch + remP));
     }
   };
 
@@ -285,6 +298,8 @@ export function setupControls({
     prevClientY = null;
     downClientX = null;
     downClientY = null;
+    pendingYawDelta = 0;
+    pendingPitchDelta = 0;
     isPointerDown = false;
     dragMoved = false;
   };
@@ -293,6 +308,8 @@ export function setupControls({
     lastLockChangeAt = performance.now();
     prevClientX = null;
     prevClientY = null;
+    pendingYawDelta = 0;
+    pendingPitchDelta = 0;
     if (!controlMode && !checkPointerLocked()) {
       activeKeys.clear();
     }
@@ -359,6 +376,9 @@ export function setupControls({
 
   // Per-frame physics
   const update = (dt) => {
+    pendingYawDelta = 0;
+    pendingPitchDelta = 0;
+
     if (controlMode) {
       if (overrideActive) {
         const snapAlpha = 1 - Math.exp(-26 * dt);
@@ -370,6 +390,8 @@ export function setupControls({
         return { px, pz, yaw, pitch, walk, isMoving: false };
       }
       if (inputPaused) {
+        pendingYawDelta = 0;
+        pendingPitchDelta = 0;
         return { px, pz, yaw, pitch, walk, isMoving: false };
       }
       const rotAlpha = 1 - Math.exp(-52 * dt);
@@ -377,7 +399,17 @@ export function setupControls({
       pitch += (targetPitch - pitch) * rotAlpha;
     } else if (isInputBlocked()) {
       activeKeys.clear();
+      prevClientX = null;
+      prevClientY = null;
+      pendingYawDelta = 0;
+      pendingPitchDelta = 0;
+      targetYaw = yaw;
+      targetPitch = pitch;
       return { px, pz, yaw, pitch, walk, isMoving: false };
+    } else {
+      const rotAlpha = 1 - Math.exp(-44 * dt);
+      yaw += (targetYaw - yaw) * rotAlpha;
+      pitch += (targetPitch - pitch) * rotAlpha;
     }
     const moveF = (activeKeys.has('KeyW') || activeKeys.has('w') || activeKeys.has('ArrowUp')) ? 1 : 0;
     const moveB = (activeKeys.has('KeyS') || activeKeys.has('s') || activeKeys.has('ArrowDown')) ? 1 : 0;
@@ -496,7 +528,7 @@ export function setupControls({
       yaw = targetYaw = y;
       pitch = targetPitch = p;
     },
-    getPos: () => ({ x: px, z: pz, yaw: controlMode ? targetYaw : yaw, pitch: controlMode ? targetPitch : pitch }),
+    getPos: () => ({ x: px, z: pz, yaw: targetYaw, pitch: targetPitch }),
     resetInput: onWindowBlur,
     dispose
   };

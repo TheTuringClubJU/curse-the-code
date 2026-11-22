@@ -4,7 +4,7 @@ import {render, screen, cleanup} from '@testing-library/react';
 import App from '../App.jsx';
 import {checkAuthStatus} from '../userlogin/authApi';
 
-vi.mock('../userlogin/authApi', () => ({checkAuthStatus:vi.fn(),logoutTeam:vi.fn()}));
+vi.mock('../userlogin/authApi', () => ({checkAuthStatus:vi.fn(),logoutTeam:vi.fn(),quickLoginTeam:vi.fn()}));
 vi.mock('../userlogin/UserLogin', () => ({default:() => <div>Team sign in</div>}));
 vi.mock('../lobby/Lobby', () => ({default:() => <div>Waiting lobby</div>}));
 vi.mock('../admin/AdminLogin', () => ({default:() => null}));

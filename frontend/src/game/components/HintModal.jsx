@@ -1,22 +1,26 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
 import {
   X,
   Lightbulb,
   Clock,
-  ShieldAlert,
   MapPin,
   CheckCircle,
   HelpCircle,
   Sparkles,
   Layers,
-  FileText
+  FileText,
+  Archive
 } from 'lucide-react';
 
 export default function HintModal({
   isOpen,
   onClose,
   roomId = 'bedroom',
-  roomTitle = "Lena's Bedroom"
+  roomTitle = "Lena's Bedroom",
+  syncTrigger = 0,
+  collectedIds = [],
+  clues = [],
+  onHintUpdated = null,
 }) {
   const [loading, setLoading] = useState(false);
   const [requesting, setRequesting] = useState(false);
@@ -24,36 +28,122 @@ export default function HintModal({
   const [errorMsg, setErrorMsg] = useState(null);
   const [latestHint, setLatestHint] = useState(null);
 
-  const fetchStatus = async () => {
-    setLoading(true);
-    setErrorMsg(null);
+  const hintStatusRef = useRef(null);
+  const inFlightRef = useRef(false);
+  const epochRef = useRef(0);
+  const prevRoomIdRef = useRef(roomId);
+
+  const fetchStatus = async ({ silent = false } = {}) => {
+    if (inFlightRef.current) return;
+    inFlightRef.current = true;
+    const reqEpoch = epochRef.current;
+    if (!silent && !hintStatusRef.current) {
+      setLoading(true);
+    }
+    if (!silent) {
+      setErrorMsg(null);
+    }
+    const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    const timeoutId = controller ? setTimeout(() => controller.abort(), 10000) : null;
     try {
       const query = roomId ? `?room_id=${encodeURIComponent(roomId)}` : '';
       const res = await fetch(`/api/game/hint/status${query}`, {
         credentials: 'include',
         headers: {
           'x-session-token': localStorage.getItem('ctc_token') || ''
-        }
+        },
+        ...(controller ? { signal: controller.signal } : {})
       });
       if (res.ok) {
         const data = await res.json();
-        setHintStatus(data);
-      } else {
+        if (epochRef.current === reqEpoch) {
+          hintStatusRef.current = data;
+          setHintStatus(data);
+          setErrorMsg(null);
+        }
+      } else if (!hintStatusRef.current) {
         setErrorMsg('Failed to load hint status.');
       }
     } catch (e) {
-      setErrorMsg('Network error connecting to hint service.');
+      if (!hintStatusRef.current) {
+        setErrorMsg('Network error connecting to hint service.');
+      }
     } finally {
+      if (timeoutId) clearTimeout(timeoutId);
+      inFlightRef.current = false;
       setLoading(false);
     }
   };
 
   useEffect(() => {
+    if (prevRoomIdRef.current !== roomId) {
+      prevRoomIdRef.current = roomId;
+      hintStatusRef.current = null;
+      setHintStatus(null);
+      setLatestHint(null);
+    }
     if (isOpen) {
-      fetchStatus();
+      fetchStatus({ silent: Boolean(hintStatusRef.current) });
+      const poll = setInterval(() => {
+        fetchStatus({ silent: true });
+      }, 2500);
+      return () => clearInterval(poll);
+    } else {
       setLatestHint(null);
     }
   }, [isOpen, roomId]);
+
+  useEffect(() => {
+    if (syncTrigger > 0 && (isOpen || hintStatusRef.current)) {
+      fetchStatus({ silent: true });
+    }
+  }, [syncTrigger]);
+
+  const collectedSet = useMemo(() => new Set(collectedIds || []), [collectedIds]);
+  const clueMap = useMemo(() => {
+    const m = new Map();
+    (clues || []).forEach((c) => {
+      if (c?.id) m.set(c.id, c);
+    });
+    return m;
+  }, [clues]);
+
+  const { activeHints, archivedHints, totalUnlocked } = useMemo(() => {
+    const rawList = hintStatus?.unlocked_hints || [
+      ...(hintStatus?.active_hints || []),
+      ...(hintStatus?.archived_hints || [])
+    ];
+    const active = [];
+    const archived = [];
+    const seen = new Set();
+
+    rawList.forEach((hint) => {
+      const tid = hint?.target_id;
+      const dedupeKey = `${hint?.room_id || ''}:${tid || hint?.id}`;
+      if (seen.has(dedupeKey)) return;
+      seen.add(dedupeKey);
+
+      let resolved = Boolean(hint?.is_resolved || hint?.status === 'archived');
+      if (hint?.hint_category === 'fragment' && collectedSet.has(tid)) {
+        resolved = true;
+      } else if (hint?.hint_category === 'clue') {
+        const c = clueMap.get(tid);
+        if (c && (c.solved || (c.attempts_max && c.attempts >= c.attempts_max))) {
+          resolved = true;
+        }
+      }
+
+      const item = { ...hint, is_resolved: resolved, is_active: !resolved };
+      if (resolved) archived.push(item);
+      else active.push(item);
+    });
+
+    return {
+      activeHints: active,
+      archivedHints: archived,
+      totalUnlocked: active.length + archived.length
+    };
+  }, [hintStatus, collectedSet, clueMap]);
 
   const isVault = roomId === 'vault';
   const isControlRoom = roomId === 'control';
@@ -61,8 +151,11 @@ export default function HintModal({
 
   const handleRequestHint = async () => {
     if (requesting) return;
+    epochRef.current += 1;
     setRequesting(true);
     setErrorMsg(null);
+    const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    const timeoutId = controller ? setTimeout(() => controller.abort(), 10000) : null;
     try {
       const res = await fetch('/api/game/hint', {
         method: 'POST',
@@ -71,25 +164,74 @@ export default function HintModal({
           'Content-Type': 'application/json',
           'x-session-token': localStorage.getItem('ctc_token') || ''
         },
-        body: JSON.stringify({ room_id: roomId })
+        body: JSON.stringify({ room_id: roomId }),
+        ...(controller ? { signal: controller.signal } : {})
       });
       const data = await res.json();
       if (res.ok && (data.success !== false && (data.success || data.target_id || data.hint_text))) {
+        epochRef.current += 1;
         setLatestHint(data);
-        await fetchStatus();
+        if (Array.isArray(data.unlocked_hints) || Array.isArray(data.active_hints)) {
+          const nextStatus = {
+            ...(hintStatusRef.current || {}),
+            ...data
+          };
+          hintStatusRef.current = nextStatus;
+          setHintStatus(nextStatus);
+        } else {
+          // Fallback merge for minimal responses/mocks so 1 round-trip is enough
+          const prev = hintStatusRef.current || {
+            total_budget: 15,
+            hints_remaining: 15,
+            total_penalty_seconds: 0,
+            unlocked_hints: []
+          };
+          const prevList = prev.unlocked_hints || [];
+          const exists = prevList.some((h) => h.target_id === data.target_id);
+          const nextList = exists
+            ? prevList
+            : [
+                ...prevList,
+                {
+                  id: data.target_id,
+                  room_id: data.room_id || roomId,
+                  hint_category: data.hint_category || 'fragment',
+                  target_id: data.target_id,
+                  target_title: data.target_title || data.target_id,
+                  penalty_seconds: data.penalty_applied ?? 10,
+                  hint_text: data.hint_text,
+                  hint_details: data.hint_details || null,
+                  is_resolved: false,
+                  is_active: true
+                }
+              ];
+          const penaltyAdd = data.is_free ? 0 : (data.penalty_applied ?? data.penalty_seconds ?? 0);
+          const nextStatus = {
+            ...prev,
+            hints_remaining: data.hints_remaining ?? Math.max(0, (prev.hints_remaining ?? 15) - (exists || data.is_free ? 0 : 1)),
+            total_penalty_seconds: data.total_penalty_seconds ?? ((prev.total_penalty_seconds ?? 0) + penaltyAdd),
+            unlocked_hints: nextList
+          };
+          hintStatusRef.current = nextStatus;
+          setHintStatus(nextStatus);
+        }
+        onHintUpdated?.(data);
       } else {
         setErrorMsg(data.detail?.message || data.detail || 'Unable to dispatch hint at this time.');
       }
     } catch (e) {
       setErrorMsg('Failed to request hint. Please try again.');
     } finally {
+      if (timeoutId) clearTimeout(timeoutId);
       setRequesting(false);
     }
   };
 
   const remaining = hintStatus?.hints_remaining ?? 15;
   const totalPenalty = hintStatus?.total_penalty_seconds ?? 0;
-  const unlockedHints = hintStatus?.unlocked_hints || [];
+  const visibleActiveHints = latestHint
+    ? activeHints.filter((h) => h.target_id !== latestHint.target_id)
+    : activeHints;
 
   const ui = isControlRoom
     ? {
@@ -148,7 +290,7 @@ export default function HintModal({
     ? {
         backdropStyle: undefined,
         panelClass:
-          'bg-[#0a0c10]/94 backdrop-blur-xl border border-slate-500/35 rounded-[2px] border-l-2 border-l-[#b91c1c] shadow-[0_24px_70px_rgba(0,0,0,0.85)]',
+          'bg-[#0a0c10]/96 border border-slate-500/35 rounded-[2px] border-l-2 border-l-[#b91c1c] shadow-[0_24px_70px_rgba(0,0,0,0.85)]',
         headerClass: 'bg-white/[0.03] border-b border-white/10',
         iconWrapClass: 'p-1.5 rounded-[2px] bg-red-950/35 border border-red-500/45',
         iconClass: 'w-5 h-5 text-[#ff9d54]',
@@ -260,7 +402,7 @@ export default function HintModal({
 
   return (
     <div
-      className="fixed inset-0 z-[120] bg-black/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 select-none"
+      className="fixed inset-0 z-[120] bg-black/85 flex items-center justify-center p-3 sm:p-4 select-none"
       style={ui.backdropStyle}
       onClick={onClose}
     >
@@ -388,52 +530,106 @@ export default function HintModal({
             </div>
           )}
 
-          {/* Unlocked Hints History */}
-          <div className="space-y-2.5">
-            <div className={ui.archiveHeaderClass}>
-              <span className={ui.archiveTitleClass}>
-                <FileText className={ui.archiveIconClass} />
-                UNLOCKED DOSSIER ARCHIVE ({unlockedHints.length})
-              </span>
-              <span className={ui.freeBadgeClass}>
-                FREE RE-READING (0 penalty)
-              </span>
-            </div>
+          {/* Active & Archived Hints Sections */}
+          <div className="space-y-4">
+            {/* Active Hints (Current Unresolved Targets) */}
+            <div className="space-y-2.5">
+              <div className={ui.archiveHeaderClass}>
+                <span className={ui.archiveTitleClass}>
+                  <Lightbulb className={ui.archiveIconClass} />
+                  ACTIVE HINTS ({activeHints.length})
+                </span>
+                <span className={ui.freeBadgeClass}>
+                  TEAM LIVE SYNC
+                </span>
+              </div>
 
-            {loading ? (
-              <div className="text-center py-6 text-xs font-mono text-gray-500">
-                Loading hint archives...
-              </div>
-            ) : unlockedHints.length === 0 ? (
-              <div className={ui.emptyArchiveClass}>
-                No hints unlocked yet. Solve cleanly to claim full 100 points!
-              </div>
-            ) : (
-              <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
-                {unlockedHints.map((hint, idx) => (
-                  <div
-                    key={hint.id || idx}
-                    className={ui.historyCardClass}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className={ui.historyTitleClass}>
-                        <CheckCircle className="w-3.5 h-3.5 text-emerald-400" />
-                        <span>
-                          {hint.target_id} • {hint.hint_category === 'fragment' ? 'Fragment Nudge' : 'Clue Guidance'}
+              {loading && !hintStatus ? (
+                <div className="text-center py-4 text-xs font-mono text-gray-500">
+                  Syncing team hints...
+                </div>
+              ) : visibleActiveHints.length === 0 && !latestHint ? (
+                <div className={ui.emptyArchiveClass}>
+                  No active hints pending. Request a hint above if you need a lead!
+                </div>
+              ) : visibleActiveHints.length > 0 ? (
+                <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                  {visibleActiveHints.map((hint, idx) => (
+                    <div
+                      key={`${hint.id || hint.target_id}-active-${idx}`}
+                      className={ui.historyCardClass}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <div className={ui.historyTitleClass}>
+                          <Sparkles className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                          <span>
+                            {hint.target_title || hint.target_id} • {hint.hint_category === 'fragment' ? 'Fragment Nudge' : 'Clue Guidance'}
+                          </span>
+                        </div>
+                        <span className={ui.historyRoomClass}>
+                          {hint.room_id}
                         </span>
                       </div>
-                      <span className={ui.historyRoomClass}>
-                        {hint.room_id}
-                      </span>
+                      {hint.hint_details?.location_prop && (
+                        <div className="text-[11px] text-amber-200/80 flex items-center gap-1 pt-0.5">
+                          <MapPin className="w-3 h-3 text-amber-400 shrink-0" />
+                          <span>{hint.hint_details.location_prop}</span>
+                        </div>
+                      )}
+                      <p className={ui.historyTextClass}>
+                        {hint.hint_details?.guidance || hint.hint_text}
+                      </p>
                     </div>
+                  ))}
+                </div>
+              ) : null}
+            </div>
 
-                    <p className={ui.historyTextClass}>
-                      {hint.hint_text}
-                    </p>
-                  </div>
-                ))}
+            {/* Archived Hints (Completed Fragments / Solved Clues) */}
+            <div className="space-y-2.5">
+              <div className={ui.archiveHeaderClass}>
+                <span className={ui.archiveTitleClass}>
+                  <Archive className={ui.archiveIconClass} />
+                  ARCHIVED HINTS ({archivedHints.length})
+                </span>
+                <span className={ui.freeBadgeClass}>
+                  FREE RE-READING (0 penalty)
+                </span>
               </div>
-            )}
+
+              {archivedHints.length === 0 ? (
+                <div className={ui.emptyArchiveClass}>
+                  {totalUnlocked === 0
+                    ? 'No hints unlocked yet. Solve cleanly to claim full 100 points!'
+                    : 'Resolved hints move here automatically once their fragment or clue is cleared.'}
+                </div>
+              ) : (
+                <div className="space-y-2 max-h-44 overflow-y-auto pr-1">
+                  {archivedHints.map((hint, idx) => (
+                    <div
+                      key={`${hint.id || hint.target_id}-arch-${idx}`}
+                      className={ui.historyCardClass}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <div className={ui.historyTitleClass}>
+                          <CheckCircle className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                          <span>
+                            {hint.target_title || hint.target_id} • {hint.hint_category === 'fragment' ? 'Fragment Cleared' : 'Clue Resolved'}
+                          </span>
+                        </div>
+                        <span className={ui.historyRoomClass}>
+                          {hint.room_id}
+                        </span>
+                      </div>
+
+                      <p className={ui.historyTextClass}>
+                        {hint.hint_details?.guidance || hint.hint_text}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
 

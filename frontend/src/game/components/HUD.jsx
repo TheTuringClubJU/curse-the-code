@@ -22,7 +22,8 @@ export default function HUD({
   onLogout,
   audioMuted = false,
   onToggleAudio,
-  activeHoverPrompt = null
+  activeHoverPrompt = null,
+  qualityControl = null
 }) {
   return (
     <div className="absolute inset-0 pointer-events-none select-none flex flex-col justify-between p-3 sm:p-4 z-40">
@@ -31,7 +32,7 @@ export default function HUD({
       <div className="flex items-center justify-between w-full pointer-events-auto gap-2">
         
         {/* Left: Room Badge */}
-        <div className="flex items-center gap-3 bg-[#0a0714]/85 backdrop-blur-md px-3.5 py-2 rounded-xl border border-[#3b2a59] shadow-lg">
+        <div className="flex items-center gap-3 bg-[#0a0714]/85 backdrop-blur-md px-3.5 py-2 rounded-xl border border-[#3b2a59] shadow-lg shrink-0">
           <Compass className="w-5 h-5 text-[#8f7bff] animate-pulse shrink-0" />
           <div>
             <span className="text-[9px] font-mono tracking-widest text-[#a292cc] uppercase block">
@@ -44,7 +45,7 @@ export default function HUD({
         </div>
 
         {/* Center: Interactive Modals Shortcuts (Basket, Clues, Photo Pieces) */}
-        <div className="flex items-center gap-2 bg-[#0a0714]/85 backdrop-blur-md px-3 py-1.5 rounded-xl border border-[#3b2a59] shadow-lg text-xs font-mono">
+        <div className="flex items-center gap-1.5 sm:gap-2 bg-[#0a0714]/85 backdrop-blur-md px-2.5 sm:px-3 py-1.5 rounded-xl border border-[#3b2a59] shadow-lg text-xs font-mono shrink">
           
           {/* Basket Button (B) */}
           <button
@@ -124,11 +125,13 @@ export default function HUD({
 
         </div>
 
-        {/* Right: Audio & Controls */}
-        <div className="flex items-center gap-2">
+        {/* Right: Quality Controls, Audio & Exit */}
+        <div className="flex items-center gap-2 shrink-0">
+          {qualityControl}
+
           <button
             onClick={onToggleAudio}
-            className="p-2 rounded-xl bg-[#0a0714]/85 backdrop-blur-md border border-[#3b2a59] text-gray-300 hover:text-white hover:bg-white/10 transition shadow-lg"
+            className="p-2 rounded-xl bg-[#0a0714]/85 backdrop-blur-md border border-[#3b2a59] text-gray-300 hover:text-white hover:bg-white/10 transition shadow-lg shrink-0"
             title={audioMuted ? "Unmute Ambient" : "Mute Ambient"}
           >
             {audioMuted ? <VolumeX className="w-4 h-4 text-red-400" /> : <Volume2 className="w-4 h-4 text-[#8f7bff]" />}
@@ -136,7 +139,7 @@ export default function HUD({
 
           <button
             onClick={onLogout}
-            className="p-2 rounded-xl bg-[#0a0714]/85 backdrop-blur-md border border-[#3b2a59] text-gray-400 hover:text-red-400 hover:bg-white/10 transition shadow-lg"
+            className="p-2 rounded-xl bg-[#0a0714]/85 backdrop-blur-md border border-[#3b2a59] text-gray-400 hover:text-red-400 hover:bg-white/10 transition shadow-lg shrink-0"
             title="Exit / Logout"
           >
             <LogOut className="w-4 h-4" />

@@ -11,6 +11,12 @@ from app.login.service import LoginService
 from app.game import vault_service
 from app.game import study_service
 from app.game import hint_service
+from app.game.memory_store import (
+    IN_MEMORY_FRAGMENTS,
+    IN_MEMORY_ROOMS,
+    IN_MEMORY_CLUES,
+    IN_MEMORY_HINTS,
+)
 import hmac
 import hashlib
 
@@ -59,43 +65,69 @@ def get_room_state(room_id: str, request: Request):
         study_service.check_room_access(team["id"], target_room)
         
     conn = get_db_connection()
-    try:
-        with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            # Query fragments already collected by this team in this room
-            cur.execute(
-                "SELECT fragment_id, is_wrapped, collected_at FROM team_fragments WHERE team_id = %s AND room_id = %s",
-                (team["id"], room_id)
-            )
-            collected_fragments = [dict(row) for row in cur.fetchall()]
-            
-            # Query room status
-            cur.execute(
-                "SELECT is_basket_unlocked, is_completed FROM team_rooms WHERE team_id = %s AND room_id = %s",
-                (team["id"], room_id)
-            )
-            room_status = cur.fetchone()
-            
-            # Query clue progress in this room
-            cur.execute(
-                """
-                SELECT clue_id, solved, attempts, score
-                FROM team_clues
-                WHERE team_id = %s AND round = %s
-                """,
-                (team["id"], target_room.get("round", 1))
-            )
-            team_clues = {row["clue_id"]: dict(row) for row in cur.fetchall()}
-            
-            # Query total photo pieces earned in this round (Round 1 photo pieces)
-            cur.execute(
-                "SELECT COUNT(DISTINCT clue_id) as photo_count FROM team_clues WHERE team_id = %s AND round = %s AND solved = TRUE",
-                (team["id"], target_room.get("round", 1))
-            )
-            photo_row = cur.fetchone()
-            photo_pieces_count = photo_row["photo_count"] if photo_row else 0
-            
-    finally:
-        conn.close()
+    collected_fragments = []
+    room_status = None
+    team_clues = {}
+    photo_pieces_count = 0
+    team_hint_rows = []
+    target_round = target_room.get("round", 1)
+
+    if conn:
+        try:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                # Query fragments already collected by this team in this room
+                cur.execute(
+                    "SELECT fragment_id, is_wrapped, collected_at FROM team_fragments WHERE team_id = %s AND room_id = %s",
+                    (team["id"], room_id)
+                )
+                collected_fragments = [dict(row) for row in cur.fetchall()]
+                
+                # Query room status
+                cur.execute(
+                    "SELECT is_basket_unlocked, is_completed FROM team_rooms WHERE team_id = %s AND room_id = %s",
+                    (team["id"], room_id)
+                )
+                room_status = cur.fetchone()
+                
+                # Query clue progress in this room
+                cur.execute(
+                    """
+                    SELECT clue_id, solved, attempts, score
+                    FROM team_clues
+                    WHERE team_id = %s AND round = %s
+                    """,
+                    (team["id"], target_round)
+                )
+                team_clues = {row["clue_id"]: dict(row) for row in cur.fetchall()}
+                
+                # Query total photo pieces earned in this round (Round 1 photo pieces)
+                photo_pieces_count = sum(1 for c in team_clues.values() if c.get("solved"))
+
+                # Query lightweight team hint sync summary in the same DB connection
+                cur.execute(
+                    """
+                    SELECT id, room_id, hint_category, target_id, created_at
+                    FROM team_hints
+                    WHERE team_id = %s AND round = %s
+                    ORDER BY created_at DESC, id DESC
+                    """,
+                    (team["id"], target_round)
+                )
+                team_hint_rows = cur.fetchall()
+        finally:
+            conn.close()
+    else:
+        collected_fragments = [
+            f for f in IN_MEMORY_FRAGMENTS
+            if f.get("team_id") == team["id"] and f.get("room_id") == room_id
+        ]
+        room_status = IN_MEMORY_ROOMS.get((team["id"], room_id), {"is_basket_unlocked": False, "is_completed": False})
+        team_clues = {k[1]: v for k, v in IN_MEMORY_CLUES.items() if k[0] == team["id"]}
+        photo_pieces_count = sum(1 for c in team_clues.values() if c.get("solved"))
+        team_hint_rows = list(reversed([
+            h for h in IN_MEMORY_HINTS
+            if h.get("team_id") == team["id"] and h.get("round") == target_round
+        ]))
         
     collected_ids = [f["fragment_id"] for f in collected_fragments]
     room_evidence = target_room.get("evidence", [])
@@ -106,30 +138,35 @@ def get_room_state(room_id: str, request: Request):
     # Auto-unlock basket if all room fragments are collected (or room has no fragments like vault)
     if not is_basket_unlocked and (total_in_room == 0 or len(collected_ids) >= total_in_room):
         conn = get_db_connection()
-        try:
-            with conn.cursor() as cur:
-                cur.execute(
-                    """
-                    INSERT INTO team_rooms (team_id, room_id, is_basket_unlocked)
-                    VALUES (%s, %s, TRUE)
-                    ON CONFLICT (team_id, room_id)
-                    DO UPDATE SET is_basket_unlocked = TRUE
-                    """,
-                    (team["id"], room_id)
-                )
-                if room_id == "bedroom":
+        if conn:
+            try:
+                with conn.cursor() as cur:
                     cur.execute(
                         """
-                        INSERT INTO team_clues (team_id, round, clue_id, room_id, is_unlocked, unlocked_at)
-                        VALUES (%s, 1, 'R1-01', %s, TRUE, NOW())
-                        ON CONFLICT (team_id, clue_id) DO UPDATE SET is_unlocked = TRUE, unlocked_at = COALESCE(team_clues.unlocked_at, NOW())
+                        INSERT INTO team_rooms (team_id, room_id, is_basket_unlocked)
+                        VALUES (%s, %s, TRUE)
+                        ON CONFLICT (team_id, room_id)
+                        DO UPDATE SET is_basket_unlocked = TRUE
                         """,
                         (team["id"], room_id)
                     )
-                conn.commit()
-            is_basket_unlocked = True
-        finally:
-            conn.close()
+                    if room_id == "bedroom":
+                        cur.execute(
+                            """
+                            INSERT INTO team_clues (team_id, round, clue_id, room_id, is_unlocked, unlocked_at)
+                            VALUES (%s, 1, 'R1-01', %s, TRUE, NOW())
+                            ON CONFLICT (team_id, clue_id) DO UPDATE SET is_unlocked = TRUE, unlocked_at = COALESCE(team_clues.unlocked_at, NOW())
+                            """,
+                            (team["id"], room_id)
+                        )
+                    conn.commit()
+            finally:
+                conn.close()
+        else:
+            IN_MEMORY_ROOMS[(team["id"], room_id)] = {"is_basket_unlocked": True, "is_completed": False}
+            if room_id == "bedroom":
+                IN_MEMORY_CLUES[(team["id"], "R1-01")] = {"clue_id": "R1-01", "round": 1, "room_id": room_id, "is_unlocked": True, "solved": False, "attempts": 0}
+        is_basket_unlocked = True
 
     # Projection of objects with client state
     projected_objects = []
@@ -236,6 +273,16 @@ def get_room_state(room_id: str, request: Request):
                     }
                 })
 
+    latest_hint_row = team_hint_rows[0] if team_hint_rows else None
+    hint_sync = {
+        "round": target_round,
+        "hints_used": len(team_hint_rows),
+        "hints_remaining": max(0, 15 - len(team_hint_rows)),
+        "latest_hint_id": latest_hint_row["id"] if latest_hint_row else None,
+        "latest_target_id": latest_hint_row["target_id"] if latest_hint_row else None,
+        "latest_room_id": latest_hint_row["room_id"] if latest_hint_row else None,
+    }
+
     return {
         "ok": True,
         "room_id": room_id,
@@ -249,7 +296,8 @@ def get_room_state(room_id: str, request: Request):
         "is_completed": is_completed,
         "clues": projected_clues,
         "evidence": projected_evidence,
-        "photo_pieces_collected": photo_pieces_count
+        "photo_pieces_collected": photo_pieces_count,
+        "hint_sync": hint_sync,
     }
 
 @router.get("/room/{room_id}/basket")
@@ -261,40 +309,50 @@ def get_room_basket(room_id: str, request: Request):
         raise HTTPException(status_code=404, detail="Room not found")
 
     conn = get_db_connection()
-    try:
-        with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            cur.execute(
-                "SELECT fragment_id, is_wrapped, collected_at FROM team_fragments WHERE team_id = %s AND room_id = %s",
-                (team["id"], room_id)
-            )
-            collected_fragments = [dict(row) for row in cur.fetchall()]
-
-            cur.execute(
-                "SELECT is_basket_unlocked, is_completed FROM team_rooms WHERE team_id = %s AND room_id = %s",
-                (team["id"], room_id)
-            )
-            room_status = cur.fetchone()
-
-            team_clues = {}
-            team_submissions = {}
-            if room_id == "vault":
+    collected_fragments = []
+    room_status = None
+    team_clues = {}
+    team_submissions = {}
+    if conn:
+        try:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
                 cur.execute(
-                    "SELECT clue_id, solved, score, solved_at FROM team_clues WHERE team_id = %s",
-                    (team["id"],)
+                    "SELECT fragment_id, is_wrapped, collected_at FROM team_fragments WHERE team_id = %s AND room_id = %s",
+                    (team["id"], room_id)
                 )
-                team_clues = {r["clue_id"]: dict(r) for r in cur.fetchall()}
+                collected_fragments = [dict(row) for row in cur.fetchall()]
 
                 cur.execute(
-                    "SELECT clue_id, submitted_answer FROM submissions WHERE team_id = %s AND is_correct = TRUE ORDER BY created_at ASC",
-                    (team["id"],)
+                    "SELECT is_basket_unlocked, is_completed FROM team_rooms WHERE team_id = %s AND room_id = %s",
+                    (team["id"], room_id)
                 )
-                for r in cur.fetchall():
-                    cid = r["clue_id"]
-                    if cid not in team_submissions:
-                        team_submissions[cid] = []
-                    team_submissions[cid].append(r["submitted_answer"])
-    finally:
-        conn.close()
+                room_status = cur.fetchone()
+
+                if room_id == "vault":
+                    cur.execute(
+                        "SELECT clue_id, solved, score, solved_at FROM team_clues WHERE team_id = %s",
+                        (team["id"],)
+                    )
+                    team_clues = {r["clue_id"]: dict(r) for r in cur.fetchall()}
+
+                    cur.execute(
+                        "SELECT clue_id, submitted_answer FROM submissions WHERE team_id = %s AND is_correct = TRUE ORDER BY created_at ASC",
+                        (team["id"],)
+                    )
+                    for r in cur.fetchall():
+                        cid = r["clue_id"]
+                        if cid not in team_submissions:
+                            team_submissions[cid] = []
+                        team_submissions[cid].append(r["submitted_answer"])
+        finally:
+            conn.close()
+    else:
+        collected_fragments = [
+            f for f in IN_MEMORY_FRAGMENTS
+            if f.get("team_id") == team["id"] and f.get("room_id") == room_id
+        ]
+        room_status = IN_MEMORY_ROOMS.get((team["id"], room_id), {"is_basket_unlocked": False, "is_completed": False})
+        team_clues = {k[1]: v for k, v in IN_MEMORY_CLUES.items() if k[0] == team["id"]}
 
     if room_id == "vault":
         # Dynamic Round 2 clue evidence basket feeder
@@ -494,20 +552,23 @@ def get_room_basket(room_id: str, request: Request):
     # Auto-unlock if all collected, or all genuine non-decoy collected in records
     if not is_basket_unlocked and (total_in_room == 0 or len(collected_ids) >= total_in_room or all_genuine_collected):
         conn = get_db_connection()
-        try:
-            with conn.cursor() as cur:
-                cur.execute(
-                    """
-                    INSERT INTO team_rooms (team_id, room_id, is_basket_unlocked)
-                    VALUES (%s, %s, TRUE)
-                    ON CONFLICT (team_id, room_id) DO UPDATE SET is_basket_unlocked = TRUE
-                    """,
-                    (team["id"], room_id)
-                )
-                conn.commit()
-            is_basket_unlocked = True
-        finally:
-            conn.close()
+        if conn:
+            try:
+                with conn.cursor() as cur:
+                    cur.execute(
+                        """
+                        INSERT INTO team_rooms (team_id, room_id, is_basket_unlocked)
+                        VALUES (%s, %s, TRUE)
+                        ON CONFLICT (team_id, room_id) DO UPDATE SET is_basket_unlocked = TRUE
+                        """,
+                        (team["id"], room_id)
+                    )
+                    conn.commit()
+            finally:
+                conn.close()
+        else:
+            IN_MEMORY_ROOMS[(team["id"], room_id)] = {"is_basket_unlocked": True, "is_completed": False}
+        is_basket_unlocked = True
 
     items = []
     for ev in room_evidence:
@@ -570,112 +631,178 @@ def search_object(room_id: str, payload: Dict[str, Any], request: Request):
         }
         
     conn = get_db_connection()
-    try:
-        with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            # Check which pieces from this object have already been collected
-            cur.execute(
-                "SELECT fragment_id FROM team_fragments WHERE team_id = %s AND fragment_id = ANY(%s)",
-                (team["id"], [ev["id"] for ev in matching_evs])
-            )
-            collected_matching = {row["fragment_id"] for row in cur.fetchall()}
-            
-            uncollected_evs = [ev for ev in matching_evs if ev["id"] not in collected_matching]
-            if not uncollected_evs:
-                return {
-                    "found": False,
-                    "already_collected": True,
-                    "message": "You have already recovered the hidden fragment from here."
-                }
+    if conn:
+        try:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                # Check which pieces from this object have already been collected
+                cur.execute(
+                    "SELECT fragment_id FROM team_fragments WHERE team_id = %s AND fragment_id = ANY(%s)",
+                    (team["id"], [ev["id"] for ev in matching_evs])
+                )
+                collected_matching = {row["fragment_id"] for row in cur.fetchall()}
                 
-            cur.execute(
-                """
-                SELECT fragment_id FROM team_fragments
-                WHERE team_id = %s AND room_id = %s
-                """,
-                (team["id"], room_id)
-            )
-            collected_in_room = {row["fragment_id"] for row in cur.fetchall()}
-
-            target_ev = None
-            is_locked = False
-            for ev in uncollected_evs:
-                t_seq = ev.get("seq")
-                t_chain = ev.get("chain", room_id)
-                if t_seq is not None and t_seq > 1:
-                    preceding = [
-                        p["id"] for p in room_evidence
-                        if p.get("chain", room_id) == t_chain and p.get("seq") is not None and p.get("seq") < t_seq
-                    ]
-                    missing = [pid for pid in preceding if pid not in collected_in_room]
-                    if missing:
-                        is_locked = True
-                        continue
-                target_ev = ev
-                break
-
-            if not target_ev:
-                if is_locked:
+                uncollected_evs = [ev for ev in matching_evs if ev["id"] not in collected_matching]
+                if not uncollected_evs:
                     return {
                         "found": False,
-                        "locked": True,
-                        "message": "Locked for now. Follow the investigation trail in order to unlock this."
+                        "already_collected": True,
+                        "message": "You have already recovered the hidden fragment from here."
                     }
-                return {
-                    "found": False,
-                    "message": "You search carefully, but this object contains no hidden compartments."
-                }
                     
-            # Valid pickup! Insert into team_fragments
-            cur.execute(
-                """
-                INSERT INTO team_fragments (team_id, room_id, fragment_id, is_wrapped)
-                VALUES (%s, %s, %s, TRUE)
-                ON CONFLICT (team_id, fragment_id) DO NOTHING
-                """,
-                (team["id"], room_id, target_ev["id"])
-            )
-            conn.commit()
-            
-            # Check total count in room now
-            cur.execute(
-                "SELECT COUNT(*) as cnt FROM team_fragments WHERE team_id = %s AND room_id = %s",
-                (team["id"], room_id)
-            )
-            cnt = cur.fetchone()["cnt"]
-            total_room = len(room_evidence)
-            basket_unlocked = False
-            
-            if cnt >= total_room:
                 cur.execute(
                     """
-                    INSERT INTO team_rooms (team_id, room_id, is_basket_unlocked)
-                    VALUES (%s, %s, TRUE)
-                    ON CONFLICT (team_id, room_id) DO UPDATE SET is_basket_unlocked = TRUE
+                    SELECT fragment_id FROM team_fragments
+                    WHERE team_id = %s AND room_id = %s
                     """,
                     (team["id"], room_id)
                 )
-                if room_id == "bedroom":
+                collected_in_room = {row["fragment_id"] for row in cur.fetchall()}
+
+                target_ev = None
+                is_locked = False
+                for ev in uncollected_evs:
+                    t_seq = ev.get("seq")
+                    t_chain = ev.get("chain", room_id)
+                    if t_seq is not None and t_seq > 1:
+                        preceding = [
+                            p["id"] for p in room_evidence
+                            if p.get("chain", room_id) == t_chain and p.get("seq") is not None and p.get("seq") < t_seq
+                        ]
+                        missing = [pid for pid in preceding if pid not in collected_in_room]
+                        if missing:
+                            is_locked = True
+                            continue
+                    target_ev = ev
+                    break
+
+                if not target_ev:
+                    if is_locked:
+                        return {
+                            "found": False,
+                            "locked": True,
+                            "message": "Locked for now. Follow the investigation trail in order to unlock this."
+                        }
+                    return {
+                        "found": False,
+                        "message": "You search carefully, but this object contains no hidden compartments."
+                    }
+                        
+                # Valid pickup! Insert into team_fragments
+                cur.execute(
+                    """
+                    INSERT INTO team_fragments (team_id, room_id, fragment_id, is_wrapped)
+                    VALUES (%s, %s, %s, TRUE)
+                    ON CONFLICT (team_id, fragment_id) DO NOTHING
+                    """,
+                    (team["id"], room_id, target_ev["id"])
+                )
+                conn.commit()
+                
+                # Check total count in room now
+                cur.execute(
+                    "SELECT COUNT(*) as cnt FROM team_fragments WHERE team_id = %s AND room_id = %s",
+                    (team["id"], room_id)
+                )
+                cnt = cur.fetchone()["cnt"]
+                total_room = len(room_evidence)
+                basket_unlocked = False
+                
+                if cnt >= total_room:
                     cur.execute(
                         """
-                        INSERT INTO team_clues (team_id, round, clue_id, room_id, is_unlocked, unlocked_at)
-                        VALUES (%s, 1, 'R1-01', %s, TRUE, NOW())
-                        ON CONFLICT (team_id, clue_id) DO UPDATE SET is_unlocked = TRUE, unlocked_at = COALESCE(team_clues.unlocked_at, NOW())
+                        INSERT INTO team_rooms (team_id, room_id, is_basket_unlocked)
+                        VALUES (%s, %s, TRUE)
+                        ON CONFLICT (team_id, room_id) DO UPDATE SET is_basket_unlocked = TRUE
                         """,
                         (team["id"], room_id)
                     )
-                conn.commit()
-                basket_unlocked = True
-                
+                    if room_id == "bedroom":
+                        cur.execute(
+                            """
+                            INSERT INTO team_clues (team_id, round, clue_id, room_id, is_unlocked, unlocked_at)
+                            VALUES (%s, 1, 'R1-01', %s, TRUE, NOW())
+                            ON CONFLICT (team_id, clue_id) DO UPDATE SET is_unlocked = TRUE, unlocked_at = COALESCE(team_clues.unlocked_at, NOW())
+                            """,
+                            (team["id"], room_id)
+                        )
+                    conn.commit()
+                    basket_unlocked = True
+                    
+                return {
+                    "found": True,
+                    "fragment_id": target_ev["id"],
+                    "message": f"You discovered a wrapped fragment inside the {object_id.replace('_', ' ')}! It has been placed in your basket.",
+                    "total_collected": cnt,
+                    "total_in_room": total_room,
+                    "basket_unlocked": basket_unlocked
+                }
+        finally:
+            conn.close()
+    else:
+        # Fallback in-memory search for local dev
+        team_frags = [f for f in IN_MEMORY_FRAGMENTS if f.get("team_id") == team["id"] and f.get("room_id") == room_id]
+        collected_matching = {f["fragment_id"] for f in team_frags if f["fragment_id"] in [ev["id"] for ev in matching_evs]}
+        uncollected_evs = [ev for ev in matching_evs if ev["id"] not in collected_matching]
+        if not uncollected_evs:
             return {
-                "found": True,
-                "fragment_id": target_ev["id"],
-                "message": f"You discovered a wrapped fragment inside the {object_id.replace('_', ' ')}! It has been placed in your basket.",
-                "total_collected": cnt,
-                "total_in_room": total_room,
-                "basket_unlocked": basket_unlocked
+                "found": False,
+                "already_collected": True,
+                "message": "You have already recovered the hidden fragment from here."
             }
-    finally:
-        conn.close()
+        collected_in_room = {f["fragment_id"] for f in team_frags}
+        target_ev = None
+        is_locked = False
+        for ev in uncollected_evs:
+            t_seq = ev.get("seq")
+            t_chain = ev.get("chain", room_id)
+            if t_seq is not None and t_seq > 1:
+                preceding = [
+                    p["id"] for p in room_evidence
+                    if p.get("chain", room_id) == t_chain and p.get("seq") is not None and p.get("seq") < t_seq
+                ]
+                missing = [pid for pid in preceding if pid not in collected_in_room]
+                if missing:
+                    is_locked = True
+                    continue
+            target_ev = ev
+            break
+
+        if not target_ev:
+            if is_locked:
+                return {
+                    "found": False,
+                    "locked": True,
+                    "message": "Locked for now. Follow the investigation trail in order to unlock this."
+                }
+            return {
+                "found": False,
+                "message": "You search carefully, but this object contains no hidden compartments."
+            }
+
+        IN_MEMORY_FRAGMENTS.append({
+            "team_id": team["id"],
+            "room_id": room_id,
+            "fragment_id": target_ev["id"],
+            "is_wrapped": True,
+            "collected_at": datetime.now(timezone.utc).isoformat()
+        })
+        cnt = len([f for f in IN_MEMORY_FRAGMENTS if f.get("team_id") == team["id"] and f.get("room_id") == room_id])
+        total_room = len(room_evidence)
+        basket_unlocked = False
+        if cnt >= total_room:
+            IN_MEMORY_ROOMS[(team["id"], room_id)] = {"is_basket_unlocked": True, "is_completed": False}
+            if room_id == "bedroom":
+                IN_MEMORY_CLUES[(team["id"], "R1-01")] = {"clue_id": "R1-01", "round": 1, "room_id": room_id, "is_unlocked": True, "solved": False, "attempts": 0}
+            basket_unlocked = True
+
+        return {
+            "found": True,
+            "fragment_id": target_ev["id"],
+            "message": f"You discovered a wrapped fragment inside the {object_id.replace('_', ' ')}! It has been placed in your basket.",
+            "total_collected": cnt,
+            "total_in_room": total_room,
+            "basket_unlocked": basket_unlocked
+        }
 
 
 @router.post("/clue/{clue_id}/submit")

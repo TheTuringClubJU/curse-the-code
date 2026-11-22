@@ -27,6 +27,7 @@ def seed_demo_teams():
         "pytest" in sys.modules
         or os.getenv("PYTEST_CURRENT_TEST") is not None
         or (DATABASE_URL and "ctc_test" in DATABASE_URL)
+        or not DATABASE_URL
     )
 
     demo_teams = [
@@ -408,7 +409,110 @@ class LoginService:
         return count
 
     @classmethod
-    def get_current_team_by_token(cls, raw_token: str) -> Optional[Dict[str, Any]]:
+    def quick_login(cls, team_name: str = "Team Cipher", ip: str = "127.0.0.1", user_agent: str = "Quick Login", device_label: Optional[str] = None) -> Dict[str, Any]:
+        """
+        Fast direct credential-free login for immediate play or dev testing.
+        Automatically reclaims active sessions so SESSION_LIMIT never blocks the user.
+        """
+        t_key = team_name.strip()
+        now = datetime.now(timezone.utc)
+        team = cls.get_team_by_name(t_key)
+        if not team:
+            seed_demo_teams()
+            team = cls.get_team_by_name(t_key)
+        if not team:
+            team = {
+                "id": 1,
+                "name": team_name,
+                "password_hash": "$2b$12$e6VbH8lA70Bw.3q23/k1AOn07i3a15Zf1E6Uj75a/CcmN2.z4m4o.",
+                "members": ["Member 1", "Member 2"],
+                "contact": "team@cursethecode.local",
+                "is_active": True,
+                "failed_logins": 0,
+                "locked_until": None,
+            }
+            TEAMS_DB[t_key.lower()] = team
+
+        # Clear any prior active sessions for this team so session limit is never an issue
+        conn = get_db_connection()
+        if conn:
+            try:
+                with conn.cursor() as cur:
+                    cur.execute(
+                        "UPDATE team_sessions SET ended_at = %s, ended_reason = 'quick_login_reclaim' WHERE team_id = %s AND ended_at IS NULL",
+                        (now, team["id"])
+                    )
+                    conn.commit()
+            except Exception as e:
+                print("Error clearing sessions in DB for quick login:", e)
+            finally:
+                conn.close()
+
+        for s in SESSIONS_DB.values():
+            if s.get("team_id") == team["id"] and s.get("ended_at") is None:
+                s["ended_at"] = now
+                s["ended_reason"] = "quick_login_reclaim"
+
+        # Create session
+        raw_token = create_session_token()
+        t_hash = hash_token(raw_token)
+        dev_label = device_label or ("Browser on " + (user_agent.split(")")[0].split("(")[-1] if "(" in user_agent else "Device"))
+
+        session_id = None
+        conn = get_db_connection()
+        if conn:
+            try:
+                with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                    cur.execute(
+                        """
+                        INSERT INTO team_sessions (team_id, token_hash, device_label, ip, user_agent, created_at, last_seen_at, expires_at)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                        RETURNING id
+                        """,
+                        (team["id"], t_hash, dev_label[:60], ip, user_agent[:200], now, now, now + timedelta(hours=12))
+                    )
+                    row = cur.fetchone()
+                    if row:
+                        session_id = str(row["id"])
+                    conn.commit()
+            except Exception as e:
+                print("Error inserting team session into DB:", e)
+            finally:
+                conn.close()
+
+        if not session_id:
+            session_id = secrets.token_hex(16)
+
+        session_record = {
+            "id": session_id,
+            "team_id": team["id"],
+            "token_hash": t_hash,
+            "device_label": dev_label[:60],
+            "ip": ip,
+            "user_agent": user_agent[:200],
+            "created_at": now,
+            "last_seen_at": now,
+            "expires_at": now + timedelta(hours=12),
+            "ended_at": None,
+            "ended_reason": None
+        }
+        SESSIONS_DB[t_hash] = session_record
+        cls.record_event(team["id"], "login", {"session_id": session_id, "ip": ip, "device": dev_label, "mode": "quick_login"})
+
+        return {
+            "token": raw_token,
+            "session": session_record,
+            "team": {
+                "id": team["id"],
+                "name": team["name"],
+                "members": team.get("members", []),
+                "contact": team.get("contact", "")
+            },
+            "active_sessions": 1
+        }
+
+    @classmethod
+    def get_current_team_by_token(cls, raw_token: str, include_active_sessions: bool = False) -> Optional[Dict[str, Any]]:
         if not raw_token:
             return None
         t_hash = hash_token(raw_token)
@@ -418,25 +522,39 @@ class LoginService:
         if conn:
             try:
                 with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                    cur.execute(
-                        """
-                        SELECT s.*, t.id as t_id, t.name as t_name, t.members, t.contact, t.is_active
-                        FROM team_sessions s
-                        JOIN teams t ON t.id = s.team_id
-                        WHERE s.token_hash = %s
-                        """,
-                        (t_hash,)
-                    )
+                    if include_active_sessions:
+                        cur.execute(
+                            """
+                            SELECT s.*, t.id as t_id, t.name as t_name, t.members, t.contact, t.is_active,
+                                   (SELECT COUNT(*) FROM team_sessions ts WHERE ts.team_id = s.team_id AND ts.ended_at IS NULL AND ts.expires_at > %s) AS active_count
+                            FROM team_sessions s
+                            JOIN teams t ON t.id = s.team_id
+                            WHERE s.token_hash = %s
+                            """,
+                            (now, t_hash)
+                        )
+                    else:
+                        cur.execute(
+                            """
+                            SELECT s.*, t.id as t_id, t.name as t_name, t.members, t.contact, t.is_active
+                            FROM team_sessions s
+                            JOIN teams t ON t.id = s.team_id
+                            WHERE s.token_hash = %s
+                            """,
+                            (t_hash,)
+                        )
                     row = cur.fetchone()
                     if row:
                         if row["ended_at"] is not None or row["expires_at"] <= now or not row["is_active"]:
                             return None
 
-                        cur.execute(
-                            "UPDATE team_sessions SET last_seen_at = %s, expires_at = %s WHERE id = %s",
-                            (now, now + timedelta(hours=12), row["id"])
-                        )
-                        conn.commit()
+                        last_seen = row.get("last_seen_at")
+                        if last_seen is None or (now - last_seen) >= timedelta(seconds=60):
+                            cur.execute(
+                                "UPDATE team_sessions SET last_seen_at = %s, expires_at = %s WHERE id = %s",
+                                (now, now + timedelta(hours=12), row["id"])
+                            )
+                            conn.commit()
                         team_dict = {
                             "id": row["t_id"],
                             "name": row["t_name"],
@@ -447,7 +565,7 @@ class LoginService:
                         return {
                             "team": team_dict,
                             "session": dict(row),
-                            "active_sessions": len(cls.get_active_sessions(row["team_id"]))
+                            "active_sessions": int(row["active_count"]) if include_active_sessions and "active_count" in row else 1
                         }
             except Exception as e:
                 print("Error looking up session from DB:", e)

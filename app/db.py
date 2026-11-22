@@ -1,6 +1,8 @@
 import os
+import time
+import threading
 import logging
-from typing import Optional
+from typing import Optional, Dict
 import psycopg2
 from psycopg2 import pool
 from psycopg2.extras import RealDictCursor
@@ -9,6 +11,9 @@ from app.config import DATABASE_URL
 logger = logging.getLogger("uvicorn.error")
 
 _db_pool: Optional[pool.ThreadedConnectionPool] = None
+_conn_last_ok: Dict[int, float] = {}
+_conn_track_lock = threading.Lock()
+_HEALTH_CHECK_INTERVAL_SEC = 120.0
 
 def ensure_schema_updates(conn=None):
     """Ensures Round 2 columns and tables exist in PostgreSQL."""
@@ -103,6 +108,9 @@ class PooledConnectionProxy:
                 pass
             if self._pool and self._conn:
                 try:
+                    if not self._conn.closed:
+                        with _conn_track_lock:
+                            _conn_last_ok[id(self._conn)] = time.monotonic()
                     self._pool.putconn(self._conn)
                 except Exception:
                     pass
@@ -135,28 +143,38 @@ def get_db_connection():
     """
     Returns a warm connection from the ThreadedConnectionPool.
     Calling .close() on the returned connection safely returns it to the pool.
+    Skips redundant SELECT 1 round-trips on recently verified connections.
     """
     p = get_pool()
     if p:
         try:
             raw = p.getconn()
-            # If the borrowed connection was unexpectedly closed or broken, test or retry
+            now_mono = time.monotonic()
+            with _conn_track_lock:
+                last_ok = _conn_last_ok.get(id(raw), 0.0)
+
             needs_recycle = False
             if raw.closed != 0:
                 needs_recycle = True
-            else:
+            elif (now_mono - last_ok) >= _HEALTH_CHECK_INTERVAL_SEC:
                 try:
                     with raw.cursor() as test_cur:
                         test_cur.execute("SELECT 1")
+                    with _conn_track_lock:
+                        _conn_last_ok[id(raw)] = now_mono
                 except Exception:
                     needs_recycle = True
 
             if needs_recycle:
+                with _conn_track_lock:
+                    _conn_last_ok.pop(id(raw), None)
                 try:
                     p.putconn(raw, close=True)
                 except Exception:
                     pass
                 raw = p.getconn()
+                with _conn_track_lock:
+                    _conn_last_ok[id(raw)] = time.monotonic()
             return PooledConnectionProxy(raw, p)
         except Exception as e:
             logger.warning(f"Connection pool getconn failed, falling back to direct connect: {e}")

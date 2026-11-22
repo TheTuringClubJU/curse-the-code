@@ -7,16 +7,33 @@ from app.login.routes import get_client_ip
 from app.login.service import LoginService, get_db_connection
 import json
 import os
+import threading
 
 lobby_router = APIRouter(prefix="/api/lobby", tags=["lobby"])
 
+_content_cache_lock = threading.Lock()
+_content_cache: Dict[str, Any] = {"path": None, "mtime": None, "data": None}
+
 def get_content_data():
-    if os.path.exists(CONTENT_FILE):
-        try:
+    if not os.path.exists(CONTENT_FILE):
+        return {}
+    try:
+        mtime = os.path.getmtime(CONTENT_FILE)
+        cached = _content_cache
+        if cached["path"] == CONTENT_FILE and cached["mtime"] == mtime and cached["data"] is not None:
+            return cached["data"]
+        with _content_cache_lock:
+            mtime = os.path.getmtime(CONTENT_FILE)
+            if _content_cache["path"] == CONTENT_FILE and _content_cache["mtime"] == mtime and _content_cache["data"] is not None:
+                return _content_cache["data"]
             with open(CONTENT_FILE, "r", encoding="utf-8") as f:
-                return json.load(f)
-        except Exception:
-            pass
+                data = json.load(f)
+            _content_cache["path"] = CONTENT_FILE
+            _content_cache["mtime"] = mtime
+            _content_cache["data"] = data
+            return data
+    except Exception:
+        pass
     return {}
 
 @lobby_router.get("/state")
