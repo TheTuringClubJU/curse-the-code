@@ -269,7 +269,7 @@ export default function Round2DossierModal({ isOpen, onClose, isLobby = false })
                       <b>Sequential Clue Gating:</b> Clues must be solved in strict chronological order. Attempting a later terminal out of order triggers a lock notification indicating which prerequisite must be cleared first.
                     </li>
                     <li>
-                      <b>3 Attempts Per Clue:</b> If your team fails 3 attempts on any clue, it becomes exhausted (awards 0 points), and the next clue unlocks automatically so your team is never trapped.
+                      <b>3 Attempts Per Clue:</b> If your team fails 3 attempts on any clue, it becomes exhausted (awards 0 points and adds a <b>+90s penalty</b>), and the next clue unlocks automatically so your team is never trapped.
                     </li>
                   </ul>
                 </div>
@@ -334,6 +334,21 @@ export default function Round2DossierModal({ isOpen, onClose, isLobby = false })
                     <div className="text-[10px] text-[#8a331c] font-sans border-t border-[#7a4823]/15 pt-1">
                       <b>Score Impact:</b> Deducts <span className="font-mono font-bold bg-[#ebd7b5] px-1 py-0.2 rounded border border-[#7a4823]/30">15</span> pts (awards 85 pts). The Vault finale deducts <span className="font-mono font-bold bg-[#ebd7b5] px-1 py-0.2 rounded border border-[#7a4823]/30">30</span> pts (awards 70 pts).
                     </div>
+                  </div>
+                </div>
+
+                <div className="p-2.5 rounded bg-[#ebd7b5]/60 border border-[#7a4823]/25 space-y-1.5">
+                  <div className="flex items-center justify-between font-bold text-[#8a331c]">
+                    <span className="text-sm">Clue Attempt Exhaustion (3 Strikes)</span>
+                    <span className="font-mono text-xs px-2 py-0.5 rounded bg-[#7a2212]/15 text-[#7a2212] font-bold">
+                      +90s penalty
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-[#543825] leading-normal font-sans">
+                    Exhausting all 3 verification attempts on any clue console triggers a permanent security lockout and adds a 90-second facility penalty to your adjusted time.
+                  </p>
+                  <div className="text-[10px] text-[#8a331c] font-sans border-t border-[#7a4823]/15 pt-1">
+                    <b>Score Impact:</b> Awards <span className="font-mono font-bold bg-[#ebd7b5] px-1 py-0.2 rounded border border-[#7a4823]/30">0</span> points. The next sequential clue terminal unlocks automatically.
                   </div>
                 </div>
 
