@@ -191,10 +191,10 @@ export default function RedactedReportModal({
                             <span
                               className="inline-block px-1.5 py-0.5 rounded font-mono font-bold tracking-wider select-text transition-all"
                               style={{
-                                backgroundColor: '#1a1714',
-                                color: '#ffd68a',
-                                border: '1px solid rgba(217, 119, 6, 0.7)',
-                                boxShadow: 'inset 0 0 4px rgba(0, 0, 0, 0.5)'
+                                backgroundColor: '#000000',
+                                color: '#ffffff',
+                                border: '1px solid #d97706',
+                                textShadow: 'none'
                               }}
                             >
                               {inkText}
