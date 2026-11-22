@@ -62,9 +62,17 @@ export default function Room6Vault({ team, onLogout }) {
   const [scanTear, setScanTear] = useState(false);
   const [nightmarePulse, setNightmarePulse] = useState(false);
   const [visorCrack, setVisorCrack] = useState(false);
-  const [playerPos, setPlayerPos] = useState({ x: 0, z: 13.8, yaw: 0 });
   const [mouseSensitivity, setMouseSensitivity] = useState(1.0);
   const [threatState, setThreatState] = useState(null);
+  const [flashlightOn, setFlashlightOn] = useState(true);
+  const [fpsCap, setFpsCap] = useState(() => {
+    try {
+      const saved = Number(localStorage.getItem('vault_fps_cap'));
+      return saved === 30 ? 30 : 60;
+    } catch {
+      return 60;
+    }
+  });
   const [qualityMode, setQualityMode] = useState(() => {
     try {
       const saved = localStorage.getItem('vault_quality');
@@ -85,11 +93,11 @@ export default function Room6Vault({ team, onLogout }) {
 
   useEffect(() => {
     if (!isBootLoading) return undefined;
-    // Safety fallback: dismiss after 5.5s if any network or asset load stalls
+    // Fast safety fallback: dismiss after 2.6s so Room 6 never hangs on boot
     const t = setTimeout(() => {
       setLoadPct(100);
       setIsBootLoading(false);
-    }, 5500);
+    }, 2600);
     return () => clearTimeout(t);
   }, [isBootLoading]);
 
@@ -323,24 +331,11 @@ export default function Room6Vault({ team, onLogout }) {
       });
       engineRef.current = engine;
       engine?.setQualityMode?.(qualityMode);
+      engine?.setFpsCap?.(fpsCap);
+      engine?.setFlashlight?.(true);
     } catch {
       // Allow graceful UI operation in headless/WebGL-less environments
     }
-
-    const posPoll = setInterval(() => {
-      const p = engine?.getPos?.();
-      if (!p) return;
-      setPlayerPos((prev) => {
-        if (
-          Math.abs(prev.x - p.x) < 0.16 &&
-          Math.abs(prev.z - p.z) < 0.16 &&
-          Math.abs(prev.yaw - p.yaw) < 0.06
-        ) {
-          return prev;
-        }
-        return { x: p.x, z: p.z, yaw: p.yaw };
-      });
-    }, 220);
 
     const wakeAudio = () => {
       audio.start();
@@ -359,7 +354,6 @@ export default function Room6Vault({ team, onLogout }) {
     document.addEventListener('pointerlockchange', onDocPointerLock);
 
     return () => {
-      clearInterval(posPoll);
       window.removeEventListener('pointerdown', wakeAudio);
       window.removeEventListener('keydown', wakeAudio);
       document.removeEventListener('pointerlockchange', onDocPointerLock);
@@ -438,11 +432,15 @@ export default function Room6Vault({ team, onLogout }) {
           audioRef.current?.setMuted?.(next);
           return next;
         });
-      } else if (e.code === 'KeyF') {
+      } else if (e.code === 'KeyF' && !e.repeat) {
         e.preventDefault();
-        engineRef.current?.sparkDeadTorch?.();
-        audioRef.current?.click?.();
-        showNotice('Torch battery dead (0%). Follow the candle sconces and amber lamps.');
+        setFlashlightOn((prev) => {
+          const next = !prev;
+          engineRef.current?.setFlashlight?.(next);
+          audioRef.current?.click?.();
+          showNotice(next ? 'Torchlight ON [F]' : 'Torchlight OFF [F]', 1800);
+          return next;
+        });
       }
     };
 
@@ -627,7 +625,7 @@ export default function Room6Vault({ team, onLogout }) {
               className="text-xs sm:text-sm text-[#b4b0a8] max-w-lg leading-relaxed"
               style={{ fontFamily: "'Inter', sans-serif" }}
             >
-              Battery depleted. Keep your eyes on the shadows ahead—the vault remembers every step.
+              Press [F] to toggle your torchlight and [R] or [TAB] to adjust resolution. Stay alert—the vault remembers every step.
             </p>
           </div>
 
@@ -677,6 +675,55 @@ export default function Room6Vault({ team, onLogout }) {
             return next;
           });
         }}
+        qualityMode={qualityMode}
+        onChangeQuality={() => {
+          setQualityMode((prev) => {
+            const order = ['low', 'med', 'high'];
+            const cur = prev === 'eco' ? 'low' : prev === 'crisp' ? 'high' : order.includes(prev) ? prev : 'med';
+            const next = order[(order.indexOf(cur) + 1) % order.length];
+            try {
+              localStorage.setItem('vault_quality', next);
+            } catch {
+              // ignore storage errors
+            }
+            engineRef.current?.setResolutionMode?.(next);
+            showNotice(`Render Resolution: ${next.toUpperCase()}`);
+            return next;
+          });
+        }}
+        onSelectQuality={(tier) => {
+          const next = tier === 'low' || tier === 'high' ? tier : 'med';
+          setQualityMode(next);
+          try {
+            localStorage.setItem('vault_quality', next);
+          } catch {
+            // ignore storage errors
+          }
+          engineRef.current?.setResolutionMode?.(next);
+          showNotice(`Render Resolution: ${next.toUpperCase()}`, 2200);
+        }}
+        fpsCap={fpsCap}
+        onChangeFpsCap={(nextFps) => {
+          const val = Number(nextFps) === 60 ? 60 : 30;
+          setFpsCap(val);
+          try {
+            localStorage.setItem('vault_fps_cap', String(val));
+          } catch {
+            // ignore storage errors
+          }
+          engineRef.current?.setFpsCap?.(val);
+          showNotice(`Frame Rate Cap: ${val} FPS`, 2200);
+        }}
+        flashlightOn={flashlightOn}
+        onToggleFlashlight={() => {
+          setFlashlightOn((prev) => {
+            const next = !prev;
+            engineRef.current?.setFlashlight?.(next);
+            audioRef.current?.click?.();
+            showNotice(next ? 'Torchlight ON [F]' : 'Torchlight OFF [F]', 1800);
+            return next;
+          });
+        }}
         onToggleDossier={() => setIsDossierOpen((v) => !v)}
         onToggleRules={() => setIsRulesDossierOpen((v) => !v)}
         onToggleHint={() => setIsHintOpen((v) => !v)}
@@ -693,7 +740,7 @@ export default function Room6Vault({ team, onLogout }) {
         onLogout={onLogout}
         isSystemOpen={isSystemOpen}
         onToggleSystem={() => setIsSystemOpen((v) => !v)}
-        getPlayerPos={() => engineRef.current?.getPos?.() || playerPos}
+        getPlayerPos={() => engineRef.current?.getPos?.() || { x: 0, z: 13.8, yaw: 0 }}
         threatState={threatState}
       />
 

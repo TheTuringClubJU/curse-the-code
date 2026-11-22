@@ -192,7 +192,7 @@ export function normalizeModelMaterials(
           if (tx) {
             tx.magFilter = THREE.LinearFilter;
             tx.minFilter = THREE.LinearMipmapLinearFilter;
-            tx.anisotropy = 8;
+            tx.anisotropy = 2;
             tx.needsUpdate = true;
           }
         });
@@ -248,34 +248,109 @@ export function createVaultArchitecture(E, { matLancet, pushStatic }) {
   const loadCached = (relPath, opts = { psx: true, npAll: true }) => {
     const key = `${relPath}|${Boolean(opts.psx)}|${opts.albedoLift || 0}`;
     if (!protoPromises.has(key)) {
-      const p = assetTracker.track(
-        loadGLB(`${VAULT_MODEL_BASE}/${relPath}`)
-          .then((gltf) => {
-            if (!gltf?.scene) return null;
-            normalizeModelMaterials(gltf.scene, opts);
-            return gltf;
-          })
-          .catch(() => null)
-      );
+      const loaderPromise = loadGLB(`${VAULT_MODEL_BASE}/${relPath}`)
+        .then((gltf) => {
+          if (!gltf?.scene) return null;
+          normalizeModelMaterials(gltf.scene, opts);
+          return gltf;
+        })
+        .catch(() => null);
+      const p = opts.trackBoot ? assetTracker.track(loaderPromise) : loaderPromise;
       protoPromises.set(key, p);
     }
     return protoPromises.get(key);
   };
 
-  // Snap a single 2m modular bay (width = 2m, height = 3m -> scaled by scaleY)
-  const placeModularBay = (relPath, x, y, z, ry = 0, scale = [1, 1, 1], opts = { psx: true, npAll: true }) =>
-    loadCached(relPath, opts).then((gltf) => {
-      if (!gltf?.scene) return null;
-      const inst = gltf.scene.clone();
-      inst.position.set(x, y, z);
-      inst.rotation.y = ry;
-      inst.scale.set(scale[0], scale[1], scale[2]);
-      inst.traverse((c) => {
-        if (c.isMesh) c.matrixAutoUpdate = true;
-      });
-      S.add(inst);
-      return { inst, animations: gltf.animations || [] };
+  const freezeStatic = (node) => {
+    node.updateMatrix();
+    node.matrixAutoUpdate = false;
+    node.traverse((c) => {
+      c.updateMatrix();
+      c.matrixAutoUpdate = false;
     });
+  };
+
+  // Batched InstancedMesh wall/bay collector — collapses ~160+ modular wall draw calls into ~6 GPU draw calls with 100% identical geometry & textures
+  const wallBatches = new Map();
+  let wallFlushScheduled = false;
+  const _mWorld = new THREE.Matrix4();
+  const _mFinal = new THREE.Matrix4();
+  const _qRot = new THREE.Quaternion();
+  const _vPos = new THREE.Vector3();
+  const _vScale = new THREE.Vector3();
+  const _eul = new THREE.Euler();
+
+  const flushWallBatches = () => {
+    wallFlushScheduled = false;
+    for (const [key, batch] of wallBatches.entries()) {
+      wallBatches.delete(key);
+      const { relPath, opts, items } = batch;
+      loadCached(relPath, opts).then((gltf) => {
+        if (!gltf?.scene || !items.length) return;
+        const proto = gltf.scene;
+        proto.updateMatrixWorld(true);
+        const meshes = [];
+        let hasSkinned = false;
+        proto.traverse((c) => {
+          if (c.isSkinnedMesh) hasSkinned = true;
+          else if (c.isMesh && c.geometry) meshes.push(c);
+        });
+        if (hasSkinned || meshes.length === 0) {
+          for (let i = 0; i < items.length; i++) {
+            const it = items[i];
+            const inst = proto.clone();
+            inst.position.set(it.x, it.y, it.z);
+            inst.rotation.y = it.ry;
+            inst.scale.set(it.sx, it.sy, it.sz);
+            freezeStatic(inst);
+            S.add(inst);
+          }
+          return;
+        }
+        for (let mIdx = 0; mIdx < meshes.length; mIdx++) {
+          const src = meshes[mIdx];
+          const im = new THREE.InstancedMesh(src.geometry, src.material, items.length);
+          im.castShadow = false;
+          im.receiveShadow = false;
+          im.userData.np = true;
+          for (let i = 0; i < items.length; i++) {
+            const it = items[i];
+            _vPos.set(it.x, it.y, it.z);
+            _eul.set(0, it.ry, 0);
+            _qRot.setFromEuler(_eul);
+            _vScale.set(it.sx, it.sy, it.sz);
+            _mWorld.compose(_vPos, _qRot, _vScale);
+            _mFinal.multiplyMatrices(_mWorld, src.matrixWorld);
+            im.setMatrixAt(i, _mFinal);
+          }
+          im.instanceMatrix.needsUpdate = true;
+          im.computeBoundingSphere();
+          im.updateMatrix();
+          im.matrixAutoUpdate = false;
+          S.add(im);
+        }
+      });
+    }
+  };
+
+  const queueWallInstance = (relPath, x, y, z, ry, sx, sy, sz, opts = { psx: true, npAll: true, trackBoot: true }) => {
+    const key = `${relPath}|${Boolean(opts.psx)}|${opts.albedoLift || 0}`;
+    let batch = wallBatches.get(key);
+    if (!batch) {
+      batch = { relPath, opts, items: [] };
+      wallBatches.set(key, batch);
+    }
+    batch.items.push({ x, y, z, ry, sx, sy, sz });
+    if (!wallFlushScheduled) {
+      wallFlushScheduled = true;
+      Promise.resolve().then(flushWallBatches);
+    }
+  };
+
+  // Snap a single 2m modular bay (width = 2m, height = 3m -> scaled by scaleY)
+  const placeModularBay = (relPath, x, y, z, ry = 0, scale = [1, 1, 1], opts = { psx: true, npAll: true, trackBoot: true }) => {
+    queueWallInstance(relPath, x, y, z, ry, scale[0], scale[1], scale[2], opts);
+  };
 
   // Tile a floor span in clean 2m x 2m modular GLB tiles
   const buildModularFloor = (relPath, x0, x1, z0, z1, y = 0, yOffset = 0, ryStep = 0) => {
@@ -283,18 +358,21 @@ export function createVaultArchitecture(E, { matLancet, pushStatic }) {
     const nz = Math.max(1, Math.round((z1 - z0) / 2.0));
     const dx = (x1 - x0) / nx;
     const dz = (z1 - z0) / nz;
-    loadCached(relPath, { psx: true, npAll: true }).then((gltf) => {
-      if (!gltf?.scene) return;
-      for (let ix = 0; ix < nx; ix++) {
-        for (let iz = 0; iz < nz; iz++) {
-          const tile = gltf.scene.clone();
-          tile.position.set(x0 + (ix + 0.5) * dx, y + yOffset, z0 + (iz + 0.5) * dz);
-          tile.scale.set(dx / 2.0, 1, dz / 2.0);
-          if (ryStep) tile.rotation.y = ((ix + iz) % 2) * ryStep;
-          S.add(tile);
-        }
+    for (let ix = 0; ix < nx; ix++) {
+      for (let iz = 0; iz < nz; iz++) {
+        queueWallInstance(
+          relPath,
+          x0 + (ix + 0.5) * dx,
+          y + yOffset,
+          z0 + (iz + 0.5) * dz,
+          ryStep ? ((ix + iz) % 2) * ryStep : 0,
+          dx / 2.0,
+          1,
+          dz / 2.0,
+          { psx: true, npAll: true, trackBoot: false }
+        );
       }
-    });
+    }
   };
 
   // Build stacked wall rows (handles multi-tier gothic walls + stained lancet windows cleanly)
@@ -309,21 +387,18 @@ export function createVaultArchitecture(E, { matLancet, pushStatic }) {
     const uz = dz / count;
     const angle = ry !== null ? ry : Math.atan2(dx, dz) + Math.PI / 2;
 
-    loadCached(relPath, { psx: true, npAll: true }).then((gltf) => {
-      if (!gltf?.scene) return;
-      for (let i = 0; i < count; i++) {
-        if (skipIndices.includes(i)) continue;
-        const px = start[0] + (i + 0.5) * ux;
-        const pz = start[1] + (i + 0.5) * uz;
-        for (let t = 0; t < tiers; t++) {
-          const w = gltf.scene.clone();
-          w.position.set(px, yBase + t * tierHeight, pz);
-          w.rotation.y = angle;
-          w.scale.set(sx, sy, 1.15);
-          S.add(w);
-        }
+    for (let i = 0; i < count; i++) {
+      if (skipIndices.includes(i)) continue;
+      const px = start[0] + (i + 0.5) * ux;
+      const pz = start[1] + (i + 0.5) * uz;
+      for (let t = 0; t < tiers; t++) {
+        queueWallInstance(relPath, px, yBase + t * tierHeight, pz, angle, sx, sy, 1.15, {
+          psx: true,
+          npAll: true,
+          trackBoot: true,
+        });
       }
-    });
+    }
   };
 
   // Add luminous crimson lancet window GLB + stained-glass backing + floor moon-wash
@@ -361,23 +436,14 @@ export function createVaultArchitecture(E, { matLancet, pushStatic }) {
   // ── Ground & Ceiling Sub-Floor Seal Planes (guarantees zero void flicker while GLBs stream) ──
   const buildRoomFloors = (materials) => {
     const { matFlagstone, matConcrete, matCeilingStone } = materials;
-    // Sub-grade foundation planes slightly below y=0 (y=-0.015) so 2m modular tiles sit cleanly on top
-    pushStatic(new THREE.PlaneGeometry(7.2, 9.6), matFlagstone, 0, -0.012, 12.1, -Math.PI / 2, 0, 0);
-    pushStatic(new THREE.PlaneGeometry(17.4, 17.4), matFlagstone, 0, -0.012, -1.0, -Math.PI / 2, 0, 0);
-    pushStatic(new THREE.PlaneGeometry(8.8, 12.6), matFlagstone, -12.85, -0.012, 0, -Math.PI / 2, 0, 0);
-    pushStatic(new THREE.PlaneGeometry(8.8, 12.6), matFlagstone, 12.85, -0.012, 0, -Math.PI / 2, 0, 0);
-    pushStatic(new THREE.PlaneGeometry(4.4, 5.8), matConcrete, -5.5, -0.012, 10.9, -Math.PI / 2, 0, 0);
-    pushStatic(new THREE.PlaneGeometry(3.8, 5.4), matConcrete, 12.9, -0.012, 8.65, -Math.PI / 2, 0, 0);
-    pushStatic(new THREE.PlaneGeometry(6.0, 5.4), matFlagstone, -13.3, -0.012, -8.75, -Math.PI / 2, 0, 0);
-
-    // Modular PSX GLB floors across all 6 Vault zones!
-    buildModularFloor('dungeon/glb/floor_stone.glb', -3.2, 3.2, 7.6, 16.4, 0, 0.002); // 6A Narthex
-    buildModularFloor('dungeon/glb/floor_straw.glb', -7.5, -3.5, 8.1, 13.7, 0, 0.002); // 6A Cell 01
-    buildModularFloor('temple/glb/floor_temple.glb', -8.4, 8.4, -9.4, 7.4, 0, 0.002); // 6B Central Nave
-    buildModularFloor('dungeon/glb/floor_stone.glb', -17.0, -8.6, -6.0, 6.0, 0, 0.002); // 6C West Scriptorium
-    buildModularFloor('dungeon/glb/floor_stone.glb', 8.6, 17.0, -6.0, 6.0, 0, 0.002); // 6D East Relay Gallery
-    buildModularFloor('dungeon/glb/floor_straw.glb', 11.2, 14.6, 6.1, 11.1, 0, 0.002); // 6E Cellar
-    buildModularFloor('temple/glb/floor_temple.glb', -16.1, -10.5, -11.2, -6.2, 0, 0.002); // 6F Reliquary Chapel
+    // Sub-grade foundation planes act as the primary seamless PBR stone floors (eliminates ~150 redundant tiled floor GLB draw calls for smooth low-end PC performance)
+    pushStatic(new THREE.PlaneGeometry(7.2, 9.6), matFlagstone, 0, 0, 12.1, -Math.PI / 2, 0, 0);
+    pushStatic(new THREE.PlaneGeometry(17.4, 17.4), matFlagstone, 0, 0, -1.0, -Math.PI / 2, 0, 0);
+    pushStatic(new THREE.PlaneGeometry(8.8, 12.6), matFlagstone, -12.85, 0, 0, -Math.PI / 2, 0, 0);
+    pushStatic(new THREE.PlaneGeometry(8.8, 12.6), matFlagstone, 12.85, 0, 0, -Math.PI / 2, 0, 0);
+    pushStatic(new THREE.PlaneGeometry(4.4, 5.8), matConcrete, -5.5, 0, 10.9, -Math.PI / 2, 0, 0);
+    pushStatic(new THREE.PlaneGeometry(3.8, 5.4), matConcrete, 12.9, 0, 8.65, -Math.PI / 2, 0, 0);
+    pushStatic(new THREE.PlaneGeometry(6.0, 5.4), matFlagstone, -13.3, 0, -8.75, -Math.PI / 2, 0, 0);
 
     // Dark Cathedral Ceilings
     pushStatic(new THREE.PlaneGeometry(7.6, 9.8), matCeilingStone, 0, 5.85, 12.1, Math.PI / 2, 0, 0);
@@ -387,8 +453,6 @@ export function createVaultArchitecture(E, { matLancet, pushStatic }) {
     pushStatic(new THREE.PlaneGeometry(4.6, 6.0), matCeilingStone, -5.5, 5.85, 10.9, Math.PI / 2, 0, 0);
     pushStatic(new THREE.PlaneGeometry(4.0, 5.6), matCeilingStone, 12.9, 4.95, 8.65, Math.PI / 2, 0, 0);
     pushStatic(new THREE.PlaneGeometry(6.2, 5.6), matCeilingStone, -13.3, 5.65, -8.75, Math.PI / 2, 0, 0);
-    buildModularFloor('dungeon/glb/ceiling_stone.glb', -17.0, -8.6, -6.0, 6.0, 3.18, 0);
-    buildModularFloor('dungeon/glb/ceiling_stone.glb', 8.6, 17.0, -6.0, 6.0, 3.18, 0);
   };
 
   // ── Assemble ALL 6 Vault Chambers from Modular 2m GLBs ──

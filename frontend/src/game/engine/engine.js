@@ -37,12 +37,12 @@ export function createEngine(el,room,h){
  const nativeRatio=isStudy
    ? Math.min(devicePixelRatio,studyLow?.85:1)
    : isVault
-   ? Math.min(devicePixelRatio,0.72)
+   ? Math.min(devicePixelRatio,1.0)
    : isBedroom
    ? Math.min(devicePixelRatio,isLowSpec?0.72:0.82)
    : Math.min(devicePixelRatio,1.0)
  const R=new THREE.WebGLRenderer({
-   antialias:isControl?!isLowSpecControl:(isBedroom?!isLowSpec:(!studyLow&&!isVault)),
+   antialias:isControl?!isLowSpecControl:(isBedroom?!isLowSpec:(isVault?true:!studyLow)),
    stencil:false,
    powerPreference:'high-performance'
  })
@@ -53,7 +53,7 @@ export function createEngine(el,room,h){
  R.shadowMap.autoUpdate=false
  R.shadowMap.needsUpdate=isControl?true:!studyLow
  R.toneMapping=THREE.ACESFilmicToneMapping
- R.toneMappingExposure=isVault?1.35:1.6
+ R.toneMappingExposure=isVault?1.12:1.6
  el.appendChild(R.domElement)
 
  const S=new THREE.Scene();S.background=new THREE.Color(T.bg);S.fog=new THREE.FogExp2(T.bg,isControl?0.035:.045)
@@ -89,7 +89,7 @@ export function createEngine(el,room,h){
  const flick=(seed,amt=.3)=>t=>1-amt*Math.abs(Math.sin(t*(6.3+seed%5)+seed)*Math.sin(t*(2.9+seed%3)+seed*1.7))-.04*Math.abs(Math.sin(t*31+seed))
   let tl=performance.now();
   const retire=(root)=>{if(!root)return;root.traverse(m=>{const i=pick.indexOf(m);if(i>=0)pick.splice(i,1);const list=byId[m.userData?.id];if(list){const j=list.indexOf(m);if(j>=0)list.splice(j,1);}});root.visible=false;S.remove(root);};
-  const E={lap:n=>{if(debug){const t=performance.now();console.info('[ctc] lap',n,Math.round(t-tl));tl=t}},S,cam,W,H,D,win:room.window,ref,sc,lampMats:[],lampGlow:null,flick,lightScale:()=>sc.v,audio:h.audio,_pick:pick,_byId:byId,_visualById:visualById,_solids:solids,
+  const E={lap:n=>{if(debug){const t=performance.now();console.info('[ctc] lap',n,Math.round(t-tl));tl=t}},R,S,cam,W,H,D,win:room.window,ref,sc,lampMats:[],lampGlow:null,flick,lightScale:()=>sc.v,audio:h.audio,_pick:pick,_byId:byId,_visualById:visualById,_solids:solids,
    anim:f=>anims.push(f),
    solid:(x0,x1,z0,z1)=>{const box={x0,x1,z0,z1};solids.push(box);return box;},
    removeSolid:box=>{const i=solids.indexOf(box);if(i!==-1)solids.splice(i,1);},
@@ -222,13 +222,18 @@ export function createEngine(el,room,h){
  } else if (room.id === 'vault') {
    ref.onLoadProgress = (pct, loaded, total) => h?.onProgress?.(pct, loaded, total);
    ref.onLoadComplete = () => h?.onComplete?.();
-   // Common held torch model from Room 5, battery dead (0%) on entry per Vault storyline
+   // Shared held torchlight — ON by default with strong beam cutting through the dark Vault
    attachTorch(E, cam);
-   setTorch(E, false);
+   if (E.flashlight) {
+     E._flashBaseIntensity = 24.0;
+     E.flashlight.distance = 28;
+     E.flashlight.penumbra = 0.48;
+   }
+   setTorch(E, true);
    R.setPixelRatio(Math.min(devicePixelRatio, 1.0));
    R.shadowMap.enabled = false;
-   R.toneMappingExposure = 1.54;
-   S.fog = new THREE.FogExp2(T.bg || 0x09070b, 0.0175);
+   R.toneMappingExposure = 1.12;
+   S.fog = new THREE.FogExp2(0x050407, 0.028);
    buildVaultScene(E, h);
    scares = createVaultScares(E, h);
  } else {
@@ -358,9 +363,9 @@ export function createEngine(el,room,h){
  const fr=new THREE.Frustum(),pm=new THREE.Matrix4(),hp=new THREE.Vector3(),lp=new THREE.Vector3()
  let last=performance.now(),raf,frameCount=0;const t0=last
  const studyPicker=room.id==='study'?createStudyPicker():null;let lastStudyPick=0;
- const FPS_LIMIT = room.id==='vault' ? 65 : 60;
+ let fpsLimit = 60;
  const studyQuality=room.id==='study'?createStudyQuality(R,nativeRatio,studyLow):null;
- const FRAME_INTERVAL = (1000 / (FPS_LIMIT + 2)) - 2.5;
+ let frameInterval = isVault ? (1000 / fpsLimit) : ((1000 / (fpsLimit + 2)) - 2.5);
  let lastRenderTime = performance.now();
  let targetFov=72;
  const defaultEco = isLowSpecControl;
@@ -410,11 +415,11 @@ export function createEngine(el,room,h){
      }
    } else {
      const elapsed = now - lastRenderTime;
-     if (room.id !== 'study' && elapsed < FRAME_INTERVAL) return;
-     lastRenderTime = room.id === 'study' ? now : now - (elapsed % FRAME_INTERVAL);
+     if (room.id !== 'study' && elapsed < frameInterval) return;
+     lastRenderTime = room.id === 'study' ? now : now - (elapsed % frameInterval);
      frameMs = now - last;
      last = now;
-     dt = Math.min(0.05, (room.id === 'study' ? frameMs : elapsed) / 1000);
+     dt = Math.min(isVault ? 0.08 : 0.05, (room.id === 'study' ? frameMs : elapsed) / 1000);
      studyQuality?.tick(frameMs, E._studyState?.paused || document.hidden || api._skip);
      frameCount++;
    }
@@ -447,7 +452,7 @@ export function createEngine(el,room,h){
    }
    const shouldRaycast = room.id === 'study'
      ? (now - lastStudyPick >= 1000 / 30)
-     : (frameCount % 2 === 0 && !(room.id === 'control' && E._paused));
+     : (frameCount % (isVault ? 3 : 2) === 0 && !(room.id === 'control' && E._paused));
 
    if (shouldRaycast) {
      lastStudyPick = now;
@@ -582,11 +587,21 @@ export function createEngine(el,room,h){
   isDoorOpened(key){
     return Boolean(ref.doors?.[key]?.opened);
   },
+  setFpsCap(fps){
+    const clamped = Math.max(20, Math.min(65, Number(fps) || 30));
+    fpsLimit = clamped;
+    frameInterval = 1000 / fpsLimit;
+  },
+  getFpsCap(){ return fpsLimit; },
   setResolutionMode(mode){
     const tier = (mode === 'low' || mode === 'eco') ? 'low' : (mode === 'high' || mode === 'crisp') ? 'high' : 'med';
-    const ratio = tier === 'low' ? Math.min(devicePixelRatio, 0.7) : tier === 'high' ? Math.min(devicePixelRatio, 1.45) : Math.min(devicePixelRatio, 1.1);
+    const ratio = isVault
+      ? (tier === 'low' ? Math.min(devicePixelRatio, 0.72) : tier === 'high' ? Math.min(devicePixelRatio, 1.4) : Math.min(devicePixelRatio, 1.0))
+      : (tier === 'low' ? Math.min(devicePixelRatio, 0.7) : tier === 'high' ? Math.min(devicePixelRatio, 1.45) : Math.min(devicePixelRatio, 1.1));
     R.setPixelRatio(ratio);
-    cam.far = tier === 'low' ? 48 : tier === 'high' ? 88 : 66;
+    cam.far = isVault
+      ? (tier === 'low' ? 44 : tier === 'high' ? 80 : 64)
+      : (tier === 'low' ? 48 : tier === 'high' ? 88 : 66);
     cam.updateProjectionMatrix();
     if (room.id !== 'vault') {
       R.shadowMap.enabled = tier !== 'low';

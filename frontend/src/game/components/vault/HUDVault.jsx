@@ -3,6 +3,7 @@ import {
   Book,
   BookOpen,
   Crosshair,
+  Flashlight,
   FlashlightOff,
   HelpCircle,
   Lock,
@@ -68,6 +69,13 @@ export default function HUDVault({
   onChangeSensitivity,
   muted = false,
   onToggleMute,
+  qualityMode = 'med',
+  onChangeQuality,
+  onSelectQuality,
+  fpsCap = 60,
+  onChangeFpsCap,
+  flashlightOn = true,
+  onToggleFlashlight,
   onToggleDossier,
   onToggleRules,
   onToggleHint,
@@ -79,6 +87,7 @@ export default function HUDVault({
   threatState = null,
 }) {
   const [localSystemOpen, setLocalSystemOpen] = useState(false);
+  const [systemTab, setSystemTab] = useState('resolution');
   const [pose, setPose] = useState({ x: 0, z: 13.8, yaw: 0 });
   const sysOpen = isSystemOpen !== undefined ? isSystemOpen : localSystemOpen;
   const toggleSystem = () => {
@@ -101,14 +110,16 @@ export default function HUDVault({
 
   const zoneInfo = getRoomZone(pose.x, pose.z);
   const riddleLine = getRiddleObjective(clues, cluesSolved, totalClues);
+  const resLabel = qualityMode === 'high' ? 'HIGH' : qualityMode === 'low' ? 'LOW' : 'MED';
   const promptBody = activeHoverPrompt ? activeHoverPrompt.replace(/^\[E\]\s*/i, '') : '';
 
   // Convert 3D world coords (-18..18, -12..17) into clean SVG blueprint coords (152x104)
   const mapX = Math.max(8, Math.min(144, ((pose.x + 18) / 36) * 140 + 6));
   const mapZ = Math.max(8, Math.min(96, ((pose.z + 12) / 29) * 88 + 8));
 
-  const triggerTorchCheck = () => {
-    window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyF' }));
+  const triggerTorchToggle = () => {
+    if (onToggleFlashlight) onToggleFlashlight();
+    else window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyF' }));
   };
 
   return (
@@ -213,6 +224,21 @@ export default function HUDVault({
               <span>Guidance</span>
             </button>
 
+            {(onChangeQuality || onSelectQuality) && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSystemTab('resolution');
+                  if (!sysOpen) toggleSystem();
+                  else onChangeQuality?.();
+                }}
+                className="re-btn cursor-pointer"
+                title="Resolution & FPS Settings [TAB]"
+              >
+                <Monitor className="w-3.5 h-3.5 text-white/90" />
+                <span>RES: {resLabel} · {fpsCap}FPS</span>
+              </button>
+            )}
             <button
               type="button"
               onClick={onToggleMute}
@@ -236,10 +262,10 @@ export default function HUDVault({
             </button>
           </div>
 
-          {/* Field System Drawer ([TAB]) */}
+          {/* Field System Drawer ([TAB]) with Resolution & Controls Tabs */}
           {sysOpen && (
             <div
-              className="w-72 bg-[#0c0a0a]/95 border border-white/15 rounded-2xl p-4 space-y-3 shadow-[0_20px_50px_rgba(0,0,0,0.92)] backdrop-blur-md text-white"
+              className="w-80 bg-[#0c0a0a]/95 border border-white/15 rounded-2xl p-4 space-y-3 shadow-[0_20px_50px_rgba(0,0,0,0.92)] text-white"
               role="region"
               aria-label="Field System Menu"
             >
@@ -248,39 +274,139 @@ export default function HUDVault({
                 {team?.name && <span className="text-white/60 truncate max-w-[110px]">{team.name}</span>}
               </div>
 
-              <button
-                type="button"
-                onClick={onRequestLock}
-                className="re-btn w-full justify-between cursor-pointer"
-                title="Capture Aim Reticle [G]"
-              >
-                <span className="inline-flex items-center gap-1.5">
-                  {isPointerLocked ? (
-                    <Lock className="w-3.5 h-3.5 text-emerald-300" />
-                  ) : (
-                    <Unlock className="w-3.5 h-3.5 text-white/90" />
-                  )}
-                  <span>{isPointerLocked ? 'Cursor Captured' : 'Capture Aim'}</span>
-                </span>
-                <span className="re-btn-circle">G</span>
-              </button>
-
-              <div className="space-y-1 border-t border-white/10 pt-2">
-                <div className="flex items-center justify-between text-[10px] font-mono uppercase tracking-[0.14em] text-white/75">
-                  <span>Mouse Sensitivity</span>
-                  <span className="text-white">{Number(sensitivity).toFixed(1)}×</span>
-                </div>
-                <input
-                  type="range"
-                  min="0.4"
-                  max="2.2"
-                  step="0.1"
-                  value={sensitivity}
-                  onChange={(e) => onChangeSensitivity?.(parseFloat(e.target.value))}
-                  aria-label="Mouse Sensitivity"
-                  className="w-full accent-white cursor-pointer"
-                />
+              {/* Tab Switcher: Resolution vs Controls */}
+              <div className="grid grid-cols-2 gap-1.5 p-1 rounded-xl bg-white/5 border border-white/10 text-[10px] font-mono uppercase tracking-[0.14em]" role="tablist">
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={systemTab === 'resolution'}
+                  onClick={() => setSystemTab('resolution')}
+                  className={`py-1.5 rounded-lg transition cursor-pointer ${
+                    systemTab === 'resolution'
+                      ? 'bg-[#b91c1c]/80 text-white font-bold shadow-sm'
+                      : 'text-white/65 hover:text-white'
+                  }`}
+                >
+                  Resolution
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={systemTab === 'controls'}
+                  onClick={() => setSystemTab('controls')}
+                  className={`py-1.5 rounded-lg transition cursor-pointer ${
+                    systemTab === 'controls'
+                      ? 'bg-[#b91c1c]/80 text-white font-bold shadow-sm'
+                      : 'text-white/65 hover:text-white'
+                  }`}
+                >
+                  Controls
+                </button>
               </div>
+
+              {systemTab === 'resolution' ? (
+                <div className="space-y-3">
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between text-[10px] font-mono uppercase tracking-[0.14em] text-white/75">
+                      <span>Render Resolution</span>
+                      <span className="text-white font-semibold">{resLabel}</span>
+                    </div>
+                    <div className="grid grid-cols-3 gap-1.5">
+                      {[
+                        { id: 'low', label: 'LOW', sub: '72%' },
+                        { id: 'med', label: 'MED', sub: '100%' },
+                        { id: 'high', label: 'HIGH', sub: '140%' },
+                      ].map((opt) => {
+                        const active = qualityMode === opt.id;
+                        return (
+                          <button
+                            key={opt.id}
+                            type="button"
+                            onClick={() => {
+                              if (onSelectQuality) onSelectQuality(opt.id);
+                              else onChangeQuality?.();
+                            }}
+                            className={`flex flex-col items-center py-1.5 px-2 rounded-lg border text-[10px] font-mono transition cursor-pointer ${
+                              active
+                                ? 'bg-white/15 border-emerald-400/70 text-white font-bold'
+                                : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10'
+                            }`}
+                          >
+                            <span>{opt.label}</span>
+                            <span className="text-[9px] text-white/55">{opt.sub}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5 border-t border-white/10 pt-2.5">
+                    <div className="flex items-center justify-between text-[10px] font-mono uppercase tracking-[0.14em] text-white/75">
+                      <span>Frame Rate Cap</span>
+                      <span className="text-emerald-300 font-semibold">{fpsCap} FPS</span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      {[
+                        { val: 30, label: '30 FPS', sub: 'Smooth / Low-End' },
+                        { val: 60, label: '60 FPS', sub: 'High Spec' },
+                      ].map((opt) => {
+                        const active = Number(fpsCap) === opt.val;
+                        return (
+                          <button
+                            key={opt.val}
+                            type="button"
+                            onClick={() => onChangeFpsCap?.(opt.val)}
+                            className={`flex flex-col items-center py-1.5 px-2 rounded-lg border text-[10px] font-mono transition cursor-pointer ${
+                              active
+                                ? 'bg-white/15 border-emerald-400/70 text-white font-bold'
+                                : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10'
+                            }`}
+                          >
+                            <span>{opt.label}</span>
+                            <span className="text-[9px] text-white/55">{opt.sub}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <button
+                    type="button"
+                    onClick={onRequestLock}
+                    className="re-btn w-full justify-between cursor-pointer"
+                    title="Capture Aim Reticle [G]"
+                  >
+                    <span className="inline-flex items-center gap-1.5">
+                      {isPointerLocked ? (
+                        <Lock className="w-3.5 h-3.5 text-emerald-300" />
+                      ) : (
+                        <Unlock className="w-3.5 h-3.5 text-white/90" />
+                      )}
+                      <span>{isPointerLocked ? 'Cursor Captured' : 'Capture Aim'}</span>
+                    </span>
+                    <span className="re-btn-circle">G</span>
+                  </button>
+
+                  <div className="space-y-1 border-t border-white/10 pt-2">
+                    <div className="flex items-center justify-between text-[10px] font-mono uppercase tracking-[0.14em] text-white/75">
+                      <span>Mouse Sensitivity</span>
+                      <span className="text-white">{Number(sensitivity).toFixed(1)}×</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0.4"
+                      max="2.2"
+                      step="0.1"
+                      value={sensitivity}
+                      onChange={(e) => onChangeSensitivity?.(parseFloat(e.target.value))}
+                      aria-label="Mouse Sensitivity"
+                      className="w-full accent-white cursor-pointer"
+                    />
+                  </div>
+                </div>
+              )}
 
               {onLogout && (
                 <button
@@ -363,7 +489,7 @@ export default function HUDVault({
       {/* ── Bottom Edge (Minimap Bottom-Left, Room 5 White-Text Rounded Capsule Dock Bottom-Center) ── */}
       <div className="flex items-end justify-between gap-4">
         <div
-          className="pointer-events-auto hidden sm:block bg-[#0c0a0a]/90 border border-white/15 rounded-xl p-2.5 shadow-[0_14px_34px_rgba(0,0,0,0.78)] backdrop-blur-sm"
+          className="pointer-events-auto hidden sm:block bg-[#0c0a0a]/92 border border-white/15 rounded-xl p-2.5 shadow-[0_14px_34px_rgba(0,0,0,0.78)]"
           aria-label="Vault Orthogonal Floor Blueprint"
         >
           <div className="flex items-center justify-between text-[9px] font-mono uppercase tracking-[0.16em] text-white/70 mb-1 px-0.5">
@@ -429,9 +555,8 @@ export default function HUDVault({
           <div
             className="pointer-events-auto flex flex-wrap items-center justify-center gap-x-3.5 gap-y-1.5 px-5 py-2 rounded-full text-[11px] font-sans text-white"
             style={{
-              background: 'rgba(14, 12, 12, 0.86)',
+              background: 'rgba(14, 12, 12, 0.92)',
               border: '1px solid rgba(255, 255, 255, 0.16)',
-              backdropFilter: 'blur(8px)',
               boxShadow: '0 10px 30px rgba(0, 0, 0, 0.72)',
             }}
           >
@@ -478,13 +603,21 @@ export default function HUDVault({
 
             <button
               type="button"
-              onClick={triggerTorchCheck}
-              title="Torch battery dead (0%)"
-              className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/15 text-white transition cursor-pointer"
+              onClick={triggerTorchToggle}
+              title={flashlightOn ? 'Turn Torchlight OFF [F]' : 'Turn Torchlight ON [F]'}
+              className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border text-white transition cursor-pointer ${
+                flashlightOn
+                  ? 'bg-amber-400/20 hover:bg-amber-400/30 border-amber-300/45'
+                  : 'bg-white/10 hover:bg-white/20 border-white/15'
+              }`}
             >
-              <FlashlightOff className="w-3 h-3 text-red-300" />
+              {flashlightOn ? (
+                <Flashlight className="w-3 h-3 text-amber-300" />
+              ) : (
+                <FlashlightOff className="w-3 h-3 text-white/60" />
+              )}
               <span className="font-semibold">F</span>
-              <span className="text-white/90">Torch 0%</span>
+              <span className="text-white/90">{flashlightOn ? 'Torch ON' : 'Torch OFF'}</span>
             </button>
 
             {onChangeSensitivity && (
