@@ -274,7 +274,7 @@ export function buildBedroom(E) {
         interact(cl, 'notebook'); add(cl)
     }
 
-    // 4. East Wall Armchair beside the Bookshelf (Chair EB12 + Doll EK01 seated neatly)
+    // 4. East Wall Armchair beside the Bookshelf (Visual/Solid only; Doll EK01 seated neatly)
     {
         const chGrp = grp(3.78, 0, 0.66)
         const yaw = grp(0, 0, 0, -Math.PI / 2), pv = grp(0, 0, 0, 0); yaw.add(pv)
@@ -285,10 +285,9 @@ export function buildBedroom(E) {
         pv.add(bx(.54, .04, .46, dark, 0, .45, 0), bx(.5, .03, .03, worn, 0, .2, .2), bx(.5, .03, .03, worn, 0, .2, -.2))
         const back = grp(0, .46, -.22); back.rotation.x = -.14; back.add(bx(.035, .55, .035, worn, -.24, .28, 0, { vert: true }), bx(.035, .55, .035, worn, .24, .28, 0, { vert: true }), bx(.54, .08, .03, worn, 0, .56, 0), bx(.5, .03, .03, worn, 0, .1, 0)); for (let i = 0; i < 6; i++)back.add(mk(new THREE.CylinderGeometry(.011, .011, .46, 8), worn, -.2 + i * .08, .3, 0)); pv.add(back)
         chGrp.add(yaw)
-        const chairGlaze = mk(new THREE.BoxGeometry(0.74, 0.88, 0.74), mat({ color: 0x140e0a, t: true, o: 0.03, r: 0.9 }), 0, 0.44, 0)
-        chairGlaze.castShadow = false; chGrp.add(chairGlaze)
+        chGrp.traverse(o => { if (o.isMesh) o.userData.np = 1 })
         ref.chair = { yaw, pv }
-        interact(chGrp, 'chair'); add(chGrp); solid(3.38, 4.18, 0.20, 1.08)
+        add(chGrp); solid(3.38, 4.18, 0.20, 1.08)
 
         // Porcelain Doll (EK01) -> creepy_doll_with_braided_hair.glb seated upright on the East armchair cushion facing West
         const dg = grp(3.76, 0.45, 0.66, -Math.PI / 2)
