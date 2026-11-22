@@ -241,18 +241,24 @@ export function buildBedroom(E) {
         vis.add(bx(1.2, .5, .02, dark, -.2, .46, -.36))
         g.add(trackVisual(vis))
 
-        // Desk Hitbox specifically over the carved study desk (Drawers & Top spanning Z:[-1.18, +0.08])
-        const deskBox = hitbox(1.26, 0.95, 0.90, 0.55, 0.475, 0.035)
+        // Desk Hitbox specifically over the carved study desk (Drawers & Top spanning Z:[-0.66, +0.24])
+        const deskBox = hitbox(0.90, 1.05, 0.95, 0.210, 0.525, -0.315)
         g.add(deskBox)
         interact(deskBox, 'desk')
-        add(g); solid(-3.85, -2.90, -1.20, 0.65)
+        add(g); solid(-3.85, -2.90, -1.30, 0.95)
 
-        // Wooden Desk Chair (GLB carved high-back chair at Z:[+0.12, +0.58]) - Chair EB12 target
-        const deskChairGrp = grp(-3.25, 0, 0.35, Math.PI / 2)
-        const deskChairBox = hitbox(0.46, 1.20, 0.60, 0, 0.60, 0)
-        deskChairGrp.add(deskChairBox)
-        interact(deskChairGrp, 'chair')
-        add(deskChairGrp)
+        // Wooden Desk Chair (GLB carved high-back chair at Z:[+0.50, +0.95] & North companion chair at Z:[-1.30, -0.75]) - Chair EB12 target
+        const deskChairSouthGrp = grp(-3.25, 0, 0.725, Math.PI / 2)
+        const deskChairSouthBox = hitbox(0.45, 1.45, 0.90, 0, 0.725, -0.450)
+        deskChairSouthGrp.add(deskChairSouthBox)
+        interact(deskChairSouthGrp, 'chair')
+        add(deskChairSouthGrp)
+
+        const deskChairNorthGrp = grp(-3.25, 0, -1.025, Math.PI / 2)
+        const deskChairNorthBox = hitbox(0.55, 1.45, 0.90, 0, 0.725, -0.450)
+        deskChairNorthGrp.add(deskChairNorthBox)
+        interact(deskChairNorthGrp, 'chair')
+        add(deskChairNorthGrp)
 
         // Mirror (EB11) aligned to GLB West wall tall cracked mirror at (-3.55, 1.92, -0.49)
         const mg = grp(-3.55, 1.92, -0.49, Math.PI / 2)
