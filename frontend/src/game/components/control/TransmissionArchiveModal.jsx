@@ -40,24 +40,34 @@ export default function TransmissionArchiveModal({ isOpen, onClose, onSubmit, cl
     return () => clearInterval(id);
   }, []);
 
-  // Reset state when modal opens & allow ESC to close cleanly
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+  const prevOpenRef = useRef(false);
+
+  // Reset state strictly once when modal opens (never on background sync re-renders)
+  useEffect(() => {
+    if (isOpen && !prevOpenRef.current) {
+      setScrolledToEnd(false);
+      setInputValue('');
+      setErrorMsg('');
+      setSubmitted(false);
+      if (scrollRef.current) scrollRef.current.scrollTop = 0;
+    }
+    prevOpenRef.current = Boolean(isOpen);
+  }, [isOpen]);
+
+  // ESC to close cleanly
   useEffect(() => {
     if (!isOpen) return undefined;
-    setScrolledToEnd(false);
-    setInputValue('');
-    setErrorMsg('');
-    setSubmitted(false);
-    if (scrollRef.current) scrollRef.current.scrollTop = 0;
-
     const onKey = (e) => {
       if (e.key === 'Escape') {
         e.stopPropagation();
-        onClose();
+        onCloseRef.current?.();
       }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [isOpen, onClose]);
+  }, [isOpen]);
 
   // Scroll detection
   const handleScroll = useCallback(() => {

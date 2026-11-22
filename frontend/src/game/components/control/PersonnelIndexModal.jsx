@@ -45,27 +45,34 @@ export default function PersonnelIndexModal({ isOpen, onClose, onSubmit, clueSta
     return () => clearTimeout(tid);
   }, [isOpen, teamName]);
 
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+  const prevOpenRef = useRef(false);
+
   useEffect(() => {
     if (!isOpen) {
       setInputVal('');
       setFilterText('');
       setResponse(null);
       setTeamNameRow(null);
+      prevOpenRef.current = false;
       return undefined;
     }
-    const tid = setTimeout(() => inputRef.current?.focus(), 100);
+    if (!prevOpenRef.current) {
+      prevOpenRef.current = true;
+      setTimeout(() => inputRef.current?.focus(), 100);
+    }
     const onKey = (e) => {
       if (e.key === 'Escape') {
         e.stopPropagation();
-        onClose();
+        onCloseRef.current?.();
       }
     };
     window.addEventListener('keydown', onKey);
     return () => {
-      clearTimeout(tid);
       window.removeEventListener('keydown', onKey);
     };
-  }, [isOpen, onClose]);
+  }, [isOpen]);
 
   const rows = useMemo(() => {
     let r = teamNameRow ? [...baseRows, teamNameRow] : baseRows;
