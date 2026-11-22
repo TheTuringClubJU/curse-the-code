@@ -4,7 +4,7 @@ from typing import Optional, Dict, Any
 from datetime import datetime, timezone
 import psycopg2
 from psycopg2.extras import RealDictCursor
-from app.config import DATABASE_URL
+from app.config import DATABASE_URL, ROUNDS_STATUS
 from app.login.routes import get_client_ip
 from app.admin.schemas import AdminLoginRequest, RoundControlRequest, QualifyTeamsRequest
 from app.admin.service import AdminService
@@ -69,8 +69,8 @@ async def get_dashboard_data(admin: Dict[str, Any] = Depends(get_admin_user)):
     2. Active teams vs logged out teams summary
     """
     conn = get_db_connection()
-    rounds = {1: {"status": "pending", "starts_at": None, "ends_at": None}, 
-              2: {"status": "pending", "starts_at": None, "ends_at": None}}
+    rounds = {1: {"status": ROUNDS_STATUS.get(1, "pending"), "starts_at": None, "ends_at": None}, 
+              2: {"status": ROUNDS_STATUS.get(2, "pending"), "starts_at": None, "ends_at": None}}
     teams_list = []
 
     if conn:
@@ -155,6 +155,8 @@ async def control_round(req: RoundControlRequest, admin: Dict[str, Any] = Depend
         new_status = "live"
     else:
         new_status = "ended"
+
+    ROUNDS_STATUS[target_round] = new_status
 
     conn = get_db_connection()
     if conn:

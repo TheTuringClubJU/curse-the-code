@@ -73,7 +73,7 @@ const EVIDENCE_DETAILS_MAP = {
   EB12: { part: 'Piece C', hiding: 'Chair Cushion Lining' },
   EK01: { part: 'Key Note', hiding: 'Porcelain Doll' },
   XB01: { part: 'Fragment', hiding: 'Photo Frame' },
-  XB02: { part: 'Fragment', hiding: 'Portrait Canvas' },
+  XB02: { part: 'Fragment', hiding: 'Castle Painting' },
   ES01: { part: 'Tape Scrap 1', hiding: 'Bookshelf Lower Rack' },
   ES02: { part: 'Tape Scrap 2', hiding: 'CRT Monitor Console' },
   ES03: { part: 'Passcode Fragment A', hiding: 'Filing Cabinet 1' },

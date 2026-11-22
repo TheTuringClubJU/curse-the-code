@@ -1,6 +1,6 @@
 # Room 1 — Lena's Bedroom (`bedroom`) Visual Upgrade To-Do
 
-**Owner:** _[Assign name]_ · **Branch:** `visual/room1-bedroom` · **Round:** 1 (Room 1 of 3)
+**Owner:** Subham Das ([@subham-OPS08](https://github.com/subham-OPS08)) · **Branch:** `feat/room-1-fixes` · **Round:** 1 (Room 1 of 3)
 **Prerequisite guides:** Read `../00_START_HERE.md`, `../01_BACKEND_AND_STORY_CONTRACT.md`, `../02_ROOM_FLOW_AND_CONTINUITY.md`, `../04_GLB_INTEGRATION.md`, `../05_OPTIMIZATION.md`, `../06_HORROR_DESIGN.md`.
 
 ---

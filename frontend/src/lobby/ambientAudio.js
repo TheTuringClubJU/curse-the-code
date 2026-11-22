@@ -10,22 +10,50 @@ class AmbientSoundManager {
     this.ctx = null;
     this.masterGain = null;
     this.isPlaying = false;
+    this.audioElement = null;
     this.intervals = [];
     this.activeNodes = [];
   }
 
   init() {
-    if (!this.ctx) {
+    if (!this.ctx && typeof window !== 'undefined') {
       const AudioContext = window.AudioContext || window.webkitAudioContext;
-      this.ctx = new AudioContext();
+      if (AudioContext) {
+        this.ctx = new AudioContext();
+      }
     }
   }
 
   async start(isRound2 = false) {
     try {
-      this.init();
       if (this.isPlaying) return;
 
+      // 1. Primary: Play the uploaded atmospheric lobby soundtrack
+      if (typeof window !== 'undefined' && typeof Audio !== 'undefined') {
+        try {
+          if (!this.audioElement) {
+            this.audioElement = new Audio('/audio/lobby/lobby.mp3');
+            this.audioElement.loop = true;
+            this.audioElement.volume = 0.50;
+            this.audioElement.addEventListener('error', () => {
+              // Try fallback path if .mp3 fails
+              if (this.audioElement && this.audioElement.src.endsWith('.mp3')) {
+                this.audioElement.src = '/audio/lobby/lobby.mpeg';
+                this.audioElement.play().catch(() => {});
+              }
+            });
+          }
+          await this.audioElement.play();
+          this.isPlaying = true;
+          return;
+        } catch (audioErr) {
+          console.warn('[LOBBY AUDIO] HTMLAudio play failed, using WebAudio synth fallback:', audioErr);
+        }
+      }
+
+      // 2. Fallback: Procedural WebAudio ambient synthesizer
+      this.init();
+      if (!this.ctx) return;
       if (this.ctx.state === 'suspended') {
         await this.ctx.resume();
       }
@@ -153,6 +181,12 @@ class AmbientSoundManager {
   }
 
   stop() {
+    if (this.audioElement) {
+      try {
+        this.audioElement.pause();
+        this.audioElement.currentTime = 0;
+      } catch (_) {}
+    }
     if (!this.isPlaying) return;
     try {
       this.intervals.forEach(id => clearInterval(id));
