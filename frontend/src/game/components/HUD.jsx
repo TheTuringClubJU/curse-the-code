@@ -22,7 +22,9 @@ export default function HUD({
   onLogout,
   audioMuted = false,
   onToggleAudio,
-  activeHoverPrompt = null
+  activeHoverPrompt = null,
+  hasFinale = false,
+  finaleSolved = false
 }) {
   return (
     <div className="absolute inset-0 pointer-events-none select-none flex flex-col justify-between p-3 sm:p-4 z-40">
@@ -67,7 +69,7 @@ export default function HUD({
           {/* Case Files Button (C) */}
           <button
             onClick={onOpenCaseFiles}
-            title="Open Case Files Directory (Press C)"
+            title={hasFinale ? "Open Case Files & Final Terminal Directory (Press C)" : "Open Case Files Directory (Press C)"}
             className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border transition ${
               cluesSolved >= totalClues
                 ? 'bg-[#18261e] text-[#86efac] border-[#22543d] hover:bg-[#203629]'
@@ -77,6 +79,15 @@ export default function HUD({
             <FileText className="w-3.5 h-3.5 text-[#8f7bff]" />
             <span className="hidden sm:inline">Clues:</span>
             <span>{cluesSolved}/{totalClues}</span>
+            {hasFinale && (
+              <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border leading-none ${
+                finaleSolved
+                  ? 'bg-emerald-950/70 text-emerald-300 border-emerald-500/40'
+                  : 'bg-amber-950/70 text-amber-300 border-amber-500/40'
+              }`}>
+                {finaleSolved ? 'Finale' : '+1 Final'}
+              </span>
+            )}
             <kbd className="px-1 py-0.2 text-[9px] bg-black/50 rounded border border-white/10 text-gray-300">
               C
             </kbd>

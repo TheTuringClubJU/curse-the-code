@@ -118,7 +118,7 @@ export default function FinalContainmentTerminalModal({
         <div className="flex flex-wrap justify-between items-center gap-3 mb-4 border-b border-red-500/30 pb-3">
           <h2 className="flex items-center gap-2 text-base sm:text-lg font-bold font-mono tracking-wide">
             <ShieldAlert className="text-red-400 w-5 h-5 shrink-0" />
-            <span>CONTAINMENT TERMINAL • STAGE {stage} OF 3</span>
+            <span>CONTAINMENT TERMINAL • PHASE {stage}/3</span>
           </h2>
 
           <div className="flex items-center gap-2">
@@ -442,7 +442,7 @@ export default function FinalContainmentTerminalModal({
           onClick={submit}
           className="mt-5 w-full bg-red-700 hover:bg-red-600 py-3 rounded font-bold font-mono tracking-wider transition disabled:opacity-50"
         >
-          {stage === 3 ? 'DISENGAGE VAULT' : 'VERIFY STAGE'}
+          {stage === 3 ? 'DISENGAGE VAULT' : 'VERIFY PHASE'}
         </button>
       </div>
     </div>

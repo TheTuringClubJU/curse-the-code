@@ -8,6 +8,7 @@ class MockAudioContext {
     this.destination = {};
   }
   resume() { return Promise.resolve(); }
+  close() { return Promise.resolve(); }
   createGain() {
     return {
       gain: {
@@ -22,7 +23,13 @@ class MockAudioContext {
   createOscillator() {
     return {
       type: 'sine',
-      frequency: { setValueAtTime: () => {} },
+      frequency: {
+        value: 440,
+        setValueAtTime: () => {},
+        linearRampToValueAtTime: () => {},
+        exponentialRampToValueAtTime: () => {},
+        setTargetAtTime: () => {},
+      },
       connect: () => {},
       start: () => {},
       stop: () => {},
@@ -31,8 +38,14 @@ class MockAudioContext {
   createBiquadFilter() {
     return {
       type: 'lowpass',
-      frequency: { setValueAtTime: () => {}, exponentialRampToValueAtTime: () => {} },
-      Q: { setValueAtTime: () => {} },
+      frequency: {
+        value: 1000,
+        setValueAtTime: () => {},
+        linearRampToValueAtTime: () => {},
+        exponentialRampToValueAtTime: () => {},
+        setTargetAtTime: () => {},
+      },
+      Q: { value: 1, setValueAtTime: () => {} },
       connect: () => {},
     };
   }
@@ -48,6 +61,41 @@ class MockAudioContext {
       connect: () => {},
       start: () => {},
       stop: () => {},
+    };
+  }
+  createStereoPanner() {
+    return {
+      pan: { value: 0, setValueAtTime: () => {} },
+      connect: () => {},
+    };
+  }
+  createDynamicsCompressor() {
+    return {
+      threshold: { value: 0 },
+      knee: { value: 0 },
+      ratio: { value: 0 },
+      attack: { value: 0 },
+      release: { value: 0 },
+      connect: () => {},
+    };
+  }
+  createAnalyser() {
+    return {
+      fftSize: 256,
+      connect: () => {},
+    };
+  }
+  createConvolver() {
+    return {
+      buffer: null,
+      connect: () => {},
+    };
+  }
+  createWaveShaper() {
+    return {
+      curve: null,
+      oversample: 'none',
+      connect: () => {},
     };
   }
 }

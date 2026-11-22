@@ -18,7 +18,7 @@ import { buildBasement } from '../game/engine/basementScene.js';
 
 let activeEngineInstance = null;
 const mockAudioInstance = {
-  start: vi.fn(), stop: vi.fn(), setMuted: vi.fn(), step: vi.fn(), playSfx: vi.fn(), dispose: vi.fn()
+  start: vi.fn(), stop: vi.fn(), setMuted: vi.fn(), step: vi.fn(), playSfx: vi.fn(), hoarseScream: vi.fn(), playTrack: vi.fn(), dispose: vi.fn()
 };
 
 vi.mock('../game/engine/engine.js', () => ({
@@ -30,6 +30,7 @@ vi.mock('../game/engine/engine.js', () => ({
       setPaused: vi.fn(),
       lock: vi.fn(),
       unlock: vi.fn(),
+      shake: vi.fn(),
       setCountdown: vi.fn(),
       openDoor: vi.fn(),
       closeDoor: vi.fn(),
@@ -43,6 +44,10 @@ vi.mock('../game/engine/engine.js', () => ({
 
 vi.mock('../game/engine/audio.js', () => ({
   GameAudio: class { constructor() { return mockAudioInstance; } }
+}));
+
+vi.mock('../game/engine/audioRecords.js', () => ({
+  GameAudioRecords: class { constructor() { return mockAudioInstance; } }
 }));
 
 describe('Room 3 (The Basement) Comprehensive Test Suite (49 Tests)', () => {
@@ -157,11 +162,57 @@ describe('Room 3 (The Basement) Comprehensive Test Suite (49 Tests)', () => {
     expect(controls.update(0.05).px).toBeDefined();
     controls.dispose();
   });
-  it('QA-R3-FE-08: test_room3_wasd_movement_inside_basement_bounds', () => {
+  it('QA-R3-FE-08: test_room3_wasd_movement_reaches_both_basement_edges', () => {
     const canvas = document.createElement('canvas');
-    const controls = setupControls({ canvas, onInteract: vi.fn(), onTargetChange: vi.fn(), getAudio: () => mockAudioInstance, getSolids: () => [], roomSize: basementConfig.size, spawn: basementConfig.spawn });
-    const state = controls.update(0.05);
-    expect(Math.abs(state.px)).toBeLessThanOrEqual(basementConfig.size[0] / 2);
+    const controls = setupControls({
+      canvas,
+      onInteract: vi.fn(),
+      onTargetChange: vi.fn(),
+      getAudio: () => mockAudioInstance,
+      getSolids: () => [],
+      roomSize: basementConfig.size,
+      boundaryInset: basementConfig.boundaryInset,
+      spawn: basementConfig.spawn
+    });
+    controls.setView(0, 0, 0);
+    fireEvent.keyDown(window, { key: 'w', code: 'KeyW' });
+    for (let i = 0; i < 300; i++) controls.update(0.02);
+    expect(controls.getPos().z).toBeCloseTo(-basementConfig.size[2] / 2 + 0.35, 1);
+    fireEvent.keyUp(window, { key: 'w', code: 'KeyW' });
+
+    controls.setView(0, 0, 0);
+    fireEvent.keyDown(window, { key: 's', code: 'KeyS' });
+    for (let i = 0; i < 300; i++) controls.update(0.02);
+    expect(controls.getPos().z).toBeCloseTo(basementConfig.size[2] / 2 - 0.35, 1);
+    fireEvent.keyUp(window, { key: 's', code: 'KeyS' });
+
+    controls.setView(0, 0, 0);
+    fireEvent.keyDown(window, { key: 'a', code: 'KeyA' });
+    for (let i = 0; i < 400; i++) controls.update(0.02);
+    expect(controls.getPos().x).toBeCloseTo(-basementConfig.size[0] / 2 + 0.35, 1);
+    fireEvent.keyUp(window, { key: 'a', code: 'KeyA' });
+
+    controls.setView(basementConfig.spawn[0], basementConfig.spawn[2], 0);
+    fireEvent.keyDown(window, { key: 'd', code: 'KeyD' });
+    for (let i = 0; i < 400; i++) controls.update(0.02);
+    expect(controls.getPos().x).toBeCloseTo(basementConfig.size[0] / 2 - 0.35, 1);
+    fireEvent.keyUp(window, { key: 'd', code: 'KeyD' });
+    controls.dispose();
+  });
+  it('QA-R3-FE-51: controls keep the default edge inset for rooms without an override', () => {
+    const controls = setupControls({
+      canvas: document.createElement('canvas'),
+      onInteract: vi.fn(),
+      getAudio: () => mockAudioInstance,
+      getSolids: () => [],
+      roomSize: [8, 3, 6],
+      spawn: [0, 0, 0]
+    });
+    fireEvent.keyDown(window, { key: 'w', code: 'KeyW' });
+    for (let i = 0; i < 200; i++) controls.update(0.02);
+
+    expect(controls.getPos().z).toBeCloseTo(-2.65, 1);
+    fireEvent.keyUp(window, { key: 'w', code: 'KeyW' });
     controls.dispose();
   });
   it('QA-R3-FE-09: test_room3_pointer_lock_engages_and_releases', () => {
@@ -178,6 +229,15 @@ describe('Room 3 (The Basement) Comprehensive Test Suite (49 Tests)', () => {
     expect(screen.getByText(/The Basement/i)).toBeInTheDocument();
     expect(screen.getByText(/5.*\/.*5/i)).toBeInTheDocument();
   });
+  it('QA-R3-FE-52: basement interact prompt stays visible with transparent styling', () => {
+    const { container } = render(
+      <div className="basement-room">
+        <HUD activeHoverPrompt="Inspect containment console" />
+      </div>
+    );
+    expect(screen.getByText('Inspect containment console')).toBeInTheDocument();
+    expect(container.querySelector('.basement-room')).toBeInTheDocument();
+  });
   it('QA-R3-FE-11: test_room3_pressing_B_opens_basement_evidence_basket', async () => {
     render(<Room3Basement team={mockTeam} onLogout={vi.fn()} />);
     fireEvent.click(await screen.findByText(/CLICK TO ENTER BASEMENT/i));
@@ -186,7 +246,7 @@ describe('Room 3 (The Basement) Comprehensive Test Suite (49 Tests)', () => {
   });
   it('QA-R3-FE-12: test_room3_basket_renders_basement_png_thumbnails', () => {
     render(<BasketModal isOpen onClose={vi.fn()} evidence={basementContent.evidence} collectedIds={['EK04']} basketUnlocked totalInRoom={5} roomTitle="The Basement" />);
-    expect(screen.getByText(/Fragment #1/i)).toBeInTheDocument();
+    expect(screen.getByText(/Glitched printer report/i)).toBeInTheDocument();
   });
   it('QA-R3-FE-13: test_room3_pressing_C_opens_clues_modal_for_basement', async () => {
     render(<Room3Basement team={mockTeam} onLogout={vi.fn()} />);
@@ -270,8 +330,8 @@ describe('Room 3 (The Basement) Comprehensive Test Suite (49 Tests)', () => {
     render(<FinalContainmentTerminalModal isOpen clue={{ ...clue, current_stage: 1 }} onClose={vi.fn()} onSubmitAnswer={submit} />);
     const inputs = screen.getAllByRole('textbox');
     clue.stages[0].answer_plain.forEach((value, index) => fireEvent.change(inputs[index], { target: { value } }));
-    fireEvent.click(screen.getByText(/VERIFY (STAGE|PHASE)/i));
-    await waitFor(() => expect(screen.getByText(/(STAGE|PHASE) 2/i)).toBeInTheDocument());
+    fireEvent.click(screen.getByText(/VERIFY PHASE/i));
+    await waitFor(() => expect(screen.getByText(/PHASE 2\/3/i)).toBeInTheDocument());
   });
   it('QA-R3-FE-29: test_room3_final_modal_stage2_renders_10_slot_photo_board', () => {
     render(<FinalContainmentTerminalModal isOpen clue={{ ...clueContent['R1-FIN'], current_stage: 2 }} onClose={vi.fn()} onSubmitAnswer={vi.fn()} />);
@@ -299,7 +359,7 @@ describe('Room 3 (The Basement) Comprehensive Test Suite (49 Tests)', () => {
   it('QA-R3-FE-33: test_room3_final_modal_stage2_submits_permutation_and_advances', async () => {
     const submit = vi.fn().mockResolvedValue({ correct: true });
     render(<FinalContainmentTerminalModal isOpen clue={{ ...clueContent['R1-FIN'], current_stage: 2 }} onClose={vi.fn()} onSubmitAnswer={submit} />);
-    fireEvent.click(screen.getByText(/VERIFY (STAGE|PHASE)/i));
+    fireEvent.click(screen.getByText(/VERIFY PHASE/i));
     await waitFor(() => expect(submit).toHaveBeenCalled());
   });
   it('QA-R3-FE-34: test_room3_final_modal_stage3_renders_protocol_buttons_and_pin_pad', () => {
@@ -346,6 +406,24 @@ describe('Room 3 (The Basement) Comprehensive Test Suite (49 Tests)', () => {
     const drawCalls = scene.children.filter((object) => object.isMesh).length;
     expect(drawCalls).toBeLessThan(250);
   });
+  it('QA-R3-FE-50: basement interior registers physical collision solids without a room door object', () => {
+    const environment = {
+      S: new THREE.Scene(),
+      add: vi.fn(),
+      solid: vi.fn(),
+      interact: vi.fn(),
+      anim: vi.fn(),
+      ref: {},
+      lightRig: vi.fn(),
+      W: 30,
+      H: 3.8,
+      D: 7.4
+    };
+    buildBasement(environment);
+
+    expect(environment.solid).toHaveBeenCalled();
+    expect(environment.interact).not.toHaveBeenCalledWith(expect.anything(), 'room_door');
+  });
   it('QA-R3-FE-43: test_room3_frame_rate_maintains_60fps', () => {
     expect(1000 / 60).toBeCloseTo(16.67, 1);
   });
@@ -381,7 +459,7 @@ describe('Room 3 (The Basement) Comprehensive Test Suite (49 Tests)', () => {
   it('QA-R3-FE-49: test_room3_final_modal_read_only_when_exhausted', () => {
     render(<FinalContainmentTerminalModal isOpen clue={{ ...clueContent['R1-FIN'], attempts: 3, attempts_max: 3 }} onClose={vi.fn()} onSubmitAnswer={vi.fn()} />);
     expect(screen.getByText(/Maximum attempts exhausted/i)).toBeInTheDocument();
-    expect(screen.getByText(/VERIFY (STAGE|PHASE)/i)).toBeDisabled();
+    expect(screen.getByText(/VERIFY PHASE/i)).toBeDisabled();
   });
   it('QA-R3-E2E-01: e2e_basement_complete_participant_journey', async () => {
     render(<Room3Basement team={mockTeam} onLogout={vi.fn()} />);
@@ -391,5 +469,234 @@ describe('Room 3 (The Basement) Comprehensive Test Suite (49 Tests)', () => {
       await activeEngineInstance?.callbacks?.onInteract('server_rack');
     });
     expect(activeEngineInstance?.canvas).toBeInTheDocument();
+  });
+
+  it('QA-R3-FE-53: staircase jumpscare triggers at end of staircase with image and scream audio', async () => {
+    sessionStorage.setItem('ctc_room2_completed', 'true');
+    render(<Room3Basement team={mockTeam} onLogout={vi.fn()} />);
+    fireEvent.click(await screen.findByText(/CLICK TO ENTER BASEMENT/i));
+    await waitFor(() => expect(screen.getByText(basementContent.title)).toBeInTheDocument());
+
+    // Initially jumpscare is not present
+    expect(screen.queryByTestId('basement-jumpscare-modal')).not.toBeInTheDocument();
+
+    // Player descends stairs and reaches the end (px <= 15.05)
+    act(() => {
+      activeEngineInstance?.callbacks?.onPlayerMove({ px: 18.0 });
+    });
+    act(() => {
+      activeEngineInstance?.callbacks?.onPlayerMove({ px: 15.0 });
+    });
+
+    // Jumpscare pops up
+    const modal = screen.getByTestId('basement-jumpscare-modal');
+    expect(modal).toBeInTheDocument();
+    const img = screen.getByTestId('jumpscare-image');
+    expect(img.getAttribute('src')).toMatch(/jumpscare_entity\.jpg/);
+    expect(mockAudioInstance.hoarseScream).toHaveBeenCalled();
+  });
+
+  it('QA-R3-FE-54: staircase jumpscare disappears after exactly one second', async () => {
+    vi.useFakeTimers();
+    sessionStorage.setItem('ctc_room2_completed', 'true');
+    render(<Room3Basement team={mockTeam} onLogout={vi.fn()} />);
+    fireEvent.click(screen.getByText(/CLICK TO ENTER BASEMENT/i));
+
+    act(() => {
+      activeEngineInstance?.callbacks?.onPlayerMove({ px: 18.0 });
+    });
+    act(() => {
+      activeEngineInstance?.callbacks?.onPlayerMove({ px: 15.0 });
+    });
+
+    expect(screen.getByTestId('basement-jumpscare-modal')).toBeInTheDocument();
+
+    // Advance by 1 second (1000ms)
+    act(() => {
+      vi.advanceTimersByTime(1000);
+    });
+
+    // Jumpscare disappears
+    expect(screen.queryByTestId('basement-jumpscare-modal')).not.toBeInTheDocument();
+    vi.useRealTimers();
+  });
+
+  it('QA-R3-FE-55: staircase jumpscare does not re-trigger after already played', async () => {
+    vi.useFakeTimers();
+    sessionStorage.setItem('ctc_room2_completed', 'true');
+    mockAudioInstance.hoarseScream.mockClear();
+    render(<Room3Basement team={mockTeam} onLogout={vi.fn()} />);
+    fireEvent.click(screen.getByText(/CLICK TO ENTER BASEMENT/i));
+
+    act(() => {
+      activeEngineInstance?.callbacks?.onPlayerMove({ px: 18.0 });
+    });
+    act(() => {
+      activeEngineInstance?.callbacks?.onPlayerMove({ px: 15.0 });
+    });
+
+    expect(mockAudioInstance.hoarseScream).toHaveBeenCalledTimes(1);
+
+    // Fade out after 1000ms
+    act(() => {
+      vi.advanceTimersByTime(1000);
+    });
+    expect(screen.queryByTestId('basement-jumpscare-modal')).not.toBeInTheDocument();
+
+    // Moving around again at end of stairs
+    act(() => {
+      activeEngineInstance?.callbacks?.onPlayerMove({ px: 14.8 });
+    });
+    expect(mockAudioInstance.hoarseScream).toHaveBeenCalledTimes(1);
+    expect(screen.queryByTestId('basement-jumpscare-modal')).not.toBeInTheDocument();
+    vi.useRealTimers();
+  });
+
+  it('QA-R3-FE-56: lurking monster audio plays every 1m15s and heavy object falling plays 40-45s after', () => {
+    vi.useFakeTimers();
+    mockAudioInstance.playTrack.mockClear();
+    render(<Room3Basement team={mockTeam} onLogout={vi.fn()} />);
+    fireEvent.click(screen.getByText(/CLICK TO ENTER BASEMENT/i));
+
+    // Initially neither track has played
+    expect(mockAudioInstance.playTrack).not.toHaveBeenCalled();
+
+    // Advance by 75 seconds (1 min 15 sec)
+    act(() => {
+      vi.advanceTimersByTime(75000);
+    });
+
+    // Monster audio plays
+    expect(mockAudioInstance.playTrack).toHaveBeenCalledWith(
+      '/assets/audio/basement/alesiadavina-halloween-horror-sound-lurking-monster-145070.mp3',
+      0.85
+    );
+
+    // Falling object audio has not played yet
+    expect(mockAudioInstance.playTrack).not.toHaveBeenCalledWith(
+      '/assets/audio/basement/universfield-heavy-object-falling-291096.mp3',
+      expect.anything()
+    );
+
+    // Advance by 45 seconds (within the 40-45s random window)
+    act(() => {
+      vi.advanceTimersByTime(45000);
+    });
+
+    // Heavy object falling audio now plays
+    expect(mockAudioInstance.playTrack).toHaveBeenCalledWith(
+      '/assets/audio/basement/universfield-heavy-object-falling-291096.mp3',
+      0.85
+    );
+
+    vi.useRealTimers();
+  });
+
+  it('QA-R3-FE-57: sequential clue gating prevents opening R1-10 when R1-09 is unsolved', async () => {
+    render(<Room3Basement team={mockTeam} onLogout={vi.fn()} />);
+    fireEvent.click(await screen.findByText(/CLICK TO ENTER BASEMENT/i));
+    await waitFor(() => expect(screen.getByText(basementContent.title)).toBeInTheDocument());
+
+    // Interacting with rack_door when R1-09 is not solved
+    await act(async () => {
+      await activeEngineInstance?.callbacks?.onInteract('rack_door');
+    });
+
+    expect(await screen.findByText(/Previous clue "R1-09" in this sequence must be solved first/i)).toBeInTheDocument();
+    expect(screen.queryByText(/SERVER RACK \/ MARGIN NOTE/i)).not.toBeInTheDocument();
+  });
+
+  it('QA-R3-FE-58: sequential clue gating prevents opening R1-FIN when prerequisites are unresolved', async () => {
+    render(<Room3Basement team={mockTeam} onLogout={vi.fn()} />);
+    fireEvent.click(await screen.findByText(/CLICK TO ENTER BASEMENT/i));
+    await waitFor(() => expect(screen.getByText(basementContent.title)).toBeInTheDocument());
+
+    // Interacting with containment_console when R1-09 & R1-10 are not resolved
+    await act(async () => {
+      await activeEngineInstance?.callbacks?.onInteract('containment_console');
+    });
+
+    expect(await screen.findByText(/Final terminal locked. Solve R1-09 and R1-10 first/i)).toBeInTheDocument();
+    expect(screen.queryByText(/CONTAINMENT TERMINAL • PHASE/i)).not.toBeInTheDocument();
+  });
+
+  it('QA-R3-FE-59: sealed evidence basket blocks opening any clues', async () => {
+    global.fetch = vi.fn().mockImplementation((url) => {
+      if (url.includes('/api/game/room/basement')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () => Promise.resolve({
+            ...initialState,
+            basket_unlocked: false,
+            fragments_found: 2,
+            collected_fragment_ids: ['EK04', 'EK05']
+          })
+        });
+      }
+      return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve({}) });
+    });
+
+    render(<Room3Basement team={mockTeam} onLogout={vi.fn()} />);
+    fireEvent.click(await screen.findByText(/CLICK TO ENTER BASEMENT/i));
+    await waitFor(() => expect(screen.getByText(basementContent.title)).toBeInTheDocument());
+
+    // Try interacting with intercom
+    await act(async () => {
+      await activeEngineInstance?.callbacks?.onInteract('intercom');
+    });
+
+    expect(await screen.findByText(/The evidence lock is sealed. Recover all 5 basement fragments first/i)).toBeInTheDocument();
+    expect(screen.queryByText(/WALL INTERCOM/i)).not.toBeInTheDocument();
+  });
+
+  it('QA-R3-FE-60: clue submission preserves 403 CLUE_LOCKED server detail message', async () => {
+    global.fetch = vi.fn().mockImplementation((url) => {
+      if (url.includes('/api/game/room/basement')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () => Promise.resolve({
+            ...initialState,
+            clues: [
+              { ...clueContent['R1-09'], solved: true, attempts: 1, attempts_max: 3 },
+              { ...clueContent['R1-10'], solved: false, attempts: 0, attempts_max: 3 },
+              { ...clueContent['R1-FIN'], solved: false, attempts: 0, attempts_max: 3 }
+            ]
+          })
+        });
+      }
+      if (url.includes('/api/game/clue/R1-10/submit')) {
+        return Promise.resolve({
+          ok: false,
+          status: 403,
+          json: () => Promise.resolve({
+            detail: {
+              code: 'CLUE_LOCKED',
+              message: "Previous clue 'R1-09' in this sequence must be solved first."
+            }
+          })
+        });
+      }
+      return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve({}) });
+    });
+
+    render(<Room3Basement team={mockTeam} onLogout={vi.fn()} />);
+    fireEvent.click(await screen.findByText(/CLICK TO ENTER BASEMENT/i));
+    await waitFor(() => expect(screen.getByText(basementContent.title)).toBeInTheDocument());
+
+    // Open R1-10 modal since R1-09 is solved
+    await act(async () => {
+      await activeEngineInstance?.callbacks?.onInteract('rack_door');
+    });
+
+    expect(await screen.findByText(/SERVER RACK \/ MARGIN NOTE/i)).toBeInTheDocument();
+
+    // Submit answer which triggers 403
+    fireEvent.change(screen.getByLabelText(/One word/i), { target: { value: 'TEST' } });
+    fireEvent.click(screen.getByText(/SUBMIT DECRYPTION/i));
+
+    expect(await screen.findByText(/Previous clue 'R1-09' in this sequence must be solved first/i)).toBeInTheDocument();
+    expect(screen.queryByText(/Your session is no longer authorized/i)).not.toBeInTheDocument();
   });
 });

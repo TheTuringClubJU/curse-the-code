@@ -84,79 +84,82 @@ export function createEngine(el,room,h){
  };
  const rnd=(a,b)=>a+Math.random()*(b-a)
  const flick=(seed,amt=.3)=>t=>1-amt*Math.abs(Math.sin(t*(6.3+seed%5)+seed)*Math.sin(t*(2.9+seed%3)+seed*1.7))-.04*Math.abs(Math.sin(t*31+seed))
- let tl=performance.now();const E={lap:n=>{if(debug){const t=performance.now();console.info('[ctc] lap',n,Math.round(t-tl));tl=t}},S,cam,W,H,D,win:room.window,ref,sc,lampMats:[],lampGlow:null,flick,lightScale:()=>sc.v,audio:h.audio,_pick:pick,_byId:byId,_visualById:visualById,_solids:solids,
-  anim:f=>anims.push(f),
-  solid:(x0,x1,z0,z1)=>{const box={x0,x1,z0,z1};solids.push(box);return box;},
-  removeSolid:box=>{const i=solids.indexOf(box);if(i!==-1)solids.splice(i,1);},
-  glow:(m,b,f)=>rigG.push({m,b,f:f||flick(Math.floor(Math.random()*90),.3)}),lightRig:(l,b,f)=>rigL.push({l,b,f}),
-  bakeShadows:()=>{R.shadowMap.needsUpdate=true;},
-  initPMREM:(intensity=0.28)=>{
-   if(!pmremGen){
-    pmremGen=new THREE.PMREMGenerator(R);
-    pmremGen.compileEquirectangularShader();
-    const envScene=new RoomEnvironment();
-    pmremRT=pmremGen.fromScene(envScene,0.04);
-    envScene.dispose();
-    S.environment=pmremRT.texture;
-   }
-   S.environmentIntensity=intensity;
-  },
-  loadGLB:(url,onProgress)=>new Promise((resolve,reject)=>{
-   MeshoptDecoder.ready.then(()=>{
+  let tl=performance.now();
+  const retire=(root)=>{if(!root)return;root.traverse(m=>{const i=pick.indexOf(m);if(i>=0)pick.splice(i,1);const list=byId[m.userData?.id];if(list){const j=list.indexOf(m);if(j>=0)list.splice(j,1);}});root.visible=false;S.remove(root);};
+  const E={lap:n=>{if(debug){const t=performance.now();console.info('[ctc] lap',n,Math.round(t-tl));tl=t}},S,cam,W,H,D,win:room.window,ref,sc,lampMats:[],lampGlow:null,flick,lightScale:()=>sc.v,audio:h.audio,_pick:pick,_byId:byId,_visualById:visualById,_solids:solids,
+   anim:f=>anims.push(f),
+   solid:(x0,x1,z0,z1)=>{const box={x0,x1,z0,z1};solids.push(box);return box;},
+   removeSolid:box=>{const i=solids.indexOf(box);if(i!==-1)solids.splice(i,1);},
+   glow:(m,b,f)=>rigG.push({m,b,f:f||flick(Math.floor(Math.random()*90),.3)}),lightRig:(l,b,f)=>rigL.push({l,b,f}),
+   bakeShadows:()=>{R.shadowMap.needsUpdate=true;},
+   retire,
+   initPMREM:(intensity=0.28)=>{
+    if(!pmremGen){
+     pmremGen=new THREE.PMREMGenerator(R);
+     pmremGen.compileEquirectangularShader();
+     const envScene=new RoomEnvironment();
+     pmremRT=pmremGen.fromScene(envScene,0.04);
+     envScene.dispose();
+     S.environment=pmremRT.texture;
+    }
+    S.environmentIntensity=intensity;
+   },
+   loadGLB:(url,onProgress)=>new Promise((resolve,reject)=>{
+    MeshoptDecoder.ready.then(()=>{
+     if(halt)return;
+     getGLTFLoader().load(
+      url,
+      (g)=>{
+       if(!halt){resolve(g);return;}
+       disposeObjectResources(g?.scene);
+      },
+      onProgress,
+      (err)=>{if(!halt)reject(err);}
+     );
+    }).catch((err)=>{if(!halt)reject(err);});
+   }),
+   loadFBX:(url,onProgress)=>new Promise((resolve,reject)=>{
     if(halt)return;
-    getGLTFLoader().load(
+    if(!fbxLoader)fbxLoader=new FBXLoader();
+    fbxLoader.load(
      url,
-     (g)=>{
-      if(!halt){resolve(g);return;}
-      disposeObjectResources(g?.scene);
+     (grp)=>{
+      if(!halt){resolve(grp);return;}
+      disposeObjectResources(grp);
      },
      onProgress,
      (err)=>{if(!halt)reject(err);}
     );
-   }).catch((err)=>{if(!halt)reject(err);});
-  }),
-  loadFBX:(url,onProgress)=>new Promise((resolve,reject)=>{
-   if(halt)return;
-   if(!fbxLoader)fbxLoader=new FBXLoader();
-   fbxLoader.load(
-    url,
-    (grp)=>{
-     if(!halt){resolve(grp);return;}
-     disposeObjectResources(grp);
-    },
-    onProgress,
-    (err)=>{if(!halt)reject(err);}
-   );
-  }),
-  visualInteract:(target,id)=>{
-   const list=Array.isArray(target)?target:[target];
-   const hlById = E._hlMatById || (E._hlMatById = new Map());
-   let idCache = hlById.get(id);
-   if (!idCache) {
-    idCache = new WeakMap();
-    hlById.set(id, idCache);
-   }
-   list.forEach(node=>{
-    if(!node)return;
-    node.traverse(o=>{
-     if(o.isMesh&&o.material){
-      if(o.userData._hlId !== id){
-       const cloneForId = (m) => {
-         if (!m) return m;
-         if (idCache.has(m)) return idCache.get(m);
-         const cm = m.clone();
-         idCache.set(m, cm);
-         return cm;
-       };
-       o.material=Array.isArray(o.material)?o.material.map(cloneForId):cloneForId(o.material);
-       o.userData._hlId = id;
+   }),
+   visualInteract:(target,id)=>{
+    const list=Array.isArray(target)?target:[target];
+    const hlById = E._hlMatById || (E._hlMatById = new Map());
+    let idCache = hlById.get(id);
+    if (!idCache) {
+     idCache = new WeakMap();
+     hlById.set(id, idCache);
+    }
+    list.forEach(node=>{
+     if(!node)return;
+     node.traverse(o=>{
+      if(o.isMesh&&o.material){
+       if(o.userData._hlId !== id){
+        const cloneForId = (m) => {
+          if (!m) return m;
+          if (idCache.has(m)) return idCache.get(m);
+          const cm = m.clone();
+          idCache.set(m, cm);
+          return cm;
+        };
+        o.material=Array.isArray(o.material)?o.material.map(cloneForId):cloneForId(o.material);
+        o.userData._hlId = id;
+       }
+       (visualById[id]??=[]).push(o);
       }
-      (visualById[id]??=[]).push(o);
-     }
+     });
     });
-   });
-  },
-  interact(obj,id){obj.traverse(o=>{if(o.isMesh){o.userData.id=id;delete o.userData.np;if(room.id==='control'&&o.material){o.material=Array.isArray(o.material)?o.material.map(m=>m.clone()):o.material.clone()}}})},
+   },
+   interact(obj,id){obj.traverse(o=>{if(o.isMesh){o.userData.id=id;delete o.userData.np;if(room.id==='control'&&o.material){o.material=Array.isArray(o.material)?o.material.map(m=>m.clone()):o.material.clone()}}})},
   add(obj,o={}){obj.traverse(m=>{if(!m.isMesh)return;if(!m.userData.ns&&!o.noShadow){m.castShadow=true}m.receiveShadow=true;if(!m.userData.np){pick.push(m);if(m.userData.id)(byId[m.userData.id]??=[]).push(m)}});S.add(obj);return obj}}
  E.renderStudyFrame=()=>{const horror=ref.studyHorror,story=ref.studyProcession;
   if(story?.closeup?.visible&&story.overlayScene)R.render(story.overlayScene,story.overlayCamera);

@@ -16,4 +16,138 @@
 .flash{position:fixed;inset:0;pointer-events:none;mix-blend-mode:screen}
 .ov h1{text-shadow:0 0 18px #ff7a1a88,0 0 40px #8f7bff55;animation:fk 4s infinite}@keyframes fk{0%,92%,100%{opacity:1}93%{opacity:.35}94%{opacity:1}96%{opacity:.5}97%{opacity:1}}
 .hints{margin-top:6px;display:flex;flex-direction:column;gap:6px}.hint{margin:0;font-size:13px;color:#cdbfff;border-left:2px solid #8f7bff;padding-left:8px}.hints button{align-self:flex-start;font-size:12px}
+
+/* Basement Staircase Jumpscare Styles */
+@keyframes jumpscarePop {
+  0% {
+    transform: scale(0.85);
+    opacity: 0.8;
+  }
+  30% {
+    transform: scale(1.08);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.0);
+    opacity: 1;
+  }
+}
+
+.jumpscare-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  background-color: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  pointer-events: none;
+  user-select: none;
+}
+
+.jumpscare-image {
+  width: 100vw;
+  height: 100vh;
+  object-fit: cover;
+  animation: jumpscarePop 0.15s cubic-bezier(0.1, 0.9, 0.2, 1) forwards;
+  will-change: transform;
+}
+
 @media (prefers-reduced-motion:reduce){.grain,.ov h1{animation:none}}
+
+/* Scoped Basement Room Visual Overrides (PR #31) */
+.basement-room :is([class~="bg-[#0a0714]/85"]) {
+  background-color: transparent !important;
+  backdrop-filter: none !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
+.basement-room :is([class~="bg-[#151024]"]) {
+  background-color: transparent !important;
+  border-color: rgba(255, 255, 255, 0.4) !important;
+  color: #ffffff !important;
+}
+
+.basement-room :is([class~="hover:bg-[#201836]"], [class~="hover:bg-[#203629]"]):hover {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.basement-room :is([class~="bg-[#0b0817]/90"]) {
+  background-color: transparent !important;
+  backdrop-filter: none !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
+.basement-room [class~="bg-[#8f7bff]"] {
+  background-color: transparent !important;
+  border: 1px solid rgba(255, 255, 255, 0.5) !important;
+  color: #ffffff !important;
+}
+
+.basement-room [class~="border-white/5"] {
+  background-color: transparent !important;
+  border-color: transparent !important;
+  color: #ffffff !important;
+}
+
+.basement-room :is([class~="bg-[#14291e]/90"]) {
+  background-color: transparent !important;
+  border-color: transparent !important;
+  color: #ffffff !important;
+  box-shadow: none !important;
+}
+
+.basement-room :is([class~="text-[#8f7bff]"], [class~="text-[#a292cc]"], [class~="text-[#e8e0ff]"], [class~="text-[#86efac]"]) {
+  color: #ffffff !important;
+}
+
+/* Scoped Modal overrides */
+.basement-room :is([class~="bg-[#0c0914]"]) {
+  background-color: rgba(0, 0, 0, 0.9) !important;
+  backdrop-filter: blur(12px) !important;
+  border-color: rgba(255, 255, 255, 0.5) !important;
+  border-radius: 0.5rem !important;
+}
+
+.basement-room :is([class~="bg-[#140e24]"]) {
+  background-color: transparent !important;
+  border-color: rgba(255, 255, 255, 0.4) !important;
+}
+
+.basement-room :is([class~="bg-[#18261e]"], [class~="bg-[#211613]"]) {
+  background-color: rgba(0, 0, 0, 0.6) !important;
+  border-color: rgba(255, 255, 255, 0.4) !important;
+  color: #ffffff !important;
+}
+
+.basement-room :is([class~="bg-[#090610]"]) {
+  background-color: transparent !important;
+}
+
+.basement-room :is([class~="bg-[#050308]"]) {
+  background-color: rgba(0, 0, 0, 0.4) !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+}
+
+.basement-room :is([class~="bg-[#2b1f47]"]) {
+  background-color: transparent !important;
+  border: 1px solid rgba(255, 255, 255, 0.5) !important;
+  color: #ffffff !important;
+  font-weight: bold !important;
+}
+
+.basement-room :is([class~="hover:bg-[#3b2a59]"]):hover {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  border-color: #ffffff !important;
+}
+
+.basement-room :is([class~="border-[#3b2a59]"], [class~="border-[#433066]"], [class~="border-[#2f224a]"]) {
+  border-color: rgba(255, 255, 255, 0.4) !important;
+}
+
+.basement-room :is([class~="text-[#e8e0ff]"], [class~="text-[#d6cded]"], [class~="text-[#cdbfff]"], [class~="text-[#a292cc]"]) {
+  color: #ffffff !important;
+}
