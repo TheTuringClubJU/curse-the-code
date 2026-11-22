@@ -30,14 +30,8 @@ export function createScares(E, h) {
   let agathaActions = []
   let activeAction = null
   let activeDuration = 2.2
-  let agathaHeadBone = null
-  let agathaEyeL = null
-  let agathaEyeR = null
   let midFlashFired = false
   let hbTimeout = null
-  const tmpHeadWorld = new THREE.Vector3()
-  const tmpEyeWorld = new THREE.Vector3()
-  const tmpHeadLocal = new THREE.Vector3()
 
   const setupLoadedAgatha = (gltf) => {
     if (!gltf?.scene) return
@@ -45,17 +39,6 @@ export function createScares(E, h) {
     agathaModel.name = 'agatha_only_jumpscares'
 
     agathaModel.traverse((o) => {
-      if (o.isBone) {
-        if (!agathaEyeL && /l_eye_01shjnt_067|l_eye/i.test(o.name) && !/end/i.test(o.name)) {
-          agathaEyeL = o
-        }
-        if (!agathaEyeR && /r_eye_01shjnt_068|r_eye/i.test(o.name) && !/end/i.test(o.name)) {
-          agathaEyeR = o
-        }
-        if (!agathaHeadBone && /head_top|neck_top|head_jaw|head/i.test(o.name) && !/end/i.test(o.name)) {
-          agathaHeadBone = o
-        }
-      }
       if (!o.isMesh) return
       o.userData.np = 1
       o.userData.ns = 1
@@ -66,25 +49,36 @@ export function createScares(E, h) {
         m.fog = false
         m.depthWrite = true
         m.depthTest = true
-        m.side = THREE.DoubleSide
+        m.side = THREE.FrontSide
         if (m.color) {
-          m.emissive = new THREE.Color(0x220c10)
-          m.emissiveIntensity = 0.35
+          m.emissive = new THREE.Color(0x331015)
+          m.emissiveIntensity = 0.4
         }
-        m.needsUpdate = true
       })
     })
 
-    // Agatha's skeleton height is ~57 units facing +Z; scale 0.036 puts her upper torso & face terrifyingly large
+    // Agatha's skeleton height is ~57 units facing +Z; scale 0.036 puts her upper torso & face in view
     agathaModel.scale.setScalar(0.036)
     agathaModel.position.set(0, -1.78, -0.20)
     agathaModel.rotation.set(0, 0, 0)
     agathaGroup.add(agathaModel)
 
+    // Pre-warm GPU pipeline offscreen: compiles skinned mesh shader & uploads all textures to GPU VRAM
+    agathaGroup.position.set(0, -999, 0)
+    agathaPivot.visible = true
+    setTimeout(() => {
+      if (!act) {
+        agathaPivot.visible = false
+        agathaGroup.position.set(0, -0.22, -1.65)
+      }
+    }, 150)
+
     if (gltf.animations?.length > 0) {
       agathaMixer = new THREE.AnimationMixer(agathaModel)
-      const clips = gltf.animations.filter((c) => c.duration > 0.1 && /jumpscare/i.test(c.name))
-      const usableClips = clips.length > 0 ? clips : gltf.animations.filter((c) => c.duration > 0.1)
+      // Pick jumpscare clips, prioritizing the direct forward-lunge jumpscare1
+      const primaryClip = gltf.animations.find((c) => /jumpscare1/i.test(c.name))
+      const otherClips = gltf.animations.filter((c) => c.duration > 0.1 && /jumpscare/i.test(c.name) && !/jumpscare1/i.test(c.name))
+      const usableClips = primaryClip ? [primaryClip, ...otherClips] : gltf.animations.filter((c) => c.duration > 0.1)
       agathaActions = usableClips.map((clip) => {
         const action = agathaMixer.clipAction(clip)
         action.setLoop(THREE.LoopOnce)
@@ -120,43 +114,16 @@ export function createScares(E, h) {
   }
 
   // Blinding strobe white key light + blood-red underlight mounted on camera
+  // Keep visible = true with intensity = 0 so Three.js compiles all shaders with these uniforms at init
   const scareKeyLight = new THREE.PointLight(0xf6f8ff, 0, 7.0)
   scareKeyLight.position.set(0, 0.14, -0.10)
-  scareKeyLight.visible = false
+  scareKeyLight.visible = true
   cam.add(scareKeyLight)
 
   const scareLight = new THREE.PointLight(0xff1008, 0, 6.0)
   scareLight.position.set(0, -0.26, -0.18)
-  scareLight.visible = false
+  scareLight.visible = true
   cam.add(scareLight)
-
-  const getFacePivotLocal = () => {
-    if (!agathaModel) return false
-    agathaModel.updateMatrixWorld(true)
-    if (agathaEyeL && agathaEyeR) {
-      agathaEyeL.getWorldPosition(tmpHeadWorld)
-      agathaEyeR.getWorldPosition(tmpEyeWorld)
-      tmpHeadWorld.lerp(tmpEyeWorld, 0.5)
-    } else if (agathaHeadBone) {
-      agathaHeadBone.getWorldPosition(tmpHeadWorld)
-    } else {
-      return false
-    }
-    agathaPivot.worldToLocal(tmpHeadLocal.copy(tmpHeadWorld))
-    return true
-  }
-
-  // Snap Agatha's face center rapidly into targetZ (-1.75m -> -0.36m in ~0.12s) and keep eyes centered
-  const alignFaceToCamera = (targetZ, snapSpeed) => {
-    if (!getFacePivotLocal()) return
-    agathaModel.position.x -= tmpHeadLocal.x * snapSpeed
-    agathaModel.position.y -= (tmpHeadLocal.y + 0.01) * snapSpeed
-    agathaModel.position.z += (targetZ - tmpHeadLocal.z) * snapSpeed
-    // Hard safety guard so nose/teeth never intersect camera near plane (-0.28m)
-    if (tmpHeadLocal.z > -0.32) {
-      agathaModel.position.z -= (tmpHeadLocal.z - (-0.32))
-    }
-  }
 
   const defs = {
     agatha: {
@@ -164,33 +131,37 @@ export function createScares(E, h) {
       start() {
         clearTimeout(hbTimeout)
         agathaPivot.visible = true
-        scareKeyLight.visible = true
         scareKeyLight.intensity = 22.0
-        scareLight.visible = true
         scareLight.intensity = 15.0
-        agathaGroup.position.set(0, 0, 0)
+        agathaGroup.position.set(0, -0.22, -1.55)
         agathaGroup.rotation.set(0, 0, 0)
-        agathaGroup.scale.setScalar(0.85)
+        agathaGroup.scale.setScalar(0.92)
         if (agathaModel) {
-          agathaModel.position.set(0, -1.78, -1.55)
+          agathaModel.position.set(0, -1.78, -0.20)
         }
         midFlashFired = false
         activeDuration = 2.25
 
         if (agathaMixer && agathaActions.length > 0) {
           agathaMixer.stopAllAction()
-          const picked = agathaActions[Math.floor(Math.random() * agathaActions.length)]
+          // Favor direct forward-screaming jumpscare1 with occasional variations
+          const picked = (Math.random() < 0.70 || agathaActions.length === 1)
+            ? agathaActions[0]
+            : agathaActions[Math.floor(Math.random() * agathaActions.length)]
           activeAction = picked.action
-          // Energetic aggressive speed so the lunge feels immediate and violent
-          const timeScale = picked.duration < 1.3 ? 0.92 : 1.25
+          const timeScale = picked.duration < 1.3 ? 0.95 : 1.25
           activeAction.reset()
           activeAction.timeScale = timeScale
           activeAction.play()
-          agathaMixer.update(0.03)
-          activeDuration = Math.min(2.6, Math.max(1.85, picked.duration / timeScale))
-          alignFaceToCamera(-1.65, 1.0)
+          activeDuration = Math.min(2.5, Math.max(1.85, picked.duration / timeScale))
         } else {
           activeAction = null
+        }
+
+        // Punch FOV once on start (no per-frame projection matrix invalidation)
+        if (cam && typeof cam.updateProjectionMatrix === 'function') {
+          cam.fov = baseFov - 16
+          cam.updateProjectionMatrix()
         }
 
         // Play the attached scary scream sound ONLY when this jumpscare happens
@@ -199,8 +170,8 @@ export function createScares(E, h) {
         } else {
           A()?.playScreamClip?.()
         }
-        E.shake?.(4.5, activeDuration)
-        flash?.('#7a0000', 0.36, 130)
+        E.shake?.(1.4, 0.45)
+        flash?.('#7a0000', 0.32, 120)
         sc.v = 0.05
       },
       upd(t, dt) {
@@ -208,41 +179,32 @@ export function createScares(E, h) {
           agathaMixer.update(dt || 0.016)
         }
 
-        // Explosive pop-out lunge in the first 0.12s: -1.65m -> -0.35m straight into the player's face
+        // Explosive pop-out lunge in the first 0.12s: group goes from -1.55m to -0.85m (face reaches -0.38m)
         const lungeProgress = Math.min(1, t / 0.12)
         const easeSnap = 1 - Math.pow(1 - lungeProgress, 4)
-        const pulseZ = lungeProgress >= 1 ? Math.max(0, Math.sin((t - 0.12) * 28)) * 0.045 : 0
-        const desiredFaceZ = -1.65 + easeSnap * 1.30 + pulseZ // reaches -0.35m -> -0.305m at full snap
+        const pulseZ = lungeProgress >= 1 ? Math.max(0, Math.sin((t - 0.12) * 26)) * 0.035 : 0
+        const desiredGroupZ = -1.55 + easeSnap * 0.70 + pulseZ
 
         if (!midFlashFired && t >= 0.11) {
           midFlashFired = true
-          flash?.('#ffffff', 0.24, 60)
+          flash?.('#ffffff', 0.22, 50)
         }
 
-        // Dramatic FOV punch: 72 -> 50 deg on impact, holding tight then snapping back near end
-        if (cam && typeof cam.updateProjectionMatrix === 'function') {
-          const exitFade = t > activeDuration - 0.22 ? Math.min(1, (t - (activeDuration - 0.22)) / 0.22) : 0
-          const targetFov = baseFov - (22 * easeSnap * (1 - exitFade))
-          if (Math.abs(cam.fov - targetFov) > 0.2) {
-            cam.fov = targetFov
-            cam.updateProjectionMatrix()
-          }
-        }
-
-        // Aggressive horror strobe + crimson rim lighting
-        const strobe = Math.sin(t * 58) > -0.15 ? 24.0 : 3.5
-        sc.v = Math.sin(t * 48) > 0 ? 0.55 : 0.04
+        // Fast horror strobe & crimson underlight
+        const strobe = Math.random() > 0.35 ? 24.0 : 3.5
+        sc.v = Math.random() > 0.5 ? 0.55 : 0.04
         scareKeyLight.intensity = strobe
-        scareLight.intensity = 13.0 + Math.sin(t * 47) * 7.0
+        scareLight.intensity = 11.0 + Math.random() * 8.0
 
-        // Violent demonic thrash & head-snap tremors once in the player's face
-        const thrashAmp = lungeProgress >= 1 ? 1.0 : lungeProgress * 0.3
-        agathaGroup.position.x = Math.sin(t * 72) * 0.032 * thrashAmp
-        agathaGroup.position.y = Math.cos(t * 61) * 0.026 * thrashAmp
-        agathaGroup.rotation.z = (Math.sin(t * 37) * 0.14 + Math.sin(t * 89) * 0.05) * thrashAmp
-        agathaGroup.scale.setScalar(0.85 + easeSnap * 0.24 + Math.sin(t * 50) * 0.035 * thrashAmp)
-
-        alignFaceToCamera(desiredFaceZ, lungeProgress < 1 ? 0.85 : Math.min(1, (dt || 0.016) * 24))
+        // Demonic tremors around face position (pure coordinate math, zero matrix updates)
+        const thrashAmp = lungeProgress >= 1 ? 1.0 : lungeProgress * 0.4
+        agathaGroup.position.set(
+          Math.sin(t * 68) * 0.024 * thrashAmp,
+          -0.22 + Math.cos(t * 54) * 0.018 * thrashAmp,
+          desiredGroupZ
+        )
+        agathaGroup.rotation.z = Math.sin(t * 41) * 0.08 * thrashAmp
+        agathaGroup.scale.setScalar(0.92 + easeSnap * 0.20 + Math.sin(t * 45) * 0.025 * thrashAmp)
 
         if (t > activeDuration) {
           if (activeAction) {
@@ -250,10 +212,10 @@ export function createScares(E, h) {
             activeAction = null
           }
           agathaPivot.visible = false
-          scareKeyLight.visible = false
-          scareLight.visible = false
+          scareKeyLight.intensity = 0
+          scareLight.intensity = 0
           sc.v = 1
-          agathaGroup.position.set(0, 0, -1.75)
+          agathaGroup.position.set(0, -0.22, -1.65)
           agathaGroup.rotation.set(0, 0, 0)
           agathaGroup.scale.setScalar(1.0)
           if (cam && Math.abs(cam.fov - baseFov) > 0.1) {

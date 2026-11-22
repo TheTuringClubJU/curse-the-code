@@ -28,25 +28,58 @@ export function buildBedroom(E) {
         E.flashlight.decay = 1.42
         E._flashBaseIntensity = 28.0
         E.flashlight.intensity = 28.0
-        let nextBurstAt = 1.4
+
+        // Randomized stochastic flashlight flicker generator (unpredictable non-sequential timing & varied intensity)
+        let nextBurstAt = 1.2 + Math.random() * 2.2
         let burstUntil = 0
+        let burstType = 0 // 0: deep brownout dip, 1: erratic multi-stutter, 2: chaotic electrical spark, 3: minor voltage sag
+        let burstFloor = 0.08
+        let burstSubPulse = 0
+
         anim((t) => {
             if (!E.flashlight || E._userFlashlightOn === false || E._flashOutageActive) return
+
+            // Schedule next burst with unpredictable randomized intervals (never periodic/sequential)
             if (t >= nextBurstAt) {
-                burstUntil = t + 0.16 + ((Math.sin(t * 17.3) * 0.5 + 0.5) * 0.24)
-                nextBurstAt = t + 1.2 + ((Math.cos(t * 9.7) * 0.5 + 0.5) * 1.3)
+                const dur = 0.10 + Math.random() * 0.34 // 100ms - 440ms randomized duration
+                burstUntil = t + dur
+                burstType = Math.floor(Math.random() * 4)
+                // Random intensity floor for this specific burst: varies between near-blackout (0.02) and dim (0.35)
+                burstFloor = 0.02 + Math.random() * 0.33
+                burstSubPulse = 0
+                // Next burst delay is completely randomized: 0.85s to 4.2s (never sequential/periodic)
+                nextBurstAt = t + dur + 0.85 + Math.random() * 3.35
             }
+
             const base = E._flashBaseIntensity || 28.0
-            const flutter = 0.94 + Math.sin(t * 37) * 0.03 + Math.cos(t * 53) * 0.03
-            let factor = flutter
+            let factor = 1.0
+
             if (t < burstUntil) {
-                const wave = Math.sin(t * 85) * 0.5 + 0.5
-                factor = 0.08 + wave * 0.27
+                // Inside randomized flicker burst: intensity dynamically varies and spikes stochastically
+                const r = Math.random()
+                if (burstType === 0) {
+                    // Deep brownout: drops deep down, with occasional erratic 1-frame micro-spark
+                    factor = r > 0.82 ? (burstFloor + Math.random() * 0.45) : (burstFloor + r * 0.06)
+                } else if (burstType === 1) {
+                    // Multi-stutter: rapid stochastic oscillation between low and moderate intensity
+                    burstSubPulse += 1
+                    factor = (burstSubPulse % 2 === 0) ? (burstFloor + Math.random() * 0.12) : (0.45 + Math.random() * 0.45)
+                } else if (burstType === 2) {
+                    // Chaotic electrical spasm: completely irregular noise
+                    factor = r > 0.5 ? (burstFloor + Math.random() * 0.2) : (0.55 + Math.random() * 0.42)
+                } else {
+                    // Minor voltage sag / soft flicker
+                    factor = 0.52 + Math.random() * 0.35
+                }
+            } else {
+                // Organic idle filament micro-tremor (stochastic noise, non-periodic)
+                factor = 0.96 + (Math.random() - 0.5) * 0.06
             }
-            const intensity = Math.max(1.5, base * factor)
+
+            const intensity = Math.max(0.6, base * factor)
             E.flashlight.intensity = intensity
             if (E._flashLensMat) {
-                E._flashLensMat.emissiveIntensity = Math.max(0.2, 2.2 * (intensity / base))
+                E._flashLensMat.emissiveIntensity = Math.max(0.12, 2.2 * (intensity / base))
             }
         })
     }
