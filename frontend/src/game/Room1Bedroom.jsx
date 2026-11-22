@@ -400,7 +400,27 @@ export default function Room1Bedroom({ team, onLogout, onTransitionToRoom2 }) {
         engineRef.current?.triggerWardrobeScare?.();
       }
 
-      // 1. Search for a hidden fragment first
+      // 1. If this is a Clue Entry object (Diary, Notebook, Poster, Portrait), open it INSTANTLY (0ms response time!)
+      const matchingClue = currentData?.clues?.find((c) => c.object_id === objectId);
+      if (matchingClue) {
+        if (!currentData?.basket_unlocked) {
+          showNotification(
+            "The arcane seal is unbroken. You must recover all 15 room fragments to unseal this case file."
+          );
+          return;
+        }
+        if (matchingClue.is_locked) {
+          showNotification(
+            matchingClue.lock_reason || "This clue is sealed. Complete the preceding clue in sequence first."
+          );
+          return;
+        }
+        setActiveClue(matchingClue);
+        engineRef.current?.unlock();
+        return;
+      }
+
+      // 2. Otherwise search for a hidden fragment in this furniture/prop
       let searchResult = null;
       try {
         const res = await fetch('/api/game/room/bedroom/search', {
@@ -445,25 +465,6 @@ export default function Room1Bedroom({ team, onLogout, onTransitionToRoom2 }) {
         }
       } catch (err) {
         console.error('Search request failed:', err);
-      }
-
-      // 2. If no fragment was found, check if this is a Clue Entry object (Diary, Notebook, Poster, Portrait)
-      const matchingClue = currentData?.clues?.find((c) => c.object_id === objectId);
-      if (matchingClue) {
-        if (!currentData?.basket_unlocked) {
-          showNotification(
-            "The arcane seal is unbroken. You must recover all 15 room fragments to unseal this case file."
-          );
-          return;
-        }
-        if (matchingClue.is_locked) {
-          showNotification(
-            matchingClue.lock_reason || "This clue is sealed. Complete the preceding clue in sequence first."
-          );
-          return;
-        }
-        setActiveClue(matchingClue);
-        engineRef.current?.unlock();
       }
     } finally {
       searchBusyRef.current = false;
