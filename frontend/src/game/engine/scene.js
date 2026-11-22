@@ -170,20 +170,23 @@ export function buildBedroom(E) {
         interact(cl, 'notebook'); add(cl)
     }
 
- // 4. East Wall Armchair beside the Bookshelf (Chair EB12 + Doll EK01 seated neatly)
- {const chGrp=grp(3.78,0,0.66)
-  const yaw=grp(0,0,0,-Math.PI/2),pv=grp(0,0,0,0);yaw.add(pv)
-  ;[-1,1].forEach(s=>{const pts=[];for(let i=0;i<=10;i++){const z=-.5+i*.1;pts.push([s*.27,.03+.2*Math.pow(z/.5,2)*.8,z])}pv.add(mk(tube(pts,.016,24,8),worn))
-   pv.add(bx(.035,.4,.035,worn,s*.26,.25,.2,{vert:true}),bx(.035,.5,.035,worn,s*.26,.3,-.2,{vert:true}),bx(.03,.2,.03,worn,s*.27,.56,.15,{vert:true}),bx(.04,.03,.44,worn,s*.27,.67,.0))})
-  pv.add(bx(.54,.04,.46,dark,0,.45,0),bx(.5,.03,.03,worn,0,.2,.2),bx(.5,.03,.03,worn,0,.2,-.2))
-  const back=grp(0,.46,-.22);back.rotation.x=-.14;back.add(bx(.035,.55,.035,worn,-.24,.28,0,{vert:true}),bx(.035,.55,.035,worn,.24,.28,0,{vert:true}),bx(.54,.08,.03,worn,0,.56,0),bx(.5,.03,.03,worn,0,.1,0));for(let i=0;i<6;i++)back.add(mk(new THREE.CylinderGeometry(.011,.011,.46,8),worn,-.2+i*.08,.3,0));pv.add(back)
-  chGrp.add(trackVisual(yaw))
-  const chairGlaze=mk(new THREE.BoxGeometry(0.74,0.88,0.74),mat({color:0x140e0a,t:true,o:0.03,r:0.9}),0,0.44,0)
-  chairGlaze.castShadow=false;chGrp.add(chairGlaze)
-  ref.chair={yaw,pv}
-  ref.doll=null
-  interact(chGrp,'chair');add(chGrp);solid(3.38,4.18,0.20,1.08)
- }
+    // 4. East Wall Armchair beside the Bookshelf (Chair EB12 + Doll EK01 seated neatly)
+    {
+        const chGrp = grp(3.78, 0, 0.66)
+        const yaw = grp(0, 0, 0, -Math.PI / 2), pv = grp(0, 0, 0, 0); yaw.add(pv)
+            ;[-1, 1].forEach(s => {
+                const pts = []; for (let i = 0; i <= 10; i++) { const z = -.5 + i * .1; pts.push([s * .27, .03 + .2 * Math.pow(z / .5, 2) * .8, z]) } pv.add(mk(tube(pts, .016, 24, 8), worn))
+                pv.add(bx(.035, .4, .035, worn, s * .26, .25, .2, { vert: true }), bx(.035, .5, .035, worn, s * .26, .3, -.2, { vert: true }), bx(.03, .2, .03, worn, s * .27, .56, .15, { vert: true }), bx(.04, .03, .44, worn, s * .27, .67, .0))
+            })
+        pv.add(bx(.54, .04, .46, dark, 0, .45, 0), bx(.5, .03, .03, worn, 0, .2, .2), bx(.5, .03, .03, worn, 0, .2, -.2))
+        const back = grp(0, .46, -.22); back.rotation.x = -.14; back.add(bx(.035, .55, .035, worn, -.24, .28, 0, { vert: true }), bx(.035, .55, .035, worn, .24, .28, 0, { vert: true }), bx(.54, .08, .03, worn, 0, .56, 0), bx(.5, .03, .03, worn, 0, .1, 0)); for (let i = 0; i < 6; i++)back.add(mk(new THREE.CylinderGeometry(.011, .011, .46, 8), worn, -.2 + i * .08, .3, 0)); pv.add(back)
+        chGrp.add(trackVisual(yaw))
+        const chairGlaze = mk(new THREE.BoxGeometry(0.74, 0.88, 0.74), mat({ color: 0x140e0a, t: true, o: 0.03, r: 0.9 }), 0, 0.44, 0)
+        chairGlaze.castShadow = false; chGrp.add(chairGlaze)
+        ref.chair = { yaw, pv }
+        ref.doll = null
+        interact(chGrp, 'chair'); add(chGrp); solid(3.38, 4.18, 0.20, 1.08)
+    }
 
     // 5. North-West Ornate Carved Double Wardrobe (Wardrobe EB06 at (-3.28, 0, -2.06)) + Opening Door & Ghost Rig
     {
@@ -201,33 +204,7 @@ export function buildBedroom(E) {
         const wdGlaze = mk(new THREE.BoxGeometry(0.05, 2.55, 1.50), mat({ color: 0x100c14, t: true, o: 0.03, r: 0.8 }), -0.31, 1.38, 0)
         wdGlaze.castShadow = false; g.add(wdGlaze)
 
-        // Dedicated opening rig shown ONLY during wardrobe jumpscare so closed state leaves GLB art crisp
-        const rigGrp = grp(-2.96, 0, -2.06)
-        rigGrp.visible = false
-        const abyss = mk(new THREE.PlaneGeometry(1.48, 2.52), new THREE.MeshBasicMaterial({ color: 0x020104, side: THREE.DoubleSide, fog: false }), -0.02, 1.32, 0, 0, Math.PI / 2, 0)
-        abyss.userData.np = 1; rigGrp.add(abyss)
-        const swingDoor = (s) => {
-            const hinge = grp(0, 0, -0.74 * s)
-            const leaf = mk(new THREE.BoxGeometry(0.04, 2.52, 0.74), dk, 0, 1.32, 0.37 * s)
-            leaf.userData.np = 1; hinge.add(leaf)
-            rigGrp.add(hinge)
-            return hinge
-        }
-        const rigDoorL = swingDoor(1), rigDoorR = swingDoor(-1)
-        S.add(rigGrp)
-        ref.wardrobeRig = { group: rigGrp, doorL: rigDoorL, doorR: rigDoorR, open: false, angle: 0 }
-        anim((_, dt) => {
-            const rig = ref.wardrobeRig
-            if (!rig) return
-            const target = rig.open ? 1.35 : 0
-            rig.angle += (target - rig.angle) * Math.min(1, (dt || 0.016) * 9)
-            rig.doorL.rotation.y = rig.angle
-            rig.doorR.rotation.y = -rig.angle
-            rig.group.visible = rig.open || rig.angle > 0.03
-        })
-
         ref.wardrobe = { doorR: dr, doorL: dl, pos: new THREE.Vector3(-2.95, 1.2, -2.06), open: false }
-        const ff = mk(new THREE.PlaneGeometry(.7, .9), new THREE.MeshBasicMaterial({ map: X.tex(X.faceC({ glow: true, eye: '#ff2a1a', seed: 7 }), {}), transparent: true, fog: false, depthWrite: false }), -.3, 1.25, .12, 0, -Math.PI / 2, 0); ff.visible = false; ff.userData.np = 1; g.add(ff); ref.wardrobe.face = ff
         interact(g, 'wardrobe'); add(g); solid(-3.75, -2.85, -2.92, -1.22)
     }
 

@@ -36,7 +36,6 @@ export default function Room1Bedroom({ team, onLogout, onTransitionToRoom2 }) {
   const [systemNotification, setSystemNotification] = useState(null);
   const [audioMuted, setAudioMuted] = useState(false);
   const [flashOverlay, setFlashOverlay] = useState({ color: '#c40414', opacity: 0, visible: false });
-  const doorScareCountRef = useRef(0);
 
   // Fetch initial room data from backend
   const fetchRoomState = async () => {
@@ -211,7 +210,7 @@ export default function Room1Bedroom({ team, onLogout, onTransitionToRoom2 }) {
           console.info("[ROOM1 ON_INTERACT RECEIVED]", objectId);
           handleInteractRef.current?.(objectId);
         },
-        onLock: () => {}
+        onLock: () => { }
       });
 
       // Unpause initially once started
@@ -265,29 +264,13 @@ export default function Room1Bedroom({ team, onLogout, onTransitionToRoom2 }) {
           engineRef.current?.unlock();
         }
       } else {
-        const now = Date.now();
-        const ds = typeof doorScareCountRef.current === 'object' ? doorScareCountRef.current : { count: doorScareCountRef.current || 0, lastAt: 0 };
-        const shouldScare = ds.count > 0 && (now - ds.lastAt) >= 45000 && Math.random() < 0.25;
-        ds.count += 1;
-        if (shouldScare) ds.lastAt = now;
-        doorScareCountRef.current = ds;
-        if (shouldScare) {
-          engineRef.current?.triggerDoorScare?.();
-          audioRef.current?.jumpscareSting?.(1.4);
-        } else {
-          audioRef.current?.slam?.(0, 0);
-        }
+        audioRef.current?.slam?.(0, 0);
         const solvedCount = currentData?.clues?.filter(c => c.solved)?.length || 0;
         showNotification(
           `The heavy corridor door is locked with four iron deadbolts. Solve all 4 case files in this room to unlock it (${solvedCount}/4 solved).`
         );
       }
       return;
-    }
-
-    // Trigger spectral wardrobe-opening jumpscare when inspecting/opening the antique wardrobe
-    if (objectId === 'wardrobe') {
-      engineRef.current?.triggerWardrobeScare?.();
     }
 
     // 1. Search for a hidden fragment first
@@ -323,7 +306,7 @@ export default function Room1Bedroom({ team, onLogout, onTransitionToRoom2 }) {
                 searchResult = dollData;
               }
             }
-          } catch (_) {}
+          } catch (_) { }
         }
         if (searchResult && searchResult.message) {
           showNotification(searchResult.message);
@@ -428,14 +411,14 @@ export default function Room1Bedroom({ team, onLogout, onTransitionToRoom2 }) {
   return (
     <div className="relative w-full h-screen overflow-hidden bg-[#07050d] select-none font-mono">
       {/* 3D Canvas Mounting Point */}
-      <div 
-        ref={mountRef} 
+      <div
+        ref={mountRef}
         onClick={() => {
           if (isStarted && engineRef.current && !activeClue && !isBasketOpen && !isPhotoPuzzleOpen && !isCaseFilesOpen && !isRoomCompleteModalOpen && !isDossierOpen && !isHintOpen) {
             engineRef.current.lock();
           }
         }}
-        className="absolute inset-0 w-full h-full cursor-none" 
+        className="absolute inset-0 w-full h-full cursor-none"
       />
 
       {/* Atmospheric Overlays */}
