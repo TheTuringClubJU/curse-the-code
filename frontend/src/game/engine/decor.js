@@ -172,34 +172,68 @@ export function buildRoomBloodAndClaws(E,{W=8,H=3,D=6,seed=1,gothicArches=true}=
 export function buildDecor(E){
  const {S,add,anim,interact,cam,W,H,D}=E,R=X.rng(12),gold=mat({map:TX.metal(),m:.7,r:.45,c:0xe0b878}),brass=mat({map:TX.brass(),m:.85,r:.4,c:0xd8b070})
 
- // Portrait (R1-04 + XB02) flush on North wall above GLB nightstand
- {const g=grp(-0.75,1.82,-2.88),fr=gold;g.add(mk(new THREE.BoxGeometry(.74,.06,.05),fr,0,.4,0),mk(new THREE.BoxGeometry(.74,.06,.05),fr,0,-.4,0),mk(new THREE.BoxGeometry(.06,.86,.05),fr,-.34,0,0),mk(new THREE.BoxGeometry(.06,.86,.05),fr,.34,0,0))
-  g.add(mk(new THREE.PlaneGeometry(.62,.775),mat({map:TX.portrait(),r:.55}),0,0,.012));const pm=new THREE.MeshBasicMaterial({color:0x06080a}),ps=[];[-1,1].forEach(s=>{const p=mk(new THREE.CircleGeometry(.0105,14),pm,s*.0638,.0647,.0135);p.userData.np=1;g.add(p);ps.push(p)})
-  const ptHit=new THREE.Mesh(new THREE.BoxGeometry(0.9,1.1,0.2),new THREE.MeshBasicMaterial({colorWrite:false,depthWrite:false}));ptHit.castShadow=false;ptHit.userData.ns=1;g.add(ptHit);interact(g,'portrait');add(g);anim(()=>{const dx=cam.position.x-g.position.x,dy=cam.position.y-g.position.y,dz=cam.position.z-g.position.z,d=Math.hypot(dx,dy,dz)||1;ps.forEach((p,i)=>{p.position.x=(i?1:-1)*.0638+Math.max(-1,Math.min(1,dx/d*1.6))*.011;p.position.y=.0647+Math.max(-1,Math.min(1,dy/d*1.6))*.007})})}
+ // Portrait (R1-04 + XB02): aligned flush onto the GLB's own antique monochrome portrait at (-1.45, 2.05, -2.95)
+ // Procedural purple portrait & eyes hide automatically once abandoned_mansion_bedroom.glb loads (zero overlap!).
+ {const g=grp(-1.45,2.05,-2.95)
+  const procVis=new THREE.Group()
+  const fr=gold
+  procVis.add(mk(new THREE.BoxGeometry(.74,.06,.05),fr,0,.4,0),mk(new THREE.BoxGeometry(.74,.06,.05),fr,0,-.4,0),mk(new THREE.BoxGeometry(.06,.86,.05),fr,-.34,0,0),mk(new THREE.BoxGeometry(.06,.86,.05),fr,.34,0,0))
+  procVis.add(mk(new THREE.PlaneGeometry(.62,.775),mat({map:TX.portrait(),r:.55}),0,0,.012))
+  const pm=new THREE.MeshBasicMaterial({color:0x06080a}),ps=[];[-1,1].forEach(s=>{const p=mk(new THREE.CircleGeometry(.0105,14),pm,s*.0638,.0647,.0135);p.userData.np=1;procVis.add(p);ps.push(p)})
+  ;(E.ref.procVisuals??=[]).push(procVis)
+  g.add(procVis)
+  // Real dusty glass glaze over the GLB's antique portrait frame so raycasting hits cleanly without obscuring the photo
+  const glassGlaze=mk(new THREE.PlaneGeometry(1.12,0.72),mat({color:0x100c14,t:true,o:0.06,r:0.25,m:0.1}),0,0,0.015)
+  glassGlaze.castShadow=false;g.add(glassGlaze)
+  interact(g,'portrait');add(g)
+  anim(()=>{if(!procVis.visible)return;const dx=cam.position.x-g.position.x,dy=cam.position.y-g.position.y,dz=cam.position.z-g.position.z,d=Math.hypot(dx,dy,dz)||1;ps.forEach((p,i)=>{p.position.x=(i?1:-1)*.0638+Math.max(-1,Math.min(1,dx/d*1.6))*.011;p.position.y=.0647+Math.max(-1,Math.min(1,dy/d*1.6))*.007})})}
 
- // Celestial Poster Plaque (R1-03) flush on upper South wall above GLB sideboard (no overlap)
- {const g=grp(-0.45,2.22,2.90,Math.PI)
-  g.rotation.z=-0.025
-  const fallback=mk(new THREE.BoxGeometry(0.66,0.82,0.028),mat({color:0x1a120d,r:0.85,m:0.08}),0,0,0)
-  const fallbackChart=mk(new THREE.PlaneGeometry(0.56,0.72),mat({color:0x1e1b28,r:0.88}),0,0,0.016)
-  g.add(fallback,fallbackChart)
-  g.updateMatrix();g.matrixAutoUpdate=false
+ // Bonnie Poster (R1-03): mounted on the BARE South-East floral wallpaper wall at (2.35, 1.75, 2.98), clear of all paintings & bookshelf
+ {const g=grp(2.35,1.75,2.98,0)
+  const fallback=mk(new THREE.BoxGeometry(0.66,0.82,0.018),mat({color:0x1a1412,r:0.88,m:0.05}),0,0,0)
+  fallback.rotation.z=-0.025
+  g.add(fallback)
+  interact(g,'poster');add(g)
   if(E.loadGLB){
-   E.loadGLB('/assets/models/bedroom/celestial_poster.glb').then(gltf=>{
+   E.loadGLB('/assets/models/bedroom/bonnie_poster.glb').then(gltf=>{
     const model=gltf.scene
-    model.traverse(c=>{if(c.isMesh){c.castShadow=true;c.receiveShadow=true;c.updateMatrix();c.matrixAutoUpdate=false}})
-    g.remove(fallback,fallbackChart)
-    E.interact(model,'poster')
-    g.add(model)
+    model.updateMatrixWorld(true)
+    const b=new THREE.Box3().setFromObject(model)
+    const ctr=b.getCenter(new THREE.Vector3())
+    const norm=new THREE.Group()
+    model.position.set(-ctr.x,-ctr.y,-ctr.z)
+    norm.add(model)
+    // Post-opt bonnie_poster.glb has UP=(-1,0,0) and FRONT=(0,1,0); (-PI/2, +PI/2, 0) XYZ faces North (-Z) upright into the room
+    norm.rotation.set(-Math.PI/2,Math.PI/2,0)
+    norm.scale.setScalar(0.22)
+    norm.traverse(c=>{
+     if(!c.isMesh)return
+     c.castShadow=true;c.receiveShadow=true
+     const mats=Array.isArray(c.material)?c.material:[c.material]
+     mats.forEach(m=>{if(m?.color){m.color.multiplyScalar(0.68);m.roughness=Math.max(m.roughness??0.8,0.82);m.needsUpdate=true}})
+     c.updateMatrix();c.matrixAutoUpdate=false
+    })
+    const holder=grp(2.35,1.75,2.94,0)
+    holder.add(norm)
+    holder.updateMatrix();holder.matrixAutoUpdate=false
+    interact(holder,'poster')
+    E.visualInteract?.(holder,'poster')
+    add(holder)
+    g.visible=false
+    g.traverse(o=>{
+     o.visible=false;o.userData.np=1;delete o.userData.id
+     if(E._pick){const i=E._pick.indexOf(o);if(i!==-1)E._pick.splice(i,1)}
+     if(E._byId){Object.values(E._byId).forEach(arr=>{const j=arr.indexOf(o);if(j!==-1)arr.splice(j,1)})}
+    })
     E?.bakeShadows?.()
    }).catch(()=>{})
   }
-  interact(g,'poster');add(g)}
+ }
 
  // Torsion Pendulum Clock (EB09) resting flat on GLB South sideboard cabinet facing North into the room
  {
   const darkWood=wm('ebony')
-  const g=grp(-1.35,1.12,2.50,Math.PI)
+  const g=grp(-1.35,1.08,2.50,Math.PI)
   const c0=mk(new THREE.CylinderGeometry(.14,.14,.04,36),[mat({color:0x2a1a12,r:.6}),mat({map:TX.clockFace(),r:.5}),mat({color:0x2a1a12,r:.6})],0,.20,.02)
   c0.rotation.x=Math.PI/2
   c0.rotation.y=Math.PI
@@ -251,7 +285,7 @@ export function buildDecor(E){
         })
       })
       clockModel.scale.setScalar(1.45)
-      clockModel.position.set(-1.35,1.12,2.50)
+      clockModel.position.set(-1.35,1.08,2.50)
       clockModel.rotation.set(0,Math.PI,0)
       interact(clockModel,'clock')
       add(clockModel)

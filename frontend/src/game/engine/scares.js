@@ -1,4 +1,4 @@
-// Jump-scare director: animated 3D Clown Springtrap jumpscare at balanced intervals. Press J or 1-5 to trigger directly.
+// Jump-scare director: animated 3D Clown Springtrap jumpscare + Spectral Wardrobe-opening ghost scare.
 import * as THREE from 'three'
 import * as X from './tex.js'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
@@ -49,8 +49,68 @@ function buildClownTexture() {
   return base
 }
 
+/** Build a spectral ragged ghost figure that bursts out of the antique wardrobe doors. */
+function buildWardrobeGhost() {
+  const g = new THREE.Group()
+  g.visible = false
+  g.userData.np = 1
+
+  const shroudMat = new THREE.MeshStandardMaterial({
+    color: 0xc8d4e8,
+    emissive: 0x304868,
+    emissiveIntensity: 0.95,
+    roughness: 0.7,
+    transparent: true,
+    opacity: 0.86,
+    side: THREE.DoubleSide,
+    fog: false
+  })
+  const faceTex = X.tex(X.faceC({ glow: true, eye: '#ff2211', mouth: true, seed: 7 }), {})
+  const headMat = new THREE.MeshBasicMaterial({
+    map: faceTex,
+    transparent: true,
+    opacity: 0.96,
+    fog: false,
+    side: THREE.DoubleSide
+  })
+  const eyeMat = new THREE.MeshBasicMaterial({ color: 0xff2211, fog: false })
+
+  // Draped spectral torso/cloak
+  const body = new THREE.Mesh(new THREE.ConeGeometry(0.42, 1.55, 14, 4, true), shroudMat)
+  body.position.set(0, 0.85, 0)
+  body.userData.np = 1
+  g.add(body)
+
+  // Floating spectral skull/visage plane facing out (+Z in local ghost space)
+  const visage = new THREE.Mesh(new THREE.PlaneGeometry(0.56, 0.72), headMat)
+  visage.position.set(0, 1.62, 0.08)
+  visage.userData.np = 1
+  g.add(visage)
+
+  // Glowing piercing eyes
+  ;[-0.08, 0.08].forEach((ex) => {
+    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.024, 8, 8), eyeMat)
+    eye.position.set(ex, 1.67, 0.11)
+    eye.userData.np = 1
+    g.add(eye)
+  })
+
+  // Outstretched clawing arms reaching toward the player
+  const arms = []
+  ;[-1, 1].forEach((side) => {
+    const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.055, 0.78, 8), shroudMat)
+    arm.position.set(side * 0.24, 1.32, 0.34)
+    arm.rotation.set(Math.PI / 2.25, 0, side * 0.22)
+    arm.userData.np = 1
+    g.add(arm)
+    arms.push(arm)
+  })
+  g.userData.arms = arms
+  return g
+}
+
 export function createScares(E, h) {
-  const { cam, sc } = E
+  const { S, cam, sc } = E
   const A = () => h.audio
   const flash = (c, a, ms) => h.onFlash?.(c, a, ms)
 
@@ -61,7 +121,7 @@ export function createScares(E, h) {
   cam.add(clownPivot)
 
   const clownGroup = new THREE.Group()
-  clownGroup.position.set(0, -0.02, -1.68)
+  clownGroup.position.set(0, -0.02, -1.55)
   clownGroup.userData.np = 1
 
   const faceTex = X.tex(buildClownTexture(), {})
@@ -100,20 +160,30 @@ export function createScares(E, h) {
       mats.forEach((m) => {
         if (!m) return
         m.fog = false
+        // Skinned body mesh shipped with alphaMode: BLEND which causes Three.js sort/invisible edge cases;
+        // enforce opaque alpha-tested cutout + depthWrite so it renders reliably over dark backgrounds.
+        if (m.transparent) {
+          m.transparent = false
+          m.alphaTest = 0.25
+        }
         m.depthWrite = true
         m.depthTest = true
         m.side = THREE.DoubleSide
         if (m.name?.includes('Eyes') || o.name?.includes('Eyes')) {
           m.emissive = new THREE.Color(0xff1100)
-          m.emissiveIntensity = 2.8
+          m.emissiveIntensity = 3.5
+        } else if (m.color) {
+          m.emissive = new THREE.Color(0x160908)
+          m.emissiveIntensity = 0.35
         }
         m.needsUpdate = true
       })
     })
 
-    // Align head/eyes at local Y ≈ 1.18m directly to camera eye height Y ≈ 0
-    clownModel.scale.setScalar(0.85)
-    clownModel.position.set(0, -1.02, 0)
+    // During Clown_Springtrap--Jumpscare, Root_Bn_04 already drops head/eyes to local Y ≈ -0.02..+0.07m!
+    // Keeping Y near -0.04 centers the face directly in camera eye line instead of pushing it off the bottom edge.
+    clownModel.scale.setScalar(1.05)
+    clownModel.position.set(-0.04, -0.04, 0.24)
     clownModel.rotation.set(0, 0, 0)
     clownGroup.add(clownModel)
 
@@ -126,7 +196,7 @@ export function createScares(E, h) {
       clownAction = clownMixer.clipAction(gltf.animations[0])
       clownAction.setLoop(THREE.LoopOnce)
       clownAction.clampWhenFinished = true
-      clownAction.timeScale = 0.85
+      clownAction.timeScale = 0.72
     }
   }
 
@@ -157,7 +227,7 @@ export function createScares(E, h) {
 
   // Bright camera-mounted key light + red underlight so the 3D clown pops clearly in the dark room
   const scareKeyLight = new THREE.PointLight(0xfff0e8, 0, 6.0)
-  scareKeyLight.position.set(0, 0.12, -0.25)
+  scareKeyLight.position.set(0, 0.14, -0.25)
   scareKeyLight.visible = false
   cam.add(scareKeyLight)
 
@@ -166,21 +236,59 @@ export function createScares(E, h) {
   scareLight.visible = false
   cam.add(scareLight)
 
+  // Spectral Wardrobe-opening ghost scare state (anchored in world at NW carved wardrobe opening)
+  const wardrobeGhost = buildWardrobeGhost()
+  wardrobeGhost.position.set(-3.18, 0.05, -2.06)
+  wardrobeGhost.rotation.y = Math.PI / 2 // face +X out of the wardrobe into the room
+  S?.add(wardrobeGhost)
+
+  const wardrobeLight = new THREE.PointLight(0x78c8ff, 0, 5.5)
+  wardrobeLight.position.set(-2.55, 1.55, -2.06)
+  wardrobeLight.visible = false
+  S?.add(wardrobeLight)
+
+  let wardrobeScareT = -1
+
+  const triggerWardrobeScare = () => {
+    wardrobeScareT = 0
+    wardrobeGhost.visible = true
+    wardrobeLight.visible = true
+    wardrobeLight.intensity = 9.5
+    if (E.ref?.wardrobeRig) {
+      E.ref.wardrobeRig.open = true
+    }
+    if (E.ref?.wardrobe) {
+      E.ref.wardrobe.open = true
+      if (E.ref.wardrobe.face) E.ref.wardrobe.face.visible = true
+    }
+    if (A()?.jumpscareSting) {
+      A().jumpscareSting(1.25)
+    } else {
+      A()?.screech?.(-3.0, -2.06)
+    }
+    E.shake?.(2.2, 1.55)
+    flash?.('#14081c', 0.28, 150)
+  }
+
   const defs = {
     clown: {
       cond: () => true,
       start() {
         clownPivot.visible = true
         scareKeyLight.visible = true
-        scareKeyLight.intensity = 12.0
+        scareKeyLight.intensity = 14.0
         scareLight.visible = true
         scareLight.intensity = 10.0
-        clownGroup.position.set(0, -0.02, -1.68)
+        clownGroup.position.set(0, -0.02, -1.55)
         clownGroup.rotation.set(0, 0, 0)
         clownGroup.scale.setScalar(1.0)
         if (clownAction) {
-          clownAction.timeScale = 0.85
-          clownAction.reset().play()
+          clownAction.reset()
+          clownAction.timeScale = 0.72
+          // Advance slightly past frame 0 crouch so the rising head enters viewport immediately
+          clownAction.time = 0.08
+          clownAction.play()
+          clownMixer?.update(0)
         }
         if (A()?.jumpscareSting) {
           A().jumpscareSting(1.45)
@@ -189,24 +297,24 @@ export function createScares(E, h) {
           A()?.screech?.(E.px(), E.pz())
         }
         E.shake?.(2.6, 1.75)
-        flash?.('#550000', 0.28, 130)
-        sc.v = 0.2
+        flash?.('#550000', 0.26, 130)
+        sc.v = 0.25
       },
       upd(t, dt) {
         if (clownMixer) {
           clownMixer.update(dt || 0.016)
         }
-        sc.v = Math.sin(t * 38) > 0 ? 0.65 : 0.12
-        scareKeyLight.intensity = 11.5 + Math.sin(t * 42) * 2.5
-        scareLight.intensity = 8.0 + Math.sin(t * 45) * 4.0
+        sc.v = Math.sin(t * 38) > 0 ? 0.65 : 0.16
+        scareKeyLight.intensity = 13.0 + Math.sin(t * 42) * 3.0
+        scareLight.intensity = 8.5 + Math.sin(t * 45) * 4.0
 
-        const lunge = Math.sin(Math.min(Math.PI * 0.5, t * 4.5)) * 0.50
-        const spasm = Math.sin(t * 28) * 0.025
-        clownGroup.position.z = -1.68 + lunge + spasm
+        const lunge = Math.sin(Math.min(Math.PI * 0.5, t * 4.5)) * 0.52
+        const spasm = Math.sin(t * 28) * 0.022
+        clownGroup.position.z = -1.55 + lunge + spasm
         clownGroup.position.x = Math.sin(t * 55) * 0.02
         clownGroup.position.y = -0.02 + Math.cos(t * 45) * 0.02
         clownGroup.rotation.z = Math.sin(t * 32) * 0.06
-        clownGroup.scale.setScalar(1.0 + Math.min(0.25, t * 0.18))
+        clownGroup.scale.setScalar(1.0 + Math.min(0.22, t * 0.16))
 
         if (t > 1.75) {
           if (clownAction) {
@@ -216,7 +324,7 @@ export function createScares(E, h) {
           scareKeyLight.visible = false
           scareLight.visible = false
           sc.v = 1
-          clownGroup.position.set(0, -0.02, -1.68)
+          clownGroup.position.set(0, -0.02, -1.55)
           clownGroup.rotation.set(0, 0, 0)
           clownGroup.scale.setScalar(1.0)
           A()?.heartbeat?.(true)
@@ -257,7 +365,32 @@ export function createScares(E, h) {
   return {
     trigger,
     triggerDoorScare,
+    triggerWardrobeScare,
     tick(dt, t) {
+      if (wardrobeScareT >= 0) {
+        wardrobeScareT += dt || 0.016
+        const p = Math.min(1, wardrobeScareT / 0.45)
+        // Burst outward from inside wardrobe (-3.18) toward room (-1.85), hovering slightly
+        wardrobeGhost.position.x = -3.18 + Math.sin(p * Math.PI * 0.5) * 1.32 + Math.sin(wardrobeScareT * 36) * 0.03
+        wardrobeGhost.position.y = 0.05 + Math.sin(wardrobeScareT * 14) * 0.06
+        wardrobeGhost.scale.setScalar(0.55 + Math.min(0.65, wardrobeScareT * 1.4))
+        wardrobeLight.intensity = 7.0 + Math.sin(wardrobeScareT * 48) * 5.0
+        ;(wardrobeGhost.userData.arms || []).forEach((arm, idx) => {
+          arm.rotation.x = Math.PI / 2.25 + Math.sin(wardrobeScareT * 26 + idx) * 0.25
+        })
+        if (wardrobeScareT > 1.65) {
+          wardrobeScareT = -1
+          wardrobeGhost.visible = false
+          wardrobeLight.visible = false
+          wardrobeGhost.position.set(-3.18, 0.05, -2.06)
+          wardrobeGhost.scale.setScalar(1.0)
+          if (E.ref?.wardrobeRig) E.ref.wardrobeRig.open = false
+          if (E.ref?.wardrobe) {
+            E.ref.wardrobe.open = false
+            if (E.ref.wardrobe.face) E.ref.wardrobe.face.visible = false
+          }
+        }
+      }
       if (act) {
         at += dt
         if (act.upd(at, dt)) {
@@ -282,6 +415,8 @@ export function createScares(E, h) {
       if (clownPivot.parent) clownPivot.parent.remove(clownPivot)
       if (scareKeyLight.parent) scareKeyLight.parent.remove(scareKeyLight)
       if (scareLight.parent) scareLight.parent.remove(scareLight)
+      if (wardrobeGhost.parent) wardrobeGhost.parent.remove(wardrobeGhost)
+      if (wardrobeLight.parent) wardrobeLight.parent.remove(wardrobeLight)
       if (typeof window !== 'undefined' && onKey) {
         window.removeEventListener('keydown', onKey)
       }

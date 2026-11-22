@@ -321,6 +321,7 @@ export function createEngine(el,room,h){
    roomSize: [W, H, D],
    spawn: room.spawn,
    controlMode: room.id === 'control',
+   moveSpeed: room.moveSpeed || null,
    isInputBlocked: () => (room.id === 'study' && Boolean(E._studyCinematicInput)) || uiPaused
  });
 
@@ -559,6 +560,7 @@ export function createEngine(el,room,h){
   step(n,ms=50){ api._skip=true; for(let i=0;i<n;i++){ last=performance.now()-ms; loop(performance.now()); } api._skip=false; last=performance.now()-16; loop(performance.now()); },
   triggerScare:n=>scares?.trigger(n),
   triggerDoorScare:()=>scares?.triggerDoorScare?.(),
+  triggerWardrobeScare:()=>scares?.triggerWardrobeScare?.(),
   scares,haunting,
   setCountdown(text, restored = false){
     ref.wallMonitor?.setText?.(text);

@@ -181,7 +181,7 @@ export default function Room1Bedroom({ team, onLogout, onTransitionToRoom2 }) {
               bed: 'Inspect Four-Poster Bed',
               clock: 'Inspect Torsion Pendulum Clock',
               wardrobe: 'Inspect Antique Wardrobe',
-              bookshelf: 'Inspect Bookcase',
+              bookshelf: 'Inspect Bookshelf',
               portrait: 'Inspect Victorian Portrait',
               poster: 'Inspect Celestial Poster',
               musicbox: 'Inspect Music Box',
@@ -283,6 +283,11 @@ export default function Room1Bedroom({ team, onLogout, onTransitionToRoom2 }) {
         );
       }
       return;
+    }
+
+    // Trigger spectral wardrobe-opening jumpscare when inspecting/opening the antique wardrobe
+    if (objectId === 'wardrobe') {
+      engineRef.current?.triggerWardrobeScare?.();
     }
 
     // 1. Search for a hidden fragment first

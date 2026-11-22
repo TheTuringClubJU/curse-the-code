@@ -4,6 +4,7 @@ export default {
   title: "Lena's Bedroom",
   size: [8, 3, 6],
   spawn: [0.8, 1.8, 1.35],
+  moveSpeed: { walk: 1.45, sprint: 2.15 },
   haunted: true,
   theme: {
     bg: '#05030a',
