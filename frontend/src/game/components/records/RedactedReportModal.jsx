@@ -79,8 +79,11 @@ export default function RedactedReportModal({
         <div className="flex items-center justify-between px-6 py-3 bg-[#1e1a14] border-b border-[#c47a00]/40">
           <div className="flex items-center gap-3">
             <span className="w-2.5 h-2.5 rounded-full bg-[#c47a00] animate-pulse" />
-            <h2 className="text-sm font-bold tracking-widest text-[#eec77d] uppercase">
-              CASE FILE CF-79A2 // REDACTED INCIDENT REPORT
+            <h2 className="text-sm font-bold tracking-widest text-[#eec77d] uppercase flex items-center gap-2">
+              <span>CASE FILE CF-79A2 // REDACTED INCIDENT REPORT</span>
+              <span className="text-[10px] bg-emerald-950 text-emerald-400 border border-emerald-500/50 px-1.5 py-0.2 rounded font-mono">
+                v2.2-FIXED
+              </span>
             </h2>
           </div>
           <div className="flex items-center gap-4">
