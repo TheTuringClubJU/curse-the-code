@@ -129,12 +129,35 @@ export function buildBedroom(E) {
         g.add(hitbox(2.1, 1.1, 3.0, 0, 0.55, 0))
         interact(g, 'bed'); add(g); solid(-0.22, 1.85, -2.90, 0.12)
 
-        // Pillow (EB08) at head of GLB bed
-        const pilGrp = grp(0.82, 0.98, -2.35)
+        // Pillow (EB08) at head of GLB bed - plush Victorian silk bed pillows (NEVER hidden on GLB load)
+        const pilGrp = grp(0.82, 0.88, -2.42)
         const pilVis = new THREE.Group()
-            ;[[-.34, 0, .08], [.34, 0, -.1]].forEach(p => { const pl = rb(.6, .17, .4, .07, mat({ map: TX.sheet(), r: .95 }), p[0], 0, p[1], 5); pl.rotation.y = p[2]; pl.scale.set(1, .9, 1); pilVis.add(pl) })
-        pilGrp.add(trackVisual(pilVis))
-        pilGrp.add(hitbox(1.7, 0.45, 0.95, 0, 0.05, 0))
+        const silkMat = mat({ map: TX.sheet(), bumpMap: TX.sheet(), bumpScale: 0.03, color: 0xf5f0e8, roughness: 0.65, metalness: 0.06 })
+        const accentSilkMat = mat({ color: 0x781824, roughness: 0.58, metalness: 0.12 })
+
+        // Back row main pillows propped against headboard
+        ;[[-0.42, 0.05, -0.06, 0.04], [0.42, 0.05, -0.06, -0.04]].forEach(([px, py, pz, ry]) => {
+            const pl = rb(0.68, 0.20, 0.44, 0.08, silkMat, px, py, pz, 5)
+            pl.rotation.x = -0.30
+            pl.rotation.y = ry
+            pilVis.add(pl)
+        })
+
+        // Front row decorative silk pillows
+        ;[[-0.38, -0.02, 0.16, 0.08], [0.38, -0.02, 0.16, -0.08]].forEach(([px, py, pz, ry]) => {
+            const pl = rb(0.56, 0.17, 0.36, 0.07, silkMat, px, py, pz, 5)
+            pl.rotation.x = -0.22
+            pl.rotation.y = ry
+            pilVis.add(pl)
+        })
+
+        // Center ornate Victorian crimson silk accent pillow
+        const bolster = rb(0.42, 0.14, 0.22, 0.05, accentSilkMat, 0, -0.03, 0.25, 4)
+        bolster.rotation.x = -0.15
+        pilVis.add(bolster)
+
+        pilGrp.add(pilVis)
+        pilGrp.add(hitbox(1.7, 0.55, 0.95, 0, 0.05, 0.08))
         interact(pilGrp, 'pillow'); add(pilGrp)
 
         // Diary (R1-01 - Clue 1) lying flat on center of GLB bed mattress
