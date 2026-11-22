@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { createEngine } from './engine/engine.js';
 import recordsConfig from './rooms/records.js';
 import { GameAudioRecords } from './engine/audioRecords.js';
@@ -35,6 +35,14 @@ export default function Room4Records({ team, onLogout }) {
   const [isRulesDossierOpen, setIsRulesDossierOpen] = useState(false);
   const [isRoomCompleteModalOpen, setIsRoomCompleteModalOpen] = useState(false);
   const [activeClueModal, setActiveClueModal] = useState(null); // 'R2-02' | 'R2-03' | 'R2-04' | 'R2-07' | null
+  const isAnyModalOpen =
+    isBasketOpen ||
+    isCaseDossierOpen ||
+    isFork1Open ||
+    isHintOpen ||
+    isRulesDossierOpen ||
+    isRoomCompleteModalOpen ||
+    Boolean(activeClueModal);
   const [activeHoverPrompt, setActiveHoverPrompt] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [systemNotification, setSystemNotification] = useState(null);
@@ -59,8 +67,11 @@ export default function Room4Records({ team, onLogout }) {
       if (res.ok) {
         const data = await res.json();
         const prevData = roomDataRef.current;
-        setRoomData(data);
-        roomDataRef.current = data;
+        const dataChanged = JSON.stringify(data) !== JSON.stringify(prevData);
+        if (dataChanged) {
+          setRoomData(data);
+          roomDataRef.current = data;
+        }
 
         // Detect teammate actions and show tactical sync notification
         if (silent && prevData) {
@@ -79,6 +90,17 @@ export default function Room4Records({ team, onLogout }) {
           if (nextSolved.length > 0) {
             showNotification(`Teammate verified ${nextSolved[0].title || nextSolved[0].id}! Case dossier updated.`);
             audioRef.current?.good?.();
+          }
+
+          // Live Teammate Hint Sync detection
+          if (data.hint_sync) {
+            const prevUsed = Number(prevData.hint_sync?.hints_used || 0);
+            const nextUsed = Number(data.hint_sync.hints_used || 0);
+            if (nextUsed > prevUsed) {
+              const target = data.hint_sync.latest_target_id || 'this chamber';
+              showNotification(`Teammate unlocked a hint (${target}). Press H to view!`);
+              audioRef.current?.click?.();
+            }
           }
         }
 
@@ -204,7 +226,7 @@ export default function Room4Records({ team, onLogout }) {
 
   // Flashlight battery decay loop
   useEffect(() => {
-    if (!isStarted || !isFlashlightOn) return;
+    if (!isStarted || !isFlashlightOn || isAnyModalOpen) return;
     const interval = setInterval(() => {
       setBatteryLevel((prev) => {
         const next = Math.max(0, prev - 0.04);
@@ -217,7 +239,7 @@ export default function Room4Records({ team, onLogout }) {
       });
     }, 1000);
     return () => clearInterval(interval);
-  }, [isStarted, isFlashlightOn]);
+  }, [isStarted, isFlashlightOn, isAnyModalOpen]);
 
   // Initialize Three.js 3D Engine for Room 4: The Rotting Archive
   useEffect(() => {
@@ -503,6 +525,11 @@ export default function Room4Records({ team, onLogout }) {
     }, 4500);
   };
 
+  const handleCloseClueModal = useCallback(() => {
+    setActiveClueModal(null);
+    engineRef.current?.lock();
+  }, []);
+
   const toggleAudio = () => {
     setAudioMuted((prev) => {
       const next = !prev;
@@ -518,14 +545,6 @@ export default function Room4Records({ team, onLogout }) {
   const totalCluesCount = roomClues.length || 4;
 
   const currentClue = roomClues.find((c) => c.id === activeClueModal);
-
-  const isAnyModalOpen =
-    isBasketOpen ||
-    isCaseDossierOpen ||
-    isFork1Open ||
-    isHintOpen ||
-    isRoomCompleteModalOpen ||
-    Boolean(activeClueModal);
 
   return (
     <div className="relative w-full h-screen overflow-hidden bg-[#030205] select-none font-mono">
@@ -680,10 +699,7 @@ export default function Room4Records({ team, onLogout }) {
       {/* Clue R2-02: Redacted Incident Report */}
       <RedactedReportModal
         isOpen={activeClueModal === 'R2-02'}
-        onClose={() => {
-          setActiveClueModal(null);
-          engineRef.current?.lock();
-        }}
+        onClose={handleCloseClueModal}
         clue={currentClue || { id: 'R2-02', attempts_max: 3 }}
         onSubmitAnswer={handleClueSubmit}
         isSubmitting={isSubmitting}
@@ -693,10 +709,7 @@ export default function Room4Records({ team, onLogout }) {
       {/* Clue R2-03: Microfilm Viewer Console */}
       <MicrofilmViewerModal
         isOpen={activeClueModal === 'R2-03'}
-        onClose={() => {
-          setActiveClueModal(null);
-          engineRef.current?.lock();
-        }}
+        onClose={handleCloseClueModal}
         clue={currentClue || { id: 'R2-03', attempts_max: 3 }}
         onSubmitAnswer={handleClueSubmit}
         isSubmitting={isSubmitting}
@@ -706,10 +719,7 @@ export default function Room4Records({ team, onLogout }) {
       {/* Clue R2-04: Epoch Event Timeline Corkboard */}
       <EpochTimelineModal
         isOpen={activeClueModal === 'R2-04'}
-        onClose={() => {
-          setActiveClueModal(null);
-          engineRef.current?.lock();
-        }}
+        onClose={handleCloseClueModal}
         clue={currentClue || { id: 'R2-04', attempts_max: 3 }}
         onSubmitAnswer={handleClueSubmit}
         isSubmitting={isSubmitting}
@@ -719,10 +729,7 @@ export default function Room4Records({ team, onLogout }) {
       {/* Clue R2-07: Sealed Bulkhead Keypad Terminal */}
       <BulkheadKeypadModal
         isOpen={activeClueModal === 'R2-07'}
-        onClose={() => {
-          setActiveClueModal(null);
-          engineRef.current?.lock();
-        }}
+        onClose={handleCloseClueModal}
         clue={currentClue || { id: 'R2-07', attempts_max: 3 }}
         onSubmitAnswer={handleClueSubmit}
         isSubmitting={isSubmitting}

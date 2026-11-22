@@ -8,7 +8,7 @@ import { createStudyScares } from './studyScares.js'
 import { createStudyHaunting } from './studyHaunting.js'
 import { createStudyQuality } from './studyQuality.js'
 import { createStudyPicker } from './studyPicking.js'
-import { isStudyLowDetail, capStudyTextures, optimizeStudyMaterials } from './studyPerformance.js'
+import { isStudyLowDetail, isBedroomLowDetail, rememberBedroomQuality, capStudyTextures, optimizeStudyMaterials } from './studyPerformance.js'
 import * as X from './tex.js'
 import { TX, bgeo, mat, wm } from './kit.js'
 import { buildBedroom } from './scene.js'
@@ -25,538 +25,581 @@ import { buildBasement } from './basementScene.js'
 import { attachTorch, updateTorchSway, setTorch, bindTorchKey } from './torch.js'
 export { posterCanvas } from './tex.js'
 
-export function createEngine(el,room,h){
- const tb0=performance.now()
- const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches,T=room.theme,[W,H,D]=room.size,debug=new URLSearchParams(location.search).has('debug')
- const isVault=room.id==='vault',isStudy=room.id==='study',isControl=room.id==='control',isBedroom=room.id==='bedroom'
- const hwCores=typeof navigator!=='undefined'&&Number(navigator.hardwareConcurrency)>0?Number(navigator.hardwareConcurrency):8
- const devMem=typeof navigator!=='undefined'&&Number(navigator.deviceMemory)>0?Number(navigator.deviceMemory):8
- const isLowSpec=hwCores<=4||devMem<=4
- const isLowSpecControl=isControl&&isLowSpec
- const studyLow=isStudy&&isStudyLowDetail()
- const nativeRatio=isStudy
-   ? Math.min(devicePixelRatio,studyLow?.85:1)
-   : isVault
-   ? Math.min(devicePixelRatio,1.0)
-   : isBedroom
-   ? Math.min(devicePixelRatio,isLowSpec?0.72:0.82)
-   : Math.min(devicePixelRatio,1.0)
- const R=new THREE.WebGLRenderer({
-   antialias:isControl?!isLowSpecControl:(isBedroom?!isLowSpec:(isVault?true:!studyLow)),
-   stencil:false,
-   powerPreference:'high-performance'
- })
- R.setPixelRatio(nativeRatio)
- R.setSize(el.clientWidth,el.clientHeight)
- R.shadowMap.enabled=isControl?true:(!studyLow&&!isVault)
- R.shadowMap.type=THREE.BasicShadowMap
- R.shadowMap.autoUpdate=false
- R.shadowMap.needsUpdate=isControl?true:!studyLow
- R.toneMapping=THREE.ACESFilmicToneMapping
- R.toneMappingExposure=isVault?1.12:1.6
- el.appendChild(R.domElement)
+export function createEngine(el, room, h) {
+  const tb0 = performance.now()
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches, T = room.theme, [W, H, D] = room.size, debug = new URLSearchParams(location.search).has('debug')
+  const isVault = room.id === 'vault', isStudy = room.id === 'study', isControl = room.id === 'control', isBedroom = room.id === 'bedroom'
+  const hwCores = typeof navigator !== 'undefined' && Number(navigator.hardwareConcurrency) > 0 ? Number(navigator.hardwareConcurrency) : 8
+  const devMem = typeof navigator !== 'undefined' && Number(navigator.deviceMemory) > 0 ? Number(navigator.deviceMemory) : 8
+  const isLowSpec = hwCores <= 4 || devMem <= 4
+  const isLowSpecControl = isControl && isLowSpec
+  const studyLow = isStudy && isStudyLowDetail()
+  const bedroomLow = isBedroom && isBedroomLowDetail()
+  const nativeRatio = isStudy
+    ? Math.min(devicePixelRatio, studyLow ? .85 : 1)
+    : isVault
+      ? Math.min(devicePixelRatio, 1.0)
+      : isBedroom
+        ? Math.min(devicePixelRatio, bedroomLow ? 0.65 : 0.82)
+        : Math.min(devicePixelRatio, 1.0)
+  const R = new THREE.WebGLRenderer({
+    antialias: isControl ? !isLowSpecControl : (isBedroom ? (!bedroomLow && !isLowSpec) : (isVault ? true : !studyLow)),
+    stencil: false,
+    powerPreference: 'high-performance'
+  })
+  R.setPixelRatio(nativeRatio)
+  R.setSize(el.clientWidth, el.clientHeight)
+  R.shadowMap.enabled = isBedroom ? false : (isControl ? true : (!studyLow && !isVault))
+  R.shadowMap.type = THREE.BasicShadowMap
+  R.shadowMap.autoUpdate = false
+  R.shadowMap.needsUpdate = isBedroom ? false : (isControl ? true : !studyLow)
+  R.toneMapping = THREE.ACESFilmicToneMapping
+  R.toneMappingExposure = isVault ? 1.12 : 1.6
+  el.appendChild(R.domElement)
 
- const S=new THREE.Scene();S.background=new THREE.Color(T.bg);S.fog=new THREE.FogExp2(T.bg,isControl?0.035:.045)
- const cam=new THREE.PerspectiveCamera(72,el.clientWidth/el.clientHeight,.05,isStudy?240:80);cam.rotation.order='YXZ';S.add(cam)
- const solids=[],pick=[],byId={},visualById={},rigL=[],rigG=[],anims=[],sc={v:1},ref={}
- let pmremGen=null,pmremRT=null,gltfLoader=null,fbxLoader=null,halt=false,uiPaused=false;
- const TEX_KEYS=['map','normalMap','roughnessMap','metalnessMap','aoMap','emissiveMap','alphaMap'];
- const disposeObjectResources=(root)=>{
-  if(!root)return;
-  const disposedMats=new Set(),disposedTexs=new Set();
-  root.traverse?.(o=>{
-   o.geometry?.dispose?.();
-   const mats=Array.isArray(o.material)?o.material:(o.material?[o.material]:[]);
-   mats.forEach(m=>{
-    if(!m||disposedMats.has(m))return;
-    disposedMats.add(m);
-    for(const k of TEX_KEYS){
-     const tx=m[k];
-     if(tx&&!disposedTexs.has(tx)){disposedTexs.add(tx);tx.dispose?.();}
-    }
-    m.dispose?.();
-   });
-  });
- };
- const getGLTFLoader = () => {
-  if (!gltfLoader) {
-   gltfLoader = new GLTFLoader();
-   gltfLoader.setMeshoptDecoder(MeshoptDecoder);
-  }
-  return gltfLoader;
- };
- const rnd=(a,b)=>a+Math.random()*(b-a)
- const flick=(seed,amt=.3)=>t=>1-amt*Math.abs(Math.sin(t*(6.3+seed%5)+seed)*Math.sin(t*(2.9+seed%3)+seed*1.7))-.04*Math.abs(Math.sin(t*31+seed))
-  let tl=performance.now();
-  const retire=(root)=>{if(!root)return;root.traverse(m=>{const i=pick.indexOf(m);if(i>=0)pick.splice(i,1);const list=byId[m.userData?.id];if(list){const j=list.indexOf(m);if(j>=0)list.splice(j,1);}});root.visible=false;S.remove(root);};
-  const E={lap:n=>{if(debug){const t=performance.now();console.info('[ctc] lap',n,Math.round(t-tl));tl=t}},R,S,cam,W,H,D,win:room.window,ref,sc,lampMats:[],lampGlow:null,flick,lightScale:()=>sc.v,audio:h.audio,_pick:pick,_byId:byId,_visualById:visualById,_solids:solids,
-   anim:f=>anims.push(f),
-   solid:(x0,x1,z0,z1)=>{const box={x0,x1,z0,z1};solids.push(box);return box;},
-   removeSolid:box=>{const i=solids.indexOf(box);if(i!==-1)solids.splice(i,1);},
-   glow:(m,b,f)=>rigG.push({m,b,f:f||flick(Math.floor(Math.random()*90),.3)}),lightRig:(l,b,f)=>rigL.push({l,b,f}),
-   bakeShadows:()=>{R.shadowMap.needsUpdate=true;},
-   retire,
-   initPMREM:(intensity=0.28)=>{
-    if(!pmremGen){
-     pmremGen=new THREE.PMREMGenerator(R);
-     pmremGen.compileEquirectangularShader();
-     const envScene=new RoomEnvironment();
-     pmremRT=pmremGen.fromScene(envScene,0.04);
-     envScene.dispose();
-     S.environment=pmremRT.texture;
-    }
-    S.environmentIntensity=intensity;
-   },
-   loadGLB:(url,onProgress)=>new Promise((resolve,reject)=>{
-    MeshoptDecoder.ready.then(()=>{
-     if(halt)return;
-     getGLTFLoader().load(
-      url,
-      (g)=>{
-       if(!halt){resolve(g);return;}
-       disposeObjectResources(g?.scene);
-      },
-      onProgress,
-      (err)=>{if(!halt)reject(err);}
-     );
-    }).catch((err)=>{if(!halt)reject(err);});
-   }),
-   loadFBX:(url,onProgress)=>new Promise((resolve,reject)=>{
-    if(halt)return;
-    if(!fbxLoader)fbxLoader=new FBXLoader();
-    fbxLoader.load(
-     url,
-     (grp)=>{
-      if(!halt){resolve(grp);return;}
-      disposeObjectResources(grp);
-     },
-     onProgress,
-     (err)=>{if(!halt)reject(err);}
-    );
-   }),
-   visualInteract:(target,id)=>{
-    const list=Array.isArray(target)?target:[target];
-    const hlById = E._hlMatById || (E._hlMatById = new Map());
-    let idCache = hlById.get(id);
-    if (!idCache) {
-     idCache = new WeakMap();
-     hlById.set(id, idCache);
-    }
-    list.forEach(node=>{
-     if(!node)return;
-     node.traverse(o=>{
-      if(o.isMesh&&o.material){
-       if(o.userData._hlId !== id){
-        const cloneForId = (m) => {
-          if (!m) return m;
-          if (idCache.has(m)) return idCache.get(m);
-          const cm = m.clone();
-          idCache.set(m, cm);
-          return cm;
-        };
-        o.material=Array.isArray(o.material)?o.material.map(cloneForId):cloneForId(o.material);
-        o.userData._hlId = id;
-       }
-       (visualById[id]??=[]).push(o);
-      }
-     });
+  const S = new THREE.Scene(); S.background = new THREE.Color(T.bg); S.fog = new THREE.FogExp2(T.bg, isControl ? 0.035 : .045)
+  const cam = new THREE.PerspectiveCamera(72, el.clientWidth / el.clientHeight, .05, (isBedroom && bedroomLow) ? 28 : (isStudy ? 240 : 80)); cam.rotation.order = 'YXZ'; S.add(cam)
+  const solids = [], pick = [], byId = {}, visualById = {}, rigL = [], rigG = [], anims = [], sc = { v: 1 }, ref = {}
+  let pmremGen = null, pmremRT = null, gltfLoader = null, fbxLoader = null, halt = false, uiPaused = false;
+  const TEX_KEYS = ['map', 'normalMap', 'roughnessMap', 'metalnessMap', 'aoMap', 'emissiveMap', 'alphaMap'];
+  const disposeObjectResources = (root) => {
+    if (!root) return;
+    const disposedMats = new Set(), disposedTexs = new Set();
+    root.traverse?.(o => {
+      o.geometry?.dispose?.();
+      const mats = Array.isArray(o.material) ? o.material : (o.material ? [o.material] : []);
+      mats.forEach(m => {
+        if (!m || disposedMats.has(m)) return;
+        disposedMats.add(m);
+        for (const k of TEX_KEYS) {
+          const tx = m[k];
+          if (tx && !disposedTexs.has(tx)) { disposedTexs.add(tx); tx.dispose?.(); }
+        }
+        m.dispose?.();
+      });
     });
-   },
-   interact(obj,id){obj.traverse(o=>{if(o.isMesh){o.userData.id=id;delete o.userData.np;if(room.id==='control'&&o.material){o.material=Array.isArray(o.material)?o.material.map(m=>m.clone()):o.material.clone()}}})},
-  add(obj,o={}){obj.traverse(m=>{if(!m.isMesh)return;if(!m.userData.ns&&!o.noShadow){m.castShadow=true}m.receiveShadow=true;if(!m.userData.np){pick.push(m);if(m.userData.id)(byId[m.userData.id]??=[]).push(m)}});S.add(obj);return obj}}
- E.renderStudyFrame=()=>{const horror=ref.studyHorror,story=ref.studyProcession;
-  if(story?.closeup?.visible&&story.overlayScene)R.render(story.overlayScene,story.overlayCamera);
-  else if(horror?.closeup?.visible&&horror.overlayScene)R.render(horror.overlayScene,horror.overlayCamera);
-  else {R.render(S,cam);if(story?.blinkScene&&E._studyBlackout>0){story.blackMaterial.opacity=E._studyBlackout;R.autoClear=false;R.clearDepth();R.render(story.blinkScene,story.blinkCamera);R.autoClear=true;}}
- };
- let lamp=null,LB=room.id==='study'?3:9,scares=null;
- const studyCleanups=[];let studyDisposed=false;
- if(room.id==='study'){
-   E._studyState={started:false,paused:true};E.renderer=R;E.studyLowDetail=studyLow;E.studyStorageKey=h.studyStorageKey;
-   E.reportStudyFinale=active=>{if(!studyDisposed)h.onStudyFinale?.(active);};
-   E.reportStudyCinematic=event=>{if(!studyDisposed)h.onStudyCinematic?.(event);};
-   E.onDispose=fn=>studyCleanups.push(fn);
-   E.reportStudyAsset=progress=>{if(!studyDisposed)h.onStudyAssets?.(progress);};
-   const loader=new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
-   E.loadGLB=async url=>{
-     await MeshoptDecoder.ready;
-     const gltf=await loader.loadAsync(url);
-     if(studyDisposed){gltf.scene.traverse(o=>{o.geometry?.dispose();const ms=Array.isArray(o.material)?o.material:[o.material];ms.forEach(m=>{if(m){Object.values(m).forEach(v=>{if(v?.isTexture)v.dispose();});m.dispose();}});});throw new Error('Study disposed');}
-     if(studyLow)capStudyTextures(gltf.scene);
-     optimizeStudyMaterials(gltf.scene);
-     return gltf;
-   };
-   E.retire=root=>{if(!root)return;root.traverse(m=>{const i=pick.indexOf(m);if(i>=0)pick.splice(i,1);const list=byId[m.userData.id];if(list){const j=list.indexOf(m);if(j>=0)list.splice(j,1);}});root.visible=false;};
-   attachStudyTorch(E,cam);studyCleanups.push(bindStudyTorchKey(E));
- }
-
- if(room.id === 'study'){
-   buildStudy(E);scares=createStudyScares(E,reduce);
- } else if(room.id === 'records'){
-   // Tactical Heavy-duty Player Flashlight
-   const flashL = new THREE.SpotLight(0xfff0d8, 4.2, 16, Math.PI / 5.5, 0.45, 1.6);
-   flashL.position.set(0.18, -0.15, 0.1);
-   flashL.target.position.set(0, 0, -5);
-   cam.add(flashL);
-   cam.add(flashL.target);
-   E.flashlight = flashL;
-
-   // Ambient sub-station fill light
-   const ambHemi = new THREE.HemisphereLight(0x2a363a, 0x080a0c, 1.2);
-   S.add(ambHemi);
-
-   buildRecordsScene(E);
-   scares = createRecordsScares(E, h);
- } else if (room.id === 'control') {
-   attachTorch(E, cam);
-
-   R.shadowMap.enabled = false;
-   R.setPixelRatio(Math.min(devicePixelRatio || 1, 0.85));
-   R.toneMappingExposure = 1.28;
-   S.fog = new THREE.FogExp2(0x050808, 0.034);
-   const ambHemi = new THREE.HemisphereLight(0x5c7264, 0x1c221e, 0.86);
-   S.add(ambHemi);
-
-   buildControlScene(E, h);
-   scares = createControlScares(E, h);
- } else if (room.id === 'vault') {
-   ref.onLoadProgress = (pct, loaded, total) => h?.onProgress?.(pct, loaded, total);
-   ref.onLoadComplete = () => h?.onComplete?.();
-   // Shared held torchlight — ON by default with strong beam cutting through the dark Vault
-   attachTorch(E, cam);
-   if (E.flashlight) {
-     E._flashBaseIntensity = 24.0;
-     E.flashlight.distance = 28;
-     E.flashlight.penumbra = 0.48;
-   }
-   setTorch(E, true);
-   R.setPixelRatio(Math.min(devicePixelRatio, 1.0));
-   R.shadowMap.enabled = false;
-   R.toneMappingExposure = 1.12;
-   S.fog = new THREE.FogExp2(0x050407, 0.028);
-   buildVaultScene(E, h);
-   scares = createVaultScares(E, h);
- } else {
-   attachTorch(E, cam);
-   E._torchUnbind = bindTorchKey(E);
-   // ---- shell: textured walls, floor, ceiling, trim ----
-   const wp=X.tex(X.wallpaper()),wmat=new THREE.MeshStandardMaterial({map:wp,bumpMap:wp,bumpScale:.5,roughness:.92,color:0xffffff})
-   const fl=X.floorPlanks(),fmat=new THREE.MeshStandardMaterial({map:X.tex(fl.map),bumpMap:X.tex(fl.bump,{srgb:false}),bumpScale:1.2,roughness:.62,metalness:.04})
-   const cmat=new THREE.MeshStandardMaterial({map:X.tex(X.ceiling()),roughness:1})
-   const box=(p,s,m,u=1.1)=>{const o=new THREE.Mesh(bgeo(...s,u),m);o.position.set(...p);o.castShadow=true;o.receiveShadow=true;S.add(o);return o}
-   box([0,-.05,0],[W,.1,D],fmat,1);const cl=new THREE.Mesh(new THREE.BoxGeometry(W,.1,D),cmat);cl.position.set(0,H+.05,0);cl.receiveShadow=true;cl.castShadow=true;S.add(cl)
-   const win=room.window,dec=(seed,w,hh,x,y,z,ry,o={})=>{const m=new THREE.Mesh(new THREE.PlaneGeometry(w,hh),new THREE.MeshStandardMaterial({map:X.tex(X.wallDecal(seed,512,256,o)),transparent:true,depthWrite:false,roughness:1,polygonOffset:true,polygonOffsetFactor:-1}));m.position.set(x,y,z);m.rotation.y=ry;m.userData.np=1;S.add(m)}
-   box([0,H/2,-D/2-.05],[W,H,.1],wmat);box([0,H/2,D/2+.05],[W,H,.1],wmat);box([W/2+.05,H/2,0],[.1,H,D],wmat)
-   dec(1,W,H,0,H/2,-D/2+.006,0,{leaks:5});dec(2,W,H,0,H/2,D/2-.006,Math.PI,{leaks:4});dec(3,D,H,W/2-.006,H/2,0,-Math.PI/2,{leaks:4})
-   if(win){const a=win.z-win.w/2,b=win.z+win.w/2,lw=(z0,z1,y0,y1)=>box([-W/2-.05,(y0+y1)/2,(z0+z1)/2],[.1,y1-y0,z1-z0],wmat);lw(-D/2,a,0,H);lw(b,D/2,0,H);lw(a,b,0,win.y0);lw(a,b,win.y1,H)
-    dec(4,a+D/2,H,-W/2+.006,H/2,(-D/2+a)/2,Math.PI/2,{leaks:2});dec(5,D/2-b,H,-W/2+.006,H/2,(b+D/2)/2,Math.PI/2,{leaks:2})}else box([-W/2-.05,H/2,0],[.1,H,D],wmat)
-   const tr=wm('ebony',{r:.7}),trim=(y,hh,dp)=>[[0,-D/2+dp/2,W,0],[0,D/2-dp/2,W,0],[-W/2+dp/2,0,D,1],[W/2-dp/2,0,D,1]].forEach(([x,z,l,r])=>{box([x,y,z],r?[dp,hh,l]:[l,hh,dp],tr,1.6).castShadow=false})
-   trim(.08,.16,.04);trim(H-.05,.1,.08)
-   // ---- lights ----
-   const hemi=new THREE.HemisphereLight(0x6a72d8,0x2a1a4a,room.id==='study'?.35:1.5);S.add(hemi)
-   const moonL=new THREE.DirectionalLight(T.moon,room.id==='study'?.8:2.2);moonL.position.set(-9,5,win?win.z:0);moonL.target.position.set(2,0,win?win.z:0);S.add(moonL.target);moonL.castShadow=true;moonL.shadow.mapSize.set(512,512);moonL.shadow.autoUpdate=false;moonL.shadow.needsUpdate=true;moonL.shadow.bias=-.0004;moonL.shadow.normalBias=.03;Object.assign(moonL.shadow.camera,{left:-8,right:8,top:8,bottom:-8,far:30});S.add(moonL);E.bakeShadows=()=>{moonL.shadow.needsUpdate=true;}
-   lamp=new THREE.PointLight(T.lamp,room.lamp?9:0,10,2);if(room.lamp)lamp.position.set(...room.lamp.pos);lamp.castShadow=false;lamp.shadow.mapSize.set(256,256);lamp.shadow.bias=-.002;S.add(lamp);
-   if(room.id==='study'||room.builder==='study')buildStudy(E);else if(room.id==='basement')buildBasement(E);else if(room.haunted)buildBedroom(E);else{
-    S.add(new THREE.PointLight(T.accent,3,10,2));(room.boxes||[]).forEach(b=>{const o=new THREE.Mesh(new THREE.BoxGeometry(...b.s),new THREE.MeshStandardMaterial({color:b.c,roughness:.9}));o.position.set(...b.p);S.add(o);if(b.solid){const[x,y,z]=b.p,[w,hh,d]=b.s;solids.push({x0:x-w/2,x1:x+w/2,z0:z-d/2,z1:z+d/2})}})}
-   scares=room.id==='study'?createStudyScares(E,reduce):room.haunted?createScares(E,h):null
- }
- if(debug)console.info('[ctc] scene built in',Math.round(performance.now()-tb0),'ms')
-
- // ---- SINGLE SOURCE OF TRUTH CONTROLS INITIALIZATION ----
- const ray=new THREE.Raycaster(),v0=new THREE.Vector2();
- const hl = (id, on) => {
-   if (room.id === 'control') {
-     const targets = [...(byId[id] || []), ...(visualById[id] || [])];
-     targets.forEach(m => {
-       const mats = Array.isArray(m.material) ? m.material : [m.material];
-       mats.forEach(q => {
-         if (q && q.emissive && typeof q.emissive.setHex === 'function') {
-           if (on) {
-             if (q.userData._origEmissive === undefined) {
-               q.userData._origEmissive = q.emissive.getHex();
-               q.userData._origEmissiveInt = q.emissiveIntensity ?? 1;
-             }
-             q.emissive.setHex(0x3b3019);
-             q.emissiveIntensity = Math.max(q.userData._origEmissiveInt || 0.08, 0.16);
-           } else if (q.userData._origEmissive !== undefined) {
-             q.emissive.setHex(q.userData._origEmissive);
-             q.emissiveIntensity = q.userData._origEmissiveInt;
-           } else {
-             q.emissive.setHex(0);
-           }
-         }
-       });
-     });
-     return;
-   }
-   byId[id]?.forEach(m => {
-     if (!m.userData.__highlightOriginalMaterials) {
-       const original = Array.isArray(m.material) ? m.material.slice() : m.material;
-       m.userData.__highlightOriginalMaterials = original;
-       m.userData.__highlightMaterials = Array.isArray(original)
-         ? original.map(q => q?.clone?.() || q)
-         : original?.clone?.() || original;
-       m.material = m.userData.__highlightMaterials;
-     }
-     const mats = Array.isArray(m.userData.__highlightMaterials)
-       ? m.userData.__highlightMaterials
-       : [m.userData.__highlightMaterials];
-     mats.forEach(q => {
-       if (q && q.emissive && !q.userData?.noEmissiveHl && typeof q.emissive.setHex === 'function') {
-         if (room.id === 'vault') {
-           if (q.userData._hlOrigHex === undefined) {
-             q.userData._hlOrigHex = q.emissive.getHex();
-             q.userData._hlOrigIntensity = q.emissiveIntensity ?? 0;
-           }
-           q.emissive.setHex(on ? 0xd89a28 : q.userData._hlOrigHex);
-           q.emissiveIntensity = on ? 0.11 : q.userData._hlOrigIntensity;
-         } else {
-           q.emissive.setHex(on ? (room.id === 'study' ? 0x16110a : room.id === 'basement' ? 0xff3030 : (room.id === 'records' ? 0xb37418 : 0x4a3c9a)) : 0);
-         }
-       }
-     });
-   });
- };
- let flickUntil=0,nextFlick=performance.now()+4000,shakeT=0,shakeA=0;
-
- const controls = setupControls({
-   canvas: R.domElement,
-   onInteract: (targetId) => {
-     if(room.id!=='study'||(!E._studyState.paused&&!E._studyCinematicInput))h.onInteract?.(targetId);
-   },
-   onTargetChange: (targetId) => {
-     h.onTarget?.(targetId);
-   },
-   getAudio: () => h.audio,
-   getSolids: () => solids,
-   roomSize: [W, H, D],
-   spawn: room.spawn,
-   controlMode: room.id === 'control',
-   moveSpeed: room.moveSpeed || null,
-   isInputBlocked: () => (room.id === 'study' && Boolean(E._studyCinematicInput)) || uiPaused
- });
-
- Object.assign(E,{
-   px: () => controls.getPos().x,
-   pz: () => controls.getPos().z,
-   yaw: () => controls.getPos().yaw,
-   isSprinting: () => Boolean(controls.isSprinting?.()),
-   shake: (a,d) => { shakeA=a; shakeT=d; },
-   isModalOpen: () => uiPaused,
-   get paused() { return false; }
- });
- E.unlockStudy=()=>{controls.unlock();controls.resetInput();};
- E.setStudyView=(x,z,yaw,pitch,height=1.6,roll=0)=>{controls.setView(x,z,yaw,pitch);E._studyEyeHeight=height;E._studyCameraRoll=roll;cam.position.set(x,height,z);cam.rotation.set(pitch,yaw,roll);};
- const haunting=room.id==='study'?createStudyHaunting(E,scares,{reduced:reduce}):null;
-
- const disposedTextures=new Set();
- const disposeMaterial=(material)=>{
-  if(!material)return;
-  Object.values(material).forEach(value=>{
-   if(value?.isTexture&&!disposedTextures.has(value)){disposedTextures.add(value);value.dispose();}
-  });
-  material.dispose?.();
- }
- const rs=()=>{R.setSize(el.clientWidth,el.clientHeight);cam.aspect=el.clientWidth/el.clientHeight;cam.updateProjectionMatrix();if(room.id==='study')for(const refGroup of [ref.studyHorror,ref.studyProcession])if(refGroup?.overlayCamera){refGroup.overlayCamera.aspect=cam.aspect;refGroup.overlayCamera.updateProjectionMatrix();}}
- window.addEventListener('resize',rs)
-
- const fr=new THREE.Frustum(),pm=new THREE.Matrix4(),hp=new THREE.Vector3(),lp=new THREE.Vector3()
- let last=performance.now(),raf,frameCount=0;const t0=last
- const studyPicker=room.id==='study'?createStudyPicker():null;let lastStudyPick=0;
- let fpsLimit = 60;
- const studyQuality=room.id==='study'?createStudyQuality(R,nativeRatio,studyLow):null;
- let frameInterval = isVault ? (1000 / fpsLimit) : ((1000 / (fpsLimit + 2)) - 2.5);
- let lastRenderTime = performance.now();
- let targetFov=72;
- const defaultEco = isLowSpecControl;
- let qualityMode = defaultEco ? 'eco' : 'high';
- if (room.id === 'control' && qualityMode === 'eco') {
-   R.setPixelRatio(Math.min(devicePixelRatio || 1, 0.72));
- }
- E._qualityMode = qualityMode;
- const applyQualityMode = (mode) => {
-   qualityMode = mode === 'eco' ? 'eco' : 'high';
-   E._qualityMode = qualityMode;
-   R.setPixelRatio(qualityMode === 'eco' ? Math.min(devicePixelRatio || 1, 0.65) : Math.min(devicePixelRatio || 1, 0.85));
-   if (E._dustPoints) E._dustPoints.visible = qualityMode !== 'eco';
-   E._onQualityModeChange?.(qualityMode);
-   h.onQualityChange?.(qualityMode);
- };
- E.setQualityMode = applyQualityMode;
- E.setCameraOverride = (active, ty, tp) => controls.setCameraOverride?.(active, ty, tp);
- E.setTargetFov = (fov) => { targetFov = Math.max(42, Math.min(88, Number(fov) || 72)); };
- let slowFrames = 0;
- let autoSwitchedEco = false;
- let lastPausedRender = 0;
-
- const loop = now => {
-   if (halt) return;
-   raf = requestAnimationFrame(loop);
-   let dt, frameMs;
-   if (room.id === 'control') {
-     if (E._paused && now - lastPausedRender < 80) return;
-     if (E._paused) lastPausedRender = now;
-     const elapsed = now - last;
-     last = now;
-     frameMs = elapsed;
-     dt = Math.min(0.05, Math.max(0.001, elapsed / 1000));
-     frameCount++;
-     const t = (now - t0) / 1000;
-     if (!E._paused && !autoSwitchedEco && qualityMode === 'high' && t > 3.5) {
-       if (elapsed > 33 && elapsed < 150) {
-         slowFrames++;
-         if (slowFrames >= 45) {
-           autoSwitchedEco = true;
-           applyQualityMode('eco');
-         }
-       } else if (elapsed < 25) {
-         slowFrames = Math.max(0, slowFrames - 1);
-       }
-     }
-   } else {
-     const elapsed = now - lastRenderTime;
-     if (room.id !== 'study' && elapsed < frameInterval) return;
-     lastRenderTime = room.id === 'study' ? now : now - (elapsed % frameInterval);
-     frameMs = now - last;
-     last = now;
-     dt = Math.min(isVault ? 0.08 : 0.05, (room.id === 'study' ? frameMs : elapsed) / 1000);
-     studyQuality?.tick(frameMs, E._studyState?.paused || document.hidden || api._skip);
-     frameCount++;
-   }
-   const t = (now - t0) / 1000;
-   haunting?.tick(Math.min(0.25, (frameMs || 16) / 1000));
-
-   // 1. Single-source Controls Update (WASD & Mouse Look)
-   const ctrl = room.id === 'study' && (E._studyState?.paused || E._studyCinematicInput)
-     ? { ...controls.getPos(), px: controls.getPos().x, pz: controls.getPos().z, yaw: cam.rotation.y, pitch: cam.rotation.x, walk: 0, isMoving: false }
-     : controls.update(dt);
-   const px = ctrl.px;
-   const pz = ctrl.pz;
-   const yaw = ctrl.yaw;
-   const pitch = ctrl.pitch;
-   const walk = ctrl.walk;
-   const mv = ctrl.isMoving ? 1 : 0;
-
-   // Automatic walk-through transition when player steps into the open Study exit passage
-   if (room.id === 'study' && E._studyProgress?.completed && pz <= -4.1 && Math.abs(px) < 1.2) {
-     if (!E._studyState?.paused && !E._studyCinematicInput) {
-       h.onInteract?.('study_door_exit');
-     }
-   }
-
-   // 2. Aim Raycast check
-   if (room.id === 'study') {
-     cam.position.set(px, E._studyEyeHeight ?? 1.6, pz);
-     cam.rotation.set(pitch, yaw, E._studyCameraRoll || 0);
-     cam.updateMatrixWorld();
-   }
-   const shouldRaycast = room.id === 'study'
-     ? (now - lastStudyPick >= 1000 / 30)
-     : (frameCount % (isVault ? 3 : 2) === 0 && !(room.id === 'control' && E._paused));
-
-   if (shouldRaycast) {
-     lastStudyPick = now;
-     if (room.id === 'control' && controls.getPointerNDC) {
-       const ndc = controls.getPointerNDC();
-       v0.set(ndc.x, ndc.y);
-     } else {
-       v0.set(0, 0);
-     }
-     ray.setFromCamera(v0, cam);
-     ray.far = room.id === 'bedroom' ? 3.2 : room.id === 'control' ? 4.2 : 5.5;
-     const hits = studyPicker ? studyPicker.intersect(ray, pick) : ray.intersectObjects(pick, false);
-     const hitMesh = hits.find(it => it.object?.userData?.id);
-     const id = hitMesh?.object?.userData?.id || null;
-
-     const prevTarget = controls.getTarget();
-     if (id !== prevTarget) {
-       try {
-         if (prevTarget) hl(prevTarget, 0);
-         if (id) hl(id, 1);
-       } catch (e) {
-         console.warn("[HIGHLIGHT ERROR]", e);
-       }
-       controls.setTarget(id);
-     }
-   }
-
-   if (!uiPaused && !(room.id === 'control' && E._paused)) {
-     scares?.tick(room.id === 'study' ? Math.min(0.25, (frameMs || 16) / 1000) : dt, t);
-   }
-   h.audio?.listen?.(px,pz,yaw);
-
-   let sx=0,sy=0;
-   if(shakeT>0&&!reduce){shakeT-=dt;const k=shakeA*Math.max(0,shakeT)*3;sx=(Math.random()-.5)*k*.05;sy=(Math.random()-.5)*k*.05}
-   cam.position.set(px+sx, (room.id==='study'?E._studyEyeHeight??1.6:1.6) + (mv && !reduce ? Math.sin(walk)*.022 : 0) + Math.sin(t*.9)*.004 + sy, pz);
-   cam.rotation.set(pitch, yaw, room.id==='study'?E._studyCameraRoll||0:0);
-   if (room.id === 'control' && Math.abs(cam.fov - targetFov) > 0.08) {
-     cam.fov += (targetFov - cam.fov) * Math.min(1, dt * 15);
-     cam.updateProjectionMatrix();
-   }
-   if(room.id==='study') updateStudyTorchSway(E, t, mv, reduce);
-   else updateTorchSway(E, t, mv, reduce);
-
-   // lamp flicker
-   if(lamp){
-     if(!reduce&&room.id!=='study'){if(now>nextFlick){flickUntil=now+rnd(120,600);nextFlick=now+rnd(1800,6000)}}
-     const lf=!reduce&&now<flickUntil?rnd(.05,.9):1,sv=sc.v
-     lamp.intensity=LB*lf*sv;E.lampMats.forEach(m=>m.emissiveIntensity=.9*lf*sv);if(E.lampGlow)E.lampGlow.material.opacity=.55*lf*sv
-   }
-   
-   rigL.forEach(r=>r.l.intensity=r.b*r.f(t)*sc.v);rigG.forEach(r=>r.m.emissiveIntensity=r.b*r.f(t)*sc.v)
-   anims.forEach(f=>f(t,dt));
-   if(ref.doll){cam.updateMatrixWorld();pm.multiplyMatrices(cam.projectionMatrix,cam.matrixWorldInverse);fr.setFromProjectionMatrix(pm);const hd=ref.doll.head;hd.getWorldPosition(hp)
-    if(!fr.containsPoint(hp)&&!ref.dollLock){lp.copy(cam.position);hd.parent.worldToLocal(lp);const tg=Math.max(-1.35,Math.min(1.35,Math.atan2(lp.x,lp.z)));hd.rotation.y+=(tg-hd.rotation.y)*Math.min(1,dt*1.6)}}
-   ref.eyes?.forEach(e=>e.lookAt(cam.position))
-   if(!api._skip){if(room.id==='study')E.renderStudyFrame();else R.render(S,cam)}
- }
- raf=requestAnimationFrame(loop)
-
- const api={
-  setStudyState(state){if(room.id==='study'){E._studyState.exitScare=Boolean(state.exitScare);E._studyState.cinematic=Boolean(state.cinematic);Object.assign(E._studyState,state);if(state.paused&&!state.exitScare)controls.unlock();}},
-  setStudyProgress(progress){if(room.id==='study'){E._studyProgress=progress;E.ref.updateStudyDisplays?.(progress);}},
-  tryStudyExit(){if(room.id!=='study')return {blocked:false};const held=haunting?.beforeExit();return held?.blocked?held:scares?.requestExit?.()||{blocked:false};},
-  standUpStudy(){return haunting?.standUp?.()||false;},
-  notifyStudyEvent(event){if(room.id==='study'){E.ref.onStudyInteract?.(event);scares?.notify?.(event);}},
-  setPaused(p){
-    uiPaused = Boolean(p);
-    E._paused = Boolean(p);
-    if (room.id === 'control') controls.setPaused?.(Boolean(p));
-  },
-  setSensitivity(s){ controls.setSensitivity?.(s); },
-  lock(){ controls.requestLock(); },
-  unlock(){ controls.unlock(); },
-  isLocked(){ return !!controls.isLocked?.(); },
-  setView(x,z,y,p=0){ controls.setView(x,z,y,p); },
-  getPos(){ return controls.getPos(); },
-  getGhostPos(){
-    const g = E._ghost;
-    if (!g?.root) return null;
-    return {
-      x: g.root.position.x,
-      z: g.root.position.z,
-      isHunting: Boolean(g.isHunting),
+  };
+  const getGLTFLoader = () => {
+    if (!gltfLoader) {
+      gltfLoader = new GLTFLoader();
+      gltfLoader.setMeshoptDecoder(MeshoptDecoder);
+    }
+    return gltfLoader;
+  };
+  const rnd = (a, b) => a + Math.random() * (b - a)
+  const flick = (seed, amt = .3) => t => 1 - amt * Math.abs(Math.sin(t * (6.3 + seed % 5) + seed) * Math.sin(t * (2.9 + seed % 3) + seed * 1.7)) - .04 * Math.abs(Math.sin(t * 31 + seed))
+  let tl = performance.now();
+  const retire = (root) => { if (!root) return; root.traverse(m => { const i = pick.indexOf(m); if (i >= 0) pick.splice(i, 1); const list = byId[m.userData?.id]; if (list) { const j = list.indexOf(m); if (j >= 0) list.splice(j, 1); } }); root.visible = false; S.remove(root); };
+  const E = {
+    lap: n => { if (debug) { const t = performance.now(); console.info('[ctc] lap', n, Math.round(t - tl)); tl = t } }, R, S, cam, W, H, D, win: room.window, ref, sc, lampMats: [], lampGlow: null, flick, lightScale: () => sc.v, audio: h.audio, _pick: pick, _byId: byId, _visualById: visualById, _solids: solids,
+    anim: f => anims.push(f),
+    solid: (x0, x1, z0, z1) => { const box = { x0, x1, z0, z1 }; solids.push(box); return box; },
+    removeSolid: box => { const i = solids.indexOf(box); if (i !== -1) solids.splice(i, 1); },
+    glow: (m, b, f) => rigG.push({ m, b, f: f || flick(Math.floor(Math.random() * 90), .3) }), lightRig: (l, b, f) => rigL.push({ l, b, f }),
+    bakeShadows: () => { R.shadowMap.needsUpdate = true; },
+    retire,
+    initPMREM: (intensity = 0.28) => {
+      if (!pmremGen) {
+        pmremGen = new THREE.PMREMGenerator(R);
+        pmremGen.compileEquirectangularShader();
+        const envScene = new RoomEnvironment();
+        pmremRT = pmremGen.fromScene(envScene, 0.04);
+        envScene.dispose();
+        S.environment = pmremRT.texture;
+      }
+      S.environmentIntensity = intensity;
+    },
+    loadGLB: (url, onProgress) => new Promise((resolve, reject) => {
+      MeshoptDecoder.ready.then(() => {
+        if (halt) return;
+        getGLTFLoader().load(
+          url,
+          (g) => {
+            if (!halt) { resolve(g); return; }
+            disposeObjectResources(g?.scene);
+          },
+          onProgress,
+          (err) => { if (!halt) reject(err); }
+        );
+      }).catch((err) => { if (!halt) reject(err); });
+    }),
+    loadFBX: (url, onProgress) => new Promise((resolve, reject) => {
+      if (halt) return;
+      if (!fbxLoader) fbxLoader = new FBXLoader();
+      fbxLoader.load(
+        url,
+        (grp) => {
+          if (!halt) { resolve(grp); return; }
+          disposeObjectResources(grp);
+        },
+        onProgress,
+        (err) => { if (!halt) reject(err); }
+      );
+    }),
+    visualInteract: (target, id) => {
+      const list = Array.isArray(target) ? target : [target];
+      const hlById = E._hlMatById || (E._hlMatById = new Map());
+      let idCache = hlById.get(id);
+      if (!idCache) {
+        idCache = new WeakMap();
+        hlById.set(id, idCache);
+      }
+      list.forEach(node => {
+        if (!node) return;
+        node.traverse(o => {
+          if (o.isMesh && o.material) {
+            if (o.userData._hlId !== id) {
+              const cloneForId = (m) => {
+                if (!m) return m;
+                if (idCache.has(m)) return idCache.get(m);
+                const cm = m.clone();
+                idCache.set(m, cm);
+                return cm;
+              };
+              o.material = Array.isArray(o.material) ? o.material.map(cloneForId) : cloneForId(o.material);
+              o.userData._hlId = id;
+            }
+            (visualById[id] ??= []).push(o);
+          }
+        });
+      });
+    },
+    interact(obj, id) { obj.traverse(o => { if (o.isMesh) { o.userData.id = id; delete o.userData.np; if (room.id === 'control' && o.material) { o.material = Array.isArray(o.material) ? o.material.map(m => m.clone()) : o.material.clone() } } }) },
+    add(obj, o = {}) { obj.traverse(m => { if (!m.isMesh) return; if (!m.userData.ns && !o.noShadow && !isBedroom) { m.castShadow = true } m.receiveShadow = !isBedroom; if (!m.userData.np) { pick.push(m); if (m.userData.id) (byId[m.userData.id] ??= []).push(m) } }); S.add(obj); return obj }
+  }
+  E.renderStudyFrame = () => {
+    const horror = ref.studyHorror, story = ref.studyProcession;
+    if (story?.closeup?.visible && story.overlayScene) R.render(story.overlayScene, story.overlayCamera);
+    else if (horror?.closeup?.visible && horror.overlayScene) R.render(horror.overlayScene, horror.overlayCamera);
+    else { R.render(S, cam); if (story?.blinkScene && E._studyBlackout > 0) { story.blackMaterial.opacity = E._studyBlackout; R.autoClear = false; R.clearDepth(); R.render(story.blinkScene, story.blinkCamera); R.autoClear = true; } }
+  };
+  let lamp = null, LB = room.id === 'study' ? 3 : 9, scares = null;
+  const studyCleanups = []; let studyDisposed = false;
+  if (isBedroom) {
+    E.bedroomLowDetail = bedroomLow;
+  }
+  if (room.id === 'study') {
+    E._studyState = { started: false, paused: true }; E.renderer = R; E.studyLowDetail = studyLow; E.studyStorageKey = h.studyStorageKey;
+    E.reportStudyFinale = active => { if (!studyDisposed) h.onStudyFinale?.(active); };
+    E.reportStudyCinematic = event => { if (!studyDisposed) h.onStudyCinematic?.(event); };
+    E.onDispose = fn => studyCleanups.push(fn);
+    E.reportStudyAsset = progress => { if (!studyDisposed) h.onStudyAssets?.(progress); };
+    const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
+    E.loadGLB = async url => {
+      await MeshoptDecoder.ready;
+      const gltf = await loader.loadAsync(url);
+      if (studyDisposed) { gltf.scene.traverse(o => { o.geometry?.dispose(); const ms = Array.isArray(o.material) ? o.material : [o.material]; ms.forEach(m => { if (m) { Object.values(m).forEach(v => { if (v?.isTexture) v.dispose(); }); m.dispose(); } }); }); throw new Error('Study disposed'); }
+      if (studyLow) capStudyTextures(gltf.scene);
+      optimizeStudyMaterials(gltf.scene);
+      return gltf;
     };
-  },
-  openDoor(){ 
-    if(ref.bulkheadDoor) ref.bulkheadDoor.isOpen = true; 
-    if(ref.roomDoor) ref.roomDoor.isOpen = true; 
-    if(ref.studyExitDoor){ref.studyExitDoor.unlocked=true;ref.studyExitDoor.isOpen=scares?.isExitCleared?.()??true;}
-  },
-  closeDoor(){ 
-    if(ref.bulkheadDoor) ref.bulkheadDoor.isOpen = false; 
-    if(ref.roomDoor) ref.roomDoor.isOpen = false; 
-    if(ref.studyExitDoor) ref.studyExitDoor.isOpen = false;
-  },
-  isDoorOpen(){ return !!(ref.bulkheadDoor?.isOpen || ref.roomDoor?.isOpen || ref.studyExitDoor?.isOpen); },
-  setFlashlight(on){
-    if(room.id==='study'){setStudyTorch(E,on);return;}
-    if(E.flashlightModel && E._userFlashlightOn !== undefined) setTorch(E, on);
-    else if(E.flashlight) E.flashlight.intensity = on ? 4.2 : 0;
-    else setTorch(E, on);
-  },
-  isFlashlightOn(){ return !!(E.flashlight && E.flashlight.intensity > 0); },
-  sparkDeadTorch(){
+    E.retire = root => { if (!root) return; root.traverse(m => { const i = pick.indexOf(m); if (i >= 0) pick.splice(i, 1); const list = byId[m.userData.id]; if (list) { const j = list.indexOf(m); if (j >= 0) list.splice(j, 1); } }); root.visible = false; };
+    attachStudyTorch(E, cam); studyCleanups.push(bindStudyTorchKey(E));
+  }
+
+  if (room.id === 'study') {
+    buildStudy(E); scares = createStudyScares(E, reduce);
+  } else if (room.id === 'records') {
+    // Tactical Heavy-duty Player Flashlight
+    const flashL = new THREE.SpotLight(0xfff0d8, 4.2, 16, Math.PI / 5.5, 0.45, 1.6);
+    flashL.position.set(0.18, -0.15, 0.1);
+    flashL.target.position.set(0, 0, -5);
+    cam.add(flashL);
+    cam.add(flashL.target);
+    E.flashlight = flashL;
+
+    // Ambient sub-station fill light
+    const ambHemi = new THREE.HemisphereLight(0x2a363a, 0x080a0c, 1.2);
+    S.add(ambHemi);
+
+    buildRecordsScene(E);
+    scares = createRecordsScares(E, h);
+  } else if (room.id === 'control') {
+    attachTorch(E, cam);
+
+    R.shadowMap.enabled = false;
+    R.setPixelRatio(Math.min(devicePixelRatio || 1, 0.85));
+    R.toneMappingExposure = 1.28;
+    S.fog = new THREE.FogExp2(0x050808, 0.034);
+    const ambHemi = new THREE.HemisphereLight(0x5c7264, 0x1c221e, 0.86);
+    S.add(ambHemi);
+
+    buildControlScene(E, h);
+    scares = createControlScares(E, h);
+  } else if (room.id === 'vault') {
+    ref.onLoadProgress = (pct, loaded, total) => h?.onProgress?.(pct, loaded, total);
+    ref.onLoadComplete = () => h?.onComplete?.();
+    // Shared held torchlight — ON by default with strong beam cutting through the dark Vault
+    attachTorch(E, cam);
+    if (E.flashlight) {
+      E._flashBaseIntensity = 24.0;
+      E.flashlight.distance = 28;
+      E.flashlight.penumbra = 0.48;
+    }
+    setTorch(E, true);
+    R.setPixelRatio(Math.min(devicePixelRatio, 1.0));
+    R.shadowMap.enabled = false;
+    R.toneMappingExposure = 1.12;
+    S.fog = new THREE.FogExp2(0x050407, 0.028);
+    buildVaultScene(E, h);
+    scares = createVaultScares(E, h);
+  } else {
+    attachTorch(E, cam);
+    E._torchUnbind = bindTorchKey(E);
+    // ---- shell: textured walls, floor, ceiling, trim ----
+    const wp = X.tex(X.wallpaper()), wmat = new THREE.MeshStandardMaterial({ map: wp, bumpMap: wp, bumpScale: .5, roughness: .92, color: 0xffffff })
+    const fl = X.floorPlanks(), fmat = new THREE.MeshStandardMaterial({ map: X.tex(fl.map), bumpMap: X.tex(fl.bump, { srgb: false }), bumpScale: 1.2, roughness: .62, metalness: .04 })
+    const cmat = new THREE.MeshStandardMaterial({ map: X.tex(X.ceiling()), roughness: 1 })
+    const box = (p, s, m, u = 1.1) => { const o = new THREE.Mesh(bgeo(...s, u), m); o.position.set(...p); o.castShadow = !isBedroom; o.receiveShadow = !isBedroom; S.add(o); return o }
+    box([0, -.05, 0], [W, .1, D], fmat, 1); const cl = new THREE.Mesh(new THREE.BoxGeometry(W, .1, D), cmat); cl.position.set(0, H + .05, 0); cl.receiveShadow = !isBedroom; cl.castShadow = !isBedroom; S.add(cl)
+    const win = room.window, dec = (seed, w, hh, x, y, z, ry, o = {}) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(w, hh), new THREE.MeshStandardMaterial({ map: X.tex(X.wallDecal(seed, 512, 256, o)), transparent: true, depthWrite: false, roughness: 1, polygonOffset: true, polygonOffsetFactor: -1 })); m.position.set(x, y, z); m.rotation.y = ry; m.userData.np = 1; S.add(m) }
+    box([0, H / 2, -D / 2 - .05], [W, H, .1], wmat); box([0, H / 2, D / 2 + .05], [W, H, .1], wmat); box([W / 2 + .05, H / 2, 0], [.1, H, D], wmat)
+    dec(1, W, H, 0, H / 2, -D / 2 + .006, 0, { leaks: 5 }); dec(2, W, H, 0, H / 2, D / 2 - .006, Math.PI, { leaks: 4 }); dec(3, D, H, W / 2 - .006, H / 2, 0, -Math.PI / 2, { leaks: 4 })
+    if (win) {
+      const a = win.z - win.w / 2, b = win.z + win.w / 2, lw = (z0, z1, y0, y1) => box([-W / 2 - .05, (y0 + y1) / 2, (z0 + z1) / 2], [.1, y1 - y0, z1 - z0], wmat); lw(-D / 2, a, 0, H); lw(b, D / 2, 0, H); lw(a, b, 0, win.y0); lw(a, b, win.y1, H)
+      dec(4, a + D / 2, H, -W / 2 + .006, H / 2, (-D / 2 + a) / 2, Math.PI / 2, { leaks: 2 }); dec(5, D / 2 - b, H, -W / 2 + .006, H / 2, (b + D / 2) / 2, Math.PI / 2, { leaks: 2 })
+    } else box([-W / 2 - .05, H / 2, 0], [.1, H, D], wmat)
+    const tr = wm('ebony', { r: .7 }), trim = (y, hh, dp) => [[0, -D / 2 + dp / 2, W, 0], [0, D / 2 - dp / 2, W, 0], [-W / 2 + dp / 2, 0, D, 1], [W / 2 - dp / 2, 0, D, 1]].forEach(([x, z, l, r]) => { box([x, y, z], r ? [dp, hh, l] : [l, hh, dp], tr, 1.6).castShadow = false })
+    trim(.08, .16, .04); trim(H - .05, .1, .08)
+    // ---- lights ----
+    const hemi = new THREE.HemisphereLight(0x6a72d8, 0x2a1a4a, room.id === 'study' ? .35 : 1.5); S.add(hemi)
+    const moonL = new THREE.DirectionalLight(T.moon, room.id === 'study' ? .8 : 2.2); moonL.position.set(-9, 5, win ? win.z : 0); moonL.target.position.set(2, 0, win ? win.z : 0); S.add(moonL.target); moonL.castShadow = isBedroom ? false : true; moonL.shadow.mapSize.set(isBedroom ? 256 : 512, isBedroom ? 256 : 512); moonL.shadow.autoUpdate = false; moonL.shadow.needsUpdate = isBedroom ? false : true; moonL.shadow.bias = -.0004; moonL.shadow.normalBias = .03; Object.assign(moonL.shadow.camera, { left: -8, right: 8, top: 8, bottom: -8, far: 30 }); S.add(moonL); ref.moonLight = moonL; E.bakeShadows = () => { if (isBedroom) return; moonL.shadow.needsUpdate = true; }
+    lamp = new THREE.PointLight(T.lamp, room.lamp ? 9 : 0, 10, 2); if (room.lamp) lamp.position.set(...room.lamp.pos); lamp.castShadow = false; lamp.shadow.mapSize.set(256, 256); lamp.shadow.bias = -.002; S.add(lamp);
+    if (room.id === 'study' || room.builder === 'study') buildStudy(E); else if (room.id === 'basement') buildBasement(E); else if (room.haunted) buildBedroom(E); else {
+      S.add(new THREE.PointLight(T.accent, 3, 10, 2)); (room.boxes || []).forEach(b => { const o = new THREE.Mesh(new THREE.BoxGeometry(...b.s), new THREE.MeshStandardMaterial({ color: b.c, roughness: .9 })); o.position.set(...b.p); S.add(o); if (b.solid) { const [x, y, z] = b.p, [w, hh, d] = b.s; solids.push({ x0: x - w / 2, x1: x + w / 2, z0: z - d / 2, z1: z + d / 2 }) } })
+    }
+    scares = room.id === 'study' ? createStudyScares(E, reduce) : room.haunted ? createScares(E, h) : null
+  }
+  if (debug) console.info('[ctc] scene built in', Math.round(performance.now() - tb0), 'ms')
+
+  // ---- SINGLE SOURCE OF TRUTH CONTROLS INITIALIZATION ----
+  const ray = new THREE.Raycaster(), v0 = new THREE.Vector2();
+  const hl = (id, on) => {
+    if (room.id === 'control') {
+      const targets = [...(byId[id] || []), ...(visualById[id] || [])];
+      targets.forEach(m => {
+        const mats = Array.isArray(m.material) ? m.material : [m.material];
+        mats.forEach(q => {
+          if (q && q.emissive && typeof q.emissive.setHex === 'function') {
+            if (on) {
+              if (q.userData._origEmissive === undefined) {
+                q.userData._origEmissive = q.emissive.getHex();
+                q.userData._origEmissiveInt = q.emissiveIntensity ?? 1;
+              }
+              q.emissive.setHex(0x3b3019);
+              q.emissiveIntensity = Math.max(q.userData._origEmissiveInt || 0.08, 0.16);
+            } else if (q.userData._origEmissive !== undefined) {
+              q.emissive.setHex(q.userData._origEmissive);
+              q.emissiveIntensity = q.userData._origEmissiveInt;
+            } else {
+              q.emissive.setHex(0);
+            }
+          }
+        });
+      });
+      return;
+    }
+    byId[id]?.forEach(m => {
+      if (!m.userData.__highlightOriginalMaterials) {
+        const original = Array.isArray(m.material) ? m.material.slice() : m.material;
+        m.userData.__highlightOriginalMaterials = original;
+        m.userData.__highlightMaterials = Array.isArray(original)
+          ? original.map(q => q?.clone?.() || q)
+          : original?.clone?.() || original;
+        m.material = m.userData.__highlightMaterials;
+      }
+      const mats = Array.isArray(m.userData.__highlightMaterials)
+        ? m.userData.__highlightMaterials
+        : [m.userData.__highlightMaterials];
+      mats.forEach(q => {
+        if (q && q.emissive && !q.userData?.noEmissiveHl && typeof q.emissive.setHex === 'function') {
+          if (room.id === 'vault') {
+            if (q.userData._hlOrigHex === undefined) {
+              q.userData._hlOrigHex = q.emissive.getHex();
+              q.userData._hlOrigIntensity = q.emissiveIntensity ?? 0;
+            }
+            q.emissive.setHex(on ? 0xd89a28 : q.userData._hlOrigHex);
+            q.emissiveIntensity = on ? 0.11 : q.userData._hlOrigIntensity;
+          } else {
+            q.emissive.setHex(on ? (room.id === 'study' ? 0x16110a : room.id === 'basement' ? 0xff3030 : (room.id === 'records' ? 0xb37418 : 0x4a3c9a)) : 0);
+          }
+        }
+      });
+    });
+  };
+  let flickUntil = 0, nextFlick = performance.now() + 4000, shakeT = 0, shakeA = 0;
+
+  const controls = setupControls({
+    canvas: R.domElement,
+    onInteract: (targetId) => {
+      if (room.id !== 'study' || (!E._studyState.paused && !E._studyCinematicInput)) h.onInteract?.(targetId);
+    },
+    onTargetChange: (targetId) => {
+      h.onTarget?.(targetId);
+    },
+    getAudio: () => h.audio,
+    getSolids: () => solids,
+    roomSize: [W, H, D],
+    spawn: room.spawn,
+    controlMode: room.id === 'control',
+    moveSpeed: room.moveSpeed || null,
+    isInputBlocked: () => (room.id === 'study' && Boolean(E._studyCinematicInput)) || uiPaused
+  });
+
+  Object.assign(E, {
+    px: () => controls.getPos().x,
+    pz: () => controls.getPos().z,
+    yaw: () => controls.getPos().yaw,
+    isSprinting: () => Boolean(controls.isSprinting?.()),
+    shake: (a, d) => { shakeA = a; shakeT = d; },
+    isModalOpen: () => uiPaused,
+    get paused() { return false; }
+  });
+  E.unlockStudy = () => { controls.unlock(); controls.resetInput(); };
+  E.setStudyView = (x, z, yaw, pitch, height = 1.6, roll = 0) => { controls.setView(x, z, yaw, pitch); E._studyEyeHeight = height; E._studyCameraRoll = roll; cam.position.set(x, height, z); cam.rotation.set(pitch, yaw, roll); };
+  const haunting = room.id === 'study' ? createStudyHaunting(E, scares, { reduced: reduce }) : null;
+
+  const disposedTextures = new Set();
+  const disposeMaterial = (material) => {
+    if (!material) return;
+    Object.values(material).forEach(value => {
+      if (value?.isTexture && !disposedTextures.has(value)) { disposedTextures.add(value); value.dispose(); }
+    });
+    material.dispose?.();
+  }
+  const rs = () => { R.setSize(el.clientWidth, el.clientHeight); cam.aspect = el.clientWidth / el.clientHeight; cam.updateProjectionMatrix(); if (room.id === 'study') for (const refGroup of [ref.studyHorror, ref.studyProcession]) if (refGroup?.overlayCamera) { refGroup.overlayCamera.aspect = cam.aspect; refGroup.overlayCamera.updateProjectionMatrix(); } }
+  window.addEventListener('resize', rs)
+
+  const fr = new THREE.Frustum(), pm = new THREE.Matrix4(), hp = new THREE.Vector3(), lp = new THREE.Vector3()
+  let last = performance.now(), raf, frameCount = 0; const t0 = last
+  const studyPicker = room.id === 'study' ? createStudyPicker() : null; let lastStudyPick = 0;
+  let fpsLimit = 60;
+  const studyQuality = room.id === 'study' ? createStudyQuality(R, nativeRatio, studyLow) : null;
+  let frameInterval = isVault ? (1000 / fpsLimit) : ((1000 / (fpsLimit + 2)) - 2.5);
+  let lastRenderTime = performance.now();
+  let targetFov = 72;
+  const defaultEco = isLowSpecControl;
+  let qualityMode = defaultEco ? 'eco' : 'high';
+  if (room.id === 'control' && qualityMode === 'eco') {
+    R.setPixelRatio(Math.min(devicePixelRatio || 1, 0.72));
+  }
+  E._qualityMode = qualityMode;
+  const applyQualityMode = (mode) => {
+    qualityMode = mode === 'eco' ? 'eco' : 'high';
+    E._qualityMode = qualityMode;
+    R.setPixelRatio(qualityMode === 'eco' ? Math.min(devicePixelRatio || 1, 0.65) : Math.min(devicePixelRatio || 1, 0.85));
+    if (E._dustPoints) E._dustPoints.visible = qualityMode !== 'eco';
+    E._onQualityModeChange?.(qualityMode);
+    h.onQualityChange?.(qualityMode);
+  };
+  E.setQualityMode = applyQualityMode;
+  E.setCameraOverride = (active, ty, tp) => controls.setCameraOverride?.(active, ty, tp);
+  E.setTargetFov = (fov) => { targetFov = Math.max(42, Math.min(88, Number(fov) || 72)); };
+  let slowFrames = 0;
+  let autoSwitchedEco = false;
+  let bedroomSlowFrames = 0;
+  let autoDroppedBedroom = false;
+  let lastPausedRender = 0;
+
+  const applyBedroomQuality = (mode, persist = true) => {
+    if (!isBedroom) return;
+    const low = mode === 'low' || mode === 'eco';
+    E.bedroomLowDetail = low;
+    if (persist) rememberBedroomQuality(low);
+    R.setPixelRatio(low ? Math.min(devicePixelRatio || 1, 0.65) : Math.min(devicePixelRatio || 1, 0.85));
+    R.shadowMap.enabled = false;
+    if (ref.moonLight) ref.moonLight.castShadow = false;
+    R.shadowMap.needsUpdate = false;
+    cam.far = low ? 28 : 50;
+    cam.updateProjectionMatrix();
+    if (E._bedroomDust) E._bedroomDust.visible = !low;
+    h.onQualityChange?.(low ? 'low' : 'balanced');
+  };
+
+  const loop = now => {
+    if (halt) return;
+    raf = requestAnimationFrame(loop);
+    if (uiPaused) return;
+    let dt, frameMs;
+    if (room.id === 'control') {
+      if (E._paused && now - lastPausedRender < 80) return;
+      if (E._paused) lastPausedRender = now;
+      const elapsed = now - last;
+      last = now;
+      frameMs = elapsed;
+      dt = Math.min(0.05, Math.max(0.001, elapsed / 1000));
+      frameCount++;
+      const t = (now - t0) / 1000;
+      if (!E._paused && !autoSwitchedEco && qualityMode === 'high' && t > 3.5) {
+        if (elapsed > 33 && elapsed < 150) {
+          slowFrames++;
+          if (slowFrames >= 45) {
+            autoSwitchedEco = true;
+            applyQualityMode('eco');
+          }
+        } else if (elapsed < 25) {
+          slowFrames = Math.max(0, slowFrames - 1);
+        }
+      }
+    } else {
+      if (isBedroom && uiPaused && now - lastPausedRender < 120) return;
+      if (isBedroom && uiPaused) lastPausedRender = now;
+      const elapsed = now - lastRenderTime;
+      if (room.id !== 'study' && elapsed < frameInterval) return;
+      lastRenderTime = room.id === 'study' ? now : now - (elapsed % frameInterval);
+      frameMs = now - last;
+      last = now;
+      dt = Math.min(isVault ? 0.08 : 0.05, (room.id === 'study' ? frameMs : elapsed) / 1000);
+      studyQuality?.tick(frameMs, E._studyState?.paused || document.hidden || api._skip);
+      frameCount++;
+      if (isBedroom && !uiPaused && !E.bedroomLowDetail && !autoDroppedBedroom && (now - t0) > 4000) {
+        if (elapsed > 40 && elapsed < 180) {
+          bedroomSlowFrames++;
+          if (bedroomSlowFrames >= 35) {
+            autoDroppedBedroom = true;
+            applyBedroomQuality('low', false);
+          }
+        } else if (elapsed < 26) {
+          bedroomSlowFrames = Math.max(0, bedroomSlowFrames - 1);
+        }
+      }
+    }
+    const t = (now - t0) / 1000;
+    haunting?.tick(Math.min(0.25, (frameMs || 16) / 1000));
+
+    // 1. Single-source Controls Update (WASD & Mouse Look)
+    const ctrl = room.id === 'study' && (E._studyState?.paused || E._studyCinematicInput)
+      ? { ...controls.getPos(), px: controls.getPos().x, pz: controls.getPos().z, yaw: cam.rotation.y, pitch: cam.rotation.x, walk: 0, isMoving: false }
+      : controls.update(dt);
+    const px = ctrl.px;
+    const pz = ctrl.pz;
+    const yaw = ctrl.yaw;
+    const pitch = ctrl.pitch;
+    const walk = ctrl.walk;
+    const mv = ctrl.isMoving ? 1 : 0;
+
+    // Automatic walk-through transition when player steps into the open Study exit passage
+    if (room.id === 'study' && E._studyProgress?.completed && pz <= -4.1 && Math.abs(px) < 1.2) {
+      if (!E._studyState?.paused && !E._studyCinematicInput) {
+        h.onInteract?.('study_door_exit');
+      }
+    }
+
+    // 2. Aim Raycast check
+    if (room.id === 'study') {
+      cam.position.set(px, E._studyEyeHeight ?? 1.6, pz);
+      cam.rotation.set(pitch, yaw, E._studyCameraRoll || 0);
+      cam.updateMatrixWorld();
+    }
+    const shouldRaycast = room.id === 'study'
+      ? (now - lastStudyPick >= 1000 / 30)
+      : (frameCount % (isVault ? 3 : 2) === 0 && !(room.id === 'control' && E._paused));
+
+    if (shouldRaycast) {
+      lastStudyPick = now;
+      if (room.id === 'control' && controls.getPointerNDC) {
+        const ndc = controls.getPointerNDC();
+        v0.set(ndc.x, ndc.y);
+      } else {
+        v0.set(0, 0);
+      }
+      ray.setFromCamera(v0, cam);
+      ray.far = room.id === 'bedroom' ? 3.2 : room.id === 'control' ? 4.2 : 5.5;
+      const hits = studyPicker ? studyPicker.intersect(ray, pick) : ray.intersectObjects(pick, false);
+      const hitMesh = hits.find(it => it.object?.userData?.id);
+      const id = hitMesh?.object?.userData?.id || null;
+
+      const prevTarget = controls.getTarget();
+      if (id !== prevTarget) {
+        try {
+          if (prevTarget) hl(prevTarget, 0);
+          if (id) hl(id, 1);
+        } catch (e) {
+          console.warn("[HIGHLIGHT ERROR]", e);
+        }
+        controls.setTarget(id);
+      }
+    }
+
+    if (!uiPaused && !(room.id === 'control' && E._paused)) {
+      scares?.tick(room.id === 'study' ? Math.min(0.25, (frameMs || 16) / 1000) : dt, t);
+    }
+    h.audio?.listen?.(px, pz, yaw);
+
+    let sx = 0, sy = 0;
+    if (shakeT > 0 && !reduce) { shakeT -= dt; const k = shakeA * Math.max(0, shakeT) * 3; sx = (Math.random() - .5) * k * .05; sy = (Math.random() - .5) * k * .05 }
+    cam.position.set(px + sx, (room.id === 'study' ? E._studyEyeHeight ?? 1.6 : 1.6) + (mv && !reduce ? Math.sin(walk) * .022 : 0) + Math.sin(t * .9) * .004 + sy, pz);
+    cam.rotation.set(pitch, yaw, room.id === 'study' ? E._studyCameraRoll || 0 : 0);
+    if (room.id === 'control' && Math.abs(cam.fov - targetFov) > 0.08) {
+      cam.fov += (targetFov - cam.fov) * Math.min(1, dt * 15);
+      cam.updateProjectionMatrix();
+    }
+    if (room.id === 'study') updateStudyTorchSway(E, t, mv, reduce);
+    else updateTorchSway(E, t, mv, reduce);
+
+    // lamp flicker
+    if (lamp) {
+      if (!reduce && room.id !== 'study') { if (now > nextFlick) { flickUntil = now + rnd(120, 600); nextFlick = now + rnd(1800, 6000) } }
+      const lf = !reduce && now < flickUntil ? rnd(.05, .9) : 1, sv = sc.v
+      lamp.intensity = LB * lf * sv; E.lampMats.forEach(m => m.emissiveIntensity = .9 * lf * sv); if (E.lampGlow) E.lampGlow.material.opacity = .55 * lf * sv
+    }
+
+    rigL.forEach(r => r.l.intensity = r.b * r.f(t) * sc.v); rigG.forEach(r => r.m.emissiveIntensity = r.b * r.f(t) * sc.v)
+    anims.forEach(f => f(t, dt));
+    if (ref.doll) {
+      cam.updateMatrixWorld(); pm.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse); fr.setFromProjectionMatrix(pm); const hd = ref.doll.head; hd.getWorldPosition(hp)
+      if (!fr.containsPoint(hp) && !ref.dollLock) { lp.copy(cam.position); hd.parent.worldToLocal(lp); const tg = Math.max(-1.35, Math.min(1.35, Math.atan2(lp.x, lp.z))); hd.rotation.y += (tg - hd.rotation.y) * Math.min(1, dt * 1.6) }
+    }
+    ref.eyes?.forEach(e => e.lookAt(cam.position))
+    if (!api._skip) { if (room.id === 'study') E.renderStudyFrame(); else R.render(S, cam) }
+  }
+  raf = requestAnimationFrame(loop)
+
+  const api = {
+    setStudyState(state) { if (room.id === 'study') { E._studyState.exitScare = Boolean(state.exitScare); E._studyState.cinematic = Boolean(state.cinematic); Object.assign(E._studyState, state); if (state.paused && !state.exitScare) controls.unlock(); } },
+    setStudyProgress(progress) { if (room.id === 'study') { E._studyProgress = progress; E.ref.updateStudyDisplays?.(progress); } },
+    tryStudyExit() { if (room.id !== 'study') return { blocked: false }; const held = haunting?.beforeExit(); return held?.blocked ? held : scares?.requestExit?.() || { blocked: false }; },
+    standUpStudy() { return haunting?.standUp?.() || false; },
+    notifyStudyEvent(event) { if (room.id === 'study') { E.ref.onStudyInteract?.(event); scares?.notify?.(event); } },
+    setPaused(p) {
+      uiPaused = Boolean(p);
+      E._paused = Boolean(p);
+      if (room.id === 'control') controls.setPaused?.(Boolean(p));
+    },
+    setSensitivity(s) { controls.setSensitivity?.(s); },
+    lock() { controls.requestLock(); },
+    unlock() { controls.unlock(); },
+    isLocked() { return !!controls.isLocked?.(); },
+    setView(x, z, y, p = 0) { controls.setView(x, z, y, p); },
+    getPos() { return controls.getPos(); },
+    getGhostPos() {
+      const g = E._ghost;
+      if (!g?.root) return null;
+      return {
+        x: g.root.position.x,
+        z: g.root.position.z,
+        isHunting: Boolean(g.isHunting),
+      };
+    },
+    openDoor() {
+      if (ref.bulkheadDoor) ref.bulkheadDoor.isOpen = true;
+      if (ref.roomDoor) ref.roomDoor.isOpen = true;
+      if (ref.studyExitDoor) { ref.studyExitDoor.unlocked = true; ref.studyExitDoor.isOpen = scares?.isExitCleared?.() ?? true; }
+    },
+    closeDoor() {
+      if (ref.bulkheadDoor) ref.bulkheadDoor.isOpen = false;
+      if (ref.roomDoor) ref.roomDoor.isOpen = false;
+      if (ref.studyExitDoor) ref.studyExitDoor.isOpen = false;
+    },
+    isDoorOpen() { return !!(ref.bulkheadDoor?.isOpen || ref.roomDoor?.isOpen || ref.studyExitDoor?.isOpen); },
+    setFlashlight(on) {
+      if (room.id === 'study') { setStudyTorch(E, on); return; }
+      if (E.flashlightModel && E._userFlashlightOn !== undefined) setTorch(E, on);
+      else if (E.flashlight) E.flashlight.intensity = on ? 4.2 : 0;
+      else setTorch(E, on);
+    },
+    isFlashlightOn(){ return !!(E.flashlight && E.flashlight.intensity > 0); },
+      sparkDeadTorch(){
     if (room.id !== 'vault' || !E.flashlight) return;
     clearTimeout(E._deadSparkTimer);
     E.flashlight.intensity = 2.8;
@@ -566,14 +609,14 @@ export function createEngine(el,room,h){
       setTorch(E, false);
     }, 95);
   },
-  halt(){ halt=true; cancelAnimationFrame(raf); },
-  frame(){ last=performance.now()-16; loop(performance.now()); },
-  step(n,ms=50){ api._skip=true; for(let i=0;i<n;i++){ last=performance.now()-ms; loop(performance.now()); } api._skip=false; last=performance.now()-16; loop(performance.now()); },
-  triggerScare:n=>scares?.trigger(n),
-  triggerDoorScare:()=>scares?.triggerDoorScare?.(),
-  triggerWardrobeScare:()=>scares?.triggerWardrobeScare?.(),
-  scares,haunting,
-  setCountdown(text, restored = false){
+  halt(){ halt = true; cancelAnimationFrame(raf); },
+  frame(){ last = performance.now() - 16; loop(performance.now()); },
+  step(n, ms = 50){ api._skip = true; for (let i = 0; i < n; i++) { last = performance.now() - ms; loop(performance.now()); } api._skip = false; last = performance.now() - 16; loop(performance.now()); },
+  triggerScare: n => scares?.trigger(n),
+    triggerDoorScare: () => scares?.triggerDoorScare?.(),
+      triggerWardrobeScare: () => scares?.triggerWardrobeScare?.(),
+        scares, haunting,
+        setCountdown(text, restored = false){
     ref.wallMonitor?.setText?.(text);
     ref.countdownBoard?.setText?.(text, restored);
   },
@@ -610,18 +653,21 @@ export function createEngine(el,room,h){
     ref.setQualityMode?.(tier);
   },
   _controlBuilt: room.id === 'control',
-  toggleControlDoor: () => E.toggleControlDoor?.(),
-  toggleWingDoor: (id) => E.toggleWingDoor?.(id),
-  toggleBreakerLight: () => E.toggleBreakerLight?.(),
-  rattleDoor: (id) => E.rattleDoor?.(id),
-  setFragmentCleared: (id) => E.setFragmentCleared?.(id),
-  setFragmentGuidance: (nextId, pendingIds, clearedIds) => E.setFragmentGuidance?.(nextId, pendingIds, clearedIds),
-  setQualityMode: (m) => {
-    applyQualityMode(m);
-    api.setResolutionMode?.(m);
-  },
-  getQualityMode: () => E._qualityMode || 'high',
-  captureView(objectId, opts = {}) {
+    toggleControlDoor: () => E.toggleControlDoor?.(),
+      toggleWingDoor: (id) => E.toggleWingDoor?.(id),
+        toggleBreakerLight: () => E.toggleBreakerLight?.(),
+          rattleDoor: (id) => E.rattleDoor?.(id),
+            setFragmentCleared: (id) => E.setFragmentCleared?.(id),
+              setFragmentGuidance: (nextId, pendingIds, clearedIds) => E.setFragmentGuidance?.(nextId, pendingIds, clearedIds),
+                setQualityMode: (m) => {
+                  if (isBedroom) { applyBedroomQuality(m, true); return; }
+                  applyQualityMode(m);
+                  api.setResolutionMode?.(m);
+                },
+                  setBedroomQuality: (m) => applyBedroomQuality(m, true),
+                    getBedroomQuality: () => (E.bedroomLowDetail ? 'low' : 'balanced'),
+                      getQualityMode: () => (isBedroom ? (E.bedroomLowDetail ? 'low' : 'balanced') : (E._qualityMode || 'high')),
+                        captureView(objectId, opts = {}) {
     if (halt || E._disposed) return null;
     try {
       const targetList = (objectId && (visualById[objectId]?.length ? visualById[objectId] : byId[objectId])) || [];
@@ -707,39 +753,39 @@ export function createEngine(el,room,h){
   },
   get dev() { return E._dev || null; },
   dispose(){
-    if(room.id==='study'){studyDisposed=true;studyCleanups.forEach(fn=>fn());}
-    halt=true;
-    E._disposed = true;
-    clearTimeout(E._deadSparkTimer);
-    E._torchUnbind?.();
-    cancelAnimationFrame(raf);
-    haunting?.dispose();
-    scares?.dispose?.();
-    controls.dispose();
-    window.removeEventListener('resize',rs);
-    pmremRT?.dispose?.();
-    pmremGen?.dispose?.();
-    if (room.id === 'control') {
-      disposeObjectResources(S);
-      E._hlMatById = null;
-      gltfLoader = null;
-      fbxLoader = null;
-      rigL.length = 0;
-      rigG.length = 0;
-      anims.length = 0;
-      pick.length = 0;
-      solids.length = 0;
-    } else {
-      S.traverse(o=>{
-        o.geometry?.dispose();
-        if (Array.isArray(o.material)) o.material.forEach(disposeMaterial);
-        else disposeMaterial(o.material);
-      });
-    }
-    R.dispose();
-    R.domElement.remove();
+    if (isStudy) { studyDisposed = true; studyCleanups.forEach(fn => fn()); }
+  halt = true;
+  E._disposed = true;
+  clearTimeout(E._deadSparkTimer);
+  E._torchUnbind?.();
+  cancelAnimationFrame(raf);
+  haunting?.dispose();
+  scares?.dispose?.();
+  controls.dispose();
+  window.removeEventListener('resize', rs);
+  pmremRT?.dispose?.();
+  pmremGen?.dispose?.();
+  if (room.id === 'control') {
+    disposeObjectResources(S);
+    E._hlMatById = null;
+    gltfLoader = null;
+    fbxLoader = null;
+    rigL.length = 0;
+    rigG.length = 0;
+    anims.length = 0;
+    pick.length = 0;
+    solids.length = 0;
+  } else {
+    S.traverse(o => {
+      o.geometry?.dispose();
+      if (Array.isArray(o.material)) o.material.forEach(disposeMaterial);
+      else disposeMaterial(o.material);
+    });
   }
+  R.dispose();
+  R.domElement.remove();
+}
  }
- if(debug)window.__ctc={api,E,THREE,controls}
- return api
+if (debug) window.__ctc = { api, E, THREE, controls }
+return api
 }

@@ -250,7 +250,12 @@ def test_control_room_hint_phases_and_round2_penalty(auth_headers):
             cur.execute("DELETE FROM team_fragments WHERE team_id = %s AND room_id = 'control'", (TEAM_ID,))
             cur.execute("DELETE FROM team_rooms WHERE team_id = %s AND room_id = 'control'", (TEAM_ID,))
             cur.execute("DELETE FROM team_clues WHERE team_id = %s AND round = 2", (TEAM_ID,))
-            cur.execute("UPDATE team_rounds SET penalty_seconds = 0 WHERE team_id = %s AND round = 2", (TEAM_ID,))
+            cur.execute(
+                """INSERT INTO team_rounds (team_id, round, penalty_seconds, clues_solved, total_score)
+                   VALUES (%s, 2, 0, 0, 0)
+                   ON CONFLICT (team_id, round) DO UPDATE SET penalty_seconds = 0, clues_solved = 0, total_score = 0""",
+                (TEAM_ID,),
+            )
             conn.commit()
 
     # Phase 1: EC01 fragment hint (+10s in Round 2)
@@ -296,7 +301,12 @@ def test_control_room_decoys_enforce_fragment_hints_until_all_collected(auth_hea
             cur.execute("DELETE FROM team_fragments WHERE team_id = %s AND room_id = 'control'", (TEAM_ID,))
             cur.execute("DELETE FROM team_rooms WHERE team_id = %s AND room_id = 'control'", (TEAM_ID,))
             cur.execute("DELETE FROM team_clues WHERE team_id = %s AND round = 2", (TEAM_ID,))
-            cur.execute("UPDATE team_rounds SET penalty_seconds = 0 WHERE team_id = %s AND round = 2", (TEAM_ID,))
+            cur.execute(
+                """INSERT INTO team_rounds (team_id, round, penalty_seconds, clues_solved, total_score)
+                   VALUES (%s, 2, 0, 0, 0)
+                   ON CONFLICT (team_id, round) DO UPDATE SET penalty_seconds = 0, clues_solved = 0, total_score = 0""",
+                (TEAM_ID,),
+            )
             
             # Insert all 8 core fragments (EC01 through EC08), leaving decoys XC01, XC02 uncollected
             for i in range(1, 9):
@@ -502,6 +512,23 @@ def test_per_round_independent_15_hint_budgets_total_30(auth_headers):
             assert cur.fetchone()[0] == 15
             cur.execute("SELECT COUNT(*) as r2_total FROM team_hints WHERE team_id = %s AND round = 2", (TEAM_ID,))
             assert cur.fetchone()[0] == 15
+
+
+def test_unqualified_team_cannot_request_round2_hints(auth_headers):
+    """Enforce that teams without a round 2 qualification cannot get or request Round 2 hints."""
+    with get_db_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("DELETE FROM team_rounds WHERE team_id = %s AND round = 2", (TEAM_ID,))
+            conn.commit()
+
+    res = client.post("/api/game/hint", json={"room_id": "control"}, headers=auth_headers)
+    assert res.status_code == 403
+    assert "not qualified for Round 2" in res.json()["detail"]
+
+    status_res = client.get("/api/game/hint/status?room_id=control", headers=auth_headers)
+    assert status_res.status_code == 403
+    assert "not qualified for Round 2" in status_res.json()["detail"]
+
 
 
 

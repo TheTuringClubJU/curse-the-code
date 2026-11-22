@@ -2,18 +2,21 @@ import React, { useEffect } from 'react';
 import { X, Flame, ShieldAlert, Compass, Sparkles, Key, AlertTriangle, Clock, Layers, GitFork, BookOpen } from 'lucide-react';
 
 export default function Round2DossierModal({ isOpen, onClose, isLobby = false }) {
+  const onCloseRef = React.useRef(onClose);
+  onCloseRef.current = onClose;
+
   useEffect(() => {
     if (!isOpen) return;
     const handleKeyDown = (e) => {
       if (e.key === 'Escape' || e.key === 'r' || e.key === 'R' || e.code === 'KeyR' || (isLobby && (e.key === 's' || e.key === 'S' || e.code === 'KeyS'))) {
         e.preventDefault();
         e.stopPropagation();
-        onClose();
+        onCloseRef.current?.();
       }
     };
     window.addEventListener('keydown', handleKeyDown, true);
     return () => window.removeEventListener('keydown', handleKeyDown, true);
-  }, [isOpen, onClose, isLobby]);
+  }, [isOpen, isLobby]);
 
   if (!isOpen) return null;
 

@@ -35,6 +35,26 @@ def verify_team_auth(request: Request):
         raise HTTPException(status_code=401, detail='Unauthorized - Invalid or expired session')
     return team_res['team']
 
+def check_round2_access(team_id: int):
+    """
+    Enforces that only teams officially qualified for Round 2 (having an entry in team_rounds for round 2)
+    can access Round 2 rooms, search objects, access forks, and submit Round 2 clues.
+    """
+    conn = get_db_connection()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT 1 FROM team_rounds WHERE team_id = %s AND round = 2",
+                (team_id,)
+            )
+            if not cur.fetchone():
+                raise HTTPException(
+                    status_code=403,
+                    detail="Access denied: Your team has not qualified for Round 2."
+                )
+    finally:
+        conn.close()
+
 @router.get("/room/{room_id}")
 @router.get("/room/{room_id}/state")
 def get_room_state(room_id: str, request: Request):
@@ -52,6 +72,9 @@ def get_room_state(room_id: str, request: Request):
             
     if not target_room:
         raise HTTPException(status_code=404, detail="Room not found")
+
+    if target_room.get("round") == 2 or room_id in ("records", "control", "vault"):
+        check_round2_access(team["id"])
 
     if room_id == "study":
         return study_service.get_room_state(team["id"], content)
@@ -93,6 +116,22 @@ def get_room_state(room_id: str, request: Request):
             )
             photo_row = cur.fetchone()
             photo_pieces_count = photo_row["photo_count"] if photo_row else 0
+
+            # Lightweight hint sync state for live teammate detection
+            cur.execute(
+                """
+                SELECT COUNT(*) as hints_used,
+                       (SELECT target_id FROM team_hints WHERE team_id = %s AND round = %s ORDER BY id DESC LIMIT 1) as latest_target_id
+                FROM team_hints
+                WHERE team_id = %s AND round = %s
+                """,
+                (team["id"], target_room.get("round", 1), team["id"], target_room.get("round", 1))
+            )
+            hint_row = cur.fetchone()
+            hint_sync = {
+                "hints_used": hint_row["hints_used"] if hint_row else 0,
+                "latest_target_id": hint_row["latest_target_id"] if hint_row else None
+            }
             
     finally:
         conn.close()
@@ -249,7 +288,8 @@ def get_room_state(room_id: str, request: Request):
         "is_completed": is_completed,
         "clues": projected_clues,
         "evidence": projected_evidence,
-        "photo_pieces_collected": photo_pieces_count
+        "photo_pieces_collected": photo_pieces_count,
+        "hint_sync": hint_sync
     }
 
 @router.get("/room/{room_id}/basket")
@@ -259,6 +299,9 @@ def get_room_basket(room_id: str, request: Request):
     target_room = next((r for r in content.get("rooms", []) if r["id"] == room_id), None)
     if not target_room:
         raise HTTPException(status_code=404, detail="Room not found")
+
+    if target_room.get("round") == 2 or room_id in ("records", "control", "vault"):
+        check_round2_access(team["id"])
 
     conn = get_db_connection()
     try:
@@ -554,6 +597,9 @@ def search_object(room_id: str, payload: Dict[str, Any], request: Request):
     if not target_room:
         raise HTTPException(status_code=404, detail="Room not found")
 
+    if target_room.get("round") == 2 or room_id in ("records", "control", "vault"):
+        check_round2_access(team["id"])
+
     if room_id == "study":
         return study_service.search_object(team["id"], content, object_id)
     if "study" in target_room.get("unlock", {}).get("all_clues_resolved", []):
@@ -697,6 +743,9 @@ def submit_clue_answer(clue_id: str, payload: Dict[str, Any], request: Request):
     target_clue = next((c for c in content.get("clues", []) if c["id"] == clue_id), None)
     if not target_clue:
         raise HTTPException(status_code=404, detail="Clue not found")
+
+    if target_clue.get("round") == 2 or str(clue_id).startswith("R2-"):
+        check_round2_access(team["id"])
 
     if target_clue.get("room") == "study":
         return study_service.submit_clue_answer(team["id"], content, target_clue, answer, bypass_sequence=bool(payload.get("_bypass_sequence")))
@@ -1040,6 +1089,9 @@ def get_clue_hints(clue_id: str, request: Request):
     if not target_clue:
         raise HTTPException(status_code=404, detail="Clue not found")
 
+    if target_clue.get("round") == 2 or str(clue_id).startswith("R2-"):
+        check_round2_access(team["id"])
+
     return {
         "ok": True,
         "clue_id": clue_id,
@@ -1054,6 +1106,9 @@ def get_clue_details(clue_id: str, request: Request):
     target_clue = next((c for c in content.get("clues", []) if c["id"] == clue_id), None)
     if not target_clue:
         raise HTTPException(status_code=404, detail="Clue not found")
+
+    if target_clue.get("round") == 2 or str(clue_id).startswith("R2-"):
+        check_round2_access(team["id"])
 
     room_id = target_clue.get("room")
 
@@ -1188,6 +1243,7 @@ FORK_CONFIG = {
 @router.get("/fork/{fork_id}/status")
 def get_fork_status(fork_id: str, request: Request):
     team = verify_team_auth(request)
+    check_round2_access(team["id"])
     if fork_id in ("airlock", "fork_airlock", "fork2", "fork_2", "valve"):
         fork_id = "fork_2"
     elif fork_id in ("records", "fork_records", "fork1", "fork_1"):
@@ -1227,6 +1283,7 @@ def get_fork_status(fork_id: str, request: Request):
 @router.post("/fork/{fork_id}/choose")
 def choose_fork_path(fork_id: str, payload: Dict[str, Any], request: Request):
     team = verify_team_auth(request)
+    check_round2_access(team["id"])
     raw_choice = payload.get("choice")
     if not raw_choice:
         raise HTTPException(status_code=400, detail="Missing fork choice")
@@ -1383,6 +1440,8 @@ def get_airlock_fork_status(round_num: int, request: Request):
 @router.get("/round/{round_num}/dossier")
 def get_round_dossier(round_num: int, request: Request):
     team = verify_team_auth(request)
+    if round_num == 2:
+        check_round2_access(team["id"])
     content = get_content_data()
 
     conn = get_db_connection()
