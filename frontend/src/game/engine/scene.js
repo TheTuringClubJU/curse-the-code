@@ -24,10 +24,10 @@ export function buildBedroom(E) {
     if (E.flashlight) {
         E.flashlight.angle = Math.PI / 7.2
         E.flashlight.penumbra = 0.48
-        E.flashlight.distance = 11.5
-        E.flashlight.decay = 1.65
-        E._flashBaseIntensity = 14.5
-        E.flashlight.intensity = 14.5
+        E.flashlight.distance = 18.0
+        E.flashlight.decay = 1.42
+        E._flashBaseIntensity = 28.0
+        E.flashlight.intensity = 28.0
         let nextBurstAt = 1.4
         let burstUntil = 0
         anim((t) => {
@@ -36,17 +36,17 @@ export function buildBedroom(E) {
                 burstUntil = t + 0.16 + ((Math.sin(t * 17.3) * 0.5 + 0.5) * 0.24)
                 nextBurstAt = t + 1.2 + ((Math.cos(t * 9.7) * 0.5 + 0.5) * 1.3)
             }
-            const base = E._flashBaseIntensity || 14.5
+            const base = E._flashBaseIntensity || 28.0
             const flutter = 0.94 + Math.sin(t * 37) * 0.03 + Math.cos(t * 53) * 0.03
             let factor = flutter
             if (t < burstUntil) {
                 const wave = Math.sin(t * 85) * 0.5 + 0.5
                 factor = 0.08 + wave * 0.27
             }
-            const intensity = Math.max(0.8, base * factor)
+            const intensity = Math.max(1.5, base * factor)
             E.flashlight.intensity = intensity
             if (E._flashLensMat) {
-                E._flashLensMat.emissiveIntensity = Math.max(0.15, 1.8 * (intensity / base))
+                E._flashLensMat.emissiveIntensity = Math.max(0.2, 2.2 * (intensity / base))
             }
         })
     }
