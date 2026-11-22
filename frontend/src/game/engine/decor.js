@@ -180,13 +180,18 @@ export function buildDecor(E){
  // Celestial Poster Plaque (R1-03) flush on upper South wall above GLB sideboard (no overlap)
  {const g=grp(-0.45,2.22,2.90,Math.PI)
   g.rotation.z=-0.025
-  const posterHit=new THREE.Mesh(new THREE.BoxGeometry(0.78,0.94,0.16),new THREE.MeshBasicMaterial({colorWrite:false,depthWrite:false}))
-  posterHit.castShadow=false;posterHit.userData.ns=1;g.add(posterHit)
+  const fallback=mk(new THREE.BoxGeometry(0.66,0.82,0.028),mat({color:0x1a120d,r:0.85,m:0.08}),0,0,0)
+  const fallbackChart=mk(new THREE.PlaneGeometry(0.56,0.72),mat({color:0x1e1b28,r:0.88}),0,0,0.016)
+  g.add(fallback,fallbackChart)
+  g.updateMatrix();g.matrixAutoUpdate=false
   if(E.loadGLB){
    E.loadGLB('/assets/models/bedroom/celestial_poster.glb').then(gltf=>{
     const model=gltf.scene
-    model.traverse(c=>{if(c.isMesh){c.castShadow=true;c.receiveShadow=true}})
+    model.traverse(c=>{if(c.isMesh){c.castShadow=true;c.receiveShadow=true;c.updateMatrix();c.matrixAutoUpdate=false}})
+    g.remove(fallback,fallbackChart)
+    E.interact(model,'poster')
     g.add(model)
+    E?.bakeShadows?.()
    }).catch(()=>{})
   }
   interact(g,'poster');add(g)}
