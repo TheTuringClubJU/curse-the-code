@@ -9,7 +9,7 @@ import Room3Basement from './game/Room3Basement';
 import Room4Records from './game/Room4Records';
 import Room5Control from './game/Room5Control';
 import Room6Vault from './game/Room6Vault';
-import { checkAuthStatus, logoutTeam, quickLoginTeam } from './userlogin/authApi';
+import { checkAuthStatus, logoutTeam } from './userlogin/authApi';
 
 export default function App() {
   const [isAdminRoute, setIsAdminRoute] = useState(
@@ -93,34 +93,9 @@ export default function App() {
       return;
     }
     checkAuthStatus()
-      .then(async (res) => {
+      .then((res) => {
         if (res && res.ok && res.team) {
           setTeam(res.team);
-        } else if (typeof window !== 'undefined' && typeof quickLoginTeam === 'function') {
-          const p = new URLSearchParams(window.location.search);
-          if (p.get('room') || p.get('autologin') || p.get('guest')) {
-            try {
-              const q = await quickLoginTeam();
-              if (q && q.ok && q.team) {
-                setTeam(q.team);
-              }
-            } catch (err) {
-              console.warn('Auto quick login failed:', err);
-            }
-          }
-        }
-      })
-      .catch(async () => {
-        if (typeof window !== 'undefined' && typeof quickLoginTeam === 'function') {
-          const p = new URLSearchParams(window.location.search);
-          if (p.get('room') || p.get('autologin') || p.get('guest')) {
-            try {
-              const q = await quickLoginTeam();
-              if (q && q.ok && q.team) {
-                setTeam(q.team);
-              }
-            } catch {}
-          }
         }
       })
       .finally(() => setCheckingAuth(false));

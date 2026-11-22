@@ -64,25 +64,3 @@ export async function checkAuthStatus() {
   }
   return res.json().catch(() => null);
 }
-
-export async function quickLoginTeam(team_name = 'Team Cipher') {
-  const res = await fetch('/api/auth/quick-login', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    credentials: 'include',
-    body: JSON.stringify({ team_name }),
-  });
-
-  const data = await res.json().catch(() => ({}));
-
-  if (!res.ok) {
-    const error = new Error(data.detail?.message || 'Quick login failed');
-    error.code = data.detail?.code || 'UNKNOWN';
-    error.detail = data.detail;
-    throw error;
-  }
-
-  return data;
-}

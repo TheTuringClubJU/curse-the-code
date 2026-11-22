@@ -68,28 +68,6 @@ def login(req: LoginRequest, request: Request, response: Response):
         "message": f"Welcome, {result['team']['name']}! Authenticated successfully."
     }
 
-@login_router.api_route("/quick-login", methods=["GET", "POST"])
-def quick_login(request: Request, response: Response):
-    ip = get_client_ip(request)
-    ua = request.headers.get("user-agent", "Unknown Browser")
-    result = LoginService.quick_login(team_name="Team Cipher", ip=ip, user_agent=ua)
-
-    raw_token = result["token"]
-    response.set_cookie(
-        key="team_session",
-        value=raw_token,
-        httponly=True,
-        samesite=COOKIE_SAMESITE,
-        secure=COOKIE_SECURE,
-        max_age=12 * 3600
-    )
-
-    return {
-        "ok": True,
-        "team": result["team"],
-        "message": f"Welcome, {result['team']['name']}! Logged in without credentials."
-    }
-
 @login_router.post("/logout")
 def logout(request: Request, response: Response):
     token = request.cookies.get("team_session")

@@ -3,8 +3,8 @@ import JackOLantern from './JackOLantern';
 import DustParticles from './DustParticles';
 import SignInForm from './SignInForm';
 import LogoutForm from './LogoutForm';
-import { loginTeam, logoutAllDevices, checkAuthStatus, logoutTeam, quickLoginTeam } from './authApi';
-import { CheckCircle2, LogIn, LogOut, ShieldCheck, Zap } from 'lucide-react';
+import { loginTeam, logoutAllDevices, checkAuthStatus, logoutTeam } from './authApi';
+import { CheckCircle2, LogIn, LogOut, ShieldCheck } from 'lucide-react';
 
 export default function UserLogin({ onLoginSuccess }) {
   const [activeTab, setActiveTab] = useState('signin'); // 'signin' or 'logout'
@@ -79,26 +79,6 @@ export default function UserLogin({ onLoginSuccess }) {
     setLoading(false);
   };
 
-  const handleQuickLogin = async () => {
-    setError('');
-    setSuccessMsg('');
-    setSessionLimitNotice(null);
-    setLoading(true);
-
-    try {
-      const res = await quickLoginTeam();
-      setAuthenticatedTeam(res.team);
-      setSuccessMsg(res.message || 'Logged in successfully!');
-      if (onLoginSuccess) {
-        onLoginSuccess(res.team);
-      }
-    } catch (err) {
-      setError(err.message || 'Quick login failed');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
     <div className="relative min-h-screen w-full bg-[#07060b] text-[#e9e4f5] flex flex-col justify-between items-center p-4 selection:bg-[#ff7a1a] selection:text-black overflow-hidden">
       {/* Background Ambience: Scanlines, vignette, dust motes */}
@@ -155,17 +135,6 @@ export default function UserLogin({ onLoginSuccess }) {
               <span>{successMsg}</span>
             </div>
           )}
-
-          {/* Quick 1-Click Login Button (No credentials needed) */}
-          <button
-            type="button"
-            onClick={handleQuickLogin}
-            disabled={loading}
-            className="w-full mb-5 py-3 px-4 bg-gradient-to-r from-[#ff7a1a]/20 via-[#ff7a1a]/30 to-[#ff7a1a]/20 hover:from-[#ff7a1a]/40 hover:to-[#ff7a1a]/40 border-2 border-[#ff7a1a] text-[#ff7a1a] hover:text-white rounded-lg font-mono font-bold text-xs sm:text-sm tracking-wider flex items-center justify-center gap-2 transition-all shadow-[0_0_15px_rgba(255,122,26,0.3)] cursor-pointer active:scale-[0.99]"
-          >
-            <Zap className="w-4 h-4 text-[#ff7a1a]" />
-            ⚡ INSTANT PLAY / AUTO-LOGIN (NO CREDENTIALS)
-          </button>
 
           {/* Tab Switcher: SIGN IN / LOGOUT */}
           <div className="grid grid-cols-2 p-1 bg-[#151121] rounded-lg border border-[#3a2a55] mb-6">

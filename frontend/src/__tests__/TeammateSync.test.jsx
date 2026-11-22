@@ -8,7 +8,6 @@ import { checkAuthStatus } from '../userlogin/authApi';
 vi.mock('../userlogin/authApi', () => ({
   checkAuthStatus: vi.fn(),
   logoutTeam: vi.fn(),
-  quickLoginTeam: vi.fn(),
 }));
 
 vi.mock('../userlogin/UserLogin', () => ({
