@@ -272,7 +272,11 @@ export default function Room6Vault({ team, onLogout }) {
     fetchRoom();
     syncCountdown();
     const timePoll = setInterval(syncCountdown, 1000);
-    return () => clearInterval(timePoll);
+    const roomPoll = setInterval(fetchRoom, 2000);
+    return () => {
+      clearInterval(timePoll);
+      clearInterval(roomPoll);
+    };
   }, [fetchRoom, syncCountdown]);
 
   useEffect(() => {

@@ -295,7 +295,11 @@ export default function Room3Basement({ team, onLogout, onProceedToLobby, onProc
     };
   }, [isStarted, audioMuted]);
 
-  useEffect(()=>{fetchRoomState();},[]);
+  useEffect(() => {
+    fetchRoomState();
+    const iv = setInterval(fetchRoomState, 2000);
+    return () => clearInterval(iv);
+  }, []);
   useEffect(() => () => {
     if (notificationTimerRef.current) clearTimeout(notificationTimerRef.current);
     if (jumpscareTimerRef.current) clearTimeout(jumpscareTimerRef.current);

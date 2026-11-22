@@ -178,8 +178,8 @@ export default function Room5Control({ team, onLogout }) {
     notifTimerRef.current = setTimeout(() => setSystemNotification(null), 5500);
   }, []);
 
-  // ── Fetch room state from backend ───────────────────────────────────────────
-  const fetchRoomState = useCallback(async () => {
+  // ── Fetch room state from backend (with live teammate sync detection) ───────
+  const fetchRoomState = useCallback(async (silent = false) => {
     try {
       const res = await fetch('/api/game/room/control', {
         credentials: 'include',
@@ -187,19 +187,43 @@ export default function Room5Control({ team, onLogout }) {
       });
       if (res.ok) {
         const data = await res.json();
+        const prevData = roomDataRef.current;
         setRoomData(data);
         roomDataRef.current = data;
+
+        // Detect teammate actions and show live sync toast
+        if (silent && prevData) {
+          const prevFrags = prevData.collected_fragment_ids || [];
+          const nextFrags = data.collected_fragment_ids || [];
+          if (nextFrags.length > prevFrags.length) {
+            showNotification(`Teammate recovered Fragment (${nextFrags.length}/${data.total_fragments_in_room || 10})!`);
+            audioRef.current?.click?.();
+          }
+          if (!prevData.basket_unlocked && data.basket_unlocked) {
+            showNotification('All morgue fragments recovered! Observation terminals unsealed.');
+            audioRef.current?.good?.();
+          }
+          const prevSolved = (prevData.clues || []).filter((c) => c.solved).map((c) => c.id);
+          const nextSolved = (data.clues || []).filter((c) => c.solved && !prevSolved.includes(c.id));
+          if (nextSolved.length > 0) {
+            showNotification(`Teammate verified ${nextSolved[0].title || nextSolved[0].id}! Next console accessible.`);
+            audioRef.current?.good?.();
+          }
+        }
+
         if (data.is_completed && engineRef.current) {
           engineRef.current.openDoor?.();
         }
-      } else if (res.status === 401 || res.status === 403) {
+      } else if (!silent && (res.status === 401 || res.status === 403)) {
         showNotification('Session expired. Please refresh and log in again.');
       }
     } catch (err) {
-      console.error('[ROOM5] Failed to fetch room state:', err);
-      showNotification('Unable to connect to game server. Check your connection.');
+      if (!silent) {
+        console.error('[ROOM5] Failed to fetch room state:', err);
+        showNotification('Unable to connect to game server. Check your connection.');
+      }
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, [showNotification]);
 
@@ -257,6 +281,10 @@ export default function Room5Control({ team, onLogout }) {
 
   useEffect(() => {
     fetchRoomState();
+    const interval = setInterval(() => {
+      fetchRoomState(true);
+    }, 2000);
+    return () => clearInterval(interval);
   }, [fetchRoomState]);
 
   // ── Initialize Three.js engine ──────────────────────────────────────────────
