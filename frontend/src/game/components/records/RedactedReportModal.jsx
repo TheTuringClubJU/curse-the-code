@@ -24,6 +24,8 @@ export default function RedactedReportModal({
   const payload = clue.payload || {};
   const copies = payload.copies || [];
   const currentCopy = copies.find((c) => c.id === activeTab) || copies[0] || { paragraphs: [] };
+  const scanRevealsInk = invert || brightness >= 150 || contrast >= 180;
+  const canHighlightInk = payload.text_under_bars_selectable === true;
 
   const attemptsLeft = Math.max(0, (clue.attempts_max || 3) - (clue.attempts || 0));
   const isSolved = Boolean(clue.solved);
@@ -83,7 +85,10 @@ export default function RedactedReportModal({
           {copies.map((copy) => (
             <button
               key={copy.id}
-              onClick={() => setActiveTab(copy.id)}
+              onClick={() => {
+                if (copy.id !== activeTab) setDecodedHash(null);
+                setActiveTab(copy.id);
+              }}
               className={`px-5 py-2 text-xs font-bold tracking-wider rounded-t uppercase transition border-t border-x ${
                 activeTab === copy.id
                   ? 'bg-[#2a241b] text-[#ffd68a] border-[#c47a00]/80 shadow-[0_-2px_10px_rgba(196,122,0,0.2)]'
@@ -103,7 +108,7 @@ export default function RedactedReportModal({
                 min="60"
                 max="180"
                 value={brightness}
-                onChange={(e) => setBrightness(e.target.value)}
+                onChange={(e) => setBrightness(e.target.valueAsNumber)}
                 className="w-20 accent-[#c47a00] h-1"
               />
             </label>
@@ -114,7 +119,7 @@ export default function RedactedReportModal({
                 min="60"
                 max="220"
                 value={contrast}
-                onChange={(e) => setContrast(e.target.value)}
+                onChange={(e) => setContrast(e.target.valueAsNumber)}
                 className="w-20 accent-[#c47a00] h-1"
               />
             </label>
@@ -152,14 +157,24 @@ export default function RedactedReportModal({
                 <p key={pIdx}>
                   {p.map((seg, sIdx) => {
                     if (seg.r) {
+                      const hasInk = typeof seg.t === 'string' && seg.t.trim().length > 0;
+                      const showInk = hasInk && scanRevealsInk;
+                      const highlightInk = hasInk && canHighlightInk;
                       return (
                         <span
                           key={sIdx}
                           className="relative inline-block mx-1 group cursor-text"
-                          title="Black marker redaction. Highlight text or examine forensic negative."
+                          title={highlightInk
+                            ? 'Black marker redaction. Adjust exposure, use NEG SCAN, or highlight the text.'
+                            : 'Black marker redaction. Adjust exposure or use NEG SCAN.'}
                         >
-                          <span className="bg-[#11100e] text-[#11100e] px-1 py-0.5 rounded font-mono select-none">
-                            ████████
+                          <span
+                            aria-hidden={!showInk && !highlightInk}
+                            className={`bg-[#11100e] px-1 py-0.5 rounded font-mono ${showInk ? 'text-white' : 'text-[#11100e]'} ${
+                              highlightInk ? 'select-text selection:bg-[#eec77d] selection:text-[#11100e]' : 'select-none'
+                            }`}
+                          >
+                            {hasInk ? seg.t : '████████'}
                           </span>
                         </span>
                       );
