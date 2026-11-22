@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { createEngine } from './engine/engine.js';
 import bedroomConfig from './rooms/bedroom.js';
 import { GameAudio } from './engine/audio.js';
+import { isBedroomLowDetail, rememberBedroomQuality } from './engine/studyPerformance.js';
 import HUD from './components/HUD.jsx';
 import BasketModal from './components/BasketModal.jsx';
 import ClueModal from './components/ClueModal.jsx';
@@ -27,6 +28,7 @@ export default function Room1Bedroom({ team, onLogout, onTransitionToRoom2 }) {
   const [roomData, setRoomData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isStarted, setIsStarted] = useState(false);
+  const [bedroomQuality, setBedroomQuality] = useState(() => isBedroomLowDetail() ? 'low' : 'balanced');
   const [isBasketOpen, setIsBasketOpen] = useState(false);
   const [activeClue, setActiveClue] = useState(null);
   const [isPhotoPuzzleOpen, setIsPhotoPuzzleOpen] = useState(false);
@@ -248,6 +250,9 @@ export default function Room1Bedroom({ team, onLogout, onTransitionToRoom2 }) {
           console.info("[ROOM1 ON_INTERACT RECEIVED]", objectId);
           handleInteractRef.current?.(objectId);
         },
+        onQualityChange: (mode) => {
+          setBedroomQuality(mode);
+        },
         onLock: () => { }
       });
 
@@ -363,6 +368,7 @@ export default function Room1Bedroom({ team, onLogout, onTransitionToRoom2 }) {
       audioRef.current.start(bedroomConfig.audio);
     }
     if (engineRef.current) {
+      engineRef.current.setBedroomQuality?.(bedroomQuality);
       engineRef.current.setPaused(false);
       setTimeout(() => {
         engineRef.current?.lock();
@@ -646,6 +652,38 @@ export default function Room1Bedroom({ team, onLogout, onTransitionToRoom2 }) {
               <span><b>B / C / P</b> Case Tools</span>
             </div>
 
+            <div className="flex items-center gap-2 text-[11px] font-mono text-[#a78bfa]/80 mt-1">
+              <span>Detail:</span>
+              <button
+                type="button"
+                onClick={() => {
+                  setBedroomQuality('balanced');
+                  rememberBedroomQuality(false);
+                }}
+                className={`px-2 py-0.5 rounded border transition cursor-pointer ${
+                  bedroomQuality === 'balanced'
+                    ? 'border-[#8f7bff] bg-[#8f7bff]/20 text-[#e8e0ff] font-bold'
+                    : 'border-[#3b2a59] text-[#a292cc] hover:text-white'
+                }`}
+              >
+                Balanced
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setBedroomQuality('low');
+                  rememberBedroomQuality(true);
+                }}
+                className={`px-2 py-0.5 rounded border transition cursor-pointer ${
+                  bedroomQuality === 'low'
+                    ? 'border-[#ff7a1a] bg-[#ff7a1a]/20 text-[#ffd8bc] font-bold'
+                    : 'border-[#3b2a59] text-[#a292cc] hover:text-[#ff9f5a]'
+                }`}
+              >
+                Low (Potato PCs)
+              </button>
+            </div>
+
             <button
               onClick={() => handleStartGame(false)}
               className="mt-2 px-7 py-3 rounded-lg border border-[#ff7a1a]/70 bg-[#1a0f26]/90 text-xs tracking-[0.2em] uppercase text-[#ff9f5a] hover:bg-[#ff7a1a]/20 hover:border-[#ff7a1a] transition-all shadow-[0_0_20px_rgba(255,122,26,0.25)]"
@@ -720,6 +758,42 @@ export default function Room1Bedroom({ team, onLogout, onTransitionToRoom2 }) {
           audioMuted={audioMuted}
           onToggleAudio={toggleAudio}
           activeHoverPrompt={activeHoverPrompt}
+          qualityControl={
+            <div className="hidden sm:flex items-center gap-1 bg-[#0a0714]/85 backdrop-blur-md px-2 py-1 rounded-xl border border-[#3b2a59] text-[11px] font-mono shadow-lg shrink-0">
+              <button
+                type="button"
+                onClick={() => {
+                  setBedroomQuality('balanced');
+                  rememberBedroomQuality(false);
+                  engineRef.current?.setBedroomQuality?.('balanced');
+                }}
+                className={`px-2 py-0.5 rounded transition cursor-pointer ${
+                  bedroomQuality === 'balanced'
+                    ? 'bg-[#8f7bff]/30 text-[#e8e0ff] font-bold border border-[#8f7bff]/60'
+                    : 'text-[#a292cc] hover:text-white'
+                }`}
+                title="Balanced graphics quality"
+              >
+                Balanced
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setBedroomQuality('low');
+                  rememberBedroomQuality(true);
+                  engineRef.current?.setBedroomQuality?.('low');
+                }}
+                className={`px-2 py-0.5 rounded transition cursor-pointer ${
+                  bedroomQuality === 'low'
+                    ? 'bg-[#ff7a1a]/30 text-[#ffd8bc] font-bold border border-[#ff7a1a]/60'
+                    : 'text-[#a292cc] hover:text-[#ff9f5a]'
+                }`}
+                title="Low detail mode for older / low-spec PCs"
+              >
+                Low (Potato PCs)
+              </button>
+            </div>
+          }
         />
       )}
 
