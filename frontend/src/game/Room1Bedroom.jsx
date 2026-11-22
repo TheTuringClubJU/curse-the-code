@@ -401,15 +401,9 @@ export default function Room1Bedroom({ team, onLogout, onTransitionToRoom2 }) {
         engineRef.current?.triggerWardrobeScare?.();
       }
 
-      // 1. If this is a Clue Entry object (Diary, Notebook, Poster, Portrait), open it INSTANTLY (0ms response time!)
+      // 1. If basket is unlocked and this is a Clue Entry object (Diary, Notebook, Poster, Portrait), open it
       const matchingClue = currentData?.clues?.find((c) => c.object_id === objectId);
-      if (matchingClue) {
-        if (!currentData?.basket_unlocked) {
-          showNotification(
-            "The arcane seal is unbroken. You must recover all 15 room fragments to unseal this case file."
-          );
-          return;
-        }
+      if (matchingClue && currentData?.basket_unlocked) {
         if (matchingClue.is_locked) {
           showNotification(
             matchingClue.lock_reason || "This clue is sealed. Complete the preceding clue in sequence first."
@@ -456,7 +450,11 @@ export default function Room1Bedroom({ team, onLogout, onTransitionToRoom2 }) {
               }
             } catch (_) {}
           }
-          if (searchResult && searchResult.message) {
+          if (matchingClue && !searchResult?.found && !currentData?.basket_unlocked) {
+            showNotification(
+              "The arcane seal is unbroken. You must recover all 15 room fragments to unseal this case file."
+            );
+          } else if (searchResult && searchResult.message) {
             showNotification(searchResult.message);
           }
           if (searchResult.found) {
