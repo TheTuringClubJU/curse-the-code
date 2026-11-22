@@ -230,7 +230,7 @@ export function buildBedroom(E) {
         g.add(trackVisual(vis))
 
         // Desk Hitbox specifically over the carved study desk (Drawers & Top from Z:[-1.12, -0.04])
-        const deskBox = hitbox(1.08, 1.25, 0.90, 0.58, 0.62, 0.05)
+        const deskBox = hitbox(1.08, 0.96, 0.90, 0.58, 0.48, 0.05)
         g.add(deskBox)
         interact(deskBox, 'desk')
         add(g); solid(-3.85, -2.92, -1.08, 1.08)
@@ -258,7 +258,7 @@ export function buildBedroom(E) {
         // School notebook stack (R1-02 - Clue 2) resting cleanly on GLB West vanity desk top
         const bk = (w, h, d, c, x, y, z, ry) => { const m = rb(w, h, d, .008, mat({ map: TX.leather(c), r: .75 }), x, y, z, 2); m.rotation.y = ry; return m }
         const cl = grp(-3.12, 1.10, -0.65, Math.PI / 2); cl.add(bk(.26, .04, .19, 'red', 0, .02, 0, .1), bk(.24, .035, .17, 'green', 0, .0575, 0, -.15), bk(.22, .04, .16, 'blue', 0, .095, .0, .3), bk(.2, .03, .15, 'dark', 0, .13, 0, -.05))
-        cl.add(hitbox(0.42, 0.32, 0.36, 0, 0.08, 0))
+        cl.add(hitbox(0.55, 0.45, 0.50, 0, 0.15, 0))
         interact(cl, 'notebook'); add(cl)
     }
 
