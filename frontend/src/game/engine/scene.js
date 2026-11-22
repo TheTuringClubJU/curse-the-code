@@ -272,12 +272,21 @@ export function buildBedroom(E) {
             })
         pv.add(bx(.54, .04, .46, dark, 0, .45, 0), bx(.5, .03, .03, worn, 0, .2, .2), bx(.5, .03, .03, worn, 0, .2, -.2))
         const back = grp(0, .46, -.22); back.rotation.x = -.14; back.add(bx(.035, .55, .035, worn, -.24, .28, 0, { vert: true }), bx(.035, .55, .035, worn, .24, .28, 0, { vert: true }), bx(.54, .08, .03, worn, 0, .56, 0), bx(.5, .03, .03, worn, 0, .1, 0)); for (let i = 0; i < 6; i++)back.add(mk(new THREE.CylinderGeometry(.011, .011, .46, 8), worn, -.2 + i * .08, .3, 0)); pv.add(back)
-        chGrp.add(trackVisual(yaw))
+        chGrp.add(yaw)
         const chairGlaze = mk(new THREE.BoxGeometry(0.74, 0.88, 0.74), mat({ color: 0x140e0a, t: true, o: 0.03, r: 0.9 }), 0, 0.44, 0)
         chairGlaze.castShadow = false; chGrp.add(chairGlaze)
         ref.chair = { yaw, pv }
-        ref.doll = null
         interact(chGrp, 'chair'); add(chGrp); solid(3.38, 4.18, 0.20, 1.08)
+
+        // Porcelain Doll (EK01) seated upright on the East armchair cushion facing West into the room
+        const dg = buildDoll(1.25)
+        dg.position.set(3.76, 0.45, 0.66)
+        dg.rotation.y = -Math.PI / 2
+        const dollHit = hitbox(0.65, 0.75, 0.65, 0, 0.25, 0)
+        dg.add(dollHit)
+        ref.doll = { g: dg, head: dg.userData.head }
+        interact(dg, 'doll')
+        add(dg)
     }
 
     // 5. North-West Ornate Carved Double Wardrobe (Wardrobe EB06 at (-3.28, 0, -2.06)) + Opening Door & Ghost Rig

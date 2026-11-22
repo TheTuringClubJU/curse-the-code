@@ -211,6 +211,7 @@ export default function Room1Bedroom({ team, onLogout, onTransitionToRoom2 }) {
               nightstand: 'Inspect Bedside Nightstand',
               chair: 'Inspect Wooden Chair',
               desk: 'Inspect Study Desk',
+              doll: 'Inspect Porcelain Doll',
               notebook: 'Inspect School Notebook',
               diary: 'Inspect Leather Diary',
               bed: 'Inspect Four-Poster Bed',
