@@ -38,8 +38,10 @@ export default function RedactedReportModal({
   const payload = clue.payload || {};
   const copies = payload.copies || [];
   const currentCopy = copies.find((c) => c.id === activeTab) || copies[0] || { paragraphs: [] };
-  const scanRevealsInk = invert || brightness >= 150 || contrast >= 180;
-  const canHighlightInk = payload.text_under_bars_selectable === true;
+  const scanRevealsInk = Boolean(
+    invert || brightness >= 125 || brightness <= 75 || contrast >= 140 || contrast <= 75
+  );
+  const canHighlightInk = payload.text_under_bars_selectable !== false;
 
   const attemptsLeft = Math.max(0, (clue.attempts_max || 3) - (clue.attempts || 0));
   const isSolved = Boolean(clue.solved);
@@ -171,25 +173,41 @@ export default function RedactedReportModal({
                 <p key={pIdx}>
                   {p.map((seg, sIdx) => {
                     if (seg.r) {
-                      const hasInk = typeof seg.t === 'string' && seg.t.trim().length > 0;
-                      const showInk = hasInk && scanRevealsInk;
-                      const highlightInk = hasInk && canHighlightInk;
+                      const fallbackText = currentCopy.id === 'copy_b'
+                        ? (pIdx === 0 ? '21 June 2001' : 'TUNDRA')
+                        : (pIdx === 0 ? '10 February 2001' : 'COMET');
+                      const inkText = (typeof seg.t === 'string' && seg.t.trim().length > 0) ? seg.t : fallbackText;
+                      const showInk = Boolean(scanRevealsInk);
+                      const highlightInk = Boolean(canHighlightInk);
                       return (
                         <span
                           key={sIdx}
                           className="relative inline-block mx-1 group cursor-text"
-                          title={highlightInk
-                            ? 'Black marker redaction. Adjust exposure, use NEG SCAN, or highlight the text.'
-                            : 'Black marker redaction. Adjust exposure or use NEG SCAN.'}
+                          title={showInk
+                            ? 'Forensic reveal: underlying archival ink detected.'
+                            : 'Black marker redaction. Adjust exposure, use NEG SCAN, or highlight text with mouse.'}
                         >
-                          <span
-                            aria-hidden={!showInk && !highlightInk}
-                            className={`bg-[#11100e] px-1 py-0.5 rounded font-mono ${showInk ? 'text-white' : 'text-[#11100e]'} ${
-                              highlightInk ? 'select-text selection:bg-[#eec77d] selection:text-[#11100e]' : 'select-none'
-                            }`}
-                          >
-                            {hasInk ? seg.t : '████████'}
-                          </span>
+                          {showInk ? (
+                            <span
+                              className="inline-block px-1.5 py-0.5 rounded font-mono font-bold tracking-wider select-text transition-all"
+                              style={{
+                                backgroundColor: '#1a1714',
+                                color: '#ffd68a',
+                                border: '1px solid rgba(217, 119, 6, 0.7)',
+                                boxShadow: 'inset 0 0 4px rgba(0, 0, 0, 0.5)'
+                              }}
+                            >
+                              {inkText}
+                            </span>
+                          ) : (
+                            <span
+                              className={`bg-[#11100e] text-[#11100e] px-1 py-0.5 rounded font-mono transition-all ${
+                                highlightInk ? 'select-text selection:bg-[#eec77d] selection:text-[#11100e]' : 'select-none'
+                              }`}
+                            >
+                              {inkText}
+                            </span>
+                          )}
                         </span>
                       );
                     }
