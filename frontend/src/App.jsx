@@ -22,9 +22,7 @@ export default function App() {
   const [checkingAuth, setCheckingAuth] = useState(true);
   const [roundStatus, setRoundStatus] = useState(null); // Pure DB-driven: null until verified from DB
   const [currentRoundNum, setCurrentRoundNum] = useState(1);
-  const [currentRoom, setCurrentRoom] = useState(() => {
-    return localStorage.getItem('ctc_current_room') || 'bedroom';
-  });
+  const [currentRoom, setCurrentRoom] = useState('bedroom');
   const [inRoom5, setInRoom5] = useState(false);
   const [round2VaultUnlocked, setRound2VaultUnlocked] = useState(false);
 
@@ -150,22 +148,22 @@ export default function App() {
         if (res.ok) {
           return res.json().then((data) => {
             if (data.is_completed) {
-              setCurrentRoom('lobby');
+              changeRoom('lobby');
             } else {
-              setCurrentRoom('basement');
+              changeRoom('basement');
             }
           });
         } else {
           return fetch('/api/game/room/study', { credentials: 'include' }).then((r2) => {
             if (r2.ok) {
-              setCurrentRoom('study');
+              changeRoom('study');
             } else {
-              setCurrentRoom('bedroom');
+              changeRoom('bedroom');
             }
           });
         }
       })
-      .catch(() => setCurrentRoom('bedroom'));
+      .catch(() => changeRoom('bedroom'));
   }, [team, isAdminRoute]);
 
   // Fast poll lobby/game status when team is logged in
