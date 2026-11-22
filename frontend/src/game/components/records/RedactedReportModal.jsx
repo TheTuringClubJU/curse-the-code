@@ -38,6 +38,10 @@ export default function RedactedReportModal({
   const payload = clue.payload || {};
   const copies = payload.copies || [];
   const currentCopy = copies.find((c) => c.id === activeTab) || copies[0] || { paragraphs: [] };
+  const scanRevealsInk = Boolean(
+    invert || brightness >= 125 || brightness <= 75 || contrast >= 140 || contrast <= 75
+  );
+  const canHighlightInk = payload.text_under_bars_selectable !== false;
 
   const attemptsLeft = Math.max(0, (clue.attempts_max || 3) - (clue.attempts || 0));
   const isSolved = Boolean(clue.solved);
@@ -97,7 +101,10 @@ export default function RedactedReportModal({
           {copies.map((copy) => (
             <button
               key={copy.id}
-              onClick={() => setActiveTab(copy.id)}
+              onClick={() => {
+                if (copy.id !== activeTab) setDecodedHash(null);
+                setActiveTab(copy.id);
+              }}
               className={`px-5 py-2 text-xs font-bold tracking-wider rounded-t uppercase transition border-t border-x ${
                 activeTab === copy.id
                   ? 'bg-[#2a241b] text-[#ffd68a] border-[#c47a00]/80 shadow-[0_-2px_10px_rgba(196,122,0,0.2)]'
@@ -117,7 +124,7 @@ export default function RedactedReportModal({
                 min="60"
                 max="180"
                 value={brightness}
-                onChange={(e) => setBrightness(e.target.value)}
+                onChange={(e) => setBrightness(e.target.valueAsNumber)}
                 className="w-20 accent-[#c47a00] h-1"
               />
             </label>
@@ -128,7 +135,7 @@ export default function RedactedReportModal({
                 min="60"
                 max="220"
                 value={contrast}
-                onChange={(e) => setContrast(e.target.value)}
+                onChange={(e) => setContrast(e.target.valueAsNumber)}
                 className="w-20 accent-[#c47a00] h-1"
               />
             </label>
@@ -147,16 +154,30 @@ export default function RedactedReportModal({
         <div className="flex-1 overflow-y-auto p-8 bg-[#100e0b]">
           <div
             style={{
-              filter: `brightness(${brightness}%) contrast(${contrast}%) ${invert ? 'invert(1) hue-rotate(180deg)' : ''}`
+              filter: `brightness(${brightness}%) contrast(${contrast}%)`
             }}
-            className="max-w-2xl mx-auto p-8 bg-[#d9cdb4] text-[#1c1813] font-serif shadow-2xl rounded border border-[#8f8269] relative transition-all"
+            className={`max-w-2xl mx-auto p-8 font-serif shadow-2xl rounded border relative transition-all ${
+              invert
+                ? 'bg-[#0e0d0b] text-[#dcd2be] border-[#443828]'
+                : 'bg-[#d9cdb4] text-[#1c1813] border-[#8f8269]'
+            }`}
           >
             {/* Stamp */}
-            <div className="absolute top-6 right-8 border-2 border-red-800 text-red-800 text-xs px-3 py-1 font-mono font-bold tracking-widest rotate-6 select-none opacity-80">
+            <div
+              className={`absolute top-6 right-8 border-2 text-xs px-3 py-1 font-mono font-bold tracking-widest rotate-6 select-none opacity-85 ${
+                invert ? 'border-red-500 text-red-400' : 'border-red-800 text-red-800'
+              }`}
+            >
               DEPT OF RECORDS // EYES ONLY
             </div>
 
-            <div className="text-center font-mono font-bold text-sm tracking-widest text-[#4a3f31] border-b-2 border-[#4a3f31]/40 pb-3 mb-6">
+            <div
+              className={`text-center font-mono font-bold text-sm tracking-widest border-b-2 pb-3 mb-6 ${
+                invert
+                  ? 'text-[#ffd68a] border-[#ffd68a]/30'
+                  : 'text-[#4a3f31] border-[#4a3f31]/40'
+              }`}
+            >
               SUBSTATION DELTA ARCHIVAL TRANSCRIPT — {activeTab.toUpperCase()}
             </div>
 
@@ -166,14 +187,24 @@ export default function RedactedReportModal({
                 <p key={pIdx}>
                   {p.map((seg, sIdx) => {
                     if (seg.r) {
+                      const fallbackText = currentCopy.id === 'copy_b'
+                        ? (pIdx === 0 ? '21 June 2001' : 'TUNDRA')
+                        : (pIdx === 0 ? '10 February 2001' : 'COMET');
+                      const inkText = (typeof seg.t === 'string' && seg.t.trim().length > 0) ? seg.t : fallbackText;
                       return (
                         <span
                           key={sIdx}
                           className="relative inline-block mx-1 group cursor-text"
-                          title="Black marker redaction. Highlight text or examine forensic negative."
+                          title="Underlying archival ink detected."
                         >
-                          <span className="bg-[#11100e] text-[#11100e] px-1 py-0.5 rounded font-mono select-none">
-                            ████████
+                          <span
+                            className={`inline-block px-2 py-0.5 rounded font-mono font-bold text-sm select-text transition-all ${
+                              invert
+                                ? 'bg-[#172554] text-[#38bdf8] border border-[#0284c7] shadow-[0_0_8px_rgba(56,189,248,0.4)]'
+                                : 'bg-[#1e1b16] text-[#b45309] border border-[#d97706] shadow-sm'
+                            }`}
+                          >
+                            {inkText}
                           </span>
                         </span>
                       );
@@ -186,15 +217,23 @@ export default function RedactedReportModal({
 
             {/* Hash Footer */}
             {currentCopy.footer_hash && (
-              <div className="mt-8 pt-4 border-t border-[#4a3f31]/30 flex items-center justify-between text-xs font-mono text-[#5a4e3c]">
+              <div
+                className={`mt-8 pt-4 border-t flex items-center justify-between text-xs font-mono ${
+                  invert ? 'border-[#ffd68a]/20 text-[#a09075]' : 'border-[#4a3f31]/30 text-[#5a4e3c]'
+                }`}
+              >
                 <span>ARCHIVAL RECORD CHECKSUM:</span>
                 <div className="flex items-center gap-2">
-                  <code className="bg-[#b8ab91] px-2 py-0.5 rounded text-[11px] font-bold">
+                  <code
+                    className={`px-2 py-0.5 rounded text-[11px] font-bold ${
+                      invert ? 'bg-[#262118] text-[#ffd68a]' : 'bg-[#b8ab91] text-[#1c1813]'
+                    }`}
+                  >
                     {currentCopy.footer_hash}
                   </code>
                   <button
                     onClick={() => handleDecodeHash(currentCopy.footer_hash)}
-                    className="text-[11px] underline hover:text-black"
+                    className="text-[11px] underline hover:text-[#ffd68a]"
                   >
                     [BASE-64 DECODE]
                   </button>

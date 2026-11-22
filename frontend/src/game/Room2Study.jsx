@@ -118,6 +118,17 @@ export default function Room2Study({
           if (nextSolved.length > 0) {
             showNotification(`Teammate solved ${nextSolved[0].title || nextSolved[0].id}!`);
           }
+
+          // Live Teammate Hint Sync detection
+          if (data.hint_sync) {
+            const prevUsed = Number(prevData.hint_sync?.hints_used || 0);
+            const nextUsed = Number(data.hint_sync.hints_used || 0);
+            if (nextUsed > prevUsed) {
+              const target = data.hint_sync.latest_target_id || 'this chamber';
+              showNotification(`Teammate unlocked a hint (${target}). Press H to view!`);
+              audioRef.current?.click?.();
+            }
+          }
         }
 
         // If room is completed, animate blast door open
