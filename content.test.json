@@ -775,7 +775,7 @@
           "seq": null,
           "hiding": {
             "room": "bedroom",
-            "object_id": "portrait",
+            "object_id": "painting",
             "spot": "behind the canvas",
             "placement": "provisional"
           },
@@ -795,7 +795,7 @@
             "image_file": "",
             "audio_file": ""
           },
-          "locate_hint": "Wedged behind the hanging portrait on the wall.",
+          "locate_hint": "Wedged behind the large landscape painting above the clock.",
           "secret": {
             "note": "decoy"
           }

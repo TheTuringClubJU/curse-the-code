@@ -17,6 +17,7 @@ export function setupControls({
   roomSize,
   spawn,
   controlMode = false,
+  moveSpeed = null,
   isInputBlocked = () => false
 }) {
   const [W, H, D] = roomSize;
@@ -337,7 +338,7 @@ export function setupControls({
         return;
       }
       const t = currentTarget;
-      if (t && !dragMoved) {
+      if (t) {
         onInteract?.(t);
       }
     }
@@ -389,7 +390,9 @@ export function setupControls({
     let isMoving = false;
     if (f !== 0 || s !== 0) {
       const isShift = activeKeys.has('ShiftLeft') || activeKeys.has('ShiftRight');
-      const speed = controlMode ? (isShift ? 4.0 : 2.9) : (isShift ? 3.4 : 2.4);
+      const speed = controlMode
+        ? (isShift ? 4.0 : 2.9)
+        : (moveSpeed ? (isShift ? moveSpeed.sprint : moveSpeed.walk) : (isShift ? 3.4 : 2.4));
       const l = Math.hypot(f, s);
       const sp = (speed * dt) / l;
 

@@ -22,9 +22,7 @@ export default function App() {
   const [checkingAuth, setCheckingAuth] = useState(true);
   const [roundStatus, setRoundStatus] = useState(null); // Pure DB-driven: null until verified from DB
   const [currentRoundNum, setCurrentRoundNum] = useState(1);
-  const [currentRoom, setCurrentRoom] = useState(() => {
-    return localStorage.getItem('ctc_current_room') || 'bedroom';
-  });
+  const [currentRoom, setCurrentRoom] = useState('bedroom');
   const [inRoom5, setInRoom5] = useState(false);
   const [round2VaultUnlocked, setRound2VaultUnlocked] = useState(false);
 

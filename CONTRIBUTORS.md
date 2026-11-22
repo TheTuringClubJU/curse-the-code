@@ -44,3 +44,6 @@ One bullet per contribution/PR, most recent contribution added to the bottom of 
   - Implemented Room 2 (Daniel's Study) backend: evidence collection, clue validation, transactional progress and scoring, room completion, and regression tests ([#7](https://github.com/TheTuringClubJU/curse-the-code/pull/7))
   - Developed Room 2's 3D frontend, gothic environment, interactive props, horror sequences, audio, performance optimizations, and regression tests ([#30](https://github.com/TheTuringClubJU/curse-the-code/pull/30), under review)
 
+- Subham Das ([@subham-OPS08](https://github.com/subham-OPS08))
+  - Integrated Room 1 (Lena's Bedroom) animated torsion pendulum clock 3D model, refined interaction and collision handling, and balanced horror jumpscare director ([#34](https://github.com/TheTuringClubJU/curse-the-code/pull/34))
+

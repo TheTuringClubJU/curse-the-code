@@ -19,6 +19,9 @@ export default function Room1Bedroom({ team, onLogout, onTransitionToRoom2 }) {
   const roomDataRef = useRef(null);
   const handleInteractRef = useRef(null);
   const activeTargetRef = useRef(null);
+  const searchBusyRef = useRef(false);
+  const notificationTimerRef = useRef(null);
+  const mountedRef = useRef(true);
 
   // Game state
   const [roomData, setRoomData] = useState(null);
@@ -36,7 +39,10 @@ export default function Room1Bedroom({ team, onLogout, onTransitionToRoom2 }) {
   const [systemNotification, setSystemNotification] = useState(null);
   const [audioMuted, setAudioMuted] = useState(false);
   const [flashOverlay, setFlashOverlay] = useState({ color: '#c40414', opacity: 0, visible: false });
-  const doorScareCountRef = useRef(0);
+  const [loadPct, setLoadPct] = useState(0);
+  const [ghostPopActive, setGhostPopActive] = useState(false);
+  const ghostPopTimerRef = useRef(null);
+  const unmountedRef = useRef(false);
 
   // Fetch room data from backend (with live teammate sync detection)
   const fetchRoomState = async (silent = false) => {
@@ -87,11 +93,14 @@ export default function Room1Bedroom({ team, onLogout, onTransitionToRoom2 }) {
 
   // Direct window listener for Keyboard shortcuts (E = interact, B = basket, C = clues, P = photo)
   useEffect(() => {
+    mountedRef.current = true;
     const handleGlobalKey = (e) => {
       const tag = (e.target?.tagName || document.activeElement?.tagName || '').toUpperCase();
       if (tag === 'INPUT' || tag === 'TEXTAREA' || e.target?.isContentEditable) {
         return;
       }
+
+      if (e.repeat) return;
 
       // E Key - Interact
       if (e.key === 'e' || e.key === 'E' || e.code === 'KeyE') {
@@ -99,6 +108,7 @@ export default function Room1Bedroom({ team, onLogout, onTransitionToRoom2 }) {
         if (target) {
           e.preventDefault();
           e.stopPropagation();
+          e.stopImmediatePropagation();
           handleInteractRef.current?.(target);
           return;
         }
@@ -199,14 +209,16 @@ export default function Room1Bedroom({ team, onLogout, onTransitionToRoom2 }) {
           if (targetId) {
             const labels = {
               nightstand: 'Inspect Bedside Nightstand',
-              chair: 'Inspect Rocking Chair',
+              chair: 'Inspect Wooden Chair',
               desk: 'Inspect Study Desk',
+              doll: 'Inspect Porcelain Doll',
+              painting: 'Inspect Castle Painting',
               notebook: 'Inspect School Notebook',
               diary: 'Inspect Leather Diary',
               bed: 'Inspect Four-Poster Bed',
               clock: 'Inspect Torsion Pendulum Clock',
               wardrobe: 'Inspect Antique Wardrobe',
-              bookshelf: 'Inspect Bookcase',
+              bookshelf: 'Inspect Bookshelf',
               portrait: 'Inspect Victorian Portrait',
               poster: 'Inspect Celestial Poster',
               musicbox: 'Inspect Music Box',
@@ -236,7 +248,7 @@ export default function Room1Bedroom({ team, onLogout, onTransitionToRoom2 }) {
           console.info("[ROOM1 ON_INTERACT RECEIVED]", objectId);
           handleInteractRef.current?.(objectId);
         },
-        onLock: () => {}
+        onLock: () => { }
       });
 
       // Unpause initially once started
@@ -252,6 +264,10 @@ export default function Room1Bedroom({ team, onLogout, onTransitionToRoom2 }) {
     }
 
     return () => {
+      mountedRef.current = false;
+      if (notificationTimerRef.current) {
+        clearTimeout(notificationTimerRef.current);
+      }
       if (engineRef.current) {
         engineRef.current.dispose();
         engineRef.current = null;
@@ -262,7 +278,86 @@ export default function Room1Bedroom({ team, onLogout, onTransitionToRoom2 }) {
     };
   }, []);
 
-  const handleStartGame = () => {
+  // Play a weird, eerie ghost pop-out shriek + sub-bass impact when loading reaches 100%
+  const playWeirdGhostScareSound = () => {
+    try {
+      if (audioMuted) return;
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      const t = ctx.currentTime;
+      const master = ctx.createGain();
+      master.gain.setValueAtTime(0.42, t);
+      master.gain.exponentialRampToValueAtTime(0.001, t + 0.85);
+      master.connect(ctx.destination);
+
+      // Pitch-gliding spectral shriek + dissonant horror harmonic
+      [
+        { type: 'sawtooth', f0: 290, f1: 1480, dur: 0.72, g: 0.35 },
+        { type: 'square', f0: 311, f1: 920, dur: 0.72, g: 0.25 },
+        { type: 'sine', f0: 95, f1: 28, dur: 0.55, g: 0.75 }
+      ].forEach((cfg) => {
+        const osc = ctx.createOscillator();
+        const g = ctx.createGain();
+        osc.type = cfg.type;
+        osc.frequency.setValueAtTime(cfg.f0, t);
+        osc.frequency.exponentialRampToValueAtTime(cfg.f1, t + cfg.dur * 0.45);
+        g.gain.setValueAtTime(0.001, t);
+        g.gain.linearRampToValueAtTime(cfg.g, t + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + cfg.dur);
+        osc.connect(g);
+        g.connect(master);
+        osc.start(t);
+        osc.stop(t + cfg.dur + 0.04);
+      });
+      setTimeout(() => { try { ctx.close?.(); } catch (_) {} }, 950);
+    } catch (_) {
+      // Ignore WebAudio restrictions in headless/test environments
+    }
+  };
+
+  const triggerGhostPopAndEnter = () => {
+    if (unmountedRef.current) return;
+    setGhostPopActive(true);
+    playWeirdGhostScareSound();
+    clearTimeout(ghostPopTimerRef.current);
+    ghostPopTimerRef.current = setTimeout(() => {
+      if (!unmountedRef.current) setGhostPopActive(false);
+    }, 720);
+  };
+
+  useEffect(() => {
+    unmountedRef.current = false;
+    return () => {
+      unmountedRef.current = true;
+      clearTimeout(ghostPopTimerRef.current);
+    };
+  }, []);
+
+  // Animate 0% -> 100% haunted loading bar and pop-out ghost on completion
+  useEffect(() => {
+    if (isStarted) return;
+    let pct = 0;
+    const iv = setInterval(() => {
+      if (unmountedRef.current) {
+        clearInterval(iv);
+        return;
+      }
+      pct = Math.min(100, pct + 2.2);
+      setLoadPct(Math.round(pct));
+      if (pct >= 100) {
+        clearInterval(iv);
+        triggerGhostPopAndEnter();
+        handleStartGame(true);
+      }
+    }, 55);
+    return () => clearInterval(iv);
+  }, [isStarted]);
+
+  const handleStartGame = (skipPopSound = false) => {
+    if (!skipPopSound) {
+      triggerGhostPopAndEnter();
+    }
     setIsStarted(true);
     if (audioRef.current) {
       audioRef.current.start(bedroomConfig.audio);
@@ -277,83 +372,104 @@ export default function Room1Bedroom({ team, onLogout, onTransitionToRoom2 }) {
 
   // Handle interacting (E) with an object
   const handleInteract = async (objectId) => {
-    console.info("[ROOM1 HANDLE_INTERACT RUNNING FOR]", objectId);
-    const currentData = roomDataRef.current;
+    if (!objectId || searchBusyRef.current) return;
+    searchBusyRef.current = true;
+    try {
+      console.info("[ROOM1 HANDLE_INTERACT RUNNING FOR]", objectId);
+      const currentData = roomDataRef.current;
 
-    // Check if this is the Bedroom Exit Door
-    if (objectId === 'room_door' || objectId === 'door') {
-      if (currentData?.is_completed) {
-        if (onTransitionToRoom2) {
-          onTransitionToRoom2();
-        } else {
-          setIsRoomCompleteModalOpen(true);
-          engineRef.current?.unlock();
-        }
-      } else {
-        const now = Date.now();
-        const ds = typeof doorScareCountRef.current === 'object' ? doorScareCountRef.current : { count: doorScareCountRef.current || 0, lastAt: 0 };
-        const shouldScare = ds.count > 0 && (now - ds.lastAt) >= 45000 && Math.random() < 0.25;
-        ds.count += 1;
-        if (shouldScare) ds.lastAt = now;
-        doorScareCountRef.current = ds;
-        if (shouldScare) {
-          engineRef.current?.triggerDoorScare?.();
-          audioRef.current?.jumpscareSting?.(1.4);
+      // Check if this is the Bedroom Exit Door
+      if (objectId === 'room_door' || objectId === 'door') {
+        if (currentData?.is_completed) {
+          if (onTransitionToRoom2) {
+            onTransitionToRoom2();
+          } else {
+            setIsRoomCompleteModalOpen(true);
+            engineRef.current?.unlock();
+          }
         } else {
           audioRef.current?.slam?.(0, 0);
+          const solvedCount = currentData?.clues?.filter(c => c.solved)?.length || 0;
+          showNotification(
+            `The heavy corridor door is locked with four iron deadbolts. Solve all 4 case files in this room to unlock it (${solvedCount}/4 solved).`
+          );
         }
-        const solvedCount = currentData?.clues?.filter(c => c.solved)?.length || 0;
-        showNotification(
-          `The heavy corridor door is locked with four iron deadbolts. Solve all 4 case files in this room to unlock it (${solvedCount}/4 solved).`
-        );
+        return;
       }
-      return;
-    }
 
-    // 1. Search for a hidden fragment first
-    let searchResult = null;
-    try {
-      const res = await fetch('/api/game/room/bedroom/search', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-session-token': localStorage.getItem('ctc_token') || ''
-        },
-        credentials: 'include',
-        body: JSON.stringify({ object_id: objectId })
-      });
+      // Trigger spectral wardrobe-opening jumpscare when inspecting/opening the antique wardrobe
+      if (objectId === 'wardrobe') {
+        engineRef.current?.triggerWardrobeScare?.();
+      }
 
-      if (res.ok) {
-        searchResult = await res.json();
-        if (searchResult && searchResult.message) {
-          showNotification(searchResult.message);
-        }
-        if (searchResult.found) {
-          fetchRoomState();
+      // 1. If this is a Clue Entry object (Diary, Notebook, Poster, Portrait), open it
+      const matchingClue = currentData?.clues?.find((c) => c.object_id === objectId);
+      if (matchingClue) {
+        if (!currentData?.basket_unlocked) {
+          showNotification(
+            "The arcane seal is unbroken. You must recover all 15 room fragments to unseal this case file."
+          );
           return;
         }
+        if (matchingClue.is_locked) {
+          showNotification(
+            matchingClue.lock_reason || "This clue is sealed. Complete the preceding clue in sequence first."
+          );
+          return;
+        }
+        setActiveClue(matchingClue);
+        engineRef.current?.unlock();
+        return;
       }
-    } catch (err) {
-      console.error('Search request failed:', err);
-    }
 
-    // 2. If no fragment was found, check if this is a Clue Entry object (Diary, Notebook, Poster, Portrait)
-    const matchingClue = currentData?.clues?.find((c) => c.object_id === objectId);
-    if (matchingClue) {
-      if (!currentData?.basket_unlocked) {
-        showNotification(
-          "The arcane seal is unbroken. You must recover all 15 room fragments to unseal this case file."
-        );
-        return;
+      // 2. Otherwise search for a hidden fragment in this furniture/prop
+      let searchResult = null;
+      try {
+        const res = await fetch('/api/game/room/bedroom/search', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-session-token': localStorage.getItem('ctc_token') || ''
+          },
+          credentials: 'include',
+          body: JSON.stringify({ object_id: objectId })
+        });
+
+        if (res.ok) {
+          searchResult = await res.json();
+          // If inspecting chair and nothing was found directly, search doll compartment for folded note EK01
+          if ((!searchResult || !searchResult.found) && objectId === 'chair') {
+            try {
+              const dollRes = await fetch('/api/game/room/bedroom/search', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'x-session-token': localStorage.getItem('ctc_token') || ''
+                },
+                credentials: 'include',
+                body: JSON.stringify({ object_id: 'doll' })
+              });
+              if (dollRes.ok) {
+                const dollData = await dollRes.json();
+                if (dollData && dollData.found) {
+                  searchResult = dollData;
+                }
+              }
+            } catch (_) {}
+          }
+          if (searchResult && searchResult.message) {
+            showNotification(searchResult.message);
+          }
+          if (searchResult.found) {
+            fetchRoomState();
+            return;
+          }
+        }
+      } catch (err) {
+        console.error('Search request failed:', err);
       }
-      if (matchingClue.is_locked) {
-        showNotification(
-          matchingClue.lock_reason || "This clue is sealed. Complete the preceding clue in sequence first."
-        );
-        return;
-      }
-      setActiveClue(matchingClue);
-      engineRef.current?.unlock();
+    } finally {
+      searchBusyRef.current = false;
     }
   };
   handleInteractRef.current = handleInteract;
@@ -405,9 +521,15 @@ export default function Room1Bedroom({ team, onLogout, onTransitionToRoom2 }) {
   };
 
   const showNotification = (msg) => {
+    if (!mountedRef.current) return;
+    if (notificationTimerRef.current) {
+      clearTimeout(notificationTimerRef.current);
+    }
     setSystemNotification(msg);
-    setTimeout(() => {
-      setSystemNotification(null);
+    notificationTimerRef.current = setTimeout(() => {
+      if (mountedRef.current) {
+        setSystemNotification(null);
+      }
     }, 4500);
   };
 
@@ -428,14 +550,14 @@ export default function Room1Bedroom({ team, onLogout, onTransitionToRoom2 }) {
   return (
     <div className="relative w-full h-screen overflow-hidden bg-[#07050d] select-none font-mono">
       {/* 3D Canvas Mounting Point */}
-      <div 
-        ref={mountRef} 
+      <div
+        ref={mountRef}
         onClick={() => {
           if (isStarted && engineRef.current && !activeClue && !isBasketOpen && !isPhotoPuzzleOpen && !isCaseFilesOpen && !isRoomCompleteModalOpen && !isDossierOpen && !isHintOpen) {
             engineRef.current.lock();
           }
         }}
-        className="absolute inset-0 w-full h-full cursor-none" 
+        className="absolute inset-0 w-full h-full cursor-none"
       />
 
       {/* Atmospheric Overlays */}
@@ -448,23 +570,111 @@ export default function Room1Bedroom({ team, onLogout, onTransitionToRoom2 }) {
         />
       )}
 
-      {/* Enter Room Splash Modal */}
+      {/* Haunted 0–100% Loading Screen with Roaming Ghosts for Room 1 (Lena's Bedroom) */}
       {!isStarted && (
-        <div className="ov">
-          <h1>CURSE THE CODE</h1>
-          <h3>Lena's Bedroom</h3>
-          <ul>
-            <li><b>W A S D</b> move</li>
-            <li><b>Mouse</b> look</li>
-            <li><b>E</b> interact / search</li>
-            <li><b>B</b> toggle evidence basket</li>
-            <li><b>C</b> view case files & clues</li>
-            <li><b>P</b> view photo pieces</li>
-            <li><b>Esc</b> release cursor</li>
-          </ul>
-          <button onClick={handleStartGame}>
-            CLICK TO ENTER ROOM
-          </button>
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center overflow-hidden bg-[#040208] text-[#e9e4f5] px-6 select-none">
+          <style>{`
+            @keyframes ghostRoamA { 0%{transform:translate(-38vw,18vh) scale(0.9)} 25%{transform:translate(-10vw,-22vh) scale(1.05)} 50%{transform:translate(34vw,-12vh) scale(0.95)} 75%{transform:translate(16vw,24vh) scale(1.1)} 100%{transform:translate(-38vw,18vh) scale(0.9)} }
+            @keyframes ghostRoamB { 0%{transform:translate(36vw,22vh) scale(1)} 30%{transform:translate(4vw,8vh) scale(0.85)} 60%{transform:translate(-32vw,-18vh) scale(1.15)} 85%{transform:translate(-14vw,26vh) scale(0.9)} 100%{transform:translate(36vw,22vh) scale(1)} }
+            @keyframes ghostRoamC { 0%{transform:translate(-26vw,-28vh) scale(0.85)} 40%{transform:translate(28vw,16vh) scale(1.1)} 75%{transform:translate(-8vw,28vh) scale(0.95)} 100%{transform:translate(-26vw,-28vh) scale(0.85)} }
+            @keyframes ghostRoamD { 0%{transform:translate(24vw,-26vh) scale(0.8)} 50%{transform:translate(-30vw,12vh) scale(1.05)} 100%{transform:translate(24vw,-26vh) scale(0.8)} }
+            @keyframes ghostLungePop { 0%{transform:scale(0.18) rotate(-4deg);opacity:0.2} 35%{transform:scale(1.14) rotate(2deg);opacity:1} 55%{transform:scale(1.03) rotate(-2deg);opacity:1} 75%{transform:scale(1.10) rotate(1.5deg);opacity:0.98} 100%{transform:scale(1.26) rotate(0deg);opacity:0} }
+          `}</style>
+
+          {/* Subtle radial vignette & giant backdrop Chapter I numeral */}
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(88,28,135,0.16)_0%,rgba(4,2,8,0.96)_72%)]" />
+          <div className="pointer-events-none absolute right-[8%] top-1/2 -translate-y-1/2 font-serif text-[28rem] leading-none text-[#8f7bff]/[0.05]">I</div>
+
+          {/* 4 Roaming Spectral Wraiths patrolling the dark loading void */}
+          <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
+            {[
+              { anim: 'ghostRoamA 9s ease-in-out infinite', opacity: 0.42 },
+              { anim: 'ghostRoamB 11s ease-in-out infinite', opacity: 0.36 },
+              { anim: 'ghostRoamC 8s ease-in-out infinite', opacity: 0.30 },
+              { anim: 'ghostRoamD 12s ease-in-out infinite', opacity: 0.28 }
+            ].map((g, idx) => (
+              <div key={idx} className="absolute left-1/2 top-1/2" style={{ animation: g.anim, opacity: g.opacity }}>
+                <svg width="68" height="86" viewBox="0 0 68 86" className="drop-shadow-[0_0_16px_rgba(143,123,255,0.45)]">
+                  <path d="M34 4 C16 4 8 18 8 36 L6 78 L16 68 L26 80 L34 69 L42 80 L52 68 L62 78 L60 36 C60 18 52 4 34 4 Z" fill="#171026" stroke="#8f7bff" strokeWidth="1.2" strokeOpacity="0.6" />
+                  <circle cx="24" cy="31" r="4" fill="#ff2a2a" />
+                  <circle cx="44" cy="31" r="4" fill="#ff2a2a" />
+                  <ellipse cx="34" cy="48" rx="6" ry="9" fill="#06020a" stroke="#ff2a2a" strokeOpacity="0.45" strokeWidth="0.8" />
+                </svg>
+              </div>
+            ))}
+          </div>
+
+          {/* Center Investigation Loading Card */}
+          <div className="relative z-10 flex w-full max-w-xl flex-col items-center text-center gap-4">
+            <p className="text-[11px] tracking-[0.28em] uppercase text-[#a78bfa]">
+              CURSE THE CODE / ROOM 01
+            </p>
+            <h1 className="font-['Special_Elite',serif] text-5xl sm:text-6xl tracking-wide text-[#ff7a1a] drop-shadow-[0_0_24px_rgba(255,122,26,0.45)]">
+              LENA&apos;S BEDROOM
+            </h1>
+            <p className="max-w-md text-xs sm:text-sm text-[#c4b5fd]/85 leading-relaxed">
+              The floorboards creak beneath dried dust. Something still lingers in the shadows — rely on your flashlight.
+            </p>
+
+            {/* 0% -> 100% Haunted Progress Bar */}
+            <div className="w-full max-w-md mt-2 space-y-2">
+              <div className="flex justify-between text-[11px] tracking-widest uppercase text-[#cdbfff]/80">
+                <span>
+                  {loadPct < 30
+                    ? 'UNSEALING OAK BEDROOM DOOR...'
+                    : loadPct < 65
+                      ? 'ENTITIES STIRRING IN THE DARK...'
+                      : loadPct < 92
+                        ? 'SOMETHING IS APPROACHING...'
+                        : 'IT IS RIGHT BEHIND YOU...'}
+                </span>
+                <span className="font-bold text-[#ff7a1a]">{loadPct}%</span>
+              </div>
+              <div className="h-2.5 w-full overflow-hidden rounded-full border border-[#8f7bff]/40 bg-[#0d0817] p-0.5">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-[#6d28d9] via-[#a855f7] to-[#ff4d1a] transition-all duration-75 shadow-[0_0_12px_rgba(255,122,26,0.7)]"
+                  style={{ width: `${loadPct}%` }}
+                />
+              </div>
+            </div>
+
+            <div className="flex flex-wrap justify-center gap-x-5 gap-y-1 text-[11px] text-[#a78bfa]/75 mt-1">
+              <span><b>W A S D</b> Move</span>
+              <span><b>Mouse</b> Look</span>
+              <span><b>F</b> Flashlight</span>
+              <span><b>E</b> Inspect</span>
+              <span><b>B / C / P</b> Case Tools</span>
+            </div>
+
+            <button
+              onClick={() => handleStartGame(false)}
+              className="mt-2 px-7 py-3 rounded-lg border border-[#ff7a1a]/70 bg-[#1a0f26]/90 text-xs tracking-[0.2em] uppercase text-[#ff9f5a] hover:bg-[#ff7a1a]/20 hover:border-[#ff7a1a] transition-all shadow-[0_0_20px_rgba(255,122,26,0.25)]"
+            >
+              CLICK TO ENTER ROOM
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 100% Loading Pop-Out Ghost Face Overlay */}
+      {ghostPopActive && (
+        <div className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center bg-black/85 overflow-hidden" aria-hidden="true">
+          <style>{`@keyframes ghostLungePop { 0%{transform:scale(0.18) rotate(-4deg);opacity:0.2} 35%{transform:scale(1.14) rotate(2deg);opacity:1} 55%{transform:scale(1.03) rotate(-2deg);opacity:1} 75%{transform:scale(1.10) rotate(1.5deg);opacity:0.98} 100%{transform:scale(1.26) rotate(0deg);opacity:0} }`}</style>
+          <svg
+            viewBox="0 0 240 280"
+            className="w-[82vmin] h-[90vmin] drop-shadow-[0_0_60px_rgba(255,20,20,0.85)]"
+            style={{ animation: 'ghostLungePop 720ms cubic-bezier(0.16, 1, 0.3, 1) forwards' }}
+          >
+            <path d="M120 12 C58 12 24 58 24 120 L18 258 L54 226 L86 266 L120 228 L154 266 L186 226 L222 258 L216 120 C216 58 182 12 120 12 Z" fill="#0d0714" stroke="#8f7bff" strokeWidth="2.5" strokeOpacity="0.65" />
+            <ellipse cx="80" cy="108" rx="22" ry="18" fill="#030005" />
+            <ellipse cx="160" cy="108" rx="22" ry="18" fill="#030005" />
+            <circle cx="80" cy="108" r="9" fill="#ff1a1a" />
+            <circle cx="160" cy="108" r="9" fill="#ff1a1a" />
+            <circle cx="80" cy="108" r="3" fill="#ffffff" />
+            <circle cx="160" cy="108" r="3" fill="#ffffff" />
+            <path d="M74 156 Q120 144 166 156 Q158 228 120 232 Q82 228 74 156 Z" fill="#050008" stroke="#ff1a1a" strokeWidth="2" strokeOpacity="0.7" />
+            <path d="M84 158 L92 178 L100 156 L110 180 L120 155 L130 180 L140 156 L148 178 L156 158" fill="none" stroke="#e2d8f0" strokeWidth="2.5" />
+          </svg>
         </div>
       )}
 

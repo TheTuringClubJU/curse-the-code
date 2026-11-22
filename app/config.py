@@ -11,6 +11,7 @@ if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
 
 CONTENT_FILE = os.getenv("CONTENT_FILE", "content.test.json")
 MAX_SESSIONS_PER_TEAM = 2
+ROUNDS_STATUS: Dict[int, str] = {1: "pending", 2: "pending"}
 
 def load_rules() -> Dict[str, Any]:
     global MAX_SESSIONS_PER_TEAM
