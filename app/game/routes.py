@@ -116,6 +116,17 @@ def get_room_state(room_id: str, request: Request):
             )
             photo_row = cur.fetchone()
             photo_pieces_count = photo_row["photo_count"] if photo_row else 0
+
+            # Lightweight hint sync state for live teammate detection
+            cur.execute(
+                "SELECT COUNT(*) as hints_used, MAX(target_id) as latest_target_id FROM team_hints WHERE team_id = %s AND round = %s",
+                (team["id"], target_room.get("round", 1))
+            )
+            hint_row = cur.fetchone()
+            hint_sync = {
+                "hints_used": hint_row["hints_used"] if hint_row else 0,
+                "latest_target_id": hint_row["latest_target_id"] if hint_row else None
+            }
             
     finally:
         conn.close()
@@ -272,7 +283,8 @@ def get_room_state(room_id: str, request: Request):
         "is_completed": is_completed,
         "clues": projected_clues,
         "evidence": projected_evidence,
-        "photo_pieces_collected": photo_pieces_count
+        "photo_pieces_collected": photo_pieces_count,
+        "hint_sync": hint_sync
     }
 
 @router.get("/room/{room_id}/basket")

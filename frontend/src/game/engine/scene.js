@@ -106,7 +106,19 @@ export function buildBedroom(E) {
                     if (j !== -1) arr.splice(j, 1)
                 })
             }
+            if (o.geometry) {
+                try { o.geometry.dispose() } catch (e) { }
+            }
+            if (o.material) {
+                try {
+                    if (Array.isArray(o.material)) o.material.forEach((m) => m?.dispose?.())
+                    else o.material.dispose?.()
+                } catch (e) { }
+            }
         })
+        if (obj.parent) {
+            try { obj.parent.remove(obj) } catch (e) { }
+        }
     }
 
     const dark = wm('dark'), worn = wm('worn'), ebony = wm('ebony'), brass = mat({ map: TX.brass(), m: .85, r: .4, c: 0xd8b070 }), gold = mat({ map: TX.metal(), m: .7, r: .45, c: 0xe0b878 })
@@ -511,10 +523,31 @@ export function buildBedroom(E) {
                 }
             })
 
-            procShell.forEach((m) => { m.visible = false; m.userData.np = 1 })
+            procShell.forEach((m) => {
+                m.visible = false
+                m.userData.np = 1
+                try { m.geometry?.dispose?.() } catch (e) { }
+                if (m.material) {
+                    try {
+                        if (Array.isArray(m.material)) m.material.forEach((mat) => mat?.dispose?.())
+                        else m.material.dispose?.()
+                    } catch (e) { }
+                }
+                if (m.parent) try { m.parent.remove(m) } catch (e) { }
+            })
             procFurnitureVisuals.forEach((obj) => {
                 obj.traverse((o) => {
-                    if (o.isMesh && !o.userData._isHitbox) { o.visible = false; o.userData.np = 1 }
+                    if (o.isMesh && !o.userData._isHitbox) {
+                        o.visible = false
+                        o.userData.np = 1
+                        try { o.geometry?.dispose?.() } catch (e) { }
+                        if (o.material) {
+                            try {
+                                if (Array.isArray(o.material)) o.material.forEach((mat) => mat?.dispose?.())
+                                else o.material.dispose?.()
+                            } catch (e) { }
+                        }
+                    }
                 })
             })
                 ; (E.ref?.procVisuals || []).forEach((obj) => retireObj(obj))

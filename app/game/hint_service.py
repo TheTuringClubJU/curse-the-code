@@ -369,12 +369,15 @@ def request_hint(
                         "message": "Re-inspected previously unlocked hint (no penalty applied)."
                     }
 
-            # 3. Check current budget
+            # 3. Check current budget & room basket status in a single query
             cur.execute(
-                "SELECT COUNT(*) as count FROM team_hints WHERE team_id = %s AND round = %s",
-                (team_id, round_num),
+                """SELECT
+                    (SELECT COUNT(*) FROM team_hints WHERE team_id = %s AND round = %s) AS hints_count,
+                    (SELECT is_basket_unlocked FROM team_rooms WHERE team_id = %s AND room_id = %s) AS is_basket_unlocked""",
+                (team_id, round_num, team_id, room_id),
             )
-            hints_used = cur.fetchone()["count"]
+            state_row = cur.fetchone()
+            hints_used = state_row["hints_count"] if state_row else 0
             if hints_used >= budget:
                 raise HTTPException(
                     403,
@@ -400,19 +403,13 @@ def request_hint(
 
             uncollected_fragments = [fid for fid in expected_fragments if fid not in collected_fragments]
 
-            # 5. Check if basket is officially unlocked in team_rooms
-            cur.execute(
-                "SELECT is_basket_unlocked FROM team_rooms WHERE team_id = %s AND room_id = %s",
-                (team_id, room_id),
-            )
-            basket_row = cur.fetchone()
-
             # Universal progression constraint:
             # Basket is only unlocked if marked unlocked in team_rooms OR all expected fragments (real + decoys) are collected
-            is_basket_unlocked = bool(basket_row and basket_row["is_basket_unlocked"]) or (len(uncollected_fragments) == 0 and len(expected_fragments) > 0)
+            raw_basket = bool(state_row and state_row["is_basket_unlocked"])
+            is_basket_unlocked = raw_basket or (len(uncollected_fragments) == 0 and len(expected_fragments) > 0)
 
             # Persist basket unlock if all room fragments have been collected
-            if len(uncollected_fragments) == 0 and len(expected_fragments) > 0 and not (basket_row and basket_row["is_basket_unlocked"]):
+            if len(uncollected_fragments) == 0 and len(expected_fragments) > 0 and not raw_basket:
                 cur.execute(
                     """INSERT INTO team_rooms (team_id, room_id, is_basket_unlocked)
                        VALUES (%s, %s, TRUE)
@@ -468,22 +465,27 @@ def request_hint(
                 hint_text = _get_fragment_hint_text(content, room_id, next_fragment_id)
                 penalty = FRAGMENT_PENALTY_SECONDS
 
+                # Atomic single-statement write for hint and penalty
                 cur.execute(
-                    """INSERT INTO team_hints (team_id, round, room_id, hint_category, target_id, penalty_seconds, hint_text)
-                       VALUES (%s, %s, %s, 'fragment', %s, %s, %s)""",
-                    (team_id, round_num, room_id, next_fragment_id, penalty, hint_text),
-                )
-                cur.execute(
-                    "INSERT INTO rounds (round, status) VALUES (%s, 'pending') ON CONFLICT (round) DO NOTHING",
-                    (round_num,),
-                )
-                cur.execute(
-                    """INSERT INTO team_rounds (team_id, round, penalty_seconds, updated_at)
-                       VALUES (%s, %s, %s, NOW())
-                       ON CONFLICT (team_id, round)
-                       DO UPDATE SET penalty_seconds = team_rounds.penalty_seconds + EXCLUDED.penalty_seconds, updated_at = NOW()
-                       RETURNING penalty_seconds""",
-                    (team_id, round_num, penalty),
+                    """WITH ins_hint AS (
+                           INSERT INTO team_hints (team_id, round, room_id, hint_category, target_id, penalty_seconds, hint_text)
+                           VALUES (%s, %s, %s, 'fragment', %s, %s, %s)
+                           RETURNING id
+                       ),
+                       ins_round AS (
+                           INSERT INTO rounds (round, status)
+                           VALUES (%s, 'pending')
+                           ON CONFLICT (round) DO NOTHING
+                       ),
+                       upd_round AS (
+                           INSERT INTO team_rounds (team_id, round, penalty_seconds, updated_at)
+                           VALUES (%s, %s, %s, NOW())
+                           ON CONFLICT (team_id, round)
+                           DO UPDATE SET penalty_seconds = team_rounds.penalty_seconds + EXCLUDED.penalty_seconds, updated_at = NOW()
+                           RETURNING penalty_seconds
+                       )
+                       SELECT penalty_seconds FROM upd_round""",
+                    (team_id, round_num, room_id, next_fragment_id, penalty, hint_text, round_num, team_id, round_num, penalty),
                 )
                 new_total_pen = cur.fetchone()["penalty_seconds"]
                 conn.commit()
@@ -582,22 +584,27 @@ def request_hint(
             )
             penalty = CLUE_PENALTY_SECONDS
 
+            # Atomic single-statement write for clue hint and penalty
             cur.execute(
-                """INSERT INTO team_hints (team_id, round, room_id, hint_category, target_id, penalty_seconds, hint_text)
-                   VALUES (%s, %s, %s, 'clue', %s, %s, %s)""",
-                (team_id, round_num, room_id, active_clue_id, penalty, rich_hint_text),
-            )
-            cur.execute(
-                "INSERT INTO rounds (round, status) VALUES (%s, 'pending') ON CONFLICT (round) DO NOTHING",
-                (round_num,),
-            )
-            cur.execute(
-                """INSERT INTO team_rounds (team_id, round, penalty_seconds, updated_at)
-                   VALUES (%s, %s, %s, NOW())
-                   ON CONFLICT (team_id, round)
-                   DO UPDATE SET penalty_seconds = team_rounds.penalty_seconds + EXCLUDED.penalty_seconds, updated_at = NOW()
-                   RETURNING penalty_seconds""",
-                (team_id, round_num, penalty),
+                """WITH ins_hint AS (
+                       INSERT INTO team_hints (team_id, round, room_id, hint_category, target_id, penalty_seconds, hint_text)
+                       VALUES (%s, %s, %s, 'clue', %s, %s, %s)
+                       RETURNING id
+                   ),
+                   ins_round AS (
+                       INSERT INTO rounds (round, status)
+                       VALUES (%s, 'pending')
+                       ON CONFLICT (round) DO NOTHING
+                   ),
+                   upd_round AS (
+                       INSERT INTO team_rounds (team_id, round, penalty_seconds, updated_at)
+                       VALUES (%s, %s, %s, NOW())
+                       ON CONFLICT (team_id, round)
+                       DO UPDATE SET penalty_seconds = team_rounds.penalty_seconds + EXCLUDED.penalty_seconds, updated_at = NOW()
+                       RETURNING penalty_seconds
+                   )
+                   SELECT penalty_seconds FROM upd_round""",
+                (team_id, round_num, room_id, active_clue_id, penalty, rich_hint_text, round_num, team_id, round_num, penalty),
             )
             new_total_pen = cur.fetchone()["penalty_seconds"]
             conn.commit()

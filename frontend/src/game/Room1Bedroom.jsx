@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { createEngine } from './engine/engine.js';
 import bedroomConfig from './rooms/bedroom.js';
 import { GameAudio } from './engine/audio.js';
@@ -41,10 +41,23 @@ export default function Room1Bedroom({ team, onLogout, onTransitionToRoom2 }) {
   const [systemNotification, setSystemNotification] = useState(null);
   const [audioMuted, setAudioMuted] = useState(false);
   const [flashOverlay, setFlashOverlay] = useState({ color: '#c40414', opacity: 0, visible: false });
-  const [loadPct, setLoadPct] = useState(0);
-  const [ghostPopActive, setGhostPopActive] = useState(false);
-  const ghostPopTimerRef = useRef(null);
   const unmountedRef = useRef(false);
+
+  const isAnyModalOpen = Boolean(
+    activeClue ||
+    isBasketOpen ||
+    isCaseFilesOpen ||
+    isPhotoPuzzleOpen ||
+    isDossierOpen ||
+    isHintOpen ||
+    isRoomCompleteModalOpen
+  );
+
+  // Suspend 3D render loop when any modal is open (matching Room 2 Study zero-lag behavior)
+  useEffect(() => {
+    if (!isStarted) return;
+    engineRef.current?.setPaused(isAnyModalOpen);
+  }, [isStarted, isAnyModalOpen]);
 
   // Fetch room data from backend (with live teammate sync detection)
   const fetchRoomState = async (silent = false) => {
@@ -58,8 +71,11 @@ export default function Room1Bedroom({ team, onLogout, onTransitionToRoom2 }) {
       if (res.ok) {
         const data = await res.json();
         const prevData = roomDataRef.current;
-        setRoomData(data);
-        roomDataRef.current = data;
+        const dataChanged = JSON.stringify(data) !== JSON.stringify(prevData);
+        if (dataChanged) {
+          setRoomData(data);
+          roomDataRef.current = data;
+        }
 
         // Detect teammate actions and show live sync toast
         if (silent && prevData) {
@@ -78,6 +94,17 @@ export default function Room1Bedroom({ team, onLogout, onTransitionToRoom2 }) {
           if (nextSolved.length > 0) {
             showNotification(`Teammate solved ${nextSolved[0].title || nextSolved[0].id}!`);
             audioRef.current?.good?.();
+          }
+
+          // Live Teammate Hint Sync detection
+          if (data.hint_sync) {
+            const prevUsed = Number(prevData.hint_sync?.hints_used || 0);
+            const nextUsed = Number(data.hint_sync.hints_used || 0);
+            if (nextUsed > prevUsed) {
+              const target = data.hint_sync.latest_target_id || 'this chamber';
+              showNotification(`Teammate unlocked a hint (${target}). Press H to view!`);
+              audioRef.current?.click?.();
+            }
           }
         }
 
@@ -283,86 +310,7 @@ export default function Room1Bedroom({ team, onLogout, onTransitionToRoom2 }) {
     };
   }, []);
 
-  // Play a weird, eerie ghost pop-out shriek + sub-bass impact when loading reaches 100%
-  const playWeirdGhostScareSound = () => {
-    try {
-      if (audioMuted) return;
-      const AudioCtx = window.AudioContext || window.webkitAudioContext;
-      if (!AudioCtx) return;
-      const ctx = new AudioCtx();
-      const t = ctx.currentTime;
-      const master = ctx.createGain();
-      master.gain.setValueAtTime(0.42, t);
-      master.gain.exponentialRampToValueAtTime(0.001, t + 0.85);
-      master.connect(ctx.destination);
-
-      // Pitch-gliding spectral shriek + dissonant horror harmonic
-      [
-        { type: 'sawtooth', f0: 290, f1: 1480, dur: 0.72, g: 0.35 },
-        { type: 'square', f0: 311, f1: 920, dur: 0.72, g: 0.25 },
-        { type: 'sine', f0: 95, f1: 28, dur: 0.55, g: 0.75 }
-      ].forEach((cfg) => {
-        const osc = ctx.createOscillator();
-        const g = ctx.createGain();
-        osc.type = cfg.type;
-        osc.frequency.setValueAtTime(cfg.f0, t);
-        osc.frequency.exponentialRampToValueAtTime(cfg.f1, t + cfg.dur * 0.45);
-        g.gain.setValueAtTime(0.001, t);
-        g.gain.linearRampToValueAtTime(cfg.g, t + 0.02);
-        g.gain.exponentialRampToValueAtTime(0.0001, t + cfg.dur);
-        osc.connect(g);
-        g.connect(master);
-        osc.start(t);
-        osc.stop(t + cfg.dur + 0.04);
-      });
-      setTimeout(() => { try { ctx.close?.(); } catch (_) {} }, 950);
-    } catch (_) {
-      // Ignore WebAudio restrictions in headless/test environments
-    }
-  };
-
-  const triggerGhostPopAndEnter = () => {
-    if (unmountedRef.current) return;
-    setGhostPopActive(true);
-    playWeirdGhostScareSound();
-    clearTimeout(ghostPopTimerRef.current);
-    ghostPopTimerRef.current = setTimeout(() => {
-      if (!unmountedRef.current) setGhostPopActive(false);
-    }, 720);
-  };
-
-  useEffect(() => {
-    unmountedRef.current = false;
-    return () => {
-      unmountedRef.current = true;
-      clearTimeout(ghostPopTimerRef.current);
-    };
-  }, []);
-
-  // Animate 0% -> 100% haunted loading bar and pop-out ghost on completion
-  useEffect(() => {
-    if (isStarted) return;
-    let pct = 0;
-    const iv = setInterval(() => {
-      if (unmountedRef.current) {
-        clearInterval(iv);
-        return;
-      }
-      pct = Math.min(100, pct + 2.2);
-      setLoadPct(Math.round(pct));
-      if (pct >= 100) {
-        clearInterval(iv);
-        triggerGhostPopAndEnter();
-        handleStartGame(true);
-      }
-    }, 55);
-    return () => clearInterval(iv);
-  }, [isStarted]);
-
-  const handleStartGame = (skipPopSound = false) => {
-    if (!skipPopSound) {
-      triggerGhostPopAndEnter();
-    }
+  const handleStartGame = () => {
     setIsStarted(true);
     if (audioRef.current) {
       audioRef.current.start(bedroomConfig.audio);
@@ -375,6 +323,41 @@ export default function Room1Bedroom({ team, onLogout, onTransitionToRoom2 }) {
       }, 50);
     }
   };
+
+  const handleCloseBasket = useCallback(() => {
+    setIsBasketOpen(false);
+    engineRef.current?.lock();
+  }, []);
+
+  const handleCloseCaseFiles = useCallback(() => {
+    setIsCaseFilesOpen(false);
+    engineRef.current?.lock();
+  }, []);
+
+  const handleCloseClue = useCallback(() => {
+    setActiveClue(null);
+    engineRef.current?.lock();
+  }, []);
+
+  const handleClosePhotoPuzzle = useCallback(() => {
+    setIsPhotoPuzzleOpen(false);
+    engineRef.current?.lock();
+  }, []);
+
+  const handleCloseRoomComplete = useCallback(() => {
+    setIsRoomCompleteModalOpen(false);
+    engineRef.current?.lock();
+  }, []);
+
+  const handleCloseDossier = useCallback(() => {
+    setIsDossierOpen(false);
+    engineRef.current?.lock();
+  }, []);
+
+  const handleCloseHint = useCallback(() => {
+    setIsHintOpen(false);
+    engineRef.current?.lock();
+  }, []);
 
   // Handle interacting (E) with an object
   const handleInteract = async (objectId) => {
@@ -622,34 +605,12 @@ export default function Room1Bedroom({ team, onLogout, onTransitionToRoom2 }) {
               The floorboards creak beneath dried dust. Something still lingers in the shadows — rely on your flashlight.
             </p>
 
-            {/* 0% -> 100% Haunted Progress Bar */}
-            <div className="w-full max-w-md mt-2 space-y-2">
-              <div className="flex justify-between text-[11px] tracking-widest uppercase text-[#cdbfff]/80">
-                <span>
-                  {loadPct < 30
-                    ? 'UNSEALING OAK BEDROOM DOOR...'
-                    : loadPct < 65
-                      ? 'ENTITIES STIRRING IN THE DARK...'
-                      : loadPct < 92
-                        ? 'SOMETHING IS APPROACHING...'
-                        : 'IT IS RIGHT BEHIND YOU...'}
-                </span>
-                <span className="font-bold text-[#ff7a1a]">{loadPct}%</span>
-              </div>
-              <div className="h-2.5 w-full overflow-hidden rounded-full border border-[#8f7bff]/40 bg-[#0d0817] p-0.5">
-                <div
-                  className="h-full rounded-full bg-gradient-to-r from-[#6d28d9] via-[#a855f7] to-[#ff4d1a] transition-all duration-75 shadow-[0_0_12px_rgba(255,122,26,0.7)]"
-                  style={{ width: `${loadPct}%` }}
-                />
-              </div>
-            </div>
-
-            <div className="flex flex-wrap justify-center gap-x-5 gap-y-1 text-[11px] text-[#a78bfa]/75 mt-1">
+            <div className="flex flex-wrap justify-center gap-x-5 gap-y-1 text-[11px] text-[#a78bfa]/75 mt-2">
               <span><b>W A S D</b> Move</span>
               <span><b>Mouse</b> Look</span>
               <span><b>F</b> Flashlight</span>
               <span><b>E</b> Inspect</span>
-              <span><b>B / C / P</b> Case Tools</span>
+              <span><b>B / C / P / H</b> Investigation Tools</span>
             </div>
 
             <div className="flex items-center gap-2 text-[11px] font-mono text-[#a78bfa]/80 mt-1">
@@ -685,34 +646,12 @@ export default function Room1Bedroom({ team, onLogout, onTransitionToRoom2 }) {
             </div>
 
             <button
-              onClick={() => handleStartGame(false)}
-              className="mt-2 px-7 py-3 rounded-lg border border-[#ff7a1a]/70 bg-[#1a0f26]/90 text-xs tracking-[0.2em] uppercase text-[#ff9f5a] hover:bg-[#ff7a1a]/20 hover:border-[#ff7a1a] transition-all shadow-[0_0_20px_rgba(255,122,26,0.25)]"
+              onClick={handleStartGame}
+              className="mt-3 px-8 py-3.5 rounded-lg border border-[#ff7a1a]/70 bg-[#1a0f26]/90 text-xs font-semibold tracking-[0.25em] uppercase text-[#ff9f5a] hover:bg-[#ff7a1a]/20 hover:border-[#ff7a1a] transition-all shadow-[0_0_20px_rgba(255,122,26,0.35)]"
             >
               CLICK TO ENTER ROOM
             </button>
           </div>
-        </div>
-      )}
-
-      {/* 100% Loading Pop-Out Ghost Face Overlay */}
-      {ghostPopActive && (
-        <div className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center bg-black/85 overflow-hidden" aria-hidden="true">
-          <style>{`@keyframes ghostLungePop { 0%{transform:scale(0.18) rotate(-4deg);opacity:0.2} 35%{transform:scale(1.14) rotate(2deg);opacity:1} 55%{transform:scale(1.03) rotate(-2deg);opacity:1} 75%{transform:scale(1.10) rotate(1.5deg);opacity:0.98} 100%{transform:scale(1.26) rotate(0deg);opacity:0} }`}</style>
-          <svg
-            viewBox="0 0 240 280"
-            className="w-[82vmin] h-[90vmin] drop-shadow-[0_0_60px_rgba(255,20,20,0.85)]"
-            style={{ animation: 'ghostLungePop 720ms cubic-bezier(0.16, 1, 0.3, 1) forwards' }}
-          >
-            <path d="M120 12 C58 12 24 58 24 120 L18 258 L54 226 L86 266 L120 228 L154 266 L186 226 L222 258 L216 120 C216 58 182 12 120 12 Z" fill="#0d0714" stroke="#8f7bff" strokeWidth="2.5" strokeOpacity="0.65" />
-            <ellipse cx="80" cy="108" rx="22" ry="18" fill="#030005" />
-            <ellipse cx="160" cy="108" rx="22" ry="18" fill="#030005" />
-            <circle cx="80" cy="108" r="9" fill="#ff1a1a" />
-            <circle cx="160" cy="108" r="9" fill="#ff1a1a" />
-            <circle cx="80" cy="108" r="3" fill="#ffffff" />
-            <circle cx="160" cy="108" r="3" fill="#ffffff" />
-            <path d="M74 156 Q120 144 166 156 Q158 228 120 232 Q82 228 74 156 Z" fill="#050008" stroke="#ff1a1a" strokeWidth="2" strokeOpacity="0.7" />
-            <path d="M84 158 L92 178 L100 156 L110 180 L120 155 L130 180 L140 156 L148 178 L156 158" fill="none" stroke="#e2d8f0" strokeWidth="2.5" />
-          </svg>
         </div>
       )}
 
@@ -800,10 +739,7 @@ export default function Room1Bedroom({ team, onLogout, onTransitionToRoom2 }) {
       {/* Modals */}
       <BasketModal
         isOpen={isBasketOpen}
-        onClose={() => {
-          setIsBasketOpen(false);
-          engineRef.current?.lock();
-        }}
+        onClose={handleCloseBasket}
         evidence={roomData?.evidence || []}
         collectedIds={roomData?.collected_fragment_ids || []}
         basketUnlocked={Boolean(roomData?.basket_unlocked)}
@@ -813,10 +749,7 @@ export default function Room1Bedroom({ team, onLogout, onTransitionToRoom2 }) {
 
       <CaseFilesModal
         isOpen={isCaseFilesOpen}
-        onClose={() => {
-          setIsCaseFilesOpen(false);
-          engineRef.current?.lock();
-        }}
+        onClose={handleCloseCaseFiles}
         clues={roomData?.clues || []}
         basketUnlocked={Boolean(roomData?.basket_unlocked)}
         onOpenClue={(clue) => {
@@ -836,10 +769,7 @@ export default function Room1Bedroom({ team, onLogout, onTransitionToRoom2 }) {
 
       <ClueModal
         isOpen={Boolean(activeClue)}
-        onClose={() => {
-          setActiveClue(null);
-          engineRef.current?.lock();
-        }}
+        onClose={handleCloseClue}
         clue={activeClue}
         evidence={roomData?.evidence || []}
         onSubmitAnswer={handleClueSubmit}
@@ -848,23 +778,16 @@ export default function Room1Bedroom({ team, onLogout, onTransitionToRoom2 }) {
 
       <PhotoPuzzleModal
         isOpen={isPhotoPuzzleOpen}
-        onClose={() => {
-          setIsPhotoPuzzleOpen(false);
-          engineRef.current?.lock();
-        }}
+        onClose={handleClosePhotoPuzzle}
         photoCount={roomData?.photo_pieces_collected || 0}
         requiredPieces={10}
       />
 
       <RoomCompleteModal
         isOpen={isRoomCompleteModalOpen}
-        onClose={() => {
-          setIsRoomCompleteModalOpen(false);
-          engineRef.current?.lock();
-        }}
+        onClose={handleCloseRoomComplete}
         onProceedToDoor={() => {
-          setIsRoomCompleteModalOpen(false);
-          engineRef.current?.lock();
+          handleCloseRoomComplete();
           if (onTransitionToRoom2) {
             onTransitionToRoom2();
           } else {
@@ -875,17 +798,11 @@ export default function Room1Bedroom({ team, onLogout, onTransitionToRoom2 }) {
 
       <Round1DossierModal
         isOpen={isDossierOpen}
-        onClose={() => {
-          setIsDossierOpen(false);
-          engineRef.current?.lock();
-        }}
+        onClose={handleCloseDossier}
       />
       <HintModal
         isOpen={isHintOpen}
-        onClose={() => {
-          setIsHintOpen(false);
-          engineRef.current?.lock();
-        }}
+        onClose={handleCloseHint}
         roomId="bedroom"
         roomTitle="Lena's Bedroom"
       />
