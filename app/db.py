@@ -55,7 +55,7 @@ def ensure_schema_updates(conn=None):
             if close_at_end:
                 conn.close()
 
-def init_pool(minconn: int = 2, maxconn: int = 30) -> Optional[pool.ThreadedConnectionPool]:
+def init_pool(minconn: int = 5, maxconn: int = 60) -> Optional[pool.ThreadedConnectionPool]:
     global _db_pool
     if _db_pool is None and DATABASE_URL:
         try:
@@ -70,7 +70,7 @@ def init_pool(minconn: int = 2, maxconn: int = 30) -> Optional[pool.ThreadedConn
                 keepalives_interval=10,
                 keepalives_count=5
             )
-            logger.info("Initialized PostgreSQL ThreadedConnectionPool (pool size 2-30)")
+            logger.info("Initialized PostgreSQL ThreadedConnectionPool (pool size 5-60)")
         except Exception as e:
             logger.error(f"Failed to initialize ThreadedConnectionPool: {e}")
             _db_pool = None
