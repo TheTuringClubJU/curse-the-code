@@ -218,7 +218,7 @@ export function buildBedroom(E) {
         interact(lg, 'lamp'); add(lg)
     }
 
-    // 3. West vanity desk (GLB (-3.36, 0, 0.0)) + mirror above + notebook lying flat on vanity top
+    // 3. West vanity desk (GLB (-3.36, 0, -0.58)) + Wooden Desk Chair (GLB (-3.30, 0, +0.36)) + mirror + notebook
     {
         const g = grp(-3.36, 0, 0.0, Math.PI / 2)
         const vis = new THREE.Group()
@@ -228,8 +228,19 @@ export function buildBedroom(E) {
             ;[0, 1, 2].forEach(i => { vis.add(bx(.44, .15, .02, dark, .52, .62 - i * .17, .37), mk(new THREE.SphereGeometry(.016, 10, 8), brass, .52, .62 - i * .17, .395)) })
         vis.add(bx(1.2, .5, .02, dark, -.2, .46, -.36))
         g.add(trackVisual(vis))
-        g.add(hitbox(2.3, 1.35, 1.15, 0, 0.65, 0.1))
-        interact(g, 'desk'); add(g); solid(-3.85, -2.92, -1.08, 1.08)
+
+        // Desk Hitbox specifically over the carved study desk (Drawers & Top from Z:[-1.12, -0.04])
+        const deskBox = hitbox(1.08, 1.25, 0.90, 0.58, 0.62, 0.05)
+        g.add(deskBox)
+        interact(deskBox, 'desk')
+        add(g); solid(-3.85, -2.92, -1.08, 1.08)
+
+        // Wooden Desk Chair (GLB chair with red seat cushion from Z:[+0.02, +0.70]) - Chair EB12 target
+        const deskChairGrp = grp(-3.30, 0, 0.36, Math.PI / 2)
+        const deskChairBox = hitbox(0.68, 1.25, 0.70, 0, 0.62, 0.06)
+        deskChairGrp.add(deskChairBox)
+        interact(deskChairGrp, 'chair')
+        add(deskChairGrp)
 
         // Mirror (EB11) aligned to GLB West wall tall cracked mirror at (-3.55, 1.92, -0.49)
         const mg = grp(-3.55, 1.92, -0.49, Math.PI / 2)

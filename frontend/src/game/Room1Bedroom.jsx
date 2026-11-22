@@ -209,7 +209,7 @@ export default function Room1Bedroom({ team, onLogout, onTransitionToRoom2 }) {
           if (targetId) {
             const labels = {
               nightstand: 'Inspect Bedside Nightstand',
-              chair: 'Inspect Rocking Chair',
+              chair: 'Inspect Wooden Chair',
               desk: 'Inspect Study Desk',
               notebook: 'Inspect School Notebook',
               diary: 'Inspect Leather Diary',
