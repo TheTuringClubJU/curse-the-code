@@ -12,18 +12,18 @@ const hitbox = (w, h, d, x = 0, y = 0, z = 0) => { const m = new THREE.Mesh(new 
 
 export function buildBedroom(E) {
     const { S, add, solid, anim, interact, W, H, D, win, ref } = E
-    // Enforce dark horror atmosphere across engine base lighting and fog + slightly dimmer player flashlight
+    // Enforce pitch-dark horror atmosphere (~10% ambient brightness; flashlight is primary light source)
     if (S) {
-        S.background = new THREE.Color(0x05030a)
-        S.fog = new THREE.FogExp2(0x05030a, 0.075)
+        S.background = new THREE.Color(0x020105)
+        S.fog = new THREE.FogExp2(0x020105, 0.115)
         S.traverse((o) => {
-            if (o.isHemisphereLight) o.intensity = 0.20
-            if (o.isDirectionalLight) o.intensity = 0.38
+            if (o.isHemisphereLight) o.intensity = 0.02
+            if (o.isDirectionalLight) o.intensity = 0.04
         })
     }
     if (E.flashlight) {
-        E._flashBaseIntensity = 11.5
-        E.flashlight.intensity = 11.5
+        E._flashBaseIntensity = 12.0
+        E.flashlight.intensity = 12.0
     }
 
     // Snapshot procedural room shell created in engine.js so it can be hidden once GLB shell loads
@@ -120,7 +120,7 @@ export function buildBedroom(E) {
         const gl = new THREE.Sprite(new THREE.SpriteMaterial({ map: TX.glow('w'), blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, fog: false, opacity: .55 })); gl.scale.set(.42, .42, 1); gl.position.set(0, .3, 0); gl.userData.np = 1; cg.add(gl)
         cg.add(hitbox(0.3, 0.48, 0.3, 0, 0.15, 0))
         interact(cg, 'candle'); add(cg)
-        const pl = new THREE.PointLight(0xff9840, 0.9, 2.8, 2); pl.position.set(-0.85, 1.40, -2.32); S.add(pl); E.lightRig(pl, 0.9, E.flick(2, .25)); anim(t => { const f = E.flick(2, .3)(t); fl.scale.set(.05 * (.9 + .2 * f), .11 * (.85 + .3 * f), 1); gl.material.opacity = .4 * f * E.lightScale() })
+        const pl = new THREE.PointLight(0xff9840, 0.16, 1.8, 2); pl.position.set(-0.85, 1.40, -2.32); S.add(pl); E.lightRig(pl, 0.16, E.flick(2, .25)); anim(t => { const f = E.flick(2, .3)(t); fl.scale.set(.05 * (.9 + .2 * f), .11 * (.85 + .3 * f), 1); gl.material.opacity = .22 * f * E.lightScale() })
 
         // Photo frame (XB01 decoy) on back-right corner of GLB nightstand surface
         const pf = grp(-0.42, 1.10, -2.60, -.35); pf.add(bx(.14, .19, .02, gold, 0, .1, 0), mk(new THREE.PlaneGeometry(.1, .15), mat({ map: TX.photo(0), r: .5 }), 0, .1, .0125)); pf.add(bx(.03, .12, .01, dark, 0, .07, -.02)); pf.rotation.x = -.15
@@ -332,9 +332,10 @@ export function buildBedroom(E) {
                 const mats = Array.isArray(o.material) ? o.material : [o.material]
                 mats.forEach((m) => {
                     if (!m) return
-                    m.color.setRGB(0.42, 0.39, 0.48)
-                    m.roughness = Math.max(m.roughness ?? 0.75, 0.78)
-                    m.metalness = Math.min(m.metalness ?? 0.1, 0.2)
+                    m.color.setRGB(0.28, 0.26, 0.33)
+                    m.roughness = Math.max(m.roughness ?? 0.75, 0.82)
+                    m.metalness = Math.min(m.metalness ?? 0.1, 0.15)
+                    if (m.emissiveIntensity !== undefined) m.emissiveIntensity = 0
                     m.side = THREE.DoubleSide
                     m.needsUpdate = true
                 })
