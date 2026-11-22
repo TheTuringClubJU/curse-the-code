@@ -12,18 +12,76 @@ const hitbox = (w, h, d, x = 0, y = 0, z = 0) => { const m = new THREE.Mesh(new 
 
 export function buildBedroom(E) {
     const { S, add, solid, anim, interact, W, H, D, win, ref } = E
-    // Enforce dark horror atmosphere across engine base lighting and fog + slightly dimmer player flashlight
+    // Enforce pitch-dark horror atmosphere (~10% ambient brightness; flashlight is primary light source)
     if (S) {
-        S.background = new THREE.Color(0x05030a)
-        S.fog = new THREE.FogExp2(0x05030a, 0.075)
+        S.background = new THREE.Color(0x020105)
+        S.fog = new THREE.FogExp2(0x020105, 0.115)
         S.traverse((o) => {
-            if (o.isHemisphereLight) o.intensity = 0.20
-            if (o.isDirectionalLight) o.intensity = 0.38
+            if (o.isHemisphereLight) o.intensity = 0.02
+            if (o.isDirectionalLight) o.intensity = 0.04
         })
     }
     if (E.flashlight) {
-        E._flashBaseIntensity = 11.5
-        E.flashlight.intensity = 11.5
+        E.flashlight.angle = Math.PI / 7.2
+        E.flashlight.penumbra = 0.48
+        E.flashlight.distance = 18.0
+        E.flashlight.decay = 1.42
+        E._flashBaseIntensity = 28.0
+        E.flashlight.intensity = 28.0
+
+        // Randomized stochastic flashlight flicker generator (unpredictable non-sequential timing & varied intensity)
+        let nextBurstAt = 1.2 + Math.random() * 2.2
+        let burstUntil = 0
+        let burstType = 0 // 0: deep brownout dip, 1: erratic multi-stutter, 2: chaotic electrical spark, 3: minor voltage sag
+        let burstFloor = 0.08
+        let burstSubPulse = 0
+
+        anim((t) => {
+            if (!E.flashlight || E._userFlashlightOn === false || E._flashOutageActive) return
+
+            // Schedule next burst with unpredictable randomized intervals (never periodic/sequential)
+            if (t >= nextBurstAt) {
+                const dur = 0.10 + Math.random() * 0.34 // 100ms - 440ms randomized duration
+                burstUntil = t + dur
+                burstType = Math.floor(Math.random() * 4)
+                // Random intensity floor for this specific burst: varies between near-blackout (0.02) and dim (0.35)
+                burstFloor = 0.02 + Math.random() * 0.33
+                burstSubPulse = 0
+                // Next burst delay is completely randomized: 0.85s to 4.2s (never sequential/periodic)
+                nextBurstAt = t + dur + 0.85 + Math.random() * 3.35
+            }
+
+            const base = E._flashBaseIntensity || 28.0
+            let factor = 1.0
+
+            if (t < burstUntil) {
+                // Inside randomized flicker burst: intensity dynamically varies and spikes stochastically
+                const r = Math.random()
+                if (burstType === 0) {
+                    // Deep brownout: drops deep down, with occasional erratic 1-frame micro-spark
+                    factor = r > 0.82 ? (burstFloor + Math.random() * 0.45) : (burstFloor + r * 0.06)
+                } else if (burstType === 1) {
+                    // Multi-stutter: rapid stochastic oscillation between low and moderate intensity
+                    burstSubPulse += 1
+                    factor = (burstSubPulse % 2 === 0) ? (burstFloor + Math.random() * 0.12) : (0.45 + Math.random() * 0.45)
+                } else if (burstType === 2) {
+                    // Chaotic electrical spasm: completely irregular noise
+                    factor = r > 0.5 ? (burstFloor + Math.random() * 0.2) : (0.55 + Math.random() * 0.42)
+                } else {
+                    // Minor voltage sag / soft flicker
+                    factor = 0.52 + Math.random() * 0.35
+                }
+            } else {
+                // Organic idle filament micro-tremor (stochastic noise, non-periodic)
+                factor = 0.96 + (Math.random() - 0.5) * 0.06
+            }
+
+            const intensity = Math.max(0.6, base * factor)
+            E.flashlight.intensity = intensity
+            if (E._flashLensMat) {
+                E._flashLensMat.emissiveIntensity = Math.max(0.12, 2.2 * (intensity / base))
+            }
+        })
     }
 
     // Snapshot procedural room shell created in engine.js so it can be hidden once GLB shell loads
@@ -120,7 +178,7 @@ export function buildBedroom(E) {
         const gl = new THREE.Sprite(new THREE.SpriteMaterial({ map: TX.glow('w'), blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, fog: false, opacity: .55 })); gl.scale.set(.42, .42, 1); gl.position.set(0, .3, 0); gl.userData.np = 1; cg.add(gl)
         cg.add(hitbox(0.3, 0.48, 0.3, 0, 0.15, 0))
         interact(cg, 'candle'); add(cg)
-        const pl = new THREE.PointLight(0xff9840, 0.9, 2.8, 2); pl.position.set(-0.85, 1.40, -2.32); S.add(pl); E.lightRig(pl, 0.9, E.flick(2, .25)); anim(t => { const f = E.flick(2, .3)(t); fl.scale.set(.05 * (.9 + .2 * f), .11 * (.85 + .3 * f), 1); gl.material.opacity = .4 * f * E.lightScale() })
+        const pl = new THREE.PointLight(0xff9840, 0.16, 1.8, 2); pl.position.set(-0.85, 1.40, -2.32); S.add(pl); E.lightRig(pl, 0.16, E.flick(2, .25)); anim(t => { const f = E.flick(2, .3)(t); fl.scale.set(.05 * (.9 + .2 * f), .11 * (.85 + .3 * f), 1); gl.material.opacity = .22 * f * E.lightScale() })
 
         // Photo frame (XB01 decoy) on back-right corner of GLB nightstand surface
         const pf = grp(-0.42, 1.10, -2.60, -.35); pf.add(bx(.14, .19, .02, gold, 0, .1, 0), mk(new THREE.PlaneGeometry(.1, .15), mat({ map: TX.photo(0), r: .5 }), 0, .1, .0125)); pf.add(bx(.03, .12, .01, dark, 0, .07, -.02)); pf.rotation.x = -.15
@@ -170,20 +228,23 @@ export function buildBedroom(E) {
         interact(cl, 'notebook'); add(cl)
     }
 
- // 4. East Wall Armchair beside the Bookshelf (Chair EB12 + Doll EK01 seated neatly)
- {const chGrp=grp(3.78,0,0.66)
-  const yaw=grp(0,0,0,-Math.PI/2),pv=grp(0,0,0,0);yaw.add(pv)
-  ;[-1,1].forEach(s=>{const pts=[];for(let i=0;i<=10;i++){const z=-.5+i*.1;pts.push([s*.27,.03+.2*Math.pow(z/.5,2)*.8,z])}pv.add(mk(tube(pts,.016,24,8),worn))
-   pv.add(bx(.035,.4,.035,worn,s*.26,.25,.2,{vert:true}),bx(.035,.5,.035,worn,s*.26,.3,-.2,{vert:true}),bx(.03,.2,.03,worn,s*.27,.56,.15,{vert:true}),bx(.04,.03,.44,worn,s*.27,.67,.0))})
-  pv.add(bx(.54,.04,.46,dark,0,.45,0),bx(.5,.03,.03,worn,0,.2,.2),bx(.5,.03,.03,worn,0,.2,-.2))
-  const back=grp(0,.46,-.22);back.rotation.x=-.14;back.add(bx(.035,.55,.035,worn,-.24,.28,0,{vert:true}),bx(.035,.55,.035,worn,.24,.28,0,{vert:true}),bx(.54,.08,.03,worn,0,.56,0),bx(.5,.03,.03,worn,0,.1,0));for(let i=0;i<6;i++)back.add(mk(new THREE.CylinderGeometry(.011,.011,.46,8),worn,-.2+i*.08,.3,0));pv.add(back)
-  chGrp.add(trackVisual(yaw))
-  const chairGlaze=mk(new THREE.BoxGeometry(0.74,0.88,0.74),mat({color:0x140e0a,t:true,o:0.03,r:0.9}),0,0.44,0)
-  chairGlaze.castShadow=false;chGrp.add(chairGlaze)
-  ref.chair={yaw,pv}
-  ref.doll=null
-  interact(chGrp,'chair');add(chGrp);solid(3.38,4.18,0.20,1.08)
- }
+    // 4. East Wall Armchair beside the Bookshelf (Chair EB12 + Doll EK01 seated neatly)
+    {
+        const chGrp = grp(3.78, 0, 0.66)
+        const yaw = grp(0, 0, 0, -Math.PI / 2), pv = grp(0, 0, 0, 0); yaw.add(pv)
+            ;[-1, 1].forEach(s => {
+                const pts = []; for (let i = 0; i <= 10; i++) { const z = -.5 + i * .1; pts.push([s * .27, .03 + .2 * Math.pow(z / .5, 2) * .8, z]) } pv.add(mk(tube(pts, .016, 24, 8), worn))
+                pv.add(bx(.035, .4, .035, worn, s * .26, .25, .2, { vert: true }), bx(.035, .5, .035, worn, s * .26, .3, -.2, { vert: true }), bx(.03, .2, .03, worn, s * .27, .56, .15, { vert: true }), bx(.04, .03, .44, worn, s * .27, .67, .0))
+            })
+        pv.add(bx(.54, .04, .46, dark, 0, .45, 0), bx(.5, .03, .03, worn, 0, .2, .2), bx(.5, .03, .03, worn, 0, .2, -.2))
+        const back = grp(0, .46, -.22); back.rotation.x = -.14; back.add(bx(.035, .55, .035, worn, -.24, .28, 0, { vert: true }), bx(.035, .55, .035, worn, .24, .28, 0, { vert: true }), bx(.54, .08, .03, worn, 0, .56, 0), bx(.5, .03, .03, worn, 0, .1, 0)); for (let i = 0; i < 6; i++)back.add(mk(new THREE.CylinderGeometry(.011, .011, .46, 8), worn, -.2 + i * .08, .3, 0)); pv.add(back)
+        chGrp.add(trackVisual(yaw))
+        const chairGlaze = mk(new THREE.BoxGeometry(0.74, 0.88, 0.74), mat({ color: 0x140e0a, t: true, o: 0.03, r: 0.9 }), 0, 0.44, 0)
+        chairGlaze.castShadow = false; chGrp.add(chairGlaze)
+        ref.chair = { yaw, pv }
+        ref.doll = null
+        interact(chGrp, 'chair'); add(chGrp); solid(3.38, 4.18, 0.20, 1.08)
+    }
 
     // 5. North-West Ornate Carved Double Wardrobe (Wardrobe EB06 at (-3.28, 0, -2.06)) + Opening Door & Ghost Rig
     {
@@ -201,33 +262,7 @@ export function buildBedroom(E) {
         const wdGlaze = mk(new THREE.BoxGeometry(0.05, 2.55, 1.50), mat({ color: 0x100c14, t: true, o: 0.03, r: 0.8 }), -0.31, 1.38, 0)
         wdGlaze.castShadow = false; g.add(wdGlaze)
 
-        // Dedicated opening rig shown ONLY during wardrobe jumpscare so closed state leaves GLB art crisp
-        const rigGrp = grp(-2.96, 0, -2.06)
-        rigGrp.visible = false
-        const abyss = mk(new THREE.PlaneGeometry(1.48, 2.52), new THREE.MeshBasicMaterial({ color: 0x020104, side: THREE.DoubleSide, fog: false }), -0.02, 1.32, 0, 0, Math.PI / 2, 0)
-        abyss.userData.np = 1; rigGrp.add(abyss)
-        const swingDoor = (s) => {
-            const hinge = grp(0, 0, -0.74 * s)
-            const leaf = mk(new THREE.BoxGeometry(0.04, 2.52, 0.74), dk, 0, 1.32, 0.37 * s)
-            leaf.userData.np = 1; hinge.add(leaf)
-            rigGrp.add(hinge)
-            return hinge
-        }
-        const rigDoorL = swingDoor(1), rigDoorR = swingDoor(-1)
-        S.add(rigGrp)
-        ref.wardrobeRig = { group: rigGrp, doorL: rigDoorL, doorR: rigDoorR, open: false, angle: 0 }
-        anim((_, dt) => {
-            const rig = ref.wardrobeRig
-            if (!rig) return
-            const target = rig.open ? 1.35 : 0
-            rig.angle += (target - rig.angle) * Math.min(1, (dt || 0.016) * 9)
-            rig.doorL.rotation.y = rig.angle
-            rig.doorR.rotation.y = -rig.angle
-            rig.group.visible = rig.open || rig.angle > 0.03
-        })
-
         ref.wardrobe = { doorR: dr, doorL: dl, pos: new THREE.Vector3(-2.95, 1.2, -2.06), open: false }
-        const ff = mk(new THREE.PlaneGeometry(.7, .9), new THREE.MeshBasicMaterial({ map: X.tex(X.faceC({ glow: true, eye: '#ff2a1a', seed: 7 }), {}), transparent: true, fog: false, depthWrite: false }), -.3, 1.25, .12, 0, -Math.PI / 2, 0); ff.visible = false; ff.userData.np = 1; g.add(ff); ref.wardrobe.face = ff
         interact(g, 'wardrobe'); add(g); solid(-3.75, -2.85, -2.92, -1.22)
     }
 
@@ -355,9 +390,10 @@ export function buildBedroom(E) {
                 const mats = Array.isArray(o.material) ? o.material : [o.material]
                 mats.forEach((m) => {
                     if (!m) return
-                    m.color.setRGB(0.42, 0.39, 0.48)
-                    m.roughness = Math.max(m.roughness ?? 0.75, 0.78)
-                    m.metalness = Math.min(m.metalness ?? 0.1, 0.2)
+                    m.color.setRGB(0.28, 0.26, 0.33)
+                    m.roughness = Math.max(m.roughness ?? 0.75, 0.82)
+                    m.metalness = Math.min(m.metalness ?? 0.1, 0.15)
+                    if (m.emissiveIntensity !== undefined) m.emissiveIntensity = 0
                     m.side = THREE.DoubleSide
                     m.needsUpdate = true
                 })

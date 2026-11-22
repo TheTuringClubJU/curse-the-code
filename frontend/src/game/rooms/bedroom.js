@@ -24,7 +24,9 @@ export default {
     every: [16, 38],
     whisperCooldown: 50,
     clock: [-1.35, 2.50],
-    voices: ['seeyou', 'getout', 'behind', 'rex']
+    voices: ['seeyou', 'getout', 'behind', 'rex'],
+    ambientTrack: '/assets/audio/bedroom/scary_night.mp3',
+    screamTrack: '/assets/audio/bedroom/scary_scream.mp3'
   },
   interact: {
     diary: { label: 'Inspect Diary' },

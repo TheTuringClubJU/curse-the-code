@@ -1,157 +1,44 @@
-// Jump-scare director: animated 3D Clown Springtrap jumpscare + Spectral Wardrobe-opening ghost scare.
+// Jump-scare director: explosive animated 3D Agatha jumpscare (agatha_only_jumpscares.glb) on a 4-5 minute randomized schedule.
 import * as THREE from 'three'
-import * as X from './tex.js'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js'
 
 const rnd = (a, b) => a + Math.random() * (b - a)
-
-function buildClownTexture() {
-  const base = X.faceC({ eye: '#ff1e1e', glow: true, mouth: true, seed: 9 })
-  const g = base.getContext('2d')
-  if (!g) return base
-  const cx = base.width / 2
-  g.fillStyle = 'rgba(245, 240, 236, 0.25)'
-  g.beginPath()
-  g.ellipse(cx, 285, 92, 132, 0, 0, Math.PI * 2)
-  g.fill()
-  g.fillStyle = 'rgba(175, 10, 18, 0.88)'
-  ;[-1, 1].forEach((s) => {
-    const ex = cx + s * 50
-    g.beginPath()
-    g.moveTo(ex, 222)
-    g.lineTo(ex + 28, 280)
-    g.lineTo(ex, 338)
-    g.lineTo(ex - 28, 280)
-    g.closePath()
-    g.fill()
-    g.fillStyle = '#ff2200'
-    g.beginPath()
-    g.arc(ex, 280, 9, 0, Math.PI * 2)
-    g.fill()
-    g.fillStyle = '#ffffff'
-    g.beginPath()
-    g.arc(ex, 280, 3.5, 0, Math.PI * 2)
-    g.fill()
-    g.fillStyle = 'rgba(175, 10, 18, 0.88)'
-  })
-  g.strokeStyle = 'rgba(165, 8, 12, 0.95)'
-  g.lineWidth = 14
-  g.lineCap = 'round'
-  g.beginPath()
-  g.moveTo(cx - 88, 378)
-  g.quadraticCurveTo(cx, 480, cx + 88, 378)
-  g.stroke()
-  g.fillStyle = '#cc0b14'
-  g.beginPath()
-  g.arc(cx, 332, 24, 0, Math.PI * 2)
-  g.fill()
-  return base
-}
-
-/** Build a spectral ragged ghost figure that bursts out of the antique wardrobe doors. */
-function buildWardrobeGhost() {
-  const g = new THREE.Group()
-  g.visible = false
-  g.userData.np = 1
-
-  const shroudMat = new THREE.MeshStandardMaterial({
-    color: 0xc8d4e8,
-    emissive: 0x304868,
-    emissiveIntensity: 0.95,
-    roughness: 0.7,
-    transparent: true,
-    opacity: 0.86,
-    side: THREE.DoubleSide,
-    fog: false
-  })
-  const faceTex = X.tex(X.faceC({ glow: true, eye: '#ff2211', mouth: true, seed: 7 }), {})
-  const headMat = new THREE.MeshBasicMaterial({
-    map: faceTex,
-    transparent: true,
-    opacity: 0.96,
-    fog: false,
-    side: THREE.DoubleSide
-  })
-  const eyeMat = new THREE.MeshBasicMaterial({ color: 0xff2211, fog: false })
-
-  // Draped spectral torso/cloak
-  const body = new THREE.Mesh(new THREE.ConeGeometry(0.42, 1.55, 14, 4, true), shroudMat)
-  body.position.set(0, 0.85, 0)
-  body.userData.np = 1
-  g.add(body)
-
-  // Floating spectral skull/visage plane facing out (+Z in local ghost space)
-  const visage = new THREE.Mesh(new THREE.PlaneGeometry(0.56, 0.72), headMat)
-  visage.position.set(0, 1.62, 0.08)
-  visage.userData.np = 1
-  g.add(visage)
-
-  // Glowing piercing eyes
-  ;[-0.08, 0.08].forEach((ex) => {
-    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.024, 8, 8), eyeMat)
-    eye.position.set(ex, 1.67, 0.11)
-    eye.userData.np = 1
-    g.add(eye)
-  })
-
-  // Outstretched clawing arms reaching toward the player
-  const arms = []
-  ;[-1, 1].forEach((side) => {
-    const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.055, 0.78, 8), shroudMat)
-    arm.position.set(side * 0.24, 1.32, 0.34)
-    arm.rotation.set(Math.PI / 2.25, 0, side * 0.22)
-    arm.userData.np = 1
-    g.add(arm)
-    arms.push(arm)
-  })
-  g.userData.arms = arms
-  return g
-}
+const SCARE_MIN_INTERVAL_SEC = 240 // 4 minutes
+const SCARE_MAX_INTERVAL_SEC = 300 // 5 minutes
+const nextScareDelay = () => rnd(SCARE_MIN_INTERVAL_SEC, SCARE_MAX_INTERVAL_SEC)
 
 export function createScares(E, h) {
-  const { S, cam, sc } = E
+  const { cam, sc } = E
   const A = () => h.audio
   const flash = (c, a, ms) => h.onFlash?.(c, a, ms)
+  const baseFov = cam?.fov || 72
 
-  // Clown jumpscare rig attached directly to camera
-  const clownPivot = new THREE.Group()
-  clownPivot.visible = false
-  clownPivot.userData.np = 1
-  cam.add(clownPivot)
+  // Agatha jumpscare rig attached directly to camera so it strikes in your face regardless of look angle
+  const agathaPivot = new THREE.Group()
+  agathaPivot.visible = false
+  agathaPivot.userData.np = 1
+  cam.add(agathaPivot)
 
-  const clownGroup = new THREE.Group()
-  clownGroup.position.set(0, -0.02, -1.55)
-  clownGroup.userData.np = 1
+  const agathaGroup = new THREE.Group()
+  agathaGroup.position.set(0, 0, -1.75)
+  agathaGroup.userData.np = 1
+  agathaPivot.add(agathaGroup)
 
-  const faceTex = X.tex(buildClownTexture(), {})
-  const faceMesh = new THREE.Mesh(
-    new THREE.PlaneGeometry(0.92, 1.15),
-    new THREE.MeshBasicMaterial({ map: faceTex, transparent: true, fog: false, depthWrite: false, side: THREE.DoubleSide })
-  )
-  faceMesh.userData.np = 1
-  clownGroup.add(faceMesh)
+  let agathaModel = null
+  let agathaMixer = null
+  let agathaActions = []
+  let activeAction = null
+  let activeDuration = 2.2
+  let midFlashFired = false
+  let hbTimeout = null
 
-  const noseMesh = new THREE.Mesh(
-    new THREE.SphereGeometry(0.055, 16, 12),
-    new THREE.MeshStandardMaterial({ color: 0xcc0a12, emissive: 0x550000, emissiveIntensity: 0.9, roughness: 0.25 })
-  )
-  noseMesh.position.set(0, -0.02, 0.04)
-  noseMesh.userData.np = 1
-  clownGroup.add(noseMesh)
-
-  clownPivot.add(clownGroup)
-
-  // Wait for MeshoptDecoder.ready before loading compressed 3D animated Clown model
-  let clownModel = null
-  let clownMixer = null
-  let clownAction = null
-
-  const setupLoadedClown = (gltf) => {
+  const setupLoadedAgatha = (gltf) => {
     if (!gltf?.scene) return
-    clownModel = gltf.scene
-    clownModel.name = 'clown_springtrap_jumpscare'
-    clownModel.traverse((o) => {
+    agathaModel = gltf.scene
+    agathaModel.name = 'agatha_only_jumpscares'
+
+    agathaModel.traverse((o) => {
       if (!o.isMesh) return
       o.userData.np = 1
       o.userData.ns = 1
@@ -160,52 +47,53 @@ export function createScares(E, h) {
       mats.forEach((m) => {
         if (!m) return
         m.fog = false
-        // Skinned body mesh shipped with alphaMode: BLEND which causes Three.js sort/invisible edge cases;
-        // enforce opaque alpha-tested cutout + depthWrite so it renders reliably over dark backgrounds.
-        if (m.transparent) {
-          m.transparent = false
-          m.alphaTest = 0.25
-        }
         m.depthWrite = true
         m.depthTest = true
-        m.side = THREE.DoubleSide
-        if (m.name?.includes('Eyes') || o.name?.includes('Eyes')) {
-          m.emissive = new THREE.Color(0xff1100)
-          m.emissiveIntensity = 3.5
-        } else if (m.color) {
-          m.emissive = new THREE.Color(0x160908)
-          m.emissiveIntensity = 0.35
+        m.side = THREE.FrontSide
+        if (m.color) {
+          m.emissive = new THREE.Color(0x331015)
+          m.emissiveIntensity = 0.4
         }
-        m.needsUpdate = true
       })
     })
 
-    // During Clown_Springtrap--Jumpscare, Root_Bn_04 already drops head/eyes to local Y ≈ -0.02..+0.07m!
-    // Keeping Y near -0.04 centers the face directly in camera eye line instead of pushing it off the bottom edge.
-    clownModel.scale.setScalar(1.05)
-    clownModel.position.set(-0.04, -0.04, 0.24)
-    clownModel.rotation.set(0, 0, 0)
-    clownGroup.add(clownModel)
+    // Agatha's skeleton height is ~57 units facing +Z; scale 0.036 puts her upper torso & face in view
+    agathaModel.scale.setScalar(0.036)
+    agathaModel.position.set(0, -1.78, -0.20)
+    agathaModel.rotation.set(0, 0, 0)
+    agathaGroup.add(agathaModel)
 
-    // Swap from 2D procedural face fallback to 3D clown
-    faceMesh.visible = false
-    noseMesh.visible = false
+    // Pre-warm GPU pipeline offscreen: compiles skinned mesh shader & uploads all textures to GPU VRAM
+    agathaGroup.position.set(0, -999, 0)
+    agathaPivot.visible = true
+    setTimeout(() => {
+      if (!act) {
+        agathaPivot.visible = false
+        agathaGroup.position.set(0, -0.22, -1.65)
+      }
+    }, 150)
 
     if (gltf.animations?.length > 0) {
-      clownMixer = new THREE.AnimationMixer(clownModel)
-      clownAction = clownMixer.clipAction(gltf.animations[0])
-      clownAction.setLoop(THREE.LoopOnce)
-      clownAction.clampWhenFinished = true
-      clownAction.timeScale = 0.72
+      agathaMixer = new THREE.AnimationMixer(agathaModel)
+      // Pick jumpscare clips, prioritizing the direct forward-lunge jumpscare1
+      const primaryClip = gltf.animations.find((c) => /jumpscare1/i.test(c.name))
+      const otherClips = gltf.animations.filter((c) => c.duration > 0.1 && /jumpscare/i.test(c.name) && !/jumpscare1/i.test(c.name))
+      const usableClips = primaryClip ? [primaryClip, ...otherClips] : gltf.animations.filter((c) => c.duration > 0.1)
+      agathaActions = usableClips.map((clip) => {
+        const action = agathaMixer.clipAction(clip)
+        action.setLoop(THREE.LoopOnce)
+        action.clampWhenFinished = true
+        return { action, duration: clip.duration, name: clip.name }
+      })
     }
   }
 
   if (typeof window !== 'undefined' && window.location?.protocol?.startsWith('http')) {
-    const clownUrl = '/assets/models/bedroom/clown_springtrap_jumpscare.glb'
+    const agathaUrl = '/assets/models/bedroom/agatha_only_jumpscares.glb'
     if (typeof E.loadGLB === 'function') {
-      E.loadGLB(clownUrl)
-        .then(setupLoadedClown)
-        .catch((err) => console.warn('[BEDROOM CLOWN GLB FALLBACK ACTIVE]', err))
+      E.loadGLB(agathaUrl)
+        .then(setupLoadedAgatha)
+        .catch((err) => console.warn('[BEDROOM AGATHA GLB LOAD FAILED]', err))
     } else {
       const readyP = typeof MeshoptDecoder !== 'undefined' && MeshoptDecoder.ready
         ? MeshoptDecoder.ready
@@ -215,120 +103,127 @@ export function createScares(E, h) {
           const loader = new GLTFLoader()
           if (typeof MeshoptDecoder !== 'undefined') loader.setMeshoptDecoder(MeshoptDecoder)
           loader.load(
-            clownUrl,
-            setupLoadedClown,
+            agathaUrl,
+            setupLoadedAgatha,
             undefined,
-            (err) => console.warn('[BEDROOM CLOWN GLB FALLBACK ACTIVE]', err)
+            (err) => console.warn('[BEDROOM AGATHA GLB LOAD FAILED]', err)
           )
         })
-        .catch((err) => console.warn('[BEDROOM CLOWN GLB FALLBACK ACTIVE]', err))
+        .catch((err) => console.warn('[BEDROOM AGATHA GLB LOAD FAILED]', err))
     }
   }
 
-  // Bright camera-mounted key light + red underlight so the 3D clown pops clearly in the dark room
-  const scareKeyLight = new THREE.PointLight(0xfff0e8, 0, 6.0)
-  scareKeyLight.position.set(0, 0.14, -0.25)
-  scareKeyLight.visible = false
+  // Blinding strobe white key light + blood-red underlight mounted on camera
+  // Keep visible = true with intensity = 0 so Three.js compiles all shaders with these uniforms at init
+  const scareKeyLight = new THREE.PointLight(0xf6f8ff, 0, 7.0)
+  scareKeyLight.position.set(0, 0.14, -0.10)
+  scareKeyLight.visible = true
   cam.add(scareKeyLight)
 
-  const scareLight = new THREE.PointLight(0xff2200, 0, 5.0)
-  scareLight.position.set(0, -0.25, -0.45)
-  scareLight.visible = false
+  const scareLight = new THREE.PointLight(0xff1008, 0, 6.0)
+  scareLight.position.set(0, -0.26, -0.18)
+  scareLight.visible = true
   cam.add(scareLight)
 
-  // Spectral Wardrobe-opening ghost scare state (anchored in world at NW carved wardrobe opening)
-  const wardrobeGhost = buildWardrobeGhost()
-  wardrobeGhost.position.set(-3.18, 0.05, -2.06)
-  wardrobeGhost.rotation.y = Math.PI / 2 // face +X out of the wardrobe into the room
-  S?.add(wardrobeGhost)
-
-  const wardrobeLight = new THREE.PointLight(0x78c8ff, 0, 5.5)
-  wardrobeLight.position.set(-2.55, 1.55, -2.06)
-  wardrobeLight.visible = false
-  S?.add(wardrobeLight)
-
-  let wardrobeScareT = -1
-
-  const triggerWardrobeScare = () => {
-    wardrobeScareT = 0
-    wardrobeGhost.visible = true
-    wardrobeLight.visible = true
-    wardrobeLight.intensity = 9.5
-    if (E.ref?.wardrobeRig) {
-      E.ref.wardrobeRig.open = true
-    }
-    if (E.ref?.wardrobe) {
-      E.ref.wardrobe.open = true
-      if (E.ref.wardrobe.face) E.ref.wardrobe.face.visible = true
-    }
-    if (A()?.jumpscareSting) {
-      A().jumpscareSting(1.25)
-    } else {
-      A()?.screech?.(-3.0, -2.06)
-    }
-    E.shake?.(2.2, 1.55)
-    flash?.('#14081c', 0.28, 150)
-  }
-
   const defs = {
-    clown: {
+    agatha: {
       cond: () => true,
       start() {
-        clownPivot.visible = true
-        scareKeyLight.visible = true
-        scareKeyLight.intensity = 14.0
-        scareLight.visible = true
-        scareLight.intensity = 10.0
-        clownGroup.position.set(0, -0.02, -1.55)
-        clownGroup.rotation.set(0, 0, 0)
-        clownGroup.scale.setScalar(1.0)
-        if (clownAction) {
-          clownAction.reset()
-          clownAction.timeScale = 0.72
-          // Advance slightly past frame 0 crouch so the rising head enters viewport immediately
-          clownAction.time = 0.08
-          clownAction.play()
-          clownMixer?.update(0)
+        clearTimeout(hbTimeout)
+        agathaPivot.visible = true
+        scareKeyLight.intensity = 22.0
+        scareLight.intensity = 15.0
+        agathaGroup.position.set(0, -0.22, -1.55)
+        agathaGroup.rotation.set(0, 0, 0)
+        agathaGroup.scale.setScalar(0.92)
+        if (agathaModel) {
+          agathaModel.position.set(0, -1.78, -0.20)
         }
+        midFlashFired = false
+        activeDuration = 2.25
+
+        if (agathaMixer && agathaActions.length > 0) {
+          agathaMixer.stopAllAction()
+          // Favor direct forward-screaming jumpscare1 with occasional variations
+          const picked = (Math.random() < 0.70 || agathaActions.length === 1)
+            ? agathaActions[0]
+            : agathaActions[Math.floor(Math.random() * agathaActions.length)]
+          activeAction = picked.action
+          const timeScale = picked.duration < 1.3 ? 0.95 : 1.25
+          activeAction.reset()
+          activeAction.timeScale = timeScale
+          activeAction.play()
+          activeDuration = Math.min(2.5, Math.max(1.85, picked.duration / timeScale))
+        } else {
+          activeAction = null
+        }
+
+        // Punch FOV once on start (no per-frame projection matrix invalidation)
+        if (cam && typeof cam.updateProjectionMatrix === 'function') {
+          cam.fov = baseFov - 16
+          cam.updateProjectionMatrix()
+        }
+
+        // Play the attached scary scream sound ONLY when this jumpscare happens
         if (A()?.jumpscareSting) {
           A().jumpscareSting(1.45)
         } else {
-          A()?.stinger?.(1.0)
-          A()?.screech?.(E.px(), E.pz())
+          A()?.playScreamClip?.()
         }
-        E.shake?.(2.6, 1.75)
-        flash?.('#550000', 0.26, 130)
-        sc.v = 0.25
+        E.shake?.(1.4, 0.45)
+        flash?.('#7a0000', 0.32, 120)
+        sc.v = 0.05
       },
       upd(t, dt) {
-        if (clownMixer) {
-          clownMixer.update(dt || 0.016)
+        if (agathaMixer) {
+          agathaMixer.update(dt || 0.016)
         }
-        sc.v = Math.sin(t * 38) > 0 ? 0.65 : 0.16
-        scareKeyLight.intensity = 13.0 + Math.sin(t * 42) * 3.0
-        scareLight.intensity = 8.5 + Math.sin(t * 45) * 4.0
 
-        const lunge = Math.sin(Math.min(Math.PI * 0.5, t * 4.5)) * 0.52
-        const spasm = Math.sin(t * 28) * 0.022
-        clownGroup.position.z = -1.55 + lunge + spasm
-        clownGroup.position.x = Math.sin(t * 55) * 0.02
-        clownGroup.position.y = -0.02 + Math.cos(t * 45) * 0.02
-        clownGroup.rotation.z = Math.sin(t * 32) * 0.06
-        clownGroup.scale.setScalar(1.0 + Math.min(0.22, t * 0.16))
+        // Explosive pop-out lunge in the first 0.12s: group goes from -1.55m to -0.85m (face reaches -0.38m)
+        const lungeProgress = Math.min(1, t / 0.12)
+        const easeSnap = 1 - Math.pow(1 - lungeProgress, 4)
+        const pulseZ = lungeProgress >= 1 ? Math.max(0, Math.sin((t - 0.12) * 26)) * 0.035 : 0
+        const desiredGroupZ = -1.55 + easeSnap * 0.70 + pulseZ
 
-        if (t > 1.75) {
-          if (clownAction) {
-            clownAction.stop()
+        if (!midFlashFired && t >= 0.11) {
+          midFlashFired = true
+          flash?.('#ffffff', 0.22, 50)
+        }
+
+        // Fast horror strobe & crimson underlight
+        const strobe = Math.random() > 0.35 ? 24.0 : 3.5
+        sc.v = Math.random() > 0.5 ? 0.55 : 0.04
+        scareKeyLight.intensity = strobe
+        scareLight.intensity = 11.0 + Math.random() * 8.0
+
+        // Demonic tremors around face position (pure coordinate math, zero matrix updates)
+        const thrashAmp = lungeProgress >= 1 ? 1.0 : lungeProgress * 0.4
+        agathaGroup.position.set(
+          Math.sin(t * 68) * 0.024 * thrashAmp,
+          -0.22 + Math.cos(t * 54) * 0.018 * thrashAmp,
+          desiredGroupZ
+        )
+        agathaGroup.rotation.z = Math.sin(t * 41) * 0.08 * thrashAmp
+        agathaGroup.scale.setScalar(0.92 + easeSnap * 0.20 + Math.sin(t * 45) * 0.025 * thrashAmp)
+
+        if (t > activeDuration) {
+          if (activeAction) {
+            activeAction.stop()
+            activeAction = null
           }
-          clownPivot.visible = false
-          scareKeyLight.visible = false
-          scareLight.visible = false
+          agathaPivot.visible = false
+          scareKeyLight.intensity = 0
+          scareLight.intensity = 0
           sc.v = 1
-          clownGroup.position.set(0, -0.02, -1.55)
-          clownGroup.rotation.set(0, 0, 0)
-          clownGroup.scale.setScalar(1.0)
+          agathaGroup.position.set(0, -0.22, -1.65)
+          agathaGroup.rotation.set(0, 0, 0)
+          agathaGroup.scale.setScalar(1.0)
+          if (cam && Math.abs(cam.fov - baseFov) > 0.1) {
+            cam.fov = baseFov
+            cam.updateProjectionMatrix?.()
+          }
           A()?.heartbeat?.(true)
-          setTimeout(() => A()?.heartbeat?.(false), 8000)
+          hbTimeout = setTimeout(() => A()?.heartbeat?.(false), 6000)
           return true
         }
       }
@@ -336,26 +231,22 @@ export function createScares(E, h) {
   }
 
   let act = null, at = 0
-  // First jumpscare strikes ~20s after entering room
-  let nextAt = 20
+  // Strictly randomized 4 to 5 minute timeframe (240 - 300 seconds)
+  let nextAt = nextScareDelay()
 
   const trigger = () => {
     if (act) return
-    act = Object.create(defs.clown)
+    act = Object.create(defs.agatha)
     at = 0
-    act.name = 'clown'
+    act.name = 'agatha'
     act.start()
   }
 
-  const triggerDoorScare = () => {
-    trigger()
-  }
-
   let onKey = null
-  if (typeof window !== 'undefined') {
+  if (typeof window !== 'undefined' && typeof window.location?.search === 'string' && window.location.search.includes('debug')) {
     onKey = (e) => {
       if (['INPUT', 'TEXTAREA'].includes(e.target?.tagName)) return
-      if (['1', '2', '3', '4', '5', 'j', 'J'].includes(e.key)) {
+      if (e.key === 'j' || e.key === 'J') {
         trigger()
       }
     }
@@ -364,38 +255,14 @@ export function createScares(E, h) {
 
   return {
     trigger,
-    triggerDoorScare,
-    triggerWardrobeScare,
+    triggerDoorScare: () => {},
+    triggerWardrobeScare: () => {},
     tick(dt, t) {
-      if (wardrobeScareT >= 0) {
-        wardrobeScareT += dt || 0.016
-        const p = Math.min(1, wardrobeScareT / 0.45)
-        // Burst outward from inside wardrobe (-3.18) toward room (-1.85), hovering slightly
-        wardrobeGhost.position.x = -3.18 + Math.sin(p * Math.PI * 0.5) * 1.32 + Math.sin(wardrobeScareT * 36) * 0.03
-        wardrobeGhost.position.y = 0.05 + Math.sin(wardrobeScareT * 14) * 0.06
-        wardrobeGhost.scale.setScalar(0.55 + Math.min(0.65, wardrobeScareT * 1.4))
-        wardrobeLight.intensity = 7.0 + Math.sin(wardrobeScareT * 48) * 5.0
-        ;(wardrobeGhost.userData.arms || []).forEach((arm, idx) => {
-          arm.rotation.x = Math.PI / 2.25 + Math.sin(wardrobeScareT * 26 + idx) * 0.25
-        })
-        if (wardrobeScareT > 1.65) {
-          wardrobeScareT = -1
-          wardrobeGhost.visible = false
-          wardrobeLight.visible = false
-          wardrobeGhost.position.set(-3.18, 0.05, -2.06)
-          wardrobeGhost.scale.setScalar(1.0)
-          if (E.ref?.wardrobeRig) E.ref.wardrobeRig.open = false
-          if (E.ref?.wardrobe) {
-            E.ref.wardrobe.open = false
-            if (E.ref.wardrobe.face) E.ref.wardrobe.face.visible = false
-          }
-        }
-      }
       if (act) {
         at += dt
         if (act.upd(at, dt)) {
           act = null
-          nextAt = t + rnd(70, 110)
+          nextAt = t + nextScareDelay()
         }
         return
       }
@@ -409,14 +276,17 @@ export function createScares(E, h) {
       trigger()
     },
     dispose() {
-      if (clownMixer) {
-        try { clownMixer.stopAllAction() } catch (_) {}
+      clearTimeout(hbTimeout)
+      if (cam && Math.abs(cam.fov - baseFov) > 0.1) {
+        cam.fov = baseFov
+        cam.updateProjectionMatrix?.()
       }
-      if (clownPivot.parent) clownPivot.parent.remove(clownPivot)
+      if (agathaMixer) {
+        try { agathaMixer.stopAllAction() } catch (_) {}
+      }
+      if (agathaPivot.parent) agathaPivot.parent.remove(agathaPivot)
       if (scareKeyLight.parent) scareKeyLight.parent.remove(scareKeyLight)
       if (scareLight.parent) scareLight.parent.remove(scareLight)
-      if (wardrobeGhost.parent) wardrobeGhost.parent.remove(wardrobeGhost)
-      if (wardrobeLight.parent) wardrobeLight.parent.remove(wardrobeLight)
       if (typeof window !== 'undefined' && onKey) {
         window.removeEventListener('keydown', onKey)
       }

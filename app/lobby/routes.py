@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from typing import Optional, Dict, Any
 import psycopg2
 from psycopg2.extras import RealDictCursor
-from app.config import DATABASE_URL, CONTENT_FILE
+from app.config import DATABASE_URL, CONTENT_FILE, ROUNDS_STATUS
 from app.login.routes import get_client_ip
 from app.login.service import LoginService, get_db_connection
 import json
@@ -35,7 +35,10 @@ def get_lobby_state(request: Request):
     team_data = LoginService.get_current_team_by_token(token) if token else None
 
     # Connect to database for round status
-    rounds_info = {1: {"status": "pending"}, 2: {"status": "pending"}}
+    rounds_info = {
+        1: {"status": ROUNDS_STATUS.get(1, "pending")},
+        2: {"status": ROUNDS_STATUS.get(2, "pending")}
+    }
     team_rounds = []
     
     if DATABASE_URL:
