@@ -1,0 +1,236 @@
+/* ==========================================================================
+   basement.css — Room 3: The Basement
+   Room 5–Caliber Editorial Horror UI + Soft Frosted White Glassmorphism Pills
+   ========================================================================== */
+
+:root {
+  --font-bsmt-display: 'Cormorant Garamond', 'Cinzel', Georgia, serif;
+  --font-bsmt-ui: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-bsmt-mono: 'IBM Plex Mono', 'Courier New', monospace;
+}
+
+.font-bsmt-display {
+  font-family: var(--font-bsmt-display);
+  letter-spacing: 0.12em;
+}
+
+.font-bsmt-ui {
+  font-family: var(--font-bsmt-ui);
+}
+
+.font-bsmt-mono {
+  font-family: var(--font-bsmt-mono);
+}
+
+/* ── Soft Frosted White Glassmorphism Button System ──────────────────────── */
+.bsmt-glass-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 7px 16px;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.24) 0%, rgba(255, 255, 255, 0.12) 100%);
+  color: #ffffff;
+  font-family: var(--font-bsmt-ui);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.48);
+  box-shadow:
+    0 8px 26px rgba(0, 0, 0, 0.34),
+    inset 0 1px 0 rgba(255, 255, 255, 0.44);
+  cursor: pointer;
+  transition: all 0.18s ease;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.bsmt-glass-btn:hover:not(:disabled) {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.34) 0%, rgba(255, 255, 255, 0.18) 100%);
+  border-color: rgba(255, 255, 255, 0.52);
+  color: #ffffff;
+  box-shadow:
+    0 10px 28px rgba(255, 255, 255, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.62);
+  transform: translateY(-1px);
+}
+
+.bsmt-glass-btn:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.bsmt-glass-btn:disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+}
+
+.bsmt-glass-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 13px 32px;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.42);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.3) 0%, rgba(255, 255, 255, 0.14) 100%);
+  color: #ffffff;
+  font-family: var(--font-bsmt-ui);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  text-shadow: 0 1px 5px rgba(0, 0, 0, 0.45);
+  box-shadow:
+    0 14px 36px rgba(0, 0, 0, 0.5),
+    0 0 26px rgba(255, 255, 255, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.58);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.bsmt-glass-primary:hover:not(:disabled) {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.42) 0%, rgba(255, 255, 255, 0.24) 100%);
+  border-color: rgba(255, 255, 255, 0.72);
+  box-shadow:
+    0 16px 42px rgba(255, 255, 255, 0.24),
+    inset 0 1px 0 rgba(255, 255, 255, 0.78);
+  transform: translateY(-1px);
+}
+
+.bsmt-glass-primary:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.bsmt-glass-primary:disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+}
+
+.bsmt-glass-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 13px;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  background: rgba(255, 255, 255, 0.14);
+  color: rgba(255, 255, 255, 0.94);
+  font-family: var(--font-bsmt-ui);
+}
+
+.bsmt-glass-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.24) 0%, rgba(255, 255, 255, 0.12) 100%);
+  color: #ffffff;
+  box-shadow:
+    0 6px 20px rgba(0, 0, 0, 0.34),
+    inset 0 1px 0 rgba(255, 255, 255, 0.42);
+  cursor: pointer;
+  transition: all 0.16s ease;
+}
+
+.bsmt-glass-icon:hover {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.34) 0%, rgba(255, 255, 255, 0.18) 100%);
+  border-color: rgba(255, 255, 255, 0.54);
+}
+
+.bsmt-key-dot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 21px;
+  height: 21px;
+  padding: 0 5px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.94);
+  color: #101216;
+  font-family: var(--font-bsmt-ui);
+  font-size: 10px;
+  font-weight: 800;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.32);
+  flex-shrink: 0;
+}
+
+/* ── Frosted Dark Glass Panels & Inputs (Room 5 Atmospheric Weight) ──────── */
+.bsmt-glass-panel {
+  background: linear-gradient(160deg, rgba(22, 24, 30, 0.86) 0%, rgba(12, 14, 18, 0.93) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 22px;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  box-shadow:
+    0 28px 80px rgba(0, 0, 0, 0.85),
+    inset 0 1px 0 rgba(255, 255, 255, 0.16);
+}
+
+.bsmt-glass-card {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 16px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.bsmt-glass-input {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 9999px;
+  color: #ffffff;
+  backdrop-filter: blur(8px);
+  transition: all 0.16s ease;
+}
+
+.bsmt-glass-input:focus {
+  outline: none;
+  border-color: rgba(255, 255, 255, 0.72);
+  background: rgba(255, 255, 255, 0.14);
+  box-shadow: 0 0 18px rgba(255, 255, 255, 0.14);
+}
+
+/* ── Scoped Overrides for Shared Modals inside Room 3 ────────────────────── */
+.basement-room :is([class~="bg-[#0c0914]"], [class~="bg-[#120d0f]"], [class~="bg-[#15171a]"], [class~="bg-[#0d1012]"]) {
+  background: linear-gradient(160deg, rgba(22, 24, 30, 0.88) 0%, rgba(12, 14, 18, 0.94) 100%) !important;
+  backdrop-filter: blur(22px) !important;
+  -webkit-backdrop-filter: blur(22px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  border-radius: 22px !important;
+  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.88), inset 0 1px 0 rgba(255, 255, 255, 0.16) !important;
+}
+
+.basement-room :is([class~="bg-[#140e24]"], [class~="bg-[#090610]"], [class~="bg-[#151024]"]) {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border-color: rgba(255, 255, 255, 0.16) !important;
+}
+
+.basement-room :is([class~="border-[#3b2a59]"], [class~="border-[#433066]"], [class~="border-[#2f224a]"], [class~="border-[#34244d]"]) {
+  border-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+.basement-room button {
+  border-radius: 9999px !important;
+}
+
+.basement-room :is([class~="bg-[#2b1f47]"], [class~="bg-[#78441d]"], [class~="bg-red-700"]) {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.24) 0%, rgba(255, 255, 255, 0.12) 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.34) !important;
+  color: #ffffff !important;
+  backdrop-filter: blur(16px) !important;
+}
+
+.basement-room :is([class~="bg-[#2b1f47]"], [class~="bg-red-700"]):hover {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.36) 0%, rgba(255, 255, 255, 0.18) 100%) !important;
+  border-color: rgba(255, 255, 255, 0.68) !important;
+}
+
+.basement-room :is([class~="text-[#8f7bff]"], [class~="text-[#a292cc]"], [class~="text-[#e8e0ff]"], [class~="text-[#d6cded]"], [class~="text-[#cdbfff]"]) {
+  color: #f3f4f6 !important;
+}

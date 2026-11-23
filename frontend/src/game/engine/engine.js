@@ -320,8 +320,15 @@ export function createEngine(el, room, h) {
             }
             q.emissive.setHex(on ? 0xd89a28 : q.userData._hlOrigHex);
             q.emissiveIntensity = on ? 0.11 : q.userData._hlOrigIntensity;
+          } else if (room.id === 'basement') {
+            if (q.userData._hlOrigHex === undefined) {
+              q.userData._hlOrigHex = q.emissive.getHex();
+              q.userData._hlOrigIntensity = q.emissiveIntensity ?? 0;
+            }
+            q.emissive.setHex(on ? 0xcfd6de : q.userData._hlOrigHex);
+            q.emissiveIntensity = on ? 0.14 : q.userData._hlOrigIntensity;
           } else {
-            q.emissive.setHex(on ? (room.id === 'study' ? 0x16110a : room.id === 'basement' ? 0xff3030 : (room.id === 'records' ? 0xb37418 : 0x4a3c9a)) : 0);
+            q.emissive.setHex(on ? (room.id === 'study' ? 0x16110a : (room.id === 'records' ? 0xb37418 : 0x4a3c9a)) : 0);
           }
         }
       });
