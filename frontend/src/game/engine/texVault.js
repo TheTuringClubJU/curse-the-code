@@ -11,7 +11,7 @@ function cloneTiled(tex, rx, ry, colorSpace) {
   c.magFilter = THREE.LinearFilter;
   c.minFilter = THREE.LinearMipmapLinearFilter;
   c.repeat.set(rx, ry);
-  c.anisotropy = 12;
+  c.anisotropy = 2;
   c.needsUpdate = true;
   return c;
 }
@@ -152,7 +152,7 @@ export function createBioFleshTextures() {
  * Hammered dark wrought-iron texture (for suspended cage, chains, railings, ossuary bars)
  */
 export function createForgedIronTexture() {
-  const S = 512;
+  const S = 256;
   const col = document.createElement('canvas');
   col.width = col.height = S;
   const ctx = col.getContext('2d');
@@ -178,7 +178,7 @@ export function createForgedIronTexture() {
     return (seed - 1) / 2147483646;
   };
 
-  for (let i = 0; i < 2400; i++) {
+  for (let i = 0; i < 500; i++) {
     const x = rnd() * S;
     const y = rnd() * S;
     const r = 1.2 + rnd() * 7.5;
@@ -207,15 +207,15 @@ export function createForgedIronTexture() {
   const map = new THREE.CanvasTexture(col);
   map.colorSpace = THREE.SRGBColorSpace;
   map.wrapS = map.wrapT = THREE.RepeatWrapping;
-  map.anisotropy = 8;
+  map.anisotropy = 2;
 
   const bumpMap = new THREE.CanvasTexture(bmp);
   bumpMap.wrapS = bumpMap.wrapT = THREE.RepeatWrapping;
-  bumpMap.anisotropy = 8;
+  bumpMap.anisotropy = 2;
 
   const roughnessMap = new THREE.CanvasTexture(rgh);
   roughnessMap.wrapS = roughnessMap.wrapT = THREE.RepeatWrapping;
-  roughnessMap.anisotropy = 8;
+  roughnessMap.anisotropy = 2;
 
   return { map, bumpMap, roughnessMap };
 }

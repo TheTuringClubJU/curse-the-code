@@ -5,7 +5,7 @@ export default {
   size: [36, 9.2, 34],
   spawn: [0, 1.6, 13.8, 0], // 6A Narthex Descent looking north (-Z) down the 9.2m vaulted nave
   haunted: true,
-  noFlashlight: true,
+  noFlashlight: false,
   theme: {
     bg: '#0a070c',
     wall: '#322b2f',

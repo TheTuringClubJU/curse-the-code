@@ -44,7 +44,10 @@ vi.mock('../game/engine/engine.js', () => ({
       isLocked: vi.fn(() => false),
       openDoor: vi.fn(),
       setFlashlight: vi.fn(),
-      isFlashlightOn: vi.fn(() => false),
+      isFlashlightOn: vi.fn(() => true),
+      setQualityMode: vi.fn(),
+      setResolutionMode: vi.fn(),
+      setFpsCap: vi.fn(),
       setCountdown: vi.fn(),
       restoreContainment: vi.fn(),
       triggerScare: vi.fn((name) => name === 'core_glass'),
@@ -301,9 +304,9 @@ describe('Room 6 (The Anointing Vault) Comprehensive Test Suite', () => {
     vi.restoreAllMocks();
   });
 
-  it('defines accurate Room 6 vault config with noFlashlight and all 5 interactables', () => {
+  it('defines accurate Room 6 vault config with working torchlight and all 5 interactables', () => {
     expect(vaultConfig.id).toBe('vault');
-    expect(vaultConfig.noFlashlight).toBe(true);
+    expect(vaultConfig.noFlashlight).toBe(false);
     expect(Object.keys(vaultConfig.interact)).toEqual(
       expect.arrayContaining([
         'core_glass',
@@ -342,7 +345,7 @@ describe('Room 6 (The Anointing Vault) Comprehensive Test Suite', () => {
     expect(mockAudioInstance.dispose).toHaveBeenCalled();
   });
 
-  it('renders HUDVault without a 2D countdown timer and reports dead torch (0%) on [F]', async () => {
+  it('renders HUDVault without a 2D countdown timer and toggles torchlight on [F]', async () => {
     render(<Room6Vault team={mockTeam} onLogout={vi.fn()} />);
     await waitFor(() =>
       expect(screen.getAllByText(/The Anointing Vault/i).length).toBeGreaterThan(0)
@@ -352,7 +355,14 @@ describe('Room 6 (The Anointing Vault) Comprehensive Test Suite', () => {
 
     fireEvent.keyDown(window, { code: 'KeyF' });
     await waitFor(() => {
-      expect(screen.getByRole('status')).toHaveTextContent(/Torch battery dead \(0%\)/i);
+      expect(activeEngineInstance.setFlashlight).toHaveBeenCalledWith(false);
+      expect(screen.getByRole('status')).toHaveTextContent(/Torchlight OFF/i);
+    });
+
+    fireEvent.keyDown(window, { code: 'KeyF' });
+    await waitFor(() => {
+      expect(activeEngineInstance.setFlashlight).toHaveBeenCalledWith(true);
+      expect(screen.getByRole('status')).toHaveTextContent(/Torchlight ON/i);
     });
   });
 

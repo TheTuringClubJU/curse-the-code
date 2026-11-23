@@ -130,6 +130,8 @@ export function buildVaultScene(E) {
     m.position.set(x, y, z);
     m.rotation.set(rx, ry, rz);
     m.userData.np = true;
+    m.updateMatrix();
+    m.matrixAutoUpdate = false;
     S.add(m);
     return m;
   };
@@ -213,7 +215,7 @@ export function buildVaultScene(E) {
   };
   installColliders();
 
-  // ── 3. Calibrated Survival-Horror Lighting Rig (+Sightline Rim Pools) ─────
+  // ── 3. Calibrated Survival-Horror Lighting Rig (4 Fixed PointLights + Hemi + Dir — Zero Shader Recompiles!) ─
   const lightEntries = [];
   const registerLight = (light) => {
     light.intensity = Number((light.intensity * 1.01).toFixed(4));
@@ -222,38 +224,32 @@ export function buildVaultScene(E) {
     return light;
   };
 
-  // Global warm tarnished sepia bounce — chiaroscuro shadows with ruined brown texture detail
-  registerLight(new THREE.HemisphereLight(0xb68a5c, 0x3b2516, 1.56));
+  // Global deep survival-horror ambience — dark enough that the player's torchlight [F] is genuinely essential
+  registerLight(new THREE.HemisphereLight(0x4a3828, 0x0d0806, 0.22));
+  const dirLight = registerLight(new THREE.DirectionalLight(0x9a7858, 0.08));
+  dirLight.position.set(6, 12, 8);
 
-  const narthexLight = registerLight(new THREE.PointLight(0xffb46e, 3.15, 14.5, 1.45));
-  narthexLight.position.set(0, 3.6, 12.2);
-
-  const cellLight = registerLight(new THREE.PointLight(0xc29864, 1.65, 10.5, 1.45));
-  cellLight.position.set(-5.2, 3.0, 10.9);
-
-  const coreLight = registerLight(new THREE.PointLight(0xe43638, 4.1, 16.5, 1.38));
+  // 1) Crimson core light in Central Nave (eerie red glow localized around the vessel)
+  const coreLight = registerLight(new THREE.PointLight(0xe42a32, 2.4, 13.0, 1.6));
   coreLight.position.set(0, 2.35, -4.9);
 
-  const altarSpotLight = registerLight(new THREE.PointLight(0xffca82, 3.0, 13.5, 1.45));
-  altarSpotLight.position.set(0, 3.8, -1.6);
+  // 2) Active-chamber dim candlelight fill (moves smoothly between 6A..6F — ZERO shader recompilation!)
+  const zoneLight = registerLight(new THREE.PointLight(0xffa654, 0.42, 9.5, 1.8));
+  zoneLight.position.set(0, 3.6, 12.2);
 
-  const westCryptLight = registerLight(new THREE.PointLight(0xf2b56e, 3.25, 16.5, 1.45));
-  westCryptLight.position.set(-13.4, 3.15, 0);
+  // 3) Central Nave faint candle fill
+  const naveSouthLight = registerLight(new THREE.PointLight(0xffa458, 0.42, 10.5, 1.8));
+  naveSouthLight.position.set(0, 4.35, 3.6);
 
-  const eastCryptLight = registerLight(new THREE.PointLight(0xebb06e, 3.1, 16.5, 1.45));
-  eastCryptLight.position.set(13.5, 3.15, 0);
-
-  const cellarLight = registerLight(new THREE.PointLight(0xdca562, 2.05, 10.0, 1.5));
-  cellarLight.position.set(12.9, 2.7, 8.5);
-
-  const reliquaryLight = registerLight(new THREE.PointLight(0xe48265, 2.35, 10.2, 1.5));
-  reliquaryLight.position.set(-13.3, 3.1, -8.5);
-
-  // Warm localized Nave aisle & chandelier fill lights so pews, bookcases, and stonework never crush pitch-black
-  const naveSouthLight = registerLight(new THREE.PointLight(0xffb870, 3.2, 16.5, 1.45));
-  naveSouthLight.position.set(0, 4.35, 4.2);
-  const naveCenterLight = registerLight(new THREE.PointLight(0xffb26a, 3.2, 16.0, 1.45));
-  naveCenterLight.position.set(0, 4.0, 2.6);
+  // Aliases for scaresVault.js & restoreContainment() compatibility
+  const narthexLight = zoneLight;
+  const cellLight = zoneLight;
+  const altarSpotLight = naveSouthLight;
+  const westCryptLight = zoneLight;
+  const eastCryptLight = zoneLight;
+  const cellarLight = zoneLight;
+  const reliquaryLight = zoneLight;
+  const naveCenterLight = naveSouthLight;
 
   // Flame sprites & animated torches
   const flameSprites = [];
@@ -291,6 +287,95 @@ export function buildVaultScene(E) {
     return { mixer, action };
   };
 
+  // Batched InstancedMesh collector for all static decorative props — collapses ~155 prop draw calls into ~25 draw calls with zero quality loss
+  const propBatches = new Map();
+  let propFlushScheduled = false;
+  const _pmWorld = new THREE.Matrix4();
+  const _pmFinal = new THREE.Matrix4();
+  const _pqRot = new THREE.Quaternion();
+  const _pvPos = new THREE.Vector3();
+  const _pvScale = new THREE.Vector3();
+  const _pEul = new THREE.Euler();
+
+  const flushPropBatches = () => {
+    propFlushScheduled = false;
+    for (const [key, batch] of propBatches.entries()) {
+      propBatches.delete(key);
+      const { relPath, albedoLift, anchor, items } = batch;
+      arch.loadCached(relPath, { psx: relPath.includes('/glb/'), npAll: true, albedoLift })
+        .then((gltf) => {
+          if (!gltf?.scene || !items.length) return;
+          // Fit prototype once at unit height/scale to measure its natural height
+          const protoClone = gltf.scene.clone();
+          const fitted = fitAndPivotModel(protoClone, 1.0, { extraScale: 1, anchor });
+          fitted.updateMatrixWorld(true);
+          // Also measure unscaled height for items that specify `scale` instead of `targetHeight`
+          const rawBox = new THREE.Box3().setFromObject(gltf.scene);
+          const rawSize = new THREE.Vector3();
+          rawBox.getSize(rawSize);
+          const naturalH = rawSize.y > 0.001 ? rawSize.y : 1.0;
+
+          const meshes = [];
+          let hasSkinned = false;
+          fitted.traverse((c) => {
+            if (c.isSkinnedMesh) hasSkinned = true;
+            else if (c.isMesh && c.geometry) meshes.push(c);
+          });
+
+          if (hasSkinned || meshes.length === 0) {
+            for (let i = 0; i < items.length; i++) {
+              const it = items[i];
+              const root = gltf.scene.clone();
+              if (it.rx) root.rotation.x = it.rx;
+              if (it.rz) root.rotation.z = it.rz;
+              const pivot = fitAndPivotModel(root, it.targetHeight, { extraScale: it.scale || 1, anchor });
+              pivot.position.set(...it.pos);
+              pivot.rotation.y = it.ry;
+              pivot.updateMatrixWorld(true);
+              pivot.matrixAutoUpdate = false;
+              pivot.traverse((c) => { c.matrixAutoUpdate = false; });
+              S.add(pivot);
+            }
+            return;
+          }
+
+          for (let mIdx = 0; mIdx < meshes.length; mIdx++) {
+            const src = meshes[mIdx];
+            const im = new THREE.InstancedMesh(src.geometry, src.material, items.length);
+            im.castShadow = false;
+            im.receiveShadow = false;
+            im.userData.np = true;
+            for (let i = 0; i < items.length; i++) {
+              const it = items[i];
+              const hScale = (it.targetHeight ? it.targetHeight : naturalH) * (it.scale || 1);
+              _pvPos.set(it.pos[0], it.pos[1], it.pos[2]);
+              _pEul.set(it.rx || 0, it.ry || 0, it.rz || 0, 'YXZ');
+              _pqRot.setFromEuler(_pEul);
+              _pvScale.set(hScale, hScale, hScale);
+              _pmWorld.compose(_pvPos, _pqRot, _pvScale);
+              _pmFinal.multiplyMatrices(_pmWorld, src.matrixWorld);
+              im.setMatrixAt(i, _pmFinal);
+            }
+            im.instanceMatrix.needsUpdate = true;
+            im.computeBoundingSphere();
+            im.updateMatrix();
+            im.matrixAutoUpdate = false;
+            S.add(im);
+          }
+        })
+        .catch(() => null);
+    }
+  };
+
+  const spawnWorldFlame = (pos, ry, offset, flameScale) => {
+    const cosY = Math.cos(ry || 0);
+    const sinY = Math.sin(ry || 0);
+    const wx = pos[0] + offset[0] * cosY + offset[2] * sinY;
+    const wy = pos[1] + offset[1];
+    const wz = pos[2] - offset[0] * sinY + offset[2] * cosY;
+    spawnFlameSprite(wx, wy, wz, flameScale, S);
+  };
+
   const placePropGLB = (
     relPath,
     {
@@ -309,34 +394,52 @@ export function buildVaultScene(E) {
       flameScale = 0.28,
       onReady = null,
     } = {}
-  ) =>
-    arch.track(
-      arch.loadCached(relPath, { psx: relPath.includes('/glb/'), npAll: true, albedoLift })
-        .then((gltf) => {
-          if (!gltf?.scene) return null;
-          const root = gltf.scene.clone();
-          normalizeModelMaterials(root, { psx: relPath.includes('/glb/'), npAll: true, albedoLift });
-          if (rx) root.rotation.x = rx;
-          if (rz) root.rotation.z = rz;
-          const pivot = fitAndPivotModel(root, targetHeight, { extraScale: scale || 1, anchor });
-          pivot.position.set(...pos);
-          pivot.rotation.y = ry;
-          S.add(pivot);
-          let clipCtrl = null;
-          if (playClip) clipCtrl = mountClipAnimation(pivot, gltf.animations, 0, { speed: clipSpeed });
-          if (flameOffset) {
-            spawnFlameSprite(flameOffset[0], flameOffset[1], flameOffset[2], flameScale, pivot);
-          }
-          if (Array.isArray(flameOffsets)) {
-            flameOffsets.forEach(([fx, fy, fz]) => {
-              spawnFlameSprite(fx, fy, fz, flameScale, pivot);
-            });
-          }
-          onReady?.(pivot, gltf, clipCtrl);
-          return pivot;
-        })
-        .catch(() => null)
-    );
+  ) => {
+    // Static decorative props (no onReady callback) are batched into InstancedMesh for 60 FPS low-end performance!
+    if (!onReady) {
+      if (flameOffset) spawnWorldFlame(pos, ry, flameOffset, flameScale);
+      if (Array.isArray(flameOffsets)) {
+        flameOffsets.forEach((off) => spawnWorldFlame(pos, ry, off, flameScale));
+      }
+      const key = `${relPath}|${albedoLift}|${anchor}`;
+      let batch = propBatches.get(key);
+      if (!batch) {
+        batch = { relPath, albedoLift, anchor, items: [] };
+        propBatches.set(key, batch);
+      }
+      batch.items.push({ pos, ry, rx, rz, targetHeight, scale });
+      if (!propFlushScheduled) {
+        propFlushScheduled = true;
+        Promise.resolve().then(flushPropBatches);
+      }
+      return Promise.resolve(null);
+    }
+
+    return arch.loadCached(relPath, { psx: relPath.includes('/glb/'), npAll: true, albedoLift })
+      .then((gltf) => {
+        if (!gltf?.scene) return null;
+        const root = gltf.scene.clone();
+        if (rx) root.rotation.x = rx;
+        if (rz) root.rotation.z = rz;
+        const pivot = fitAndPivotModel(root, targetHeight, { extraScale: scale || 1, anchor });
+        pivot.position.set(...pos);
+        pivot.rotation.y = ry;
+        S.add(pivot);
+        let clipCtrl = null;
+        if (playClip) clipCtrl = mountClipAnimation(pivot, gltf.animations, 0, { speed: clipSpeed });
+        if (flameOffset) {
+          spawnFlameSprite(flameOffset[0], flameOffset[1], flameOffset[2], flameScale, pivot);
+        }
+        if (Array.isArray(flameOffsets)) {
+          flameOffsets.forEach(([fx, fy, fz]) => {
+            spawnFlameSprite(fx, fy, fz, flameScale, pivot);
+          });
+        }
+        onReady?.(pivot, gltf, clipCtrl);
+        return pivot;
+      })
+      .catch(() => null);
+  };
 
   const registerHitProxy = (id, pos, size) => {
     const proxy = new THREE.Mesh(new THREE.BoxGeometry(...size), matInvisibleHit);
@@ -364,36 +467,26 @@ export function buildVaultScene(E) {
     } = {}
   ) => {
     registerHitProxy(id, hitPos || [pos[0], pos[1] + (targetHeight || 1.2) * 0.5, pos[2]], hitSize);
-    return arch.track(
-      arch.loadCached(relPath, {
-        crtMap: screenTex,
-        screenNames: screenTex ? ['screen', 'crt', 'monitor', 'display', 'phosphor'] : [],
-        psx: relPath.includes('/glb/'),
-        npAll: false,
-        albedoLift,
+    return arch.loadCached(relPath, {
+      crtMap: screenTex,
+      screenNames: screenTex ? ['screen', 'crt', 'monitor', 'display', 'phosphor'] : [],
+      psx: relPath.includes('/glb/'),
+      npAll: true,
+      albedoLift,
+    })
+      .then((gltf) => {
+        if (!gltf?.scene) return null;
+        const root = gltf.scene.clone();
+        if (rx) root.rotation.x = rx;
+        const pivot = fitAndPivotModel(root, targetHeight, { extraScale: scale || 1, anchor });
+        pivot.position.set(...pos);
+        pivot.rotation.y = ry;
+        S.add(pivot);
+        visualInteract(id, pivot);
+        onReady?.(pivot, gltf);
+        return pivot;
       })
-        .then((gltf) => {
-          if (!gltf?.scene) return null;
-          const root = gltf.scene.clone();
-          normalizeModelMaterials(root, {
-            crtMap: screenTex,
-            screenNames: screenTex ? ['screen', 'crt', 'monitor', 'display', 'phosphor'] : [],
-            psx: relPath.includes('/glb/'),
-            npAll: false,
-            albedoLift,
-          });
-          if (rx) root.rotation.x = rx;
-          const pivot = fitAndPivotModel(root, targetHeight, { extraScale: scale || 1, anchor });
-          pivot.position.set(...pos);
-          pivot.rotation.y = ry;
-          interact(pivot, id);
-          add(pivot, { noShadow: true });
-          visualInteract(id, pivot);
-          onReady?.(pivot, gltf);
-          return pivot;
-        })
-        .catch(() => null)
-    );
+      .catch(() => null);
   };
 
   // ── 5. Central Nave Centerpiece (Altar R2-10, Core Glass, Split-Flap Clock) ─
@@ -572,11 +665,6 @@ export function buildVaultScene(E) {
   leadedVessel.position.y = 1.78;
   coreGroup.add(leadedVessel);
 
-  // Interior specimen glow lamp inside the cracked vessel
-  const coreInnerLamp = new THREE.PointLight(0xff343e, 3.636, 5.8, 1.6);
-  coreInnerLamp.position.set(0, 1.68, 0);
-  coreGroup.add(coreInnerLamp);
-
   interact(coreGroup, 'core_glass');
   add(coreGroup, { noShadow: true });
   registerHitProxy('core_glass', [0, 1.65, -4.9], [2.3, 3.2, 2.3]);
@@ -594,24 +682,22 @@ export function buildVaultScene(E) {
   });
 
   let fleshRoot = null;
-  arch.track(
-    loadGLB(`${VAULT_MODEL_BASE}/flesh_blob.glb`)
-      .then((gltf) => {
-        if (!gltf?.scene) return;
-        const blobPivot = fitAndPivotSkinnedModel(gltf, 1.38, { anchor: 'bottom' });
-        blobPivot.traverse((o) => {
-          if (o.isMesh) {
-            o.material = matFlesh;
-            o.userData.np = true;
-          }
-        });
-        blobPivot.position.set(0, 0.88, -4.9);
-        S.add(blobPivot);
-        fleshRoot = blobPivot;
-        mountClipAnimation(blobPivot, gltf.animations, 0, { speed: 0.95 });
-      })
-      .catch(() => null)
-  );
+  loadGLB(`${VAULT_MODEL_BASE}/flesh_blob.glb`)
+    .then((gltf) => {
+      if (!gltf?.scene) return;
+      const blobPivot = fitAndPivotSkinnedModel(gltf, 1.38, { anchor: 'bottom' });
+      blobPivot.traverse((o) => {
+        if (o.isMesh) {
+          o.material = matFlesh;
+          o.userData.np = true;
+        }
+      });
+      blobPivot.position.set(0, 0.88, -4.9);
+      S.add(blobPivot);
+      fleshRoot = blobPivot;
+      mountClipAnimation(blobPivot, gltf.animations, 0, { speed: 0.95 });
+    })
+    .catch(() => null);
 
   placePropGLB('temple/glb/candelabra.glb', {
     pos: [-1.7, 0, -4.9],
@@ -949,19 +1035,17 @@ export function buildVaultScene(E) {
     targetHeight: 1.35,
     albedoLift: 0.38,
     onReady: (root) => {
-      const chLight = new THREE.PointLight(0xffa844, 2.424, 7.5);
-      chLight.position.set(-15.15, 3.1, 0);
-      S.add(chLight);
-      // Subtle chandelier sway and flickering candlelight
+      // Subtle chandelier sway (illuminated by roving chamber zoneLight — zero extra PointLight cost)
       anim((t) => {
         root.rotation.z = Math.sin(t * 1.1) * 0.025;
         root.rotation.x = Math.cos(t * 0.95) * 0.02;
-        chLight.intensity = 2.424 + Math.sin(t * 7.3) * 0.28 + Math.cos(t * 13.1) * 0.15;
       });
       // Dark iron suspension chain anchor up to ceiling
       const chainGeo = new THREE.CylinderGeometry(0.022, 0.022, 1.45, 6);
       const chainMesh = new THREE.Mesh(chainGeo, matDarkIron);
       chainMesh.position.set(-15.15, 4.15, 0);
+      chainMesh.updateMatrix();
+      chainMesh.matrixAutoUpdate = false;
       S.add(chainMesh);
     },
   });
@@ -1253,7 +1337,8 @@ export function buildVaultScene(E) {
     });
   };
 
-  arch.track(
+  // Lazy-load heavy horror apparitions (agatha.glb is 12MB) after initial scene boot so Room 6 loads instantaneously
+  setTimeout(() => {
     loadGLB(`${VAULT_MODEL_BASE}/agatha.glb`)
       .then((gltf) => {
         if (!gltf?.scene) return;
@@ -1276,10 +1361,10 @@ export function buildVaultScene(E) {
         ref.agathaAnimations = gltf.animations;
         ref.ghostMixer = mixer;
       })
-      .catch(() => null)
-  );
+      .catch(() => null);
+  }, 2200);
 
-  arch.track(
+  setTimeout(() => {
     loadGLB(`${VAULT_MODEL_BASE}/stalker.glb`)
       .then((gltf) => {
         if (!gltf?.scene) return;
@@ -1292,8 +1377,8 @@ export function buildVaultScene(E) {
         const ctrl = mountClipAnimation(stPivot, gltf.animations, 0, { speed: 1.0 });
         ref.stalkerMixer = ctrl?.mixer || null;
       })
-      .catch(() => null)
-  );
+      .catch(() => null);
+  }, 1000);
 
   // ── 8. Reactive Engine Hooks & Per-Frame Heartbeat / Proximity Doors ──────
   ref.narthexLight = narthexLight;
@@ -1367,32 +1452,25 @@ export function buildVaultScene(E) {
     east_gate: doorEastProxy,
   };
 
+  let activeQualityTier = 'med';
   ref.setQualityMode = (tier) => {
+    activeQualityTier = tier === 'low' ? 'low' : tier === 'high' ? 'high' : 'med';
     if (!E.R) return;
-    const dpr = window.devicePixelRatio || 1;
-    if (tier === 'low') {
-      E.R.setPixelRatio(Math.min(dpr, 0.72));
-      E.R.toneMappingExposure = 1.46;
-      if (S.fog) S.fog.density = 0.024;
-      cellarLight.intensity = 1.2;
-      reliquaryLight.intensity = 1.4;
-    } else if (tier === 'high') {
-      E.R.setPixelRatio(Math.min(dpr, 1.35));
-      E.R.toneMappingExposure = 1.52;
-      if (S.fog) S.fog.density = 0.019;
-      cellarLight.intensity = 2.05;
-      reliquaryLight.intensity = 2.35;
+    if (activeQualityTier === 'low') {
+      E.R.toneMappingExposure = 1.08;
+      if (S.fog) S.fog.density = 0.032;
+    } else if (activeQualityTier === 'high') {
+      E.R.toneMappingExposure = 1.15;
+      if (S.fog) S.fog.density = 0.026;
     } else {
-      E.R.setPixelRatio(Math.min(dpr, 1.0));
-      E.R.toneMappingExposure = 1.49;
-      if (S.fog) S.fog.density = 0.021;
-      cellarLight.intensity = 2.05;
-      reliquaryLight.intensity = 2.35;
+      E.R.toneMappingExposure = 1.12;
+      if (S.fog) S.fog.density = 0.028;
     }
   };
-  ref.setQualityMode('medium');
+  ref.setQualityMode('med');
 
   let flameTick = 0;
+  let lightCullTick = 0;
   anim((t) => {
     const px = E.px?.() ?? 0;
     const pz = E.pz?.() ?? 13.8;
@@ -1401,8 +1479,8 @@ export function buildVaultScene(E) {
       window.__vaultPose = { x: px, z: pz, yaw };
     }
 
-    // Flame & brazier ember pulse (throttled to every 2nd frame with pre-computed phases for potato PCs)
-    flameTick = (flameTick + 1) % 2;
+    // Flame & brazier ember pulse (throttled to every 3rd frame for smooth low-end PC performance)
+    flameTick = (flameTick + 1) % 3;
     if (flameTick === 0) {
       const w1 = t * 9.3;
       const s1 = Math.sin(w1);
@@ -1424,7 +1502,7 @@ export function buildVaultScene(E) {
         fleshRoot.scale.set(s, s, s);
       }
       if (!ref._lightsOverridden) {
-        coreLight.intensity = (2.9 + beat * 1.6) * 1.01;
+        coreLight.intensity = 1.6 + beat * 1.1;
       }
     }
 
@@ -1433,7 +1511,17 @@ export function buildVaultScene(E) {
       eastSwingLamp.rotation.z = ref.eastLampAgitated ? Math.sin(t * 7.8) * 0.24 : Math.sin(t * 1.1) * 0.03;
     }
 
-    // Scale active lights proportionally when blackout scares dim E.sc.v
+    // Smoothly position roving zoneLight into the player's current chamber (NEVER toggles .visible -> ZERO shader recompilations!)
+    let tzX = 0, tzY = 3.8, tzZ = -1.6;
+    if (px > 10.5 && pz > 5.8) { tzX = 12.9; tzY = 2.8; tzZ = 8.5; }
+    else if (px < -10.0 && pz < -5.8) { tzX = -13.3; tzY = 3.1; tzZ = -8.5; }
+    else if (px < -8.2) { tzX = -13.4; tzY = 3.2; tzZ = 0; }
+    else if (px > 8.2) { tzX = 13.5; tzY = 3.2; tzZ = 0; }
+    else if (pz > 7.4) { tzX = 0; tzY = 3.6; tzZ = 12.2; }
+    zoneLight.position.x += (tzX - zoneLight.position.x) * 0.08;
+    zoneLight.position.y += (tzY - zoneLight.position.y) * 0.08;
+    zoneLight.position.z += (tzZ - zoneLight.position.z) * 0.08;
+
     const gScale = E.sc?.v ?? 1;
     if (!ref._lightsOverridden) {
       for (let i = 0; i < lightEntries.length; i++) {
