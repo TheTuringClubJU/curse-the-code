@@ -121,7 +121,7 @@ def validate_vault_clue_match(
     """
     stage_idx = stage_def.get("index", 1)
     expected_hash = stage_def.get("answer_hash")
-    answer_plain_list = stage_def.get("answer_plain", [])
+    answer_plain_list = stage_def.get("answer_plain") or []
     field_norm = stage_def.get("fields", [{}])[0].get("normalize", "alnum")
 
     if clue_id == "R2-10":

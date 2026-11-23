@@ -557,7 +557,7 @@ def submit_clue_answer(team_id: int, clue_id: str, payload: Dict[str, Any], cont
 
                 stage_def = target_clue.get("stages", [{}])[0]
                 expected_hash = stage_def.get("answer_hash")
-                answer_plain_list = stage_def.get("answer_plain", [])
+                answer_plain_list = stage_def.get("answer_plain") or []
 
                 # Normalization (alnum)
                 norm_val = "".join(ch for ch in answer_str.upper() if ch.isalnum())
@@ -756,7 +756,7 @@ def submit_clue_answer(team_id: int, clue_id: str, payload: Dict[str, Any], cont
                     calc_hash = hmac.new(answer_salt.encode("utf-8"), msg_str.encode("utf-8"), hashlib.sha256).hexdigest()
                     expected_hash = stage_def.get("answer_hash")
 
-                    expected_plain = ["".join(ch for ch in str(p).upper() if ch.isalnum()) for p in stage_def.get("answer_plain", [])]
+                    expected_plain = ["".join(ch for ch in str(p).upper() if ch.isalnum()) for p in (stage_def.get("answer_plain") or [])]
                     is_stage1_correct = (
                         (expected_hash and hmac.compare_digest(calc_hash, expected_hash))
                         or (norm_words == expected_plain)
@@ -835,7 +835,7 @@ def submit_clue_answer(team_id: int, clue_id: str, payload: Dict[str, Any], cont
                     msg_str = f"R1-FIN:2:{'|'.join(pieces)}"
                     calc_hash = hmac.new(answer_salt.encode("utf-8"), msg_str.encode("utf-8"), hashlib.sha256).hexdigest()
                     expected_hash = stage_def.get("answer_hash")
-                    expected_plain = [str(p).upper() for p in stage_def.get("answer_plain", [])]
+                    expected_plain = [str(p).upper() for p in (stage_def.get("answer_plain") or [])]
 
                     is_stage2_correct = (
                         (expected_hash and hmac.compare_digest(calc_hash, expected_hash))
@@ -892,12 +892,12 @@ def submit_clue_answer(team_id: int, clue_id: str, payload: Dict[str, Any], cont
                     msg_str = f"R1-FIN:3:{norm_choice}|{norm_code}"
                     calc_hash = hmac.new(answer_salt.encode("utf-8"), msg_str.encode("utf-8"), hashlib.sha256).hexdigest()
                     expected_hash = stage_def.get("answer_hash")
-                    expected_plain = stage_def.get("answer_plain", ["BETA", "2468"])
+                    expected_plain = stage_def.get("answer_plain") or ["BETA", "2468"]
 
                     is_stage3_correct = (
                         (expected_hash and hmac.compare_digest(calc_hash, expected_hash))
                         or (norm_code == "7351")
-                        or (norm_choice == str(expected_plain[0]).upper() and norm_code == str(expected_plain[1]))
+                        or (len(expected_plain) >= 2 and norm_choice == str(expected_plain[0]).upper() and norm_code == str(expected_plain[1]))
                     )
 
                     fin_deduction = hint_service.get_clue_hint_point_deduction(cur, team_id, "R1-FIN")

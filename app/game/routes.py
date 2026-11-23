@@ -837,7 +837,7 @@ def submit_clue_answer(clue_id: str, payload: Dict[str, Any], request: Request):
         for stage_def in target_clue.get("stages", [{}]):
             stage_idx = stage_def.get("index", 1)
             expected_hash = stage_def.get("answer_hash")
-            answer_plain_list = stage_def.get("answer_plain", [])
+            answer_plain_list = stage_def.get("answer_plain") or []
             field_norm = stage_def.get("fields", [{}])[0].get("normalize", "alnum")
             exp_fields = stage_def.get("expected_fields", len(stage_def.get("fields", [1])))
 

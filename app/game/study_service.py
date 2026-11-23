@@ -404,7 +404,7 @@ def _verify_answer(content, clue, answer):
     if test_mode:
         return any(
             normalized == _normalize(p, rule)
-            for p in stage.get("answer_plain", [])
+            for p in (stage.get("answer_plain") or [])
             if isinstance(p, str)
         )
     return False
