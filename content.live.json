@@ -4272,7 +4272,7 @@
             }
           ],
           "expected_fields": 10,
-          "answer_hash": "3040105a80b380660bd78f76e92455fa5a7fe060322ced3c1fd081757f47f77c",
+          "answer_hash": "39fdaf693b97514397ba5e29ee255be3b059aeb55102b48d2857017531fcd1c4",
           "answer_plain": null,
           "reveal": {
             "shadow_hint": "Five people. Four shadows."
@@ -6029,63 +6029,63 @@
     {
       "id": "P01",
       "awarded_by": "R1-01",
-      "correct_slot": 3,
+      "correct_slot": 2,
       "file": "piece_01.png",
       "caption": "A child's hand on a banister"
     },
     {
       "id": "P02",
       "awarded_by": "R1-02",
-      "correct_slot": 8,
+      "correct_slot": 7,
       "file": "piece_02.png",
       "caption": "The corner of a family dinner table"
     },
     {
       "id": "P03",
       "awarded_by": "R1-03",
-      "correct_slot": 6,
+      "correct_slot": 3,
       "file": "piece_03.png",
       "caption": "A pumpkin on the porch"
     },
     {
       "id": "P04",
       "awarded_by": "R1-04",
-      "correct_slot": 1,
+      "correct_slot": 8,
       "file": "piece_04.png",
       "caption": "Mara laughing at something off-camera"
     },
     {
       "id": "P05",
       "awarded_by": "R1-05",
-      "correct_slot": 10,
+      "correct_slot": 6,
       "file": "piece_05.png",
       "caption": "Daniel's watch, stopped at 11:47"
     },
     {
       "id": "P06",
       "awarded_by": "R1-06",
-      "correct_slot": 7,
+      "correct_slot": 1,
       "file": "piece_06.png",
       "caption": "A cracked picture frame on the wall"
     },
     {
       "id": "P07",
       "awarded_by": "R1-07",
-      "correct_slot": 4,
+      "correct_slot": 10,
       "file": "piece_07.png",
       "caption": "Theo in a paper ghost costume"
     },
     {
       "id": "P08",
       "awarded_by": "R1-08",
-      "correct_slot": 9,
+      "correct_slot": 4,
       "file": "piece_08.png",
       "caption": "Lena holding a flashlight"
     },
     {
       "id": "P09",
       "awarded_by": "R1-09",
-      "correct_slot": 2,
+      "correct_slot": 9,
       "file": "piece_09.png",
       "caption": "The staircase into the dark"
     },

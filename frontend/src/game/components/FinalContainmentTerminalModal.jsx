@@ -293,6 +293,15 @@ export default function FinalContainmentTerminalModal({
 
         {stage === 2 && (
           <div className="space-y-3">
+            {pieces.length < 10 && (
+              <div className="p-3 bg-red-950/40 border border-red-500/40 rounded-xl text-red-200 text-xs flex items-center gap-2.5">
+                <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
+                <span>
+                  <strong>Missing photograph fragments ({pieces.length}/10 collected):</strong> All 10 previous clues across Lena&apos;s Bedroom, Daniel&apos;s Study, and the Basement must be solved to recover every piece before the photograph can be assembled.
+                </span>
+              </div>
+            )}
+
             <div className="flex flex-wrap items-center justify-between text-xs font-mono text-white/70 border-b border-white/15 pb-2 gap-2">
               <span className="text-white flex items-center gap-1.5 font-bold">
                 <ImageIcon className="w-4 h-4 text-[#ff6b6b]" />
@@ -307,7 +316,7 @@ export default function FinalContainmentTerminalModal({
               {pieces.map((piece, index) => (
                 <div
                   key={piece}
-                  draggable={!readOnly}
+                  draggable={!readOnly && pieces.length === 10}
                   onDragStart={(event) => event.dataTransfer.setData('text/plain', String(index))}
                   onDragOver={(event) => event.preventDefault()}
                   onDrop={(event) => {
@@ -342,12 +351,23 @@ export default function FinalContainmentTerminalModal({
                   </div>
                 </div>
               ))}
+
+              {Array.from({ length: Math.max(0, 10 - pieces.length) }).map((_, i) => (
+                <div
+                  key={`locked-slot-${i}`}
+                  className="relative aspect-[4/5] sm:aspect-[4/3] border-2 border-dashed border-red-500/35 bg-red-950/20 rounded-2xl overflow-hidden flex flex-col items-center justify-center p-2 text-center select-none"
+                >
+                  <Lock className="w-5 h-5 text-red-400/70 mb-1" />
+                  <span className="text-[10px] font-mono text-red-300 font-bold">LOCKED PIECE</span>
+                  <span className="text-[9px] text-white/40">Unsolved clue</span>
+                </div>
+              ))}
             </div>
 
             <div className="flex items-center justify-between pt-1">
               <button
                 type="button"
-                disabled={readOnly}
+                disabled={readOnly || pieces.length < 10}
                 onClick={() => {
                   setPieces([...initialPieces]);
                   setSelectedIndex(null);
@@ -359,7 +379,9 @@ export default function FinalContainmentTerminalModal({
               </button>
 
               <span className="text-[11px] font-mono text-white/55">
-                Correct permutation unlocks the override terminal
+                {pieces.length === 10
+                  ? 'Correct permutation unlocks the override terminal'
+                  : 'Recover all missing pieces to enable verification'}
               </span>
             </div>
           </div>
@@ -445,11 +467,15 @@ export default function FinalContainmentTerminalModal({
         )}
 
         <button
-          disabled={readOnly}
+          disabled={readOnly || (stage === 2 && pieces.length < 10)}
           onClick={submit}
-          className="bsmt-glass-primary mt-5 w-full"
+          className="bsmt-glass-primary mt-5 w-full disabled:opacity-40 disabled:cursor-not-allowed"
         >
-          {stage === 3 ? 'DISENGAGE VAULT' : 'VERIFY PHASE'}
+          {stage === 3
+            ? 'DISENGAGE VAULT'
+            : stage === 2 && pieces.length < 10
+            ? `MISSING PIECES (${pieces.length}/10)`
+            : 'VERIFY PHASE'}
         </button>
       </div>
     </div>

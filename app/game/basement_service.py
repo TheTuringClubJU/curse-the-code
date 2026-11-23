@@ -286,6 +286,19 @@ def get_room_state(team_id: int, content: dict, request: Optional[Request] = Non
                 clue_dict["current_stage"] = current_stage
                 clue_dict["previous_clues_archive"] = archive_items
                 clue_dict["archive_stats"] = archive_stats
+
+                # Filter piece_ids to only what the team has legitimately unlocked
+                photo_map = {p.get("awarded_by"): p["id"] for p in content.get("photo_pieces", [])}
+                unlocked_pieces = [
+                    photo_map[cid] for cid in ARCHIVE_CLUE_IDS
+                    if cid in photo_map and bool(team_clues.get(cid, {}).get("solved"))
+                ]
+                fin_payload = dict(c.get("payload", {}))
+                fin_payload["piece_ids"] = unlocked_pieces
+                fin_payload["unlocked_piece_ids"] = unlocked_pieces
+                fin_payload["photo_count"] = len(unlocked_pieces)
+                fin_payload["total_photo_pieces"] = len(ARCHIVE_CLUE_IDS)
+                clue_dict["payload"] = fin_payload
             projected_clues.append(clue_dict)
 
     # Project evidence (no answer leaks)
