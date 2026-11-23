@@ -47,7 +47,7 @@ export default function CaseDossierModal({
   const roomClues = clues.filter((c) => c.id && c.id.startsWith('R2-') && c.room === 'records');
   const displayClues = roomClues.length > 0 ? roomClues : clues.filter((c) => c.id && c.id.startsWith('R2-'));
 
-  const solvedCount = displayClues.filter((c) => c.solved).length;
+  const resolvedCount = displayClues.filter((c) => Boolean(c.solved || (c.attempts >= (c.attempts_max || 3)))).length;
 
   return (
     <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 select-none font-mono">
@@ -84,7 +84,7 @@ export default function CaseDossierModal({
           <div>
             <span className="text-[#8ca0b0]">CASE FILES RESOLVED: </span>
             <span className="font-bold text-[#3dff8b]">
-              {solvedCount} / {displayClues.length || 4}
+              {resolvedCount} / {displayClues.length || 4}
             </span>
           </div>
         </div>
@@ -155,22 +155,20 @@ export default function CaseDossierModal({
                   </div>
                 </div>
 
-                {/* Footer action button */}
-                <div className="mt-3 pt-3 border-t border-black/30 flex items-center justify-between">
-                  <div className="text-[11px] text-[#708494]">
+                {/* Footer prop location */}
+                <div className="mt-3 pt-3 border-t border-black/30 flex items-center justify-between text-[11px]">
+                  <div className="text-[#708494]">
                     TERMINAL PROP: <code className="text-[#a0b4c4]">{clue.object_id}</code>
                   </div>
-
-                  <button
-                    onClick={() => onOpenClue(clue)}
-                    className={`px-4 py-1 text-xs font-bold rounded transition border ${
-                      isLocked
-                        ? 'bg-[#1a1515] hover:bg-[#261717] text-red-400/80 border-red-900/50 hover:border-red-600'
-                        : 'bg-[#28323c] hover:bg-[#c47a00] hover:text-black text-[#ffd68a] border-[#445260] hover:border-[#ffd68a]'
-                    }`}
-                  >
-                    {isLocked ? '[LOCKED // SEALED]' : 'ACCESS TERMINAL ➔'}
-                  </button>
+                  <div className="text-[#8ca0b0] italic">
+                    {isSolved
+                      ? 'ARCHIVE DATA RESOLVED'
+                      : isLockedOut
+                      ? 'TERMINAL LOCKED OUT'
+                      : isLocked
+                      ? 'PROP ENCRYPTED // SEALED'
+                      : 'LOCATE & OPERATE PROP IN ROOM'}
+                  </div>
                 </div>
               </div>
             );

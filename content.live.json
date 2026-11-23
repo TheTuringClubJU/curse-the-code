@@ -5212,7 +5212,9 @@
       "title": "Epoch Timeline",
       "scene_text": "A whiteboard of event cards. Each card has a number where a date should be.",
       "unlock": {
-        "requires_resolved": []
+        "requires_resolved": [
+          "R2-03"
+        ]
       },
       "input_gate": "room_evidence_complete",
       "payload": {

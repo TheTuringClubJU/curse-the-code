@@ -1171,9 +1171,8 @@ describe('Room 4 (The Rotting Archive) Comprehensive Test Suite (QA-R4-FE-01 to 
     expect(screen.getByText('100%')).toBeInTheDocument();
   });
 
-  // Test 47: Case Dossier clicking clue button opens corresponding clue modal
-  it('QA-R4-FE-47: Case Dossier clicking inspect button opens matching clue modal', async () => {
-    const onOpenClueMock = vi.fn();
+  // Test 47: Case Dossier renders dossier details and physical prop locations
+  it('QA-R4-FE-47: Case Dossier renders dossier details and physical prop locations', async () => {
     await act(async () => {
       render(
         <CaseDossierModal
@@ -1183,14 +1182,12 @@ describe('Room 4 (The Rotting Archive) Comprehensive Test Suite (QA-R4-FE-01 to 
           totalFragments={12}
           collectedCount={12}
           onClose={vi.fn()}
-          onOpenClue={onOpenClueMock}
         />
       );
     });
 
-    const inspectBtns = screen.getAllByText(/ACCESS TERMINAL/i);
-    fireEvent.click(inspectBtns[0]);
-    expect(onOpenClueMock).toHaveBeenCalledWith(expect.objectContaining({ id: 'R2-02' }));
+    expect(screen.getByText(/SUBSTATION DELTA RECORDS VAULT/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/TERMINAL PROP:/i).length).toBeGreaterThan(0);
   });
 
   // Test 48: Redacted Report modal displays case file header

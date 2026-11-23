@@ -390,7 +390,8 @@ export default function Room4Records({ team, onLogout }) {
     // 2. Check Bulkhead Door (Exit to next room / Fork 1)
     if (objectId === 'bulkhead_door') {
       const clueR207 = currentData?.clues?.find((c) => c.id === 'R2-07') || { id: 'R2-07', requires_resolved: ['R2-03', 'R2-04'] };
-      if (currentData?.is_completed || clueR207?.solved) {
+      const r207Resolved = Boolean(clueR207?.solved || (clueR207?.attempts >= (clueR207?.attempts_max || 3)));
+      if (currentData?.is_completed || r207Resolved) {
         setIsFork1Open(true);
         engineRef.current?.unlock();
         return;
@@ -538,10 +539,10 @@ export default function Room4Records({ team, onLogout }) {
     });
   };
 
-  // Clues count
+  // Clues count (counts both solved and exhausted clues)
   const cluesList = roomData?.clues || [];
   const roomClues = cluesList.filter((c) => c.id && c.id.startsWith('R2-'));
-  const cluesSolvedCount = roomClues.filter((c) => c.solved).length;
+  const cluesSolvedCount = roomClues.filter((c) => Boolean(c.solved || (c.attempts >= (c.attempts_max || 3)))).length;
   const totalCluesCount = roomClues.length || 4;
 
   const currentClue = roomClues.find((c) => c.id === activeClueModal);

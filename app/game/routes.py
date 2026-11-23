@@ -818,9 +818,15 @@ def submit_clue_answer(clue_id: str, payload: Dict[str, Any], request: Request):
     if isinstance(answer, dict):
         val_strings = [str(v).strip() for v in answer.values() if v is not None and str(v).strip()]
         candidates.extend([str(answer), " ".join(val_strings)] + val_strings)
+        if len(val_strings) >= 2:
+            candidates.append("|".join(val_strings))
+            candidates.append("|".join(["".join(ch for ch in v.upper() if ch.isalnum()) for v in val_strings]))
     elif isinstance(answer, list):
         val_strings = [str(v).strip() for v in answer if v is not None]
         candidates.extend([" ".join(val_strings)] + val_strings)
+        if len(val_strings) >= 2:
+            candidates.append("|".join(val_strings))
+            candidates.append("|".join(["".join(ch for ch in str(v).upper() if ch.isalnum()) for v in val_strings]))
     else:
         val_strings = [str(answer).strip()]
         candidates.append(str(answer).strip())

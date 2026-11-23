@@ -5169,7 +5169,9 @@
       "title": "Test Timeline",
       "scene_text": "A test whiteboard of cards with numbers instead of dates.",
       "unlock": {
-        "requires_resolved": []
+        "requires_resolved": [
+          "R2-03"
+        ]
       },
       "input_gate": "room_evidence_complete",
       "payload": {
