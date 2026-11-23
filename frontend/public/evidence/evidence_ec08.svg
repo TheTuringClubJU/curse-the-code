@@ -5,32 +5,27 @@
     <rect width="580" height="440" fill="url(#paperV)" rx="5"/>
     <rect width="564" height="424" x="8" y="8" fill="none" stroke="#8a3a2a" stroke-width="1.5" opacity="0.4" rx="4"/>
 
-    <!-- Warning triangle graphic -->
-    <polygon points="290,42 230,138 350,138" fill="none" stroke="#a31818" stroke-width="3" opacity="0.8"/>
-    <text x="290" y="122" font-family="Courier, monospace" font-size="22" font-weight="bold" fill="#a31818" text-anchor="middle">!</text>
+    <!-- Warning triangle -->
+    <polygon points="290,40 235,130 345,130" fill="none" stroke="#a31818" stroke-width="3" opacity="0.8"/>
+    <text x="290" y="115" font-family="Courier, monospace" font-size="22" font-weight="bold" fill="#a31818" text-anchor="middle">!</text>
 
     <!-- Header -->
-    <text x="60" y="168" font-family="Courier, monospace" font-size="14" font-weight="bold" letter-spacing="3" fill="#2b1510">FUSE BOX WARNING NOTICE</text>
-    <text x="60" y="186" font-family="Courier, monospace" font-size="10" letter-spacing="1" fill="#8a3a2a">DELTA CONTROL // ELECTRICAL SAFETY // FORM EL-83</text>
-    <line x1="60" y1="200" x2="520" y2="200" stroke="#8a3a2a" stroke-width="1.2" opacity="0.5"/>
+    <text x="60" y="160" font-family="Courier, monospace" font-size="12" font-style="italic" fill="#8a3a2a">[Handwritten note taped inside fuse box door]</text>
+    <line x1="60" y1="172" x2="520" y2="172" stroke="#8a3a2a" stroke-width="1.2" opacity="0.5"/>
 
-    <!-- Body -->
-    <text x="60" y="228" font-family="Courier, monospace" font-size="12" fill="#2b1510">FUSE PANEL REF: FP-CTRL-05</text>
-    <text x="60" y="248" font-family="Courier, monospace" font-size="12" fill="#2b1510">WARNING: DO NOT DISCONNECT CIRCUIT BREAKER CB-7</text>
-    <text x="60" y="268" font-family="Courier, monospace" font-size="12" fill="#2b1510">CB-7 FEEDS: RADIO CONSOLE + SOUND CONSOLE</text>
-    <text x="60" y="288" font-family="Courier, monospace" font-size="12" fill="#2b1510">DISCONNECTION WILL ERASE ACTIVE VOICEMAIL BUFFER.</text>
-    <text x="60" y="310" font-family="Courier, monospace" font-size="11" fill="#5a2a1a" font-style="italic">VM-A buffer is live and loaded. Power loss = data loss.</text>
-    <text x="60" y="330" font-family="Courier, monospace" font-size="11" fill="#5a2a1a" font-style="italic">The spectrogram data embedded in VM-A is irreplaceable.</text>
+    <!-- Note lines -->
+    <text x="60" y="200" font-family="Courier, monospace" font-size="14" font-weight="bold" fill="#a31818">FUSES 4, 7, 9 — DO NOT RESTORE TO OFF</text>
+    <text x="60" y="225" font-family="Courier, monospace" font-size="12" fill="#2b1510">These circuits feed Chamber 3.</text>
+    <text x="60" y="248" font-family="Courier, monospace" font-size="12" font-weight="bold" fill="#2b1510">They are meant to be on.</text>
+    <text x="60" y="271" font-family="Courier, monospace" font-size="12" fill="#2b1510">Anyone who switches them off will answer to me.</text>
+    <text x="60" y="294" font-family="Courier, monospace" font-size="12" fill="#2b1510">If the system looks broken, it isn't.</text>
+    <text x="60" y="317" font-family="Courier, monospace" font-size="13" font-weight="bold" fill="#a31818">Leave it.</text>
 
-    <!-- Stamp -->
-    <g transform="translate(360, 215) rotate(-8)">
-        <rect x="0" y="0" width="155" height="40" fill="none" stroke="#a31818" stroke-width="2.5" stroke-dasharray="4 2" rx="4" opacity="0.9"/>
-        <text x="78" y="26" font-family="Courier, monospace" font-size="11" font-weight="900" fill="#a31818" text-anchor="middle" letter-spacing="1">DO NOT RESET</text>
-    </g>
+    <!-- Signoff -->
+    <text x="420" y="340" font-family="Georgia, serif" font-size="15" font-style="italic" fill="#2b1510">— M.C.</text>
 
     <!-- Footer -->
     <line x1="60" y1="385" x2="520" y2="385" stroke="#8a3a2a" stroke-width="0.8" opacity="0.4"/>
-    <text x="60" y="405" font-family="Courier, monospace" font-size="10" fill="#8a3a2a">RECORD ID: EC08 — FUSE BOX WARNING NOTE</text>
-    <text x="520" y="405" font-family="Courier, monospace" font-size="9" fill="#aa5a4a" text-anchor="end">SUBSTATION DELTA // CTRL-04</text>
+    <text x="60" y="405" font-family="Courier, monospace" font-size="10" fill="#8a3a2a">RECORD ID: EC08 — FUSE BOX OVERRIDE NOTE</text>
+    <text x="520" y="405" font-family="Courier, monospace" font-size="9" fill="#aa5a4a" text-anchor="end">SUBSTATION DELTA // CTRL-05</text>
 </svg>
-

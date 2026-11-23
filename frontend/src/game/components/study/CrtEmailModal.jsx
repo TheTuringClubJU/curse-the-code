@@ -14,24 +14,24 @@ export default function CrtEmailModal({
   const [feedback, setFeedback] = useState(null);
 
   // 3 CRT Dump Tapes reordering state
-  // Index 0: Tape A (ES02: 'VGhlIHNpZ25hbCBtdXN0IG5l' -> "The signal must ne")
-  // Index 1: Tape B (ES05: 'dmVyIGJlIHNlbnQgZnJvbSBp' -> "ver be sent from i")
-  // Index 2: Tape C (ES09: 'bnNpZGUgdGhlIGxhYi4=' -> "nside the lab.")
+  // Index 0: Tape A (ES02: 'SXQgY29waWVzIG91ciB2b2ljZXMuIF' -> "It copies our voices. ")
+  // Index 1: Tape B (ES05: 'RoZSBkb29yIG11c3QgbmV2ZXIgYmUg' -> "The door must never be ")
+  // Index 2: Tape C (ES09: 'b3BlbmVkIGZyb20gaW5zaWRlLg==' -> "opened from inside.")
   const [tapeOrder, setTapeOrder] = useState([1, 2, 0]); // Starts scrambled (Tape B, Tape C, Tape A)
 
   if (!isOpen || !clue) return null;
 
   const tapes = [
-    { id: 0, label: 'CRT Tape A (Corkboard)', b64: 'VGhlIHNpZ25hbCBtdXN0IG5l', text: 'The signal must ne' },
-    { id: 1, label: 'CRT Tape B (Sticky Wall)', b64: 'dmVyIGJlIHNlbnQgZnJvbSBp', text: 'ver be sent from i' },
-    { id: 2, label: 'CRT Tape C (Upper Corkboard)', b64: 'bnNpZGUgdGhlIGxhYi4=', text: 'nside the lab.' },
+    { id: 0, label: 'CRT Tape A (Corkboard)', b64: 'SXQgY29waWVzIG91ciB2b2ljZXMuIF', text: 'It copies our voices. ' },
+    { id: 1, label: 'CRT Tape B (Sticky Wall)', b64: 'RoZSBkb29yIG11c3QgbmV2ZXIgYmUg', text: 'The door must never be ' },
+    { id: 2, label: 'CRT Tape C (Upper Corkboard)', b64: 'b3BlbmVkIGZyb20gaW5zaWRlLg==', text: 'opened from inside.' },
   ];
 
   const isAligned = tapeOrder[0] === 0 && tapeOrder[1] === 1 && tapeOrder[2] === 2;
   const assembledText = isAligned 
-    ? "The signal must never be sent from inside the lab."
+    ? "It copies our voices. The door must never be opened from inside."
     : tapeOrder.map(i => tapes[i].text).join(' ... ');
-  const base64Buffer = "U0lHTkFM";
+  const base64Buffer = "RE9PUg==";
 
   const moveTape = (fromIndex, dir) => {
     const toIndex = fromIndex + dir;
@@ -192,7 +192,7 @@ export default function CrtEmailModal({
           {/* Prompt & Submission */}
           <div className="p-4 rounded-lg bg-[#071a0f] border border-[#1b3d27]">
             <h3 className="text-sm font-bold text-[#b6ffd1] mb-2">
-              {clue.stages?.[0]?.prompt || "What must never be sent from inside? (one word)"}
+              {clue.stages?.[0]?.prompt || "What must never be opened from inside? (one word)"}
             </h3>
 
             {clue.solved ? (

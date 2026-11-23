@@ -14,9 +14,9 @@ export default function CrashDumpModal({
   const [feedback, setFeedback] = useState(null);
 
   // 3 Memory Dump Blocks reordering state
-  // Index 0: Block A (ES01: Terminal printout -> "ERROR 02:15:00 KERNEL PANIC")
-  // Index 1: Block B (ES06: Armchair crash excerpt -> "FATAL FAULT 0x04 THREAD 4")
-  // Index 2: Block C (ES11: Floor lamp memo -> "ORBIT.SYS HALTED 0xFFFFFFFF")
+  // Index 0: Block A (ES01: Terminal printout -> "CRASH 23:47:12")
+  // Index 1: Block B (ES06: Armchair crash excerpt -> " PROCESS HOLLO")
+  // Index 2: Block C (ES11: Floor lamp memo -> "W.SYS HALTED")
   const [blockOrder, setBlockOrder] = useState([2, 0, 1]); // Starts scrambled (C, A, B)
 
   if (!isOpen || !clue) return null;
@@ -26,24 +26,24 @@ export default function CrashDumpModal({
       id: 0,
       label: 'Memory Segment A (Bookshelf)',
       offset: '0x00000000',
-      hex: '45 52 52 4F 52 20 30 32 3A 31 35 3A 30 30 20 54',
-      ascii: 'ERROR 02:15:00 T',
+      hex: '43 52 41 53 48 20 32 33 3A 34 37 3A 31 32',
+      ascii: 'CRASH 23:47:12',
       isFault: false,
     },
     {
       id: 1,
       label: 'Memory Segment B (Armchair)',
       offset: '0x00000020',
-      hex: '46 41 54 41 4C 20 46 41 55 4C 54 20 30 78 30 34',
-      ascii: 'FATAL FAULT 0x04',
+      hex: '20 50 52 4F 43 45 53 53 20 48 4F 4C 4C 4F',
+      ascii: ' PROCESS HOLLO',
       isFault: true,
     },
     {
       id: 2,
       label: 'Memory Segment C (Floor Lamp)',
       offset: '0x00000030',
-      hex: '4F 52 42 49 54 2E 53 59 53 20 48 41 4C 54 45 44',
-      ascii: 'ORBIT.SYS HALTED',
+      hex: '57 2E 53 59 53 20 48 41 4C 54 45 44',
+      ascii: 'W.SYS HALTED',
       isFault: true,
     },
   ];

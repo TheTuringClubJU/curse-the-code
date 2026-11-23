@@ -35,8 +35,8 @@ const SCRAP_DATA = {
     part: 'A',
     label: 'Scrap A • EB01',
     source: 'Trunk Lid Lining',
-    titleFragment: 'CARNI',
-    dateFragment: 'TEST DATE 07/',
+    titleFragment: 'THE ',
+    dateFragment: 'THE LAST PHOTO',
     footerFragment: '',
     tearType: 'right',
   },
@@ -45,8 +45,8 @@ const SCRAP_DATA = {
     part: 'B',
     label: 'Scrap B • EB06',
     source: 'Coat in Wardrobe',
-    titleFragment: 'VAL OF ',
-    dateFragment: '04/20',
+    titleFragment: 'LAST ',
+    dateFragment: 'WAS TAKEN ON 10/3',
     footerFragment: '',
     tearType: 'both',
   },
@@ -55,9 +55,9 @@ const SCRAP_DATA = {
     part: 'C',
     label: 'Scrap C • EB11',
     source: 'Behind Mirror Frame',
-    titleFragment: 'SHADOWS',
-    dateFragment: '01',
-    footerFragment: 'THE GATES SHALL BOLT AT SUNDOWN',
+    titleFragment: 'PHOTO',
+    dateFragment: '1/1996',
+    footerFragment: '10/31/1996',
     tearType: 'left',
   },
 
@@ -93,22 +93,22 @@ const SCRAP_DATA = {
     part: 'A',
     label: 'Page Slip A • EB02',
     source: 'Nightstand drawer',
-    contentFragment: 'YJXY JSYWD Y',
-    hintNote: 'Rex turned 5 today',
+    contentFragment: 'MJM BJHB CQN CAD',
+    hintNote: 'Theo turned 9 today',
   },
   EB05: {
     id: 'EB05',
     part: 'B',
     label: 'Page Slip B • EB05',
     source: 'Under mattress edge',
-    contentFragment: 'MJ PJDBTWI NX QFS',
+    contentFragment: 'CQ RB KDARNM RW CQN KJBN',
   },
   EB09: {
     id: 'EB09',
     part: 'C',
     label: 'Page Slip C • EB09',
     source: 'Behind clock face',
-    contentFragment: 'YJWS',
+    contentFragment: 'VNWC',
   },
 
   // Notebook R1-02 scraps
@@ -117,22 +117,22 @@ const SCRAP_DATA = {
     part: 'A',
     label: 'Notebook Page A • EB04',
     source: 'Desk cubby',
-    contentFragment: 'WKH WHVW JDW',
-    hintNote: '3 tally marks in margin',
+    contentFragment: 'AOL OVBZL D',
+    hintNote: '7 paper stars',
   },
   EB07: {
     id: 'EB07',
     part: 'B',
     label: 'Notebook Page B • EB07',
     source: 'Bookshelf upper nook',
-    contentFragment: 'H RSHQV DW VXQ',
+    contentFragment: 'PSS VWLU HA TPK',
   },
   EB10: {
     id: 'EB10',
     part: 'C',
     label: 'Notebook Page C • EB10',
     source: 'Curtain hem',
-    contentFragment: 'ULVH',
+    contentFragment: 'UPNOA',
   },
 };
 
@@ -446,7 +446,7 @@ export default function ClueModal({
                           <img src="/poster_piece_3.png" alt="Strip C" className="w-1/3 h-full object-cover" />
                         </div>
                         <p className="text-gray-800 text-xs tracking-widest font-bold">
-                          CARNIVAL OF SHADOWS • TEST DATE 07/04/2001
+                          THE LAST PHOTO WAS TAKEN ON 10/31/1996
                         </p>
                       </div>
                     ) : (
@@ -599,7 +599,7 @@ export default function ClueModal({
                   onChange={(e) => setAnswerInput(e.target.value)}
                   placeholder={
                     clue.object_id === 'poster' 
-                      ? "Enter date (e.g. 07/04/2001)..." 
+                      ? "Enter date (e.g. 10/31/1996)..." 
                       : "Enter deduced answer..."
                   }
                   disabled={isSubmitting || (clue.attempts_max && clue.attempts >= clue.attempts_max)}

@@ -7,16 +7,16 @@ const RACK_NOTE_CIPHER_PIECES = [
     label: 'Scrap A • Porcelain Doll Note',
     origin: "Room 1: Lena's Bedroom",
     file: '/key_piece.png',
-    cipherText: 'KYFV MVV HZ',
+    cipherText: 'PT ESS LPQE',
     summary:
-      'Aged paper fragment recovered from Lena’s porcelain doll in the bedroom. Contains the opening encrypted triad.',
+      'Aged paper fragment recovered from Lena’s porcelain doll in the bedroom. (Margin: The key is the name of what died that night.)',
   },
   {
     id: 'EK03',
     label: 'Scrap B • Hidden Ledger Recess',
     origin: "Room 2: Daniel's Study",
     file: '/evidence/study/EK03.png',
-    cipherText: 'BR TPUIZVUML ZF',
+    cipherText: 'FFA JCXAZAASD NZ',
     summary:
       'Folded slip concealed behind Daniel’s study bookshelf recess. Contains the central cipher phrase.',
   },
@@ -25,7 +25,7 @@ const RACK_NOTE_CIPHER_PIECES = [
     label: 'Scrap C • Toolbox Margin Note',
     origin: 'Room 3: The Basement',
     file: '/evidence/basement/EK06.png',
-    cipherText: 'XMK HYF NEOX',
+    cipherText: 'KZS ESS OLOW',
     summary:
       'Pencil margin note recovered from the mechanics toolbox. Concludes the three-piece message.',
   },
@@ -133,7 +133,7 @@ export default function ServerRackNoteModal({ isOpen, onClose, clue, onSubmitAns
             Complete Assembled Estate Cipher Sequence
           </span>
           <div className="text-sm sm:text-base font-bold font-mono text-amber-200 tracking-[0.2em]">
-            KYFV MVV HZ • BR TPUIZVUML ZF • XMK HYF NEOX
+            PT ESS LPQE • FFA JCXAZAASD NZ • KZS ESS OLOW
           </div>
         </div>
 
@@ -144,7 +144,7 @@ export default function ServerRackNoteModal({ isOpen, onClose, clue, onSubmitAns
             <span>VIGENÈRE CIPHER DECRYPTION PROTOCOL</span>
           </div>
           <p className="text-white/75 text-[11px] leading-relaxed">
-            The three note scraps assemble into a single contiguous cipher message. Decrypt the text using the family surname as the Vigenère repeating key to uncover what to do with the flag.
+            The three note scraps assemble into a single contiguous cipher message. Decrypt the text using the key indicated in the scrap margin to uncover what to do with the seal.
           </p>
         </div>
 
@@ -152,14 +152,14 @@ export default function ServerRackNoteModal({ isOpen, onClose, clue, onSubmitAns
         <form onSubmit={submit} className="space-y-3 pt-1">
           <div className="space-y-1.5">
             <label className="text-xs text-white/80 block font-medium">
-              {stage?.prompt || field?.label || 'What does the note say to do with the flag? (one word)'}
+              {stage?.prompt || field?.label || 'What does the family ask you to do with the seal? (one word)'}
             </label>
             <input
               aria-label={field?.label || 'One word'}
               value={answer}
               onChange={(event) => setAnswer(event.target.value.toUpperCase())}
               disabled={isSubmitting || exhausted || clue?.solved}
-              placeholder={field?.placeholder || 'ENTER DECRYPTED WORD (e.g. LOWER)'}
+              placeholder={field?.placeholder || 'ENTER DECRYPTED WORD (e.g. CLOSE)'}
               className="bsmt-glass-input w-full px-5 py-3 tracking-[.25em] text-center text-sm sm:text-base font-bold font-mono placeholder:text-white/35"
             />
           </div>

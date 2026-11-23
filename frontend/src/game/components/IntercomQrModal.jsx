@@ -3,31 +3,22 @@ import { X, Radio, Volume2, ZoomIn, Info } from 'lucide-react';
 
 const INTERCOM_EVIDENCE_PIECES = [
   {
-    id: 'EK02',
-    name: 'Tape Spool Clearance Segment',
-    origin: "Room 2: Daniel's Study (Tape Recorder)",
-    file: '/evidence/study/EK02.png',
-    role: 'Emergency Frequency Channel',
-    summary:
-      'Audio spool recovered from Daniel’s reel-to-reel recorder. Encodes the primary transmission channel: Channel 92 / RED broadcast band.',
-  },
-  {
     id: 'EK04',
-    name: 'Drive Bay Transmission Echo',
+    name: 'Decoy Transmission Card',
     origin: 'Room 3: The Basement (Server Rack)',
     file: '/evidence/basement/EK04.png',
-    role: 'Sub-station Telemetry Header',
+    role: 'Sub-station Telemetry [Card 1]',
     summary:
-      'Telemetry printout salvaged from the central server rack drive bay. Handshake sequence confirms external physical clearance card verification.',
+      'Damaged telemetry clearance card recovered from the server rack printer tray. Scan to verify transmission status.',
   },
   {
     id: 'EK05',
-    name: 'Terminal Alignment Packet',
+    name: 'Station Clearance Card',
     origin: 'Room 3: The Basement (Maintenance Terminal)',
     file: '/evidence/basement/EK05.png',
-    role: 'Authorization Handshake Key',
+    role: 'Primary Intercom Keycard [Card 2]',
     summary:
-      'Audio data packet recovered from the CRT maintenance terminal desk. Directs agents to cross-reference the physical QR card.',
+      'Clearance card recovered from the CRT maintenance terminal desk. Scan to retrieve external authorization passcode.',
   },
 ];
 
@@ -116,11 +107,11 @@ export default function IntercomQrModal({ isOpen, onClose, clue, onSubmitAnswer,
         {/* Recovered Fragments Grid */}
         <div className="space-y-2">
           <div className="flex items-center justify-between text-[11px] font-bold text-white/80 uppercase tracking-wider">
-            <span>Recovered Assembly Evidence (Study &amp; Basement)</span>
-            <span className="text-[10px] text-white/50 font-normal">Click any fragment to inspect</span>
+            <span>Recovered Clearance Cards (Basement)</span>
+            <span className="text-[10px] text-white/50 font-normal">Click any card to inspect &amp; scan</span>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {INTERCOM_EVIDENCE_PIECES.map((piece) => (
               <div
                 key={piece.id}

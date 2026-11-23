@@ -428,8 +428,8 @@ describe('Room 4 (The Rotting Archive) Comprehensive Test Suite (QA-R4-FE-01 to 
     expect(screen.getByText(/FRAME 02\/04/i)).toBeInTheDocument();
   });
 
-  // Test 12: Microfilm Viewer frame 3 reveals decimal panel code 1357
-  it('QA-R4-FE-12: Microfilm Viewer frame 3 reveals address 0x054D and requires decimal conversion', async () => {
+  // Test 12: Microfilm Viewer frame 3 reveals decimal panel code 5821
+  it('QA-R4-FE-12: Microfilm Viewer frame 3 reveals address 0x16BD and requires decimal conversion', async () => {
     await act(async () => {
       render(
         <MicrofilmViewerModal
@@ -447,7 +447,7 @@ describe('Room 4 (The Rotting Archive) Comprehensive Test Suite (QA-R4-FE-01 to 
       fireEvent.click(nextBtn);
       fireEvent.click(nextBtn);
     });
-    expect(screen.getAllByText(/0x054D/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/0x16BD/i).length).toBeGreaterThan(0);
   });
 
   // Test 13: Epoch Timeline modal renders cards and calculates keyword
@@ -514,21 +514,21 @@ describe('Room 4 (The Rotting Archive) Comprehensive Test Suite (QA-R4-FE-01 to 
       );
     });
 
-    fireEvent.click(screen.getByText('1'));
-    fireEvent.click(screen.getByText('3'));
     fireEvent.click(screen.getByText('5'));
-    fireEvent.click(screen.getByText('7'));
+    fireEvent.click(screen.getByText('8'));
+    fireEvent.click(screen.getByText('2'));
+    fireEvent.click(screen.getByText('1'));
 
     fireEvent.click(screen.getByText(/INPUT 2: ARCHIVAL TIMELINE KEYWORD/i));
     const keywordInput = screen.getByPlaceholderText('______');
-    fireEvent.change(keywordInput, { target: { value: 'PLANET' } });
+    fireEvent.change(keywordInput, { target: { value: 'BEACON' } });
 
     const enterBtn = screen.getByText('ENTER');
     await act(async () => {
       fireEvent.click(enterBtn);
     });
 
-    expect(submitMock).toHaveBeenCalledWith('R2-07', { panel: '1357', word: 'PLANET' });
+    expect(submitMock).toHaveBeenCalledWith('R2-07', { panel: '5821', word: 'BEACON' });
     expect(onUnlockedMock).toHaveBeenCalled();
   });
 
@@ -836,9 +836,9 @@ describe('Room 4 (The Rotting Archive) Comprehensive Test Suite (QA-R4-FE-01 to 
       );
     });
 
-    const input = screen.getByPlaceholderText(/ENTER KEYWORD|PLANET/);
-    fireEvent.change(input, { target: { value: 'planet' } });
-    expect(input.value).toBe('PLANET');
+    const input = screen.getByPlaceholderText(/ENTER KEYWORD/);
+    fireEvent.change(input, { target: { value: 'beacon' } });
+    expect(input.value).toBe('BEACON');
   });
 
   // Test 32: Bulkhead Keypad backspace button removes last digit
