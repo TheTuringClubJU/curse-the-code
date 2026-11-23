@@ -6,7 +6,7 @@ const INTERCOM_EVIDENCE_PIECES = [
     id: 'EK04',
     name: 'Decoy Transmission Card',
     origin: 'Room 3: The Basement (Server Rack)',
-    file: '/evidence/basement/EK04.png',
+    file: '',
     role: 'Sub-station Telemetry [Card 1]',
     summary:
       'Damaged telemetry clearance card recovered from the server rack printer tray. Scan to verify transmission status.',
@@ -15,7 +15,7 @@ const INTERCOM_EVIDENCE_PIECES = [
     id: 'EK05',
     name: 'Station Clearance Card',
     origin: 'Room 3: The Basement (Maintenance Terminal)',
-    file: '/evidence/basement/EK05.png',
+    file: '',
     role: 'Primary Intercom Keycard [Card 2]',
     summary:
       'Clearance card recovered from the CRT maintenance terminal desk. Scan to retrieve external authorization passcode.',
