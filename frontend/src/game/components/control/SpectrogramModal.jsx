@@ -27,15 +27,15 @@ const TELEMETRY_PROFILES = {
     },
   },
   'VM-B': {
-    label: '// SECONDARY ARCHIVE',
-    peakMin: 40,
-    peakMax: 55,
-    carrierFreqKHz: '14.41',
+    label: '// SECONDARY ARCHIVE [AUTHENTIC]',
+    peakMin: 65,
+    peakMax: 80,
+    carrierFreqKHz: '14.82',
     frames: [
-      { idx: 0, bcd: '1000', morse: '---..', peakHz: 14410 },
-      { idx: 1, bcd: '0100', morse: '....-', peakHz: 14440 },
-      { idx: 2, bcd: '0001', morse: '.----', peakHz: 14110 },
-      { idx: 3, bcd: '0000', morse: '-----', peakHz: 14000 },
+      { idx: 0, bcd: '0110', morse: '-....', peakHz: 14820 },
+      { idx: 1, bcd: '0000', morse: '-----', peakHz: 14000 },
+      { idx: 2, bcd: '0010', morse: '..---', peakHz: 14220 },
+      { idx: 3, bcd: '0111', morse: '--...', peakHz: 14770 },
     ],
   },
 };

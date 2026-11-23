@@ -90,7 +90,7 @@ export function paperPage(lines,label,flip=false){const W=384,H=525,c=pix(W,H,(u
  ;(lines||[]).forEach((t,i)=>wrap(t,26).forEach((l,j)=>g.fillText(l,34,112+(j+i*0)*26)));return c}
 export function posterCanvas(){const c=cv(420,600),g=c.getContext('2d')
  g.fillStyle='#050505';g.fillRect(0,0,420,600);g.fillStyle='#090909';g.fillRect(30,40,360,300);g.beginPath();g.arc(210,190,90,0,7);g.fill()
- g.fillStyle='#0d0d0d';g.font='bold 30px monospace';g.textAlign='center';['TEST DATE','07/04/2001'].forEach((t,i)=>g.fillText(t,210,430+i*46));return c}
+ g.fillStyle='#0d0d0d';g.font='bold 30px monospace';g.textAlign='center';['THE LAST PHOTO','10/31/1996'].forEach((t,i)=>g.fillText(t,210,430+i*46));return c}
 // ---------- paintings / photos ----------
 export function portrait(){const W=512,H=640,c=cv(W,H),g=c.getContext('2d');let gr=g.createRadialGradient(W/2,H*.4,40,W/2,H*.45,W*.8);gr.addColorStop(0,'#4a3f30');gr.addColorStop(1,'#120d09');g.fillStyle=gr;g.fillRect(0,0,W,H)
  g.fillStyle='#15131e';g.beginPath();g.moveTo(30,H);g.bezierCurveTo(50,480,150,430,W/2,420);g.bezierCurveTo(362,430,462,480,482,H);g.fill()

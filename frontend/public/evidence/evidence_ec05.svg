@@ -6,38 +6,34 @@
     <rect width="564" height="424" x="8" y="8" fill="none" stroke="#3a5a3a" stroke-width="1.5" opacity="0.4" rx="4"/>
 
     <!-- Header -->
-    <text x="60" y="52" font-family="Courier, monospace" font-size="13" font-weight="bold" letter-spacing="2" fill="#1a3a1a">DELTA CONTROL — CABLE TRENCH SCHEMATIC</text>
-    <text x="60" y="70" font-family="Courier, monospace" font-size="10" letter-spacing="1" fill="#3a5a3a">SUBSURFACE WIRING MAP // SECTOR 5 CONTROL ROOM</text>
+    <text x="60" y="52" font-family="Courier, monospace" font-size="13" font-weight="bold" letter-spacing="2" fill="#1a3a1a">AUTOMATED RADIO INTERCEPT — DELTA RECEIVE</text>
+    <text x="60" y="70" font-family="Courier, monospace" font-size="10" letter-spacing="1" fill="#3a5a3a">RADIO INTERCEPT DIVISION // TELETYPE OUTPUT</text>
     <line x1="60" y1="85" x2="520" y2="85" stroke="#3a5a3a" stroke-width="1.2" opacity="0.5"/>
 
-    <!-- Simple schematic diagram -->
-    <!-- Trench outline -->
-    <rect x="80" y="110" width="420" height="120" fill="none" stroke="#1a3a1a" stroke-width="2" rx="4"/>
-    <text x="290" y="130" font-family="Courier, monospace" font-size="10" fill="#3a5a3a" text-anchor="middle">CABLE TRENCH — CONTROL ROOM FLOOR SECTION</text>
-    <!-- Cable lines -->
-    <line x1="100" y1="150" x2="480" y2="150" stroke="#c47a00" stroke-width="2.5" stroke-dasharray="12 4"/>
-    <line x1="100" y1="168" x2="480" y2="168" stroke="#4a7a8a" stroke-width="1.5" stroke-dasharray="8 3"/>
-    <line x1="100" y1="184" x2="480" y2="184" stroke="#4a7a8a" stroke-width="1.5" stroke-dasharray="8 3"/>
-    <line x1="100" y1="200" x2="480" y2="200" stroke="#8a4a4a" stroke-width="2" stroke-dasharray="6 6"/>
-    <!-- Labels -->
-    <text x="90" y="148" font-family="Courier, monospace" font-size="8" fill="#c47a00">HF-TX</text>
-    <text x="90" y="166" font-family="Courier, monospace" font-size="8" fill="#4a7a8a">CTRL-A</text>
-    <text x="90" y="182" font-family="Courier, monospace" font-size="8" fill="#4a7a8a">CTRL-B</text>
-    <text x="90" y="198" font-family="Courier, monospace" font-size="8" fill="#8a4a4a">PWR</text>
+    <!-- Data Fields -->
+    <text x="60" y="120" font-family="Courier, monospace" font-size="12" font-weight="bold" fill="#3a5a3a">FREQUENCY:</text>
+    <text x="210" y="120" font-family="Courier, monospace" font-size="12" font-weight="bold" fill="#1a3a1a">7.455 MHz</text>
+    <text x="60" y="145" font-family="Courier, monospace" font-size="12" font-weight="bold" fill="#3a5a3a">DATE / TIME:</text>
+    <text x="210" y="145" font-family="Courier, monospace" font-size="12" fill="#1a3a1a">14 AUG 1983  |  23:58 hrs</text>
+    <text x="60" y="170" font-family="Courier, monospace" font-size="12" font-weight="bold" fill="#3a5a3a">DIRECTION:</text>
+    <text x="210" y="170" font-family="Courier, monospace" font-size="12" fill="#1a3a1a">INBOUND</text>
+    <text x="60" y="195" font-family="Courier, monospace" font-size="12" font-weight="bold" fill="#3a5a3a">SENDER:</text>
+    <text x="210" y="195" font-family="Courier, monospace" font-size="12" fill="#1a3a1a">UNIDENTIFIED</text>
 
-    <!-- Annotation -->
-    <text x="60" y="265" font-family="Courier, monospace" font-size="11" fill="#2a4a2a">HF-TX cable routes from RELAY RACK to RADIO CONSOLE.</text>
-    <text x="60" y="283" font-family="Courier, monospace" font-size="11" fill="#2a4a2a">Splice junction at node J-5 feeds both TX and monitoring.</text>
-    <text x="60" y="301" font-family="Courier, monospace" font-size="11" fill="#2a4a2a">NOTE: Post-shutdown, HF-TX line remained LIVE.</text>
-    <text x="60" y="319" font-family="Courier, monospace" font-size="11" fill="#2a4a2a">Source: BDG-9001 continued broadcasting on 7.420 MHz.</text>
+    <!-- Decoded Box -->
+    <rect x="60" y="225" width="460" height="90" fill="#1a3a1a" opacity="0.08" rx="4"/>
+    <text x="80" y="250" font-family="Courier, monospace" font-size="11" font-weight="bold" fill="#2a5a2a">DECODED CONTENT:</text>
+    <text x="80" y="275" font-family="Courier, monospace" font-size="12" font-weight="bold" fill="#a31818">"Echo Zero authorised. Lock it down. Do not enter."</text>
+    <text x="80" y="298" font-family="Courier, monospace" font-size="12" font-weight="bold" fill="#a31818">"If it speaks, do not respond."</text>
 
-    <!-- Handwritten circle annotation -->
-    <ellipse cx="380" cy="150" rx="30" ry="18" fill="none" stroke="#a31818" stroke-width="1.5" opacity="0.7"/>
-    <text x="420" y="145" font-family="Georgia, serif" font-size="10" fill="#a31818">still live!</text>
+    <!-- Stamp -->
+    <g transform="translate(370, 48) rotate(10)">
+        <rect x="0" y="0" width="145" height="38" fill="none" stroke="#a31818" stroke-width="2" stroke-dasharray="4 2" rx="3" opacity="0.85"/>
+        <text x="72" y="24" font-family="Courier, monospace" font-size="10" font-weight="900" fill="#a31818" text-anchor="middle" letter-spacing="1">ECHO ZERO ACTIVE</text>
+    </g>
 
     <!-- Footer -->
     <line x1="60" y1="385" x2="520" y2="385" stroke="#3a5a3a" stroke-width="0.8" opacity="0.4"/>
-    <text x="60" y="405" font-family="Courier, monospace" font-size="10" fill="#3a5a3a">RECORD ID: EC05 — CABLE TRENCH SCHEMATIC</text>
-    <text x="520" y="405" font-family="Courier, monospace" font-size="9" fill="#5a7a5a" text-anchor="end">SUBSTATION DELTA // CTRL-04</text>
+    <text x="60" y="405" font-family="Courier, monospace" font-size="10" fill="#3a5a3a">RECORD ID: EC05 — RADIO INTERCEPT PRINTOUT</text>
+    <text x="520" y="405" font-family="Courier, monospace" font-size="9" fill="#5a7a5a" text-anchor="end">SUBSTATION DELTA // CTRL-05</text>
 </svg>
-

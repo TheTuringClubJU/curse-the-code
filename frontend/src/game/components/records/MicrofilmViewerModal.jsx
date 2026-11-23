@@ -92,7 +92,7 @@ export default function MicrofilmViewerModal({
             </div>
             <div className="flex justify-between py-1 border-b border-emerald-900/60">
               <span className="text-emerald-500">CIRCUIT BUS:</span>
-              <span className="font-bold text-emerald-200">0x054D</span>
+              <span className="font-bold text-emerald-200">0x16BD</span>
             </div>
             <div className="flex justify-between py-1 border-b border-emerald-900/60">
               <span className="text-emerald-500">LOGIC LEVEL:</span>

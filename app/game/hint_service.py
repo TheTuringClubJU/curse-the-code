@@ -127,22 +127,22 @@ CLUE_HINT_DETAILS = {
         "guidance": "Convert the machine timestamps in your recovered cards from Unix epoch seconds, cross-reference termination dates in the personnel register, and flag any anomalous post-closure login."
     },
     "R2-02": {
-        "title": "Flooded Index Registry",
-        "location_prop": "Rotting library shelves in the archive sub-basement.",
-        "puzzle_type": "Waterlogged Ledger Cross-Reference",
-        "guidance": "Reconstruct the blurred index entries using surviving shelf tags. Identify the accession number matching the transfer order."
+        "title": "Redacted Report",
+        "location_prop": "Redacted incident report folder on the reading desk.",
+        "puzzle_type": "Base64 Checksum & Redaction Deciphering",
+        "guidance": "Examine the negative scan under the examination light. Match the document body with the base64-encoded footer checksum to identify the genuine shutdown date and project codename."
     },
     "R2-03": {
-        "title": "Microfiche Reader",
-        "location_prop": "Illuminated microfiche projector in the catalog aisle.",
-        "puzzle_type": "Optical Grid Decryption",
-        "guidance": "Align the microfilm reel markers with the ledger coordinates to reveal the redacted project clearance."
+        "title": "Photograph, Revisited",
+        "location_prop": "Illuminated microfilm reader with rotary date dial (microfilm_reader).",
+        "puzzle_type": "Optical Date Gate & Embedded Hex Metadata",
+        "guidance": "Set the dial to the genuine shutdown date verified from the incident report. Read the embedded hex metadata in the photograph comments to discover the panel code."
     },
     "R2-04": {
-        "title": "Card Catalog Drawer",
-        "location_prop": "Solid brass card catalog cabinet against the south wall.",
-        "puzzle_type": "Dewey-Hex Decimal Cross-Indexing",
-        "guidance": "Convert the Dewey-Hex notation on the requisition slip to identify the vault bulkhead sequence number."
+        "title": "Epoch Timeline",
+        "location_prop": "Chronological event timeline board on the archive wall.",
+        "puzzle_type": "Unix Epoch Chronology & Anomaly Filtering",
+        "guidance": "Convert the epoch seconds on each card to standard calendar dates. Filter out cards occurring after the genuine shutdown date. The first letters of the remaining cards in chronological order spell the keyword."
     },
     "R2-05": {
         "title": "Transmission Archive",
@@ -157,10 +157,10 @@ CLUE_HINT_DETAILS = {
         "guidance": "Inspect the upper-frequency spectrogram of the authentic voicemail file identified in the Radio Console archive to reveal the hidden code."
     },
     "R2-07": {
-        "title": "Vault Bulkhead Gate",
-        "location_prop": "Heavy hydraulic containment door leading to the Anointing Vault.",
-        "puzzle_type": "Hydraulic Interlock Release",
-        "guidance": "Verify all upstream record clearances to disengage the magnetic interlock seal."
+        "title": "Convergence Lock",
+        "location_prop": "Heavy hydraulic bulkhead keypad leading out of the Archive (bulkhead_keypad).",
+        "puzzle_type": "Dual-Factor Security Keypad",
+        "guidance": "Enter the numeric panel code discovered from the photograph and the keyword spelled by the chronological event timeline."
     },
     "R2-08": {
         "title": "Shutdown Manual Diff",
@@ -177,8 +177,8 @@ CLUE_HINT_DETAILS = {
     "R2-10": {
         "title": "Central Containment Console",
         "location_prop": "Central Altar Monolith Console in the Anointing Nave (Sector 6B).",
-        "puzzle_type": "Grand Finale Tri-Fold Authorization",
-        "guidance": "Simultaneously enter the clean procedure steps from R2-08, the failsafe authorization code from R2-09, and the real sender badge (BDG-9001)."
+        "puzzle_type": "Master Containment Override Protocol",
+        "guidance": "Simultaneously enter the clean procedure steps from R2-08, the failsafe authorization code from R2-09, and the real sender badge (BDG-0417)."
     }
 }
 

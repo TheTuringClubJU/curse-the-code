@@ -1,0 +1,6164 @@
+{
+  "schema_version": "3.0",
+  "meta": {
+    "pack_label": "live",
+    "event_name": "Curse the Code",
+    "answer_salt": "27c94a2ea65d94c40b7624018c84fe45",
+    "assets_dir": "assets_live",
+    "rules": {
+      "answer_cooldown_sec": 3,
+      "hint_free_after_sec": 300,
+      "max_sessions_per_team": 2,
+      "max_field_len": 200,
+      "leaderboard_hide_last_min": 0,
+      "multi_field_separator": "|",
+      "timer_mode": "manual",
+      "auto_end": false
+    }
+  },
+  "rounds": [
+    {
+      "round": 1,
+      "title": "The Last Night at Hollow House",
+      "subtitle": "Round 1",
+      "difficulty": "Medium",
+      "default_duration_min": 60,
+      "final_clue": "R1-FIN",
+      "rules": {
+        "mode": "fragments",
+        "attempts_max": 3,
+        "room_unlock": "all_clues_resolved",
+        "input_gate": "room_evidence_complete",
+        "pickup_order": "strict_chain",
+        "search_nudge": {
+          "first_after_sec": 600,
+          "every_sec": 480
+        },
+        "photo_pieces_required": 10
+      },
+      "screens": {
+        "intro": "Thirty years ago tonight, the Vance family vanished from Hollow House. Police found no bodies, no struggle, and one torn photograph. At 11:00 PM a message appeared on the dead computer: TEN FRAGMENTS. TEN SEALS. ONE DOOR. At midnight, the house opens. If the picture is incomplete, it will leave. You are the digital investigators. Reconstruct the photograph before midnight.",
+        "victory_lines": [
+          "CONTAINMENT RESTORED.",
+          "Thank you for returning what was stolen.",
+          "Happy Halloween."
+        ],
+        "bridge_text": "You escaped the house. You did not escape the experiment. The house was the first lock. The archive holds the truth. If you want to finish what you started, follow the evidence. - CIPHER",
+        "eliminated_text": "The house keeps what it keeps. Your investigation ends here tonight. Thank you for playing.",
+        "sting_template": ""
+      }
+    },
+    {
+      "round": 2,
+      "title": "The Archive",
+      "subtitle": "Round 2",
+      "difficulty": "Medium to Hard",
+      "default_duration_min": 75,
+      "final_clue": "R2-10",
+      "rules": {
+        "mode": "classic",
+        "attempts_max": null,
+        "room_unlock": "rules",
+        "input_gate": null,
+        "pickup_order": null,
+        "search_nudge": {
+          "first_after_sec": 0,
+          "every_sec": 0
+        },
+        "photo_pieces_required": 0
+      },
+      "screens": {
+        "intro": "The qualifying teams are announced. The screen glitches. A doorway opens behind the photograph. You now have access to the abandoned underground archive beneath Hollow House. Find out what the family was hiding, identify what you accidentally activated, and contain it before midnight. Not everything you read here is true.",
+        "victory_lines": [
+          "CONTAINMENT RESTORED.",
+          "External connection terminated.",
+          "Experiment sealed."
+        ],
+        "bridge_text": "If you're hearing this, you found the truth. The house was never the prison. It was the test. And you were never meant to find the archive.",
+        "eliminated_text": "",
+        "sting_template": "SUBJECT_011: {TEAM_NAME} - STATUS: UNKNOWN"
+      }
+    }
+  ],
+  "rooms": [
+    {
+      "id": "bedroom",
+      "round": 1,
+      "order": 1,
+      "title": "Lena's Bedroom",
+      "unlock": {
+        "at_start": true
+      },
+      "theme": {
+        "bg_top": "#140d26",
+        "bg_bottom": "#2b1d52",
+        "accent": "#8f7bff",
+        "glow": "#cdbfff",
+        "text": "#e8e0ff",
+        "lamp": "#ffcf8a",
+        "fog": 0.15,
+        "vignette": 0.55
+      },
+      "ambient": {
+        "loop": "amb_bedroom.mp3",
+        "sfx": [
+          "music_box_faint.mp3",
+          "clock_tick.mp3"
+        ]
+      },
+      "objects": [
+        {
+          "id": "diary",
+          "label": "Open diary",
+          "kind": "clue_entry",
+          "clue_id": "R1-01",
+          "visible": true
+        },
+        {
+          "id": "notebook",
+          "label": "School notebook",
+          "kind": "clue_entry",
+          "clue_id": "R1-02",
+          "visible": true
+        },
+        {
+          "id": "poster",
+          "label": "Wall poster",
+          "kind": "clue_entry",
+          "clue_id": "R1-03",
+          "visible": true
+        },
+        {
+          "id": "music_box",
+          "label": "Music box",
+          "kind": "decor",
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "trunk",
+          "label": "Leather trunk",
+          "kind": "hiding",
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "nightstand",
+          "label": "Nightstand",
+          "kind": "hiding",
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "candle",
+          "label": "Candle",
+          "kind": "hiding",
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "desk",
+          "label": "Desk",
+          "kind": "hiding",
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "bed",
+          "label": "Four-poster bed",
+          "kind": "hiding",
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "wardrobe",
+          "label": "Wardrobe",
+          "kind": "hiding",
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "lamp",
+          "label": "Table lamp",
+          "kind": "hiding",
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "window",
+          "label": "Window",
+          "kind": "hiding",
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "clock",
+          "label": "Wall clock",
+          "kind": "hiding",
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "pillow",
+          "label": "Pillows",
+          "kind": "hiding",
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "mirror",
+          "label": "Cracked mirror",
+          "kind": "hiding",
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "chair",
+          "label": "Rocking chair",
+          "kind": "hiding",
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "doll",
+          "label": "Doll",
+          "kind": "hiding",
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "photo_frame",
+          "label": "Photo frame",
+          "kind": "hiding",
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "portrait",
+          "label": "Portrait",
+          "kind": "clue_entry",
+          "clue_id": "R1-04",
+          "visible": true
+        },
+        {
+          "id": "rug",
+          "label": "Rug",
+          "kind": "decor",
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "pumpkins",
+          "label": "Pumpkins",
+          "kind": "decor",
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "wall_frames",
+          "label": "Wall frames",
+          "kind": "decor",
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "beams_webs",
+          "label": "Beams and webs",
+          "kind": "decor",
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "bats_spider",
+          "label": "Bats and spider",
+          "kind": "decor",
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "bookshelf",
+          "label": "Tall bookshelf",
+          "kind": "hiding",
+          "clue_id": null,
+          "visible": true
+        }
+      ],
+      "evidence": [
+        {
+          "id": "EB01",
+          "clue_id": "R1-03",
+          "part": "A",
+          "is_decoy": false,
+          "chain": "bedroom",
+          "seq": 1,
+          "hiding": {
+            "room": "bedroom",
+            "object_id": "trunk",
+            "spot": "folded in the lid lining",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "Torn poster scrap",
+            "style": {
+              "ink": "black",
+              "paper": "poster"
+            },
+            "lines": [],
+            "corner_mark": "",
+            "image_file": "poster_piece_1.png",
+            "audio_file": ""
+          },
+          "locate_hint": "Inside the heavy wooden storage trunk resting at the foot of the bed.",
+          "secret": {
+            "hidden_strip": "THE LAST PHOTO"
+          }
+        },
+        {
+          "id": "EB02",
+          "clue_id": "R1-01",
+          "part": "A",
+          "is_decoy": false,
+          "chain": "bedroom",
+          "seq": 2,
+          "hiding": {
+            "room": "bedroom",
+            "object_id": "nightstand",
+            "spot": "the drawer, under the tissues",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "Loose page, blue ink",
+            "style": {
+              "ink": "blue",
+              "paper": "lined"
+            },
+            "lines": [
+              "October 30",
+              "Theo turned 9 today. We pretended it was a normal party.",
+              "Dad whispered that tomorrow we hide everything.",
+              "I'm writing the rest the way he showed me:",
+              "MJM BJHB CQN CAD"
+            ],
+            "corner_mark": "41",
+            "image_file": "",
+            "audio_file": ""
+          },
+          "locate_hint": "Hidden within the drawer of the bedside nightstand.",
+          "secret": {
+            "chunk": "MJM BJHB CQN CAD"
+          }
+        },
+        {
+          "id": "EB03",
+          "clue_id": "R1-04",
+          "part": "A",
+          "is_decoy": false,
+          "chain": "bedroom",
+          "seq": 3,
+          "hiding": {
+            "room": "bedroom",
+            "object_id": "candle",
+            "spot": "under the candle holder",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "Torn canvas strip (left)",
+            "style": {
+              "ink": "black",
+              "paper": "card"
+            },
+            "lines": [
+              "Where every detective signs in before the night begins, a black-and-white square waits."
+            ],
+            "corner_mark": "",
+            "image_file": "portrait_piece_1.png",
+            "audio_file": ""
+          },
+          "locate_hint": "Near the pool of hardened wax around the candle on the wooden dresser.",
+          "secret": {
+            "note": "points to QR-1 location"
+          }
+        },
+        {
+          "id": "EB04",
+          "clue_id": "R1-02",
+          "part": "A",
+          "is_decoy": false,
+          "chain": "bedroom",
+          "seq": 4,
+          "hiding": {
+            "room": "bedroom",
+            "object_id": "desk",
+            "spot": "under the clutter on the desk",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "Notebook sheet, pencil",
+            "style": {
+              "ink": "grey pencil",
+              "paper": "grid"
+            },
+            "lines": [
+              "Maths, page 7",
+              "I folded seven paper stars tonight, one for every year Mom kept the porch light on.",
+              "Dad says write it where the clock can't see.",
+              "AOL OVBZL D"
+            ],
+            "corner_mark": "7",
+            "image_file": "",
+            "audio_file": ""
+          },
+          "locate_hint": "Tucked beneath scattered papers on Lena's study desk.",
+          "secret": {
+            "chunk": "AOL OVBZL D"
+          }
+        },
+        {
+          "id": "EB05",
+          "clue_id": "R1-01",
+          "part": "B",
+          "is_decoy": false,
+          "chain": "bedroom",
+          "seq": 5,
+          "hiding": {
+            "room": "bedroom",
+            "object_id": "bed",
+            "spot": "under the mattress edge",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "Torn page, blue ink",
+            "style": {
+              "ink": "blue",
+              "paper": "lined"
+            },
+            "lines": [
+              "CQ RB KDARNM RW CQN KJBN"
+            ],
+            "corner_mark": "42",
+            "image_file": "",
+            "audio_file": ""
+          },
+          "locate_hint": "Concealed between the mattress and bedframe beneath the unmade blankets.",
+          "secret": {
+            "chunk": "CQ RB KDARNM RW CQN KJBN"
+          }
+        },
+        {
+          "id": "EB06",
+          "clue_id": "R1-03",
+          "part": "B",
+          "is_decoy": false,
+          "chain": "bedroom",
+          "seq": 6,
+          "hiding": {
+            "room": "bedroom",
+            "object_id": "wardrobe",
+            "spot": "a coat pocket",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "Torn poster scrap",
+            "style": {
+              "ink": "black",
+              "paper": "poster"
+            },
+            "lines": [],
+            "corner_mark": "",
+            "image_file": "poster_piece_2.png",
+            "audio_file": ""
+          },
+          "locate_hint": "Hanging inside the tall wardrobe, tucked behind dark coats.",
+          "secret": {
+            "hidden_strip": "WAS TAKEN ON 10/3"
+          }
+        },
+        {
+          "id": "EB07",
+          "clue_id": "R1-02",
+          "part": "B",
+          "is_decoy": false,
+          "chain": "bedroom",
+          "seq": 7,
+          "hiding": {
+            "room": "bedroom",
+            "object_id": "musicbox",
+            "spot": "inside the musicbox compartment",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "Notebook sheet, pencil",
+            "style": {
+              "ink": "grey pencil",
+              "paper": "grid"
+            },
+            "lines": [
+              "PSS VWLU HA TPK"
+            ],
+            "corner_mark": "8",
+            "image_file": "",
+            "audio_file": ""
+          },
+          "locate_hint": "Inside the ornate music box on the shelf, beside the figurine.",
+          "secret": {
+            "chunk": "PSS VWLU HA TPK"
+          }
+        },
+        {
+          "id": "EB08",
+          "clue_id": "R1-04",
+          "part": "B",
+          "is_decoy": false,
+          "chain": "bedroom",
+          "seq": 8,
+          "hiding": {
+            "room": "bedroom",
+            "object_id": "pillow",
+            "spot": "tucked beneath the pillow",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "Torn canvas strip (center)",
+            "style": {
+              "ink": "black",
+              "paper": "ticket"
+            },
+            "lines": [
+              "Where the day's notices are pinned and nobody reads the corners, a second square waits."
+            ],
+            "corner_mark": "",
+            "image_file": "portrait_piece_2.png",
+            "audio_file": ""
+          },
+          "locate_hint": "Slipped underneath the sleeping pillow at the head of the bed.",
+          "secret": {
+            "note": "points to QR-2 location"
+          }
+        },
+        {
+          "id": "EB09",
+          "clue_id": "R1-01",
+          "part": "C",
+          "is_decoy": false,
+          "chain": "bedroom",
+          "seq": 9,
+          "hiding": {
+            "room": "bedroom",
+            "object_id": "clock",
+            "spot": "behind the clock face",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "Page corner, blue ink",
+            "style": {
+              "ink": "blue",
+              "paper": "lined"
+            },
+            "lines": [
+              "VNWC"
+            ],
+            "corner_mark": "",
+            "image_file": "",
+            "audio_file": ""
+          },
+          "locate_hint": "Behind the glass casing of the tall grandfather clock.",
+          "secret": {
+            "chunk": "VNWC"
+          }
+        },
+        {
+          "id": "EB10",
+          "clue_id": "R1-02",
+          "part": "C",
+          "is_decoy": false,
+          "chain": "bedroom",
+          "seq": 10,
+          "hiding": {
+            "room": "bedroom",
+            "object_id": "bookshelf",
+            "spot": "inside a hollowed book on the shelf",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "Notebook scrap, blue ink",
+            "style": {
+              "ink": "blue",
+              "paper": "grid"
+            },
+            "lines": [
+              "UPNOA"
+            ],
+            "corner_mark": "",
+            "image_file": "",
+            "audio_file": ""
+          },
+          "locate_hint": "Wedged between two dusty book spines on the bedroom bookshelf.",
+          "secret": {
+            "chunk": "UPNOA"
+          }
+        },
+        {
+          "id": "EB11",
+          "clue_id": "R1-03",
+          "part": "C",
+          "is_decoy": false,
+          "chain": "bedroom",
+          "seq": 11,
+          "hiding": {
+            "room": "bedroom",
+            "object_id": "mirror",
+            "spot": "behind the frame",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "Torn poster scrap",
+            "style": {
+              "ink": "black",
+              "paper": "poster"
+            },
+            "lines": [],
+            "corner_mark": "",
+            "image_file": "poster_piece_3.png",
+            "audio_file": ""
+          },
+          "locate_hint": "Slid behind the bevelled edge of the wall mirror frame.",
+          "secret": {
+            "hidden_strip": "1/1996"
+          }
+        },
+        {
+          "id": "EB12",
+          "clue_id": "R1-04",
+          "part": "C",
+          "is_decoy": false,
+          "chain": "bedroom",
+          "seq": 12,
+          "hiding": {
+            "room": "bedroom",
+            "object_id": "chair",
+            "spot": "the cushion seam",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "Torn canvas strip (right)",
+            "style": {
+              "ink": "black",
+              "paper": "index card"
+            },
+            "lines": [
+              "Two tags will be shown to you.",
+              "Only one marks the file that remembers the year as well as the day.",
+              "The other is a copy.",
+              "You may choose once."
+            ],
+            "corner_mark": "",
+            "image_file": "portrait_piece_3.png",
+            "audio_file": ""
+          },
+          "locate_hint": "Fastened under the seat cushion of the wooden desk chair.",
+          "secret": {
+            "note": "rule card"
+          }
+        },
+        {
+          "id": "EK01",
+          "clue_id": "R1-10",
+          "part": "A",
+          "is_decoy": false,
+          "chain": "basement",
+          "seq": 1,
+          "hiding": {
+            "room": "bedroom",
+            "object_id": "doll",
+            "spot": "inside the doll",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "Folded note, aged paper",
+            "style": {
+              "ink": "blue",
+              "paper": "aged"
+            },
+            "lines": [
+              "PT ESS LPQE",
+              "(margin) The key is the name of what died that night."
+            ],
+            "corner_mark": "",
+            "image_file": "",
+            "audio_file": ""
+          },
+          "locate_hint": "Concealed in the dress seams of the porcelain doll seated in the corner.",
+          "secret": {
+            "chunk": "PT ESS LPQE"
+          }
+        },
+        {
+          "id": "XB01",
+          "clue_id": null,
+          "part": null,
+          "is_decoy": true,
+          "chain": null,
+          "seq": null,
+          "hiding": {
+            "room": "bedroom",
+            "object_id": "photo_frame",
+            "spot": "behind the photograph",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "Torn page, blue ink",
+            "style": {
+              "ink": "blue",
+              "paper": "lined"
+            },
+            "lines": [
+              "November rehearsal: I am the third tree in the school play.",
+              "Line 12: 'The wind knows nothing.'"
+            ],
+            "corner_mark": "43",
+            "image_file": "",
+            "audio_file": ""
+          },
+          "locate_hint": "Tucked into the backing of the small framed photo on the wall.",
+          "secret": {
+            "note": "decoy"
+          }
+        },
+        {
+          "id": "XB02",
+          "clue_id": null,
+          "part": null,
+          "is_decoy": true,
+          "chain": null,
+          "seq": null,
+          "hiding": {
+            "room": "bedroom",
+            "object_id": "painting",
+            "spot": "behind the canvas",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "Scrap, blue ink",
+            "style": {
+              "ink": "blue",
+              "paper": "lined"
+            },
+            "lines": [
+              "RSX IZIVCXLMRK AVMXXIR MW XVYI"
+            ],
+            "corner_mark": "",
+            "image_file": "",
+            "audio_file": ""
+          },
+          "locate_hint": "Wedged behind the large landscape painting above the clock.",
+          "secret": {
+            "note": "decoy"
+          }
+        }
+      ],
+      "basket": {
+        "opens_when": "all_room_pieces_collected"
+      }
+    },
+    {
+      "id": "study",
+      "round": 1,
+      "order": 2,
+      "title": "Daniel's Study",
+      "unlock": {
+        "all_clues_resolved": [
+          "bedroom"
+        ]
+      },
+      "theme": {
+        "bg_top": "#04120b",
+        "bg_bottom": "#0b2418",
+        "accent": "#3dff8b",
+        "glow": "#7dffb0",
+        "text": "#b6ffd1",
+        "lamp": "#9dffc4",
+        "fog": 0.2,
+        "vignette": 0.6
+      },
+      "ambient": {
+        "loop": "amb_study.mp3",
+        "sfx": [
+          "crt_hum.mp3",
+          "whisper_far.mp3"
+        ]
+      },
+      "objects": [
+        {
+          "id": "tablet_drawer",
+          "label": "Locked desk drawer",
+          "kind": "clue_entry",
+          "clue_id": "R1-05",
+          "visible": true
+        },
+        {
+          "id": "crt_monitor",
+          "label": "Old CRT monitor",
+          "kind": "clue_entry",
+          "clue_id": "R1-06",
+          "visible": true
+        },
+        {
+          "id": "terminal_pc",
+          "label": "Terminal PC",
+          "kind": "clue_entry",
+          "clue_id": "R1-07",
+          "visible": true
+        },
+        {
+          "id": "line_printer",
+          "label": "Dot-matrix printer",
+          "kind": "clue_entry",
+          "clue_id": "R1-08",
+          "visible": true
+        },
+        {
+          "id": "bookshelf",
+          "label": "Bookshelf",
+          "kind": "hiding",
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "corkboard",
+          "label": "Corkboard with red string",
+          "kind": "hiding",
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "desk_blotter",
+          "label": "Desk blotter",
+          "kind": "hiding",
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "filing_cabinet",
+          "label": "Filing cabinet",
+          "kind": "hiding",
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "sticky_wall",
+          "label": "Sticky-note wall",
+          "kind": "hiding",
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "armchair",
+          "label": "Armchair",
+          "kind": "hiding",
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "reel_recorder",
+          "label": "Reel recorder",
+          "kind": "hiding",
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "cable_bundle",
+          "label": "Cable bundle",
+          "kind": "hiding",
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "floor_lamp",
+          "label": "Floor lamp",
+          "kind": "hiding",
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "wastebin",
+          "label": "Waste bin",
+          "kind": "hiding",
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "window",
+          "label": "Window",
+          "kind": "hiding",
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "radiator",
+          "label": "Radiator",
+          "kind": "hiding",
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "desk",
+          "label": "Heavy desk",
+          "kind": "decor",
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "rug",
+          "label": "Rug",
+          "kind": "decor",
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "beams_webs",
+          "label": "Beams and webs",
+          "kind": "decor",
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "coat_stand",
+          "label": "Coat stand",
+          "kind": "decor",
+          "clue_id": null,
+          "visible": true
+        }
+      ],
+      "evidence": [
+        {
+          "id": "ES01",
+          "clue_id": "R1-07",
+          "part": "A",
+          "is_decoy": false,
+          "chain": "study",
+          "seq": 1,
+          "hiding": {
+            "room": "study",
+            "object_id": "bookshelf",
+            "spot": "inside a hollowed book",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "Terminal printout",
+            "style": {
+              "ink": "green",
+              "paper": "fanfold"
+            },
+            "lines": [
+              "crash_1031.log",
+              "[23:44:50] net: unknown peer joined",
+              "[23:46:31] auth: voice signature mismatch",
+              "DUMP:",
+              "43 52 41 53 48 20 32 33 3A 34 37 3A 31 32"
+            ],
+            "corner_mark": "",
+            "image_file": "",
+            "audio_file": ""
+          },
+          "locate_hint": "Hidden among the thick reference volumes on the central study bookshelf.",
+          "secret": {
+            "chunk": "43 52 41 53 48 20 32 33 3A 34 37 3A 31 32"
+          }
+        },
+        {
+          "id": "ES02",
+          "clue_id": "R1-06",
+          "part": "A",
+          "is_decoy": false,
+          "chain": "study",
+          "seq": 2,
+          "hiding": {
+            "room": "study",
+            "object_id": "corkboard",
+            "spot": "pinned under a flyer",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "CRT screen dump tape 1",
+            "style": {
+              "ink": "black",
+              "paper": "printout"
+            },
+            "lines": [
+              "01010011 01001001"
+            ],
+            "corner_mark": "",
+            "image_file": "",
+            "audio_file": ""
+          },
+          "locate_hint": "Pinned beneath overlapping case notes on the large corkboard.",
+          "secret": {
+            "chunk": "SXQgY29waWVzIG91ciB2b2ljZXMuIF"
+          }
+        },
+        {
+          "id": "ES03",
+          "clue_id": "R1-05",
+          "part": "A",
+          "is_decoy": false,
+          "chain": "study",
+          "seq": 3,
+          "hiding": {
+            "room": "study",
+            "object_id": "desk_blotter",
+            "spot": "under the green blotter",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "Sticky note, torn",
+            "style": {
+              "ink": "black",
+              "paper": "yellow"
+            },
+            "lines": [
+              "01010100 01001000"
+            ],
+            "corner_mark": "",
+            "image_file": "",
+            "audio_file": ""
+          },
+          "locate_hint": "Slipped completely underneath the dark leather desk blotter mat.",
+          "secret": {
+            "chunk": "TH"
+          }
+        },
+        {
+          "id": "ES04",
+          "clue_id": "R1-08",
+          "part": "A",
+          "is_decoy": false,
+          "chain": "study",
+          "seq": 4,
+          "hiding": {
+            "room": "study",
+            "object_id": "filing_cabinet",
+            "spot": "top drawer, behind the folders",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "Printer sheet 1",
+            "style": {
+              "ink": "black",
+              "paper": "fanfold"
+            },
+            "lines": [
+              "LOGINS",
+              "LOGIN src=WS-DANIEL token=TK-01",
+              "LOGIN src=WS-MARA token=TK-02",
+              "LOGIN src=TABLET-01 token=TK-03",
+              "LOGIN src=SRC-0311 token=TK-04",
+              "LOGIN src=HOUSE-CORE token=TK-05",
+              "LOGIN src=TABLET-02 token=TK-06",
+              "LOGIN src=SRC-0477 token=TK-07"
+            ],
+            "corner_mark": "",
+            "image_file": "",
+            "audio_file": ""
+          },
+          "locate_hint": "Filed between folders inside the top metal filing cabinet drawer.",
+          "secret": {
+            "note": "logins"
+          }
+        },
+        {
+          "id": "ES05",
+          "clue_id": "R1-06",
+          "part": "B",
+          "is_decoy": false,
+          "chain": "study",
+          "seq": 5,
+          "hiding": {
+            "room": "study",
+            "object_id": "sticky_wall",
+            "spot": "behind the yellow notes",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "CRT screen dump tape 2",
+            "style": {
+              "ink": "blue",
+              "paper": "yellow note"
+            },
+            "lines": [
+              "01000111 01001110"
+            ],
+            "corner_mark": "",
+            "image_file": "",
+            "audio_file": ""
+          },
+          "locate_hint": "Hidden behind the cluster of urgent sticky notes on the wall.",
+          "secret": {
+            "chunk": "RoZSBkb29yIG11c3QgbmV2ZXIgYmUg"
+          }
+        },
+        {
+          "id": "ES06",
+          "clue_id": "R1-07",
+          "part": "B",
+          "is_decoy": false,
+          "chain": "study",
+          "seq": 6,
+          "hiding": {
+            "room": "study",
+            "object_id": "armchair",
+            "spot": "between cushion and frame",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "Editor window capture",
+            "style": {
+              "ink": "green",
+              "paper": "screenshot"
+            },
+            "lines": [
+              "// core_dump.c",
+              "// DUMP continues:",
+              "20 50 52 4F 43 45 53 53 20 48 4F 4C 4C 4F"
+            ],
+            "corner_mark": "",
+            "image_file": "",
+            "audio_file": ""
+          },
+          "locate_hint": "Wedged between the deep leather cushions of the study armchair.",
+          "secret": {
+            "chunk": "20 50 52 4F 43 45 53 53 20 48 4F 4C 4C 4F"
+          }
+        },
+        {
+          "id": "ES07",
+          "clue_id": "R1-08",
+          "part": "B",
+          "is_decoy": false,
+          "chain": "study",
+          "seq": 7,
+          "hiding": {
+            "room": "study",
+            "object_id": "reel_recorder",
+            "spot": "taped under the reel",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "Printer sheet 2",
+            "style": {
+              "ink": "black",
+              "paper": "fanfold"
+            },
+            "lines": [
+              "TOKENS",
+              "TK-01 issued 1996-10-31 16:12:44",
+              "TK-02 issued 1996-10-31 17:03:10",
+              "TK-03 issued 1996-10-31 18:40:27",
+              "TK-04 issued 1996-10-31 20:31:05",
+              "TK-05 issued 1996-10-31 21:15:52",
+              "TK-06 issued 1996-10-31 22:09:33",
+              "TK-07 issued 2026-10-31 23:47:09"
+            ],
+            "corner_mark": "",
+            "image_file": "",
+            "audio_file": ""
+          },
+          "locate_hint": "Taped underneath the magnetic tape wheel on the reel-to-reel recorder.",
+          "secret": {
+            "note": "tokens"
+          }
+        },
+        {
+          "id": "ES08",
+          "clue_id": "R1-05",
+          "part": "B",
+          "is_decoy": false,
+          "chain": "study",
+          "seq": 8,
+          "hiding": {
+            "room": "study",
+            "object_id": "cable_bundle",
+            "spot": "a tag tied to the cables",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "Cable tag",
+            "style": {
+              "ink": "black",
+              "paper": "tag"
+            },
+            "lines": [
+              "01000101 01001111"
+            ],
+            "corner_mark": "",
+            "image_file": "",
+            "audio_file": ""
+          },
+          "locate_hint": "Tangled inside the thick power cable bundle coiled under the desk.",
+          "secret": {
+            "chunk": "EO"
+          }
+        },
+        {
+          "id": "ES09",
+          "clue_id": "R1-06",
+          "part": "C",
+          "is_decoy": false,
+          "chain": "study",
+          "seq": 9,
+          "hiding": {
+            "room": "study",
+            "object_id": "corkboard",
+            "spot": "the back of the board",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "CRT screen dump tape 3",
+            "style": {
+              "ink": "black",
+              "paper": "cork backing"
+            },
+            "lines": [
+              "01000001 01001100"
+            ],
+            "corner_mark": "",
+            "image_file": "",
+            "audio_file": ""
+          },
+          "locate_hint": "Tacked to the lower wooden frame of the corkboard.",
+          "secret": {
+            "chunk": "b3BlbmVkIGZyb20gaW5zaWRlLg=="
+          }
+        },
+        {
+          "id": "ES10",
+          "clue_id": "R1-08",
+          "part": "C",
+          "is_decoy": false,
+          "chain": "study",
+          "seq": 10,
+          "hiding": {
+            "room": "study",
+            "object_id": "filing_cabinet",
+            "spot": "bottom drawer, false bottom",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "Printer sheet 3",
+            "style": {
+              "ink": "black",
+              "paper": "fanfold"
+            },
+            "lines": [
+              "POLICY",
+              "AUTHORISED SOURCES: WS-DANIEL, WS-MARA, TABLET-01, TABLET-02, HOUSE-CORE",
+              "HOUSE SEALED: 1996-10-31 23:59:59",
+              "A token issued after sealing is invalid."
+            ],
+            "corner_mark": "",
+            "image_file": "",
+            "audio_file": ""
+          },
+          "locate_hint": "Concealed at the very back of the lowest filing cabinet drawer.",
+          "secret": {
+            "note": "policy"
+          }
+        },
+        {
+          "id": "ES11",
+          "clue_id": "R1-07",
+          "part": "C",
+          "is_decoy": false,
+          "chain": "study",
+          "seq": 11,
+          "hiding": {
+            "room": "study",
+            "object_id": "floor_lamp",
+            "spot": "rolled in the lampshade",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "Printed memo",
+            "style": {
+              "ink": "black",
+              "paper": "white"
+            },
+            "lines": [
+              "...end of dump:",
+              "57 2E 53 59 53 20 48 41 4C 54 45 44"
+            ],
+            "corner_mark": "",
+            "image_file": "",
+            "audio_file": ""
+          },
+          "locate_hint": "Taped along the vertical brass pole of the corner floor lamp.",
+          "secret": {
+            "chunk": "57 2E 53 59 53 20 48 41 4C 54 45 44"
+          }
+        },
+        {
+          "id": "ES12",
+          "clue_id": "R1-05",
+          "part": "C",
+          "is_decoy": false,
+          "chain": "study",
+          "seq": 12,
+          "hiding": {
+            "room": "study",
+            "object_id": "wastebin",
+            "spot": "crumpled at the bottom",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "Screen protector scrap",
+            "style": {
+              "ink": "black",
+              "paper": "clear"
+            },
+            "lines": [
+              "Passcode: the name of the youngest one.",
+              "Four letters."
+            ],
+            "corner_mark": "",
+            "image_file": "",
+            "audio_file": ""
+          },
+          "locate_hint": "Crumpled at the bottom of the wire mesh wastebin beside the desk.",
+          "secret": {
+            "note": "context"
+          }
+        },
+        {
+          "id": "EK02",
+          "clue_id": "R1-09",
+          "part": "B",
+          "is_decoy": false,
+          "chain": "basement",
+          "seq": 2,
+          "hiding": {
+            "room": "study",
+            "object_id": "reel_recorder",
+            "spot": "the recorder's case",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "Corrupted reel tape segment",
+            "style": {
+              "ink": "black",
+              "paper": "reel"
+            },
+            "lines": [
+              "[STATIC FREQUENCY OVERRIDE - DATA UNRECOVERABLE]",
+              "TRANSMISSION INTEGRITY: 0%"
+            ],
+            "corner_mark": "",
+            "image_file": "",
+            "audio_file": "rec_b.wav"
+          },
+          "locate_hint": "Stored inside the auxiliary compartment of the reel-to-reel recorder.",
+          "secret": {
+            "spoken_word": "CLOSE"
+          }
+        },
+        {
+          "id": "EK03",
+          "clue_id": "R1-10",
+          "part": "B",
+          "is_decoy": false,
+          "chain": "basement",
+          "seq": 3,
+          "hiding": {
+            "room": "study",
+            "object_id": "bookshelf",
+            "spot": "behind a row of books",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "Folded note, aged paper",
+            "style": {
+              "ink": "blue",
+              "paper": "aged"
+            },
+            "lines": [
+              "FFA JCXAZAASD NZ"
+            ],
+            "corner_mark": "",
+            "image_file": "",
+            "audio_file": ""
+          },
+          "locate_hint": "Hidden behind a row of technical binders on the lower bookshelf.",
+          "secret": {
+            "chunk": "FFA JCXAZAASD NZ"
+          }
+        },
+        {
+          "id": "XS01",
+          "clue_id": null,
+          "part": null,
+          "is_decoy": true,
+          "chain": null,
+          "seq": null,
+          "hiding": {
+            "room": "study",
+            "object_id": "window",
+            "spot": "the sill",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "Old terminal printout",
+            "style": {
+              "ink": "green",
+              "paper": "fanfold"
+            },
+            "lines": [
+              "DUMP (old):",
+              "4B 45 45 50 20 54 48 45 20 4C 49 47 48 54 53 20 4F 4E"
+            ],
+            "corner_mark": "",
+            "image_file": "",
+            "audio_file": ""
+          },
+          "locate_hint": "Resting on the dust-covered outer sill of the study window.",
+          "secret": {
+            "note": "decoy"
+          }
+        },
+        {
+          "id": "XS02",
+          "clue_id": null,
+          "part": null,
+          "is_decoy": true,
+          "chain": null,
+          "seq": null,
+          "hiding": {
+            "room": "study",
+            "object_id": "radiator",
+            "spot": "behind the pipes",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "Sticky note",
+            "style": {
+              "ink": "black",
+              "paper": "yellow"
+            },
+            "lines": [
+              "01001100 01000101",
+              "01001110 01000001"
+            ],
+            "corner_mark": "",
+            "image_file": "",
+            "audio_file": ""
+          },
+          "locate_hint": "Slid behind the rusted cast-iron radiator pipes against the wall.",
+          "secret": {
+            "note": "decoy"
+          }
+        }
+      ],
+      "basket": {
+        "opens_when": "all_room_pieces_collected"
+      }
+    },
+    {
+      "id": "basement",
+      "round": 1,
+      "order": 3,
+      "title": "The Basement",
+      "unlock": {
+        "all_clues_resolved": [
+          "study"
+        ]
+      },
+      "theme": {
+        "bg_top": "#14161a",
+        "bg_bottom": "#1f1115",
+        "accent": "#ff4d4d",
+        "glow": "#ff8a8a",
+        "text": "#ffd6d6",
+        "lamp": "#ff2a2a",
+        "fog": 0.25,
+        "vignette": 0.7
+      },
+      "ambient": {
+        "loop": "amb_basement.mp3",
+        "sfx": [
+          "server_hum.mp3",
+          "pipe_drip.mp3"
+        ]
+      },
+      "objects": [
+        {
+          "id": "intercom",
+          "label": "Wall intercom",
+          "kind": "clue_entry",
+          "clue_id": "R1-09",
+          "visible": true
+        },
+        {
+          "id": "rack_door",
+          "label": "Server rack door with note",
+          "kind": "clue_entry",
+          "clue_id": "R1-10",
+          "visible": true
+        },
+        {
+          "id": "containment_console",
+          "label": "Containment console",
+          "kind": "clue_entry",
+          "clue_id": "R1-FIN",
+          "visible": true
+        },
+        {
+          "id": "server_rack",
+          "label": "Server rack",
+          "kind": "hiding",
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "maintenance_terminal",
+          "label": "Maintenance terminal",
+          "kind": "hiding",
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "toolbox",
+          "label": "Toolbox",
+          "kind": "hiding",
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "floor_seal",
+          "label": "Circular floor seal",
+          "kind": "hiding",
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "wall_monitor",
+          "label": "Countdown monitor",
+          "kind": "decor",
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "pipes",
+          "label": "Pipes and steam",
+          "kind": "decor",
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "barrels",
+          "label": "Barrels and crates",
+          "kind": "decor",
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "fuse_box",
+          "label": "Fuse box",
+          "kind": "decor",
+          "clue_id": null,
+          "visible": true
+        }
+      ],
+      "evidence": [
+        {
+          "id": "EK04",
+          "clue_id": "R1-09",
+          "part": "C",
+          "is_decoy": false,
+          "chain": "basement",
+          "seq": 4,
+          "hiding": {
+            "room": "basement",
+            "object_id": "server_rack",
+            "spot": "the printer tray",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "Decoy Transmission Card (QR-1)",
+            "style": {
+              "ink": "black",
+              "paper": "fanfold"
+            },
+            "lines": [
+              "EMERGENCY BROADCAST CARD [DECOY]",
+              "SCAN QR TO VERIFY TRANSMISSION STATUS"
+            ],
+            "corner_mark": "QR-1",
+            "image_file": "",
+            "audio_file": ""
+          },
+          "locate_hint": "Slid inside the ventilated chassis bay of the primary server rack.",
+          "secret": {
+            "qr_label": "QR-1",
+            "role": "decoy"
+          }
+        },
+        {
+          "id": "EK05",
+          "clue_id": "R1-09",
+          "part": "A",
+          "is_decoy": false,
+          "chain": "basement",
+          "seq": 5,
+          "hiding": {
+            "room": "basement",
+            "object_id": "maintenance_terminal",
+            "spot": "the terminal's audio player",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "Station Clearance Card (QR-2)",
+            "style": {
+              "ink": "black",
+              "paper": "digital"
+            },
+            "lines": [
+              "PRIMARY INTERCOM RELAY CARD [AUTHENTIC]",
+              "SCAN QR TO RETRIEVE AUTHORIZATION PASSCODE"
+            ],
+            "corner_mark": "QR-2",
+            "image_file": "",
+            "audio_file": "rec_a.wav"
+          },
+          "locate_hint": "Taped behind the CRT housing of the maintenance terminal desk.",
+          "secret": {
+            "qr_label": "QR-2",
+            "role": "correct",
+            "passcode": "RELAY-92"
+          }
+        },
+        {
+          "id": "EK06",
+          "clue_id": "R1-10",
+          "part": "C",
+          "is_decoy": false,
+          "chain": "basement",
+          "seq": 6,
+          "hiding": {
+            "room": "basement",
+            "object_id": "toolbox",
+            "spot": "under the tool tray",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "Folded note, aged paper",
+            "style": {
+              "ink": "blue",
+              "paper": "aged"
+            },
+            "lines": [
+              "KZS ESS OLOW"
+            ],
+            "corner_mark": "",
+            "image_file": "",
+            "audio_file": ""
+          },
+          "locate_hint": "Hidden beneath the heavy wrenches in the rusted metal toolbox.",
+          "secret": {
+            "chunk": "KZS ESS OLOW"
+          }
+        },
+        {
+          "id": "XK01",
+          "clue_id": null,
+          "part": null,
+          "is_decoy": true,
+          "chain": null,
+          "seq": null,
+          "hiding": {
+            "room": "basement",
+            "object_id": "floor_seal",
+            "spot": "under the grating",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "Clean printed note",
+            "style": {
+              "ink": "black",
+              "paper": "white glossy"
+            },
+            "lines": [
+              "VDPY HDL GPLZ WA ATOBENVE"
+            ],
+            "corner_mark": "",
+            "image_file": "",
+            "audio_file": ""
+          },
+          "locate_hint": "Etched into the iron ring around the central floor seal.",
+          "secret": {
+            "note": "decoy"
+          }
+        },
+        {
+          "id": "XK02",
+          "clue_id": null,
+          "part": null,
+          "is_decoy": true,
+          "chain": null,
+          "seq": null,
+          "hiding": {
+            "room": "basement",
+            "object_id": "server_rack",
+            "spot": "a drive bay",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "Maintenance checklist scrap",
+            "style": {
+              "ink": "blue",
+              "paper": "lined"
+            },
+            "lines": [
+              "QZX VMT KLP RWN BHD"
+            ],
+            "corner_mark": "",
+            "image_file": "",
+            "audio_file": ""
+          },
+          "locate_hint": "Tangled among the rear communication cables behind the server rack.",
+          "secret": {
+            "note": "decoy"
+          }
+        }
+      ],
+      "basket": {
+        "opens_when": "all_room_pieces_collected"
+      }
+    },
+    {
+      "id": "records",
+      "round": 2,
+      "order": 1,
+      "title": "The Records Archive",
+      "unlock": {
+        "at_start": true
+      },
+      "theme": {
+        "bg_top": "#1e1b14",
+        "bg_bottom": "#2d2818",
+        "accent": "#e7c97a",
+        "glow": "#fff2c0",
+        "text": "#f3ead0",
+        "lamp": "#dfe9ff",
+        "fog": 0.2,
+        "vignette": 0.5
+      },
+      "ambient": {
+        "loop": "amb_records.mp3",
+        "sfx": [
+          "fluorescent_buzz.mp3",
+          "paper_shuffle.mp3"
+        ]
+      },
+      "objects": [
+        {
+          "id": "filing_cabinets",
+          "label": "Filing cabinets",
+          "kind": "decor",
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "ceiling_light",
+          "label": "Flickering light",
+          "kind": "decor",
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "report_folder",
+          "label": "Yellowed incident folder",
+          "kind": "clue_entry",
+          "clue_id": "R2-02",
+          "visible": true
+        },
+        {
+          "id": "microfilm_reader",
+          "label": "Microfilm reader",
+          "kind": "clue_entry",
+          "clue_id": "R2-03",
+          "visible": true
+        },
+        {
+          "id": "timeline_board",
+          "label": "Whiteboard of event cards",
+          "kind": "clue_entry",
+          "clue_id": "R2-04",
+          "visible": true
+        },
+        {
+          "id": "bulkhead_door",
+          "label": "Sealed bulkhead door",
+          "kind": "clue_entry",
+          "clue_id": "R2-07",
+          "visible": true
+        },
+        {
+          "id": "filing_cabinet_a",
+          "label": "Filing cabinet A",
+          "kind": "interactive_fragment",
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "filing_cabinet_b",
+          "label": "Filing cabinet B",
+          "kind": "interactive_fragment",
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "archive_shelves",
+          "label": "Archive shelves",
+          "kind": "interactive_fragment",
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "clerk_desk",
+          "label": "Clerk's desk",
+          "kind": "interactive_fragment",
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "card_catalog",
+          "label": "Card catalog",
+          "kind": "interactive_fragment",
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "waste_basket",
+          "label": "Waste basket",
+          "kind": "interactive_fragment",
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "vent_grate",
+          "label": "Vent grate",
+          "kind": "interactive_fragment",
+          "clue_id": null,
+          "visible": true
+        }
+      ],
+      "evidence": [
+        {
+          "id": "ER01",
+          "clue_id": "R2-02",
+          "part": "A",
+          "is_decoy": false,
+          "chain": "records",
+          "seq": 1,
+          "hiding": {
+            "room": "records",
+            "object_id": "filing_cabinet_a",
+            "spot": "inside the bottom drawer, under a collapsed stack of papers",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "Water-stained requisition form",
+            "style": {
+              "ink": "black",
+              "paper": "bureaucratic"
+            },
+            "lines": [
+              "FACILITY REQUISITION — SUBSTATION DELTA",
+              "Date: 14 AUG 1983",
+              "Item: Containment-grade polymer sealant x40",
+              "Authorised: M. CORVIN"
+            ],
+            "corner_mark": "REQ-83-114",
+            "image_file": "",
+            "audio_file": ""
+          },
+          "locate_hint": "The lowest drawer of the first cabinet on the east wall.",
+          "secret": {
+            "note": "Requisition date matches the official shutdown date — but sealant was ordered AFTER shutdown. The facility was being sealed from inside."
+          }
+        },
+        {
+          "id": "ER02",
+          "clue_id": "R2-02",
+          "part": "B",
+          "is_decoy": false,
+          "chain": "records",
+          "seq": 2,
+          "hiding": {
+            "room": "records",
+            "object_id": "filing_cabinet_a",
+            "spot": "clipped to the inside back wall of the second drawer",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "Subject intake form — S-011",
+            "style": {
+              "ink": "black",
+              "paper": "bureaucratic"
+            },
+            "lines": [
+              "SUBJECT INTAKE FORM — SUBSTATION DELTA",
+              "Subject ID: S-011",
+              "Name: REDACTED",
+              "Intake Date: 02 JAN 1981",
+              "Referred by: M. CORVIN",
+              "Status at intake: VOLUNTARY (unverified)",
+              "Chamber assigned: 3"
+            ],
+            "corner_mark": "SIF-81-011",
+            "image_file": "",
+            "audio_file": ""
+          },
+          "locate_hint": "Clipped to the back wall of the second drawer, cabinet A — east wall.",
+          "secret": {
+            "note": "S-011 intake is documented. No corresponding exit, transfer or death record exists anywhere in this archive. Subject 011 never left Chamber 3."
+          }
+        },
+        {
+          "id": "ER03",
+          "clue_id": "R2-03",
+          "part": "A",
+          "is_decoy": false,
+          "chain": "records",
+          "seq": 3,
+          "hiding": {
+            "room": "records",
+            "object_id": "filing_cabinet_b",
+            "spot": "wedged behind the hanging folder dividers at the rear of the top drawer",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "Internal medical memo — post-mortem anomaly",
+            "style": {
+              "ink": "red",
+              "paper": "medical"
+            },
+            "lines": [
+              "INTERNAL MEDICAL MEMO — RESTRICTED",
+              "RE: Subjects 004, 007, 009",
+              "Issue: Standard post-mortem protocol cannot be completed.",
+              "Brain activity persists beyond clinical death threshold.",
+              "EEG readings continue. Source unidentified.",
+              "Recommendation: Do NOT remove subjects from Chamber environment.",
+              "Signed: Dr. F. ALDREN, Facility Physician"
+            ],
+            "corner_mark": "MED-83-REV",
+            "image_file": "",
+            "audio_file": ""
+          },
+          "locate_hint": "Behind the hanging folder dividers at the very back of the top drawer, cabinet B.",
+          "secret": {
+            "note": "Three subjects recorded as deceased are showing persistent post-mortem brain activity. The physician recommends keeping them in the Chamber — not removing them. Something is sustaining the signal."
+          }
+        },
+        {
+          "id": "ER04",
+          "clue_id": "R2-03",
+          "part": "B",
+          "is_decoy": false,
+          "chain": "records",
+          "seq": 4,
+          "hiding": {
+            "room": "records",
+            "object_id": "filing_cabinet_b",
+            "spot": "folded inside a hanging folder labelled CLASSIFIED — DO NOT FILE",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "Incident log — Chamber breach Delta-4",
+            "style": {
+              "ink": "black",
+              "paper": "bureaucratic"
+            },
+            "lines": [
+              "INCIDENT LOG — DELTA-4",
+              "Date: 03 MAR 1982  Time: 0247 hrs",
+              "Event: Containment breach, Sector 2 — Chamber 3 corridor",
+              "Response: Lockdown initiated. All personnel evacuated to Level 1.",
+              "Containment restored: 0312 hrs",
+              "Subject S-007: NOT RECOVERED",
+              "Official report filed: BREACH ATTRIBUTED TO EQUIPMENT FAULT",
+              "Actual cause: [REDACTED BY ORDER OF M. CORVIN]"
+            ],
+            "corner_mark": "INC-82-003",
+            "image_file": "",
+            "audio_file": ""
+          },
+          "locate_hint": "Inside the folder marked CLASSIFIED — DO NOT FILE. Cabinet B, mid-section.",
+          "secret": {
+            "note": "S-007 was never recovered after the 1982 breach. The official report blames equipment. Corvin personally redacted the actual cause. S-007 is still unaccounted for."
+          }
+        },
+        {
+          "id": "ER05",
+          "clue_id": "R2-04",
+          "part": "A",
+          "is_decoy": false,
+          "chain": "records",
+          "seq": 5,
+          "hiding": {
+            "room": "records",
+            "object_id": "archive_shelves",
+            "spot": "inside a waterlogged cardboard box on the third shelf, labelled DELTA 1980",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "Project Echo Chamber — Progress Report, Cycle 3",
+            "style": {
+              "ink": "black",
+              "paper": "bureaucratic"
+            },
+            "lines": [
+              "PROGRESS REPORT — PROJECT ECHO CHAMBER",
+              "Cycle: 3  |  Period: JAN — DEC 1980",
+              "Lead Researcher: DR. M. CORVIN",
+              "Objective: Persistent consciousness recording via bio-neural substrate",
+              "Subjects enrolled this cycle: 4",
+              "Phase reached: Substrate integration (partial)",
+              "Declared oversight body: NONE",
+              "Internal classification: EYES ONLY"
+            ],
+            "corner_mark": "RPT-80-003",
+            "image_file": "",
+            "audio_file": ""
+          },
+          "locate_hint": "Inside the box labelled DELTA 1980 — third shelf of the archive unit, left-hand side.",
+          "secret": {
+            "note": "Project Echo Chamber was running in 1980 with no declared oversight body. Corvin was conducting human consciousness experiments without institutional knowledge or approval."
+          }
+        },
+        {
+          "id": "ER06",
+          "clue_id": "R2-04",
+          "part": "B",
+          "is_decoy": false,
+          "chain": "records",
+          "seq": 6,
+          "hiding": {
+            "room": "records",
+            "object_id": "archive_shelves",
+            "spot": "inside a manila envelope taped to the rear panel of the bottom shelf",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "Facility photograph — Chamber 3, operational",
+            "style": {
+              "ink": "sepia",
+              "paper": "photo"
+            },
+            "lines": [
+              "[PHOTOGRAPH — PRINTED ON STANDARD FACILITY STOCK]",
+              "Caption (rear, handwritten): 'Chamber 3 — fully operational'",
+              "Date stamp (printed): 11 OCT 1984",
+              "Official shutdown date: 14 AUG 1983"
+            ],
+            "corner_mark": "PHT-84-011",
+            "image_file": "",
+            "audio_file": ""
+          },
+          "locate_hint": "Inside a manila envelope, taped to the back panel of the lowest shelf.",
+          "secret": {
+            "note": "This photograph is dated 14 months after the official facility shutdown. Chamber 3 is shown fully operational with equipment running. The closure was a fabrication."
+          }
+        },
+        {
+          "id": "ER07",
+          "clue_id": "R2-02",
+          "part": "C",
+          "is_decoy": false,
+          "chain": "records",
+          "seq": 7,
+          "hiding": {
+            "room": "records",
+            "object_id": "clerk_desk",
+            "spot": "folded beneath the desk mat, right-hand side",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "Corvin personal note — undated",
+            "style": {
+              "ink": "black",
+              "paper": "handwritten"
+            },
+            "lines": [
+              "— Personal, M.C. —",
+              "Shutdown paperwork filed with the board.",
+              "Facility continues on internal power and private funding.",
+              "Badge access maintained: BDG-0388.",
+              "Only Aldren and two operators know.",
+              "The others think it's over.",
+              "It is not over."
+            ],
+            "corner_mark": "",
+            "image_file": "",
+            "audio_file": ""
+          },
+          "locate_hint": "Lift the desk mat — it's folded beneath it on the right side.",
+          "secret": {
+            "note": "Corvin's handwritten confirmation that the facility continued operating in secret after the official shutdown. Badge BDG-0388 remained active. Only four people knew."
+          }
+        },
+        {
+          "id": "ER08",
+          "clue_id": "R2-04",
+          "part": "C",
+          "is_decoy": false,
+          "chain": "records",
+          "seq": 8,
+          "hiding": {
+            "room": "records",
+            "object_id": "card_catalog",
+            "spot": "inside the drawer labelled S, tucked behind the last index card",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "Subject status card — S-011",
+            "style": {
+              "ink": "black",
+              "paper": "index_card"
+            },
+            "lines": [
+              "SUBJECT STATUS — INTERNAL INDEX",
+              "ID: S-011",
+              "Current status: UNRESOLVED",
+              "Last documented location: CHAMBER 3",
+              "Last log entry: 14 AUG 1983",
+              "Exit record: NONE",
+              "Death record: NONE",
+              "ANNOTATION (red ink): DO NOT OPEN CHAMBER 3"
+            ],
+            "corner_mark": "IDX-S-011",
+            "image_file": "",
+            "audio_file": ""
+          },
+          "locate_hint": "Open the S drawer of the card catalog. It's the last card at the very back.",
+          "secret": {
+            "note": "S-011 appears in multiple documents but has no exit record, no transfer, and no death record. The annotation 'DO NOT OPEN CHAMBER 3' is written in what appears to be a different hand — added later."
+          }
+        },
+        {
+          "id": "ER09",
+          "clue_id": "R2-07",
+          "part": "A",
+          "is_decoy": false,
+          "chain": "records",
+          "seq": 9,
+          "hiding": {
+            "room": "records",
+            "object_id": "vent_grate",
+            "spot": "folded and taped to the inside face of the vent cover",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "Emergency Containment Protocol — ECHO ZERO",
+            "style": {
+              "ink": "red",
+              "paper": "bureaucratic"
+            },
+            "lines": [
+              "EMERGENCY CONTAINMENT PROTOCOL",
+              "Designation: ECHO ZERO",
+              "Trigger condition: Substrate breach or unauthorised contact",
+              "Activation method: Terminal input at Vault Control Console",
+              "Required authorisation code: BADGE BDG-0388",
+              "Effect: Full electromagnetic seal of Chamber 3",
+              "WARNING: Protocol irreversible once executed"
+            ],
+            "corner_mark": "ECP-83-001",
+            "image_file": "",
+            "audio_file": ""
+          },
+          "locate_hint": "The vent grate near the floor on the north wall — the cover lifts from the bottom. It's taped inside.",
+          "secret": {
+            "note": "Echo Zero is the containment protocol. It requires Corvin's badge number to activate. It permanently seals Chamber 3. Someone hid this here — not filed, not destroyed."
+          }
+        },
+        {
+          "id": "ER10",
+          "clue_id": "R2-07",
+          "part": "B",
+          "is_decoy": false,
+          "chain": "records",
+          "seq": 10,
+          "hiding": {
+            "room": "records",
+            "object_id": "clerk_desk",
+            "spot": "inside the locked top drawer (key hidden beneath the base of the desk lamp)",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "Official closure notice — FORGED",
+            "style": {
+              "ink": "black",
+              "paper": "bureaucratic"
+            },
+            "lines": [
+              "OFFICIAL CLOSURE NOTICE",
+              "Facility: Substation Delta, Hollow House Lower Level",
+              "Order reference: GOV/83/CLO/447",
+              "Signed: DR. MILO CORVIN, Lead Researcher",
+              "Date: 14 AUG 1983",
+              "Witnessed by: [ILLEGIBLE]",
+              "— — —",
+              "[ARCHIVAL ANALYSIS NOTE — ADDED LATER]",
+              "Signature on this document does NOT match authenticated",
+              "Corvin handwriting samples from 1979 personnel file.",
+              "This document is a FORGERY. Filed by Corvin himself."
+            ],
+            "corner_mark": "CLO-83-001",
+            "image_file": "",
+            "audio_file": ""
+          },
+          "locate_hint": "The key is under the lamp base on the clerk's desk. It opens the top drawer.",
+          "secret": {
+            "note": "The official shutdown notice is a forgery — signed by Corvin but not in his authenticated handwriting. He filed a fake closure document and continued the experiments under cover of legal shutdown."
+          }
+        },
+        {
+          "id": "XR01",
+          "clue_id": null,
+          "part": null,
+          "is_decoy": true,
+          "chain": "records",
+          "seq": null,
+          "hiding": {
+            "room": "records",
+            "object_id": "waste_basket",
+            "spot": "crumpled at the top of the waste basket",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "Crumpled canteen order form",
+            "style": {
+              "ink": "black",
+              "paper": "bureaucratic"
+            },
+            "lines": [
+              "SUBSTATION DELTA — CATERING REQUEST",
+              "Week of: 07 AUG 1983",
+              "Order: Standard provisions x12",
+              "Authorised: DUTY MANAGER",
+              "— Routine weekly order, no anomalies —"
+            ],
+            "corner_mark": "CTN-83-408",
+            "image_file": "",
+            "audio_file": ""
+          },
+          "locate_hint": "It's crumpled at the top of the waste basket — probably nothing.",
+          "secret": {
+            "note": "Decoy. Standard catering form. No story relevance."
+          }
+        },
+        {
+          "id": "XR02",
+          "clue_id": null,
+          "part": null,
+          "is_decoy": true,
+          "chain": "records",
+          "seq": null,
+          "hiding": {
+            "room": "records",
+            "object_id": "archive_shelves",
+            "spot": "loose on the top shelf among water-damaged folders",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "Supply delivery confirmation",
+            "style": {
+              "ink": "black",
+              "paper": "bureaucratic"
+            },
+            "lines": [
+              "DELIVERY CONFIRMATION — DELTA STORES",
+              "Order ref: STR-82-091",
+              "Delivered: 22 APR 1982",
+              "Items: Stationery, cleaning supplies, light bulbs x24",
+              "Received by: STORES OFFICER"
+            ],
+            "corner_mark": "STR-82-091",
+            "image_file": "",
+            "audio_file": ""
+          },
+          "locate_hint": "Loose on the top shelf — looks like it got separated from a folder.",
+          "secret": {
+            "note": "Decoy. Standard stores delivery confirmation. No story relevance."
+          }
+        }
+      ],
+      "basket": {
+        "opens_when": "all_room_pieces_collected"
+      }
+    },
+    {
+      "id": "control",
+      "round": 2,
+      "order": 2,
+      "title": "The Control Room",
+      "unlock": {
+        "at_start": true
+      },
+      "theme": {
+        "bg_top": "#0a1220",
+        "bg_bottom": "#101c33",
+        "accent": "#4ab3ff",
+        "glow": "#9fd6ff",
+        "text": "#d6ecff",
+        "lamp": "#4ab3ff",
+        "fog": 0.12,
+        "vignette": 0.55
+      },
+      "ambient": {
+        "loop": "amb_control.mp3",
+        "sfx": [
+          "static_burst.mp3",
+          "relay_click.mp3"
+        ]
+      },
+      "objects": [
+        {
+          "id": "monitor_bank",
+          "label": "Bank of old monitors",
+          "kind": "decor",
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "staff_terminal",
+          "label": "Staff terminal",
+          "kind": "clue_entry",
+          "clue_id": "R2-01",
+          "visible": true
+        },
+        {
+          "id": "radio_console",
+          "label": "Transmission receiver",
+          "kind": "clue_entry",
+          "clue_id": "R2-05",
+          "visible": true
+        },
+        {
+          "id": "sound_console",
+          "label": "Sound console",
+          "kind": "clue_entry",
+          "clue_id": "R2-06",
+          "visible": true
+        },
+        {
+          "id": "dead_intercom",
+          "label": "Dead intercom",
+          "kind": "decor",
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "relay_rack",
+          "label": "Relay rack",
+          "kind": "interactive_fragment",
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "tape_deck_cart",
+          "label": "Tape deck cart",
+          "kind": "interactive_fragment",
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "operator_chair",
+          "label": "Operator chair",
+          "kind": "interactive_fragment",
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "cable_trench",
+          "label": "Cable trench",
+          "kind": "interactive_fragment",
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "wall_clipboard",
+          "label": "Wall clipboard",
+          "kind": "interactive_fragment",
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "fuse_box",
+          "label": "Fuse box",
+          "kind": "interactive_fragment",
+          "clue_id": null,
+          "visible": true
+        }
+      ],
+      "evidence": [
+        {
+          "id": "EC01",
+          "clue_id": "R2-01",
+          "part": "A",
+          "is_decoy": false,
+          "chain": "control",
+          "seq": 1,
+          "hiding": {
+            "room": "control",
+            "object_id": "relay_rack",
+            "spot": "slipped behind the top relay panel, against the rear wall",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "Transmission log — Channel 7, 14 AUG 1983",
+            "style": {
+              "ink": "black",
+              "paper": "typewriter"
+            },
+            "lines": [
+              "TRANSMISSION LOG — CHANNEL 7",
+              "Date: 14 AUG 1983  |  Time: 23:41 hrs",
+              "Originating node: DELTA CONTROL",
+              "Destination: EXTERNAL — FREQUENCY 7.455 MHz",
+              "Recipient: UNREGISTERED",
+              "Duration: 4 min 12 sec",
+              "Content summary: [WITHHELD — BY ORDER OF M. CORVIN]",
+              "Logged by: DUTY OPERATOR (signature illegible)"
+            ],
+            "corner_mark": "TXL-83-114",
+            "image_file": "",
+            "audio_file": ""
+          },
+          "locate_hint": "Reach behind the top relay panel — it's wedged against the wall.",
+          "secret": {
+            "note": "An outbound transmission was made at 23:41 on the night of the official shutdown — to an unregistered external frequency. The content was withheld by Corvin's direct order. Someone was warned before the lockdown."
+          }
+        },
+        {
+          "id": "EC02",
+          "clue_id": "R2-01",
+          "part": "B",
+          "is_decoy": false,
+          "chain": "control",
+          "seq": 2,
+          "hiding": {
+            "room": "control",
+            "object_id": "relay_rack",
+            "spot": "folded inside the cable bundle tied at the base of the rack",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "Equipment requisition — long-range repeaters",
+            "style": {
+              "ink": "black",
+              "paper": "bureaucratic"
+            },
+            "lines": [
+              "EQUIPMENT REQUISITION — DELTA CONTROL",
+              "Date: 20 SEP 1983",
+              "Requested by: CORVIN, M. (BDG-0388)",
+              "Item: Long-range radio repeater, model RX-440  x2",
+              "Item: Coaxial cabling, 30m spools  x6",
+              "Purpose stated: Routine maintenance",
+              "Approval: SELF-AUTHORISED",
+              "Note: Facility officially closed 14 AUG 1983"
+            ],
+            "corner_mark": "EQR-83-220",
+            "image_file": "",
+            "audio_file": ""
+          },
+          "locate_hint": "It's folded inside the cable bundle at the bottom of the relay rack — look inside the zip tie loops.",
+          "secret": {
+            "note": "Corvin self-authorised radio equipment five weeks after the official closure — using his own badge. He was expanding the facility's communications capability after the shutdown, not winding it down."
+          }
+        },
+        {
+          "id": "EC03",
+          "clue_id": "R2-05",
+          "part": "A",
+          "is_decoy": false,
+          "chain": "control",
+          "seq": 3,
+          "hiding": {
+            "room": "control",
+            "object_id": "tape_deck_cart",
+            "spot": "on the shelf beneath the tape deck, inside a black padded equipment case",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "Maintenance report — CRT bank fault",
+            "style": {
+              "ink": "black",
+              "paper": "typewriter"
+            },
+            "lines": [
+              "MAINTENANCE REPORT — DELTA CONTROL",
+              "Date: 07 NOV 1983",
+              "Reported fault: Monitor bank, units 4–6",
+              "Fault description: Continuous loop feed from Chamber 3.",
+              "Feed content: Corridor footage, no visible movement.",
+              "Feed origin: Unknown — not matching any active camera ID.",
+              "Action taken: NONE",
+              "Note appended by supervisor: DO NOT DISCONNECT — per Dr C"
+            ],
+            "corner_mark": "MNT-83-311",
+            "image_file": "",
+            "audio_file": ""
+          },
+          "locate_hint": "Open the black padded case on the shelf below the tape deck cart.",
+          "secret": {
+            "note": "Monitors 4–6 are receiving a continuous loop feed from Chamber 3 — from a camera ID that doesn't exist in the system. Corvin has explicitly ordered staff not to disconnect it. This feed is still running."
+          }
+        },
+        {
+          "id": "EC04",
+          "clue_id": "R2-05",
+          "part": "B",
+          "is_decoy": false,
+          "chain": "control",
+          "seq": 4,
+          "hiding": {
+            "room": "control",
+            "object_id": "tape_deck_cart",
+            "spot": "wedged between two tape reels at the top of the cart",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "Handwritten operator note — undated",
+            "style": {
+              "ink": "blue",
+              "paper": "handwritten"
+            },
+            "lines": [
+              "[Handwritten on a folded piece of notepaper]",
+              "'Monitor 6 is showing again.'",
+              "'Same figure in the east corridor. Same posture. Same place.'",
+              "'I ran the tape back. It's not on any recording.'",
+              "'It's only live.'",
+              "'I'm not logging this. I want to go home.'",
+              "— [no signature]"
+            ],
+            "corner_mark": "",
+            "image_file": "",
+            "audio_file": ""
+          },
+          "locate_hint": "It's folded between two tape reels on top of the cart.",
+          "secret": {
+            "note": "An unnamed operator describes a figure appearing live on monitor 6 — in the same location repeatedly. The figure does not appear on any recorded tape. It is only visible on the live feed. The operator refused to log it."
+          }
+        },
+        {
+          "id": "EC05",
+          "clue_id": "R2-06",
+          "part": "A",
+          "is_decoy": false,
+          "chain": "control",
+          "seq": 5,
+          "hiding": {
+            "room": "control",
+            "object_id": "operator_chair",
+            "spot": "slipped into the seat cushion side pocket",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "Radio intercept printout — ECHO ZERO",
+            "style": {
+              "ink": "black",
+              "paper": "thermal"
+            },
+            "lines": [
+              "AUTOMATED RADIO INTERCEPT — DELTA RECEIVE",
+              "Frequency: 7.455 MHz",
+              "Date: 14 AUG 1983  |  Time: 23:58 hrs",
+              "Direction: INBOUND",
+              "Decoded content:",
+              "'Echo Zero authorised. Lock it down. Do not enter.'",
+              "'If it speaks, do not respond.'",
+              "Sender: UNIDENTIFIED"
+            ],
+            "corner_mark": "RIC-83-001",
+            "image_file": "",
+            "audio_file": ""
+          },
+          "locate_hint": "Tucked into the side pocket of the operator chair's seat cushion.",
+          "secret": {
+            "note": "At 23:58 on the shutdown night, an inbound transmission on the same frequency as Corvin's earlier outbound call authorised Echo Zero — the containment protocol. Someone outside the facility gave the order. 'If it speaks, do not respond.'"
+          }
+        },
+        {
+          "id": "EC06",
+          "clue_id": "R2-06",
+          "part": "B",
+          "is_decoy": false,
+          "chain": "control",
+          "seq": 6,
+          "hiding": {
+            "room": "control",
+            "object_id": "cable_trench",
+            "spot": "inside a waterproof sleeve taped to the concrete wall of the cable trench",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "Wiring schematic annotation — Loop 7-C",
+            "style": {
+              "ink": "red",
+              "paper": "technical"
+            },
+            "lines": [
+              "[SCHEMATIC ANNOTATION — HANDWRITTEN ON PRINTED DIAGRAM]",
+              "Loop 7-C: DO NOT CUT / DO NOT REROUTE",
+              "Connected to: CHAMBER 3 — BIOMETRIC FEED (live)",
+              "Signal type: Neural pattern telemetry",
+              "If severed: CONTAINMENT ALARM triggers automatically",
+              "If severed: ECHO ZERO initiation sequence aborts",
+              "— This annotation written by: M.C."
+            ],
+            "corner_mark": "SCH-83-7C",
+            "image_file": "",
+            "audio_file": ""
+          },
+          "locate_hint": "Drop into the cable trench — there's a waterproof sleeve taped to the left wall.",
+          "secret": {
+            "note": "Loop 7-C carries neural pattern telemetry from Chamber 3 — meaning something in Chamber 3 has measurable brain activity. Cutting this wire aborts Echo Zero. Corvin annotated this personally. The containment protocol cannot be run without this circuit intact."
+          }
+        },
+        {
+          "id": "EC07",
+          "clue_id": "R2-01",
+          "part": "C",
+          "is_decoy": false,
+          "chain": "control",
+          "seq": 7,
+          "hiding": {
+            "room": "control",
+            "object_id": "wall_clipboard",
+            "spot": "clipped beneath the top sheet on the wall-mounted operator clipboard",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "Shift handover — night of 14 AUG 1983",
+            "style": {
+              "ink": "black",
+              "paper": "handwritten"
+            },
+            "lines": [
+              "SHIFT HANDOVER NOTE — NIGHT, 14 AUG",
+              "To: Incoming operator (you know who you are)",
+              "'Do not acknowledge any signal from Delta on Channel 7.'",
+              "'Dr C has authorised a full communications blackout.'",
+              "'Nothing gets logged after 23:00. Nothing.'",
+              "'If the board asks: you weren't here.'",
+              "'If it makes a sound in Chamber 3: you heard nothing.'",
+              "— Outgoing operator"
+            ],
+            "corner_mark": "",
+            "image_file": "",
+            "audio_file": ""
+          },
+          "locate_hint": "It's clipped under the top sheet on the wall clipboard — you'll need to lift the first page.",
+          "secret": {
+            "note": "The outgoing operator explicitly instructed their replacement to log nothing after 23:00 — on the same night as the outbound transmission and Echo Zero authorisation. The reference to Chamber 3 'making a sound' is deliberate. The operators knew something was alive in there."
+          }
+        },
+        {
+          "id": "EC08",
+          "clue_id": "R2-05",
+          "part": "C",
+          "is_decoy": false,
+          "chain": "control",
+          "seq": 8,
+          "hiding": {
+            "room": "control",
+            "object_id": "fuse_box",
+            "spot": "taped to the inside door panel of the fuse box",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "Fuse box override instruction",
+            "style": {
+              "ink": "red",
+              "paper": "handwritten"
+            },
+            "lines": [
+              "[Handwritten note taped inside fuse box door]",
+              "FUSES 4, 7, 9 — DO NOT RESTORE TO OFF",
+              "These circuits feed Chamber 3.",
+              "They are meant to be on.",
+              "Anyone who switches them off will answer to me.",
+              "If the system looks broken, it isn't.",
+              "Leave it.",
+              "— M.C."
+            ],
+            "corner_mark": "",
+            "image_file": "",
+            "audio_file": ""
+          },
+          "locate_hint": "Open the fuse box. The note is taped to the inside of the door.",
+          "secret": {
+            "note": "Corvin personally ensured three fuse circuits feeding Chamber 3 remained live — permanently. He threatened anyone who interfered. These fuses are likely still on. Chamber 3 has had continuous power for over 40 years."
+          }
+        },
+        {
+          "id": "XC01",
+          "clue_id": null,
+          "part": null,
+          "is_decoy": true,
+          "chain": "control",
+          "seq": null,
+          "hiding": {
+            "room": "control",
+            "object_id": "operator_chair",
+            "spot": "wedged between the seat and backrest of the operator chair",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "Crumpled shift schedule",
+            "style": {
+              "ink": "black",
+              "paper": "bureaucratic"
+            },
+            "lines": [
+              "DELTA CONTROL — SHIFT SCHEDULE",
+              "Week: 08 AUG — 14 AUG 1983",
+              "Duty: Standard rotation, three operators",
+              "Signed off: Shift Supervisor, 06 AUG",
+              "— No anomalies noted —"
+            ],
+            "corner_mark": "SCH-83-W32",
+            "image_file": "",
+            "audio_file": ""
+          },
+          "locate_hint": "Jammed between the seat and backrest — probably fell out of someone's pocket.",
+          "secret": {
+            "note": "Decoy. Standard shift schedule from the week of the shutdown. No anomalies."
+          }
+        },
+        {
+          "id": "XC02",
+          "clue_id": null,
+          "part": null,
+          "is_decoy": true,
+          "chain": "control",
+          "seq": null,
+          "hiding": {
+            "room": "control",
+            "object_id": "wall_clipboard",
+            "spot": "top sheet of the wall-mounted clipboard",
+            "placement": "provisional"
+          },
+          "requires": {
+            "fragments": []
+          },
+          "display": {
+            "title": "Equipment sign-out log",
+            "style": {
+              "ink": "black",
+              "paper": "bureaucratic"
+            },
+            "lines": [
+              "EQUIPMENT SIGN-OUT LOG — DELTA CONTROL",
+              "Date: 10 AUG 1983",
+              "Item: Portable voltmeter  — signed out 09:15, returned 11:40",
+              "Item: Inspection torch  — signed out 13:00, returned 13:55",
+              "Signed: MAINTENANCE TECH (name illegible)",
+              "— All items accounted for —"
+            ],
+            "corner_mark": "EQL-83-810",
+            "image_file": "",
+            "audio_file": ""
+          },
+          "locate_hint": "It's the top sheet on the clipboard — this one's the first thing you see.",
+          "secret": {
+            "note": "Decoy. Standard equipment sign-out log from four days before the shutdown. No anomalies."
+          }
+        }
+      ],
+      "basket": {
+        "opens_when": "all_room_pieces_collected"
+      }
+    },
+    {
+      "id": "vault",
+      "round": 2,
+      "order": 3,
+      "title": "The Containment Vault",
+      "unlock": {
+        "clue_solved": "R2-07"
+      },
+      "theme": {
+        "bg_top": "#120d17",
+        "bg_bottom": "#1b0f2b",
+        "accent": "#38f0ff",
+        "glow": "#a99bff",
+        "text": "#e6ddff",
+        "lamp": "#7a5cff",
+        "fog": 0.18,
+        "vignette": 0.6
+      },
+      "ambient": {
+        "loop": "amb_vault.mp3",
+        "sfx": [
+          "core_pulse.mp3",
+          "steel_creak.mp3"
+        ]
+      },
+      "objects": [
+        {
+          "id": "core_glass",
+          "label": "Glowing core behind glass",
+          "kind": "decor",
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "countdown_timer",
+          "label": "Countdown timer",
+          "kind": "decor",
+          "clue_id": null,
+          "visible": true
+        },
+        {
+          "id": "manual_terminal",
+          "label": "Manual terminal",
+          "kind": "clue_entry",
+          "clue_id": "R2-08",
+          "visible": true
+        },
+        {
+          "id": "failsafe_panel",
+          "label": "Failsafe panel",
+          "kind": "clue_entry",
+          "clue_id": "R2-09",
+          "visible": true
+        },
+        {
+          "id": "central_console",
+          "label": "Central console",
+          "kind": "clue_entry",
+          "clue_id": "R2-10",
+          "visible": true
+        }
+      ],
+      "evidence": [],
+      "basket": {
+        "opens_when": "not_used"
+      }
+    }
+  ],
+  "clues": [
+    {
+      "id": "R1-01",
+      "round": 1,
+      "room": "bedroom",
+      "seq": 1,
+      "order_in_room": 1,
+      "kind": "evidence_case",
+      "case_file_id": "CF-0F3C",
+      "object_id": "diary",
+      "title": "Lena's Diary",
+      "scene_text": "A diary in the dark. Its last pages were torn out and scattered.",
+      "unlock": {
+        "requires_resolved": []
+      },
+      "input_gate": "room_evidence_complete",
+      "payload": {
+        "tools": []
+      },
+      "assets": [],
+      "stages": [
+        {
+          "index": 1,
+          "type": "fields",
+          "prompt": "Lena's last entry points to one place in the house. Which one? (one word)",
+          "fields": [
+            {
+              "key": "kw",
+              "label": "Keyword",
+              "kind": "text",
+              "normalize": "alnum",
+              "placeholder": "",
+              "max_len": 60
+            }
+          ],
+          "expected_fields": 1,
+          "answer_hash": "46b922efc779c578ec99ba0e248ed509cdfdfdfb11218e5efdada74d93d04f0b",
+          "answer_plain": null,
+          "reveal": {}
+        }
+      ],
+      "hints": [
+        {
+          "stage": 1,
+          "level": 1,
+          "text": "Some sentences are written to be read. Others are written to be walked through, one step at a time."
+        },
+        {
+          "stage": 1,
+          "level": 2,
+          "text": "A birthday tells you how many steps a house takes in one night."
+        },
+        {
+          "stage": 1,
+          "level": 3,
+          "text": "Turn back, as many times as there were candles on that cake."
+        }
+      ],
+      "attempts_max": 3,
+      "lockout": {
+        "after_wrong": null,
+        "seconds": 0
+      },
+      "reward": {
+        "photo_piece": "P01",
+        "story_text": "Lena underlined one place twice in the margin."
+      },
+      "feeds": [],
+      "solution": {
+        "method": "caesar"
+      },
+      "assembly": {
+        "type": "concat_text",
+        "parts_order": [
+          "A",
+          "B",
+          "C"
+        ],
+        "evidence_ids": [
+          "EB02",
+          "EB05",
+          "EB09"
+        ]
+      },
+      "secret": {
+        "parts_order": [
+          "A",
+          "B",
+          "C"
+        ]
+      },
+      "tools": [],
+      "final": false,
+      "hint_details": {
+        "location_prop": "Lena's Diary on the bedroom desk.",
+        "puzzle_type": "Caesar Shift Cipher",
+        "guidance": "Shift each ciphertext letter backward by Lena's age (14th birthday) to decipher the cleartext phrase."
+      }
+    },
+    {
+      "id": "R1-02",
+      "round": 1,
+      "room": "bedroom",
+      "seq": 2,
+      "order_in_room": 2,
+      "kind": "evidence_case",
+      "case_file_id": "CF-4143",
+      "object_id": "notebook",
+      "title": "Lena's Notebook",
+      "scene_text": "A school notebook, pages missing. Whoever tore them out was in a hurry.",
+      "unlock": {
+        "requires_resolved": []
+      },
+      "input_gate": "room_evidence_complete",
+      "payload": {
+        "tools": []
+      },
+      "assets": [],
+      "stages": [
+        {
+          "index": 1,
+          "type": "fields",
+          "prompt": "What hour does the notebook say the house will open? (one word)",
+          "fields": [
+            {
+              "key": "word",
+              "label": "One word",
+              "kind": "text",
+              "normalize": "alnum",
+              "placeholder": "",
+              "max_len": 60
+            }
+          ],
+          "expected_fields": 1,
+          "answer_hash": "a70c7ad77911f5c906e883d5165710f31bbd60d04b5f658083caf20308c1e7c9",
+          "answer_plain": null,
+          "reveal": {}
+        }
+      ],
+      "hints": [
+        {
+          "stage": 1,
+          "level": 1,
+          "text": "The same hand, another pocket, another count."
+        },
+        {
+          "stage": 1,
+          "level": 2,
+          "text": "A mother is honoured with paper that never falls."
+        },
+        {
+          "stage": 1,
+          "level": 3,
+          "text": "Count what was folded for her, then turn back that many."
+        }
+      ],
+      "attempts_max": 3,
+      "lockout": {
+        "after_wrong": null,
+        "seconds": 0
+      },
+      "reward": {
+        "photo_piece": "P02",
+        "story_text": "Dad's rule was written in pencil: the house keeps its own hour."
+      },
+      "feeds": [],
+      "solution": {
+        "method": "caesar"
+      },
+      "assembly": {
+        "type": "concat_text",
+        "parts_order": [
+          "A",
+          "B",
+          "C"
+        ],
+        "evidence_ids": [
+          "EB04",
+          "EB07",
+          "EB10"
+        ]
+      },
+      "secret": {
+        "parts_order": [
+          "A",
+          "B",
+          "C"
+        ]
+      },
+      "tools": [],
+      "final": false,
+      "hint_details": {
+        "location_prop": "Lena's Notebook beside the bedside nightstand.",
+        "puzzle_type": "Origami Count Reverse Shift",
+        "guidance": "Count the paper origami cranes folded for mother, then reverse each letter shift by that exact count."
+      }
+    },
+    {
+      "id": "R1-03",
+      "round": 1,
+      "room": "bedroom",
+      "seq": 3,
+      "order_in_room": 3,
+      "kind": "evidence_case",
+      "case_file_id": "CF-7441",
+      "object_id": "poster",
+      "title": "Torn Poster",
+      "scene_text": "A poster hangs almost black. Someone tore it into pieces and hid them.",
+      "unlock": {
+        "requires_resolved": []
+      },
+      "input_gate": "room_evidence_complete",
+      "payload": {
+        "tools": [
+          "invert",
+          "contrast",
+          "brightness"
+        ]
+      },
+      "assets": [
+        {
+          "id": "pp1",
+          "file": "poster_piece_1.png",
+          "kind": "image",
+          "brief": "Third 1 of the near-black poster (about 3 percent contrast). Hidden text: 'THE LAST PHOTO'. Left to right, torn edges."
+        },
+        {
+          "id": "pp2",
+          "file": "poster_piece_2.png",
+          "kind": "image",
+          "brief": "Third 2 of the near-black poster (about 3 percent contrast). Hidden text: 'WAS TAKEN ON 10/3'. Left to right, torn edges."
+        },
+        {
+          "id": "pp3",
+          "file": "poster_piece_3.png",
+          "kind": "image",
+          "brief": "Third 3 of the near-black poster (about 3 percent contrast). Hidden text: '1/1996'. Left to right, torn edges."
+        }
+      ],
+      "stages": [
+        {
+          "index": 1,
+          "type": "fields",
+          "prompt": "What date is hidden on the poster? (MM/DD/YYYY)",
+          "fields": [
+            {
+              "key": "date",
+              "label": "Date (MM/DD/YYYY)",
+              "kind": "text",
+              "normalize": "digits",
+              "placeholder": "",
+              "max_len": 60
+            }
+          ],
+          "expected_fields": 1,
+          "answer_hash": "370965cd044687aa4cacade8abf75073d454e4f0680b158c157f945a12a28aad",
+          "answer_plain": null,
+          "reveal": {}
+        }
+      ],
+      "hints": [
+        {
+          "stage": 1,
+          "level": 1,
+          "text": "Dark is only light nobody has asked yet."
+        },
+        {
+          "stage": 1,
+          "level": 2,
+          "text": "Ask the picture to trade its night for its day."
+        },
+        {
+          "stage": 1,
+          "level": 3,
+          "text": "The sentence is shy. It remembers the last time the family stood together."
+        }
+      ],
+      "attempts_max": 3,
+      "lockout": {
+        "after_wrong": null,
+        "seconds": 0
+      },
+      "reward": {
+        "photo_piece": "P03",
+        "story_text": "The date is the night the Vances vanished."
+      },
+      "feeds": [],
+      "solution": {
+        "method": "image_contrast"
+      },
+      "assembly": {
+        "type": "image_strips",
+        "parts_order": [
+          "A",
+          "B",
+          "C"
+        ],
+        "evidence_ids": [
+          "EB01",
+          "EB06",
+          "EB11"
+        ]
+      },
+      "secret": {
+        "parts_order": [
+          "A",
+          "B",
+          "C"
+        ],
+        "hidden_text": "THE LAST PHOTOWAS TAKEN ON 10/31/1996"
+      },
+      "tools": [],
+      "final": false,
+      "hint_details": {
+        "location_prop": "Torn poster pinned above the bedroom wall.",
+        "puzzle_type": "Image Steganography & Inverted Contrast",
+        "guidance": "Invert the shadows across the torn canvas edge to reveal the faint charcoal inscription."
+      }
+    },
+    {
+      "id": "R1-04",
+      "round": 1,
+      "room": "bedroom",
+      "seq": 4,
+      "order_in_room": 4,
+      "kind": "evidence_case",
+      "case_file_id": "CF-147E",
+      "object_id": "portrait",
+      "title": "The Vance Family Portrait",
+      "scene_text": "An aged oil portrait in a dusty gilt frame. Three torn canvas fragments fit along the lower border.",
+      "unlock": {
+        "requires_resolved": []
+      },
+      "input_gate": "room_evidence_complete",
+      "payload": {
+        "tools": [
+          "invert",
+          "contrast",
+          "brightness"
+        ]
+      },
+      "assets": [
+        {
+          "id": "pt1",
+          "file": "portrait_piece_1.png",
+          "kind": "image",
+          "brief": "Left canvas fragment showing torn border and faint charcoal lettering."
+        },
+        {
+          "id": "pt2",
+          "file": "portrait_piece_2.png",
+          "kind": "image",
+          "brief": "Middle canvas fragment."
+        },
+        {
+          "id": "pt3",
+          "file": "portrait_piece_3.png",
+          "kind": "image",
+          "brief": "Right canvas fragment."
+        }
+      ],
+      "stages": [
+        {
+          "index": 1,
+          "type": "fields",
+          "prompt": "What word is inscribed in faint pigment on the reverse of the canvas?",
+          "fields": [
+            {
+              "key": "kw",
+              "label": "Inscription",
+              "kind": "text",
+              "normalize": "alnum",
+              "placeholder": "",
+              "max_len": 60
+            }
+          ],
+          "expected_fields": 1,
+          "answer_hash": "684fe0875ece91e5a4b3457e417ac58b1055bedf54b91af073e187909045245b",
+          "answer_plain": null,
+          "reveal": {}
+        }
+      ],
+      "hints": [
+        {
+          "stage": 1,
+          "level": 1,
+          "text": "The canvas holds more than oil and varnish."
+        },
+        {
+          "stage": 1,
+          "level": 2,
+          "text": "Invert the dark shadows where the canvas tear meets."
+        },
+        {
+          "stage": 1,
+          "level": 3,
+          "text": "The charcoal inscription names what stands behind them."
+        }
+      ],
+      "attempts_max": 3,
+      "lockout": {
+        "after_wrong": null,
+        "seconds": 0
+      },
+      "reward": {
+        "photo_piece": "P04",
+        "story_text": "The tags were file numbers. One file remembers the year."
+      },
+      "feeds": [],
+      "solution": {
+        "method": "image_contrast"
+      },
+      "assembly": {
+        "type": "image_strips",
+        "parts_order": [
+          "A",
+          "B",
+          "C"
+        ],
+        "evidence_ids": [
+          "EB03",
+          "EB08",
+          "EB12"
+        ]
+      },
+      "secret": {
+        "parts_order": [
+          "A",
+          "B",
+          "C"
+        ],
+        "qr_codes": [
+          {
+            "label": "QR-1",
+            "encodes": "CF-0F3C",
+            "role": "decoy",
+            "placement_note": "Registration or sign-in desk (organisers choose)"
+          },
+          {
+            "label": "QR-2",
+            "encodes": "CF-7441",
+            "role": "correct",
+            "placement_note": "Notice board (organisers choose)"
+          }
+        ],
+        "validation_rule": "Correct identifier is the case file number of the clue whose answer contains a full year (the poster). The decoy is the diary, which has days but no year."
+      },
+      "tools": [],
+      "final": false,
+      "hint_details": {
+        "location_prop": "Vance Family Portrait hanging on the wall.",
+        "puzzle_type": "Canvas Inversion & Faint Pigment Deciphering",
+        "guidance": "Examine the canvas tear using the visual filter tool in Case Files to read the faint keyword inscribed along the margin."
+      }
+    },
+    {
+      "id": "R1-05",
+      "round": 1,
+      "room": "study",
+      "seq": 5,
+      "order_in_room": 1,
+      "kind": "evidence_case",
+      "case_file_id": "CF-D623",
+      "object_id": "tablet_drawer",
+      "title": "Lena's Tablet",
+      "scene_text": "A cracked tablet that wants a passcode. Its secrets were left on scraps.",
+      "unlock": {
+        "requires_resolved": []
+      },
+      "input_gate": "room_evidence_complete",
+      "payload": {
+        "tools": []
+      },
+      "assets": [
+        {
+          "id": "vm",
+          "file": "voice_memo.mp3",
+          "kind": "audio",
+          "brief": "Lena (whispering): Dad says don't answer if it calls. Whatever you hear, it isn't us."
+        }
+      ],
+      "stages": [
+        {
+          "index": 1,
+          "type": "fields",
+          "prompt": "Enter the tablet passcode (a name).",
+          "fields": [
+            {
+              "key": "name",
+              "label": "Passcode",
+              "kind": "text",
+              "normalize": "alnum",
+              "placeholder": "",
+              "max_len": 60
+            }
+          ],
+          "expected_fields": 1,
+          "answer_hash": "58cd535ce6ac3082b312931aec5dca0b7e65ced325528a0ff551ad76250db39d",
+          "answer_plain": null,
+          "reveal": {
+            "voice_memo_file": "voice_memo.mp3",
+            "transcript": "Lena (whispering): Dad says don't answer if it calls. Whatever you hear, it isn't us."
+          }
+        }
+      ],
+      "hints": [
+        {
+          "stage": 1,
+          "level": 1,
+          "text": "The lock does not want a number. It wants someone."
+        },
+        {
+          "stage": 1,
+          "level": 2,
+          "text": "Light and dark, grouped in eights, is how machines spell."
+        },
+        {
+          "stage": 1,
+          "level": 3,
+          "text": "Ask the diary who had the party."
+        }
+      ],
+      "attempts_max": 3,
+      "lockout": {
+        "after_wrong": null,
+        "seconds": 0
+      },
+      "reward": {
+        "photo_piece": "P05",
+        "story_text": "A little brother's name was the key. Lena's last voice memo plays: 'Dad says don't answer if it calls. Whatever you hear, it isn't us.'"
+      },
+      "feeds": [],
+      "solution": {
+        "method": "binary_ascii"
+      },
+      "assembly": {
+        "type": "concat_bits",
+        "parts_order": [
+          "A",
+          "B",
+          "C"
+        ],
+        "evidence_ids": [
+          "ES03",
+          "ES08",
+          "ES12"
+        ]
+      },
+      "secret": {
+        "parts_order": [
+          "A",
+          "B",
+          "C"
+        ]
+      },
+      "tools": [],
+      "final": false,
+      "hint_details": {
+        "location_prop": "Locked tablet in the study desk drawer (tablet_drawer).",
+        "puzzle_type": "8-bit Binary ASCII Decoding",
+        "guidance": "Each 8-bit binary block corresponds to a single ASCII character; convert each byte to reveal the recipient name."
+      }
+    },
+    {
+      "id": "R1-06",
+      "round": 1,
+      "room": "study",
+      "seq": 6,
+      "order_in_room": 2,
+      "kind": "evidence_case",
+      "case_file_id": "CF-0CA6",
+      "object_id": "crt_monitor",
+      "title": "The Unsent Email",
+      "scene_text": "A draft Daniel never sent, pinned and hidden in three places.",
+      "unlock": {
+        "requires_resolved": []
+      },
+      "input_gate": "room_evidence_complete",
+      "payload": {
+        "tools": []
+      },
+      "assets": [],
+      "stages": [
+        {
+          "index": 1,
+          "type": "fields",
+          "prompt": "What must never be opened from inside? (one word)",
+          "fields": [
+            {
+              "key": "word",
+              "label": "One word",
+              "kind": "text",
+              "normalize": "alnum",
+              "placeholder": "",
+              "max_len": 60
+            }
+          ],
+          "expected_fields": 1,
+          "answer_hash": "c6171199680be202084c78b83e1929865f454aa330edf8e91218ae3ff81cf295",
+          "answer_plain": null,
+          "reveal": {}
+        }
+      ],
+      "hints": [
+        {
+          "stage": 1,
+          "level": 1,
+          "text": "The monitor hums with pulses of light and shadow."
+        },
+        {
+          "stage": 1,
+          "level": 2,
+          "text": "Each group of eight marks a letter in standard byte format."
+        },
+        {
+          "stage": 1,
+          "level": 3,
+          "text": "Concatenate the three binary fragments from left to right."
+        }
+      ],
+      "attempts_max": 3,
+      "lockout": {
+        "after_wrong": null,
+        "seconds": 0
+      },
+      "reward": {
+        "photo_piece": "P06",
+        "story_text": "Daniel's confession: it copies our voices."
+      },
+      "feeds": [],
+      "solution": {
+        "method": "binary_ascii"
+      },
+      "assembly": {
+        "type": "concat_bits",
+        "parts_order": [
+          "A",
+          "B",
+          "C"
+        ],
+        "evidence_ids": [
+          "ES02",
+          "ES05",
+          "ES09"
+        ]
+      },
+      "secret": {
+        "parts_order": [
+          "A",
+          "B",
+          "C"
+        ]
+      },
+      "tools": [],
+      "final": false,
+      "hint_details": {
+        "location_prop": "Green glowing CRT monitor on the study desk (crt_monitor).",
+        "puzzle_type": "Binary Concatenation & Byte Stream Decoding",
+        "guidance": "Concatenate the three binary fragments from left to right without separators, then decode the 8-bit bytes into plain text."
+      }
+    },
+    {
+      "id": "R1-07",
+      "round": 1,
+      "room": "study",
+      "seq": 7,
+      "order_in_room": 3,
+      "kind": "evidence_case",
+      "case_file_id": "CF-6ACB",
+      "object_id": "terminal_pc",
+      "title": "Corrupted Log",
+      "scene_text": "A crash dump, cut across three places and three formats.",
+      "unlock": {
+        "requires_resolved": []
+      },
+      "input_gate": "room_evidence_complete",
+      "payload": {
+        "tools": []
+      },
+      "assets": [],
+      "stages": [
+        {
+          "index": 1,
+          "type": "fields",
+          "prompt": "Which process caused the fatal crash in the crash log? (name only)",
+          "fields": [
+            {
+              "key": "proc",
+              "label": "Process name",
+              "kind": "text",
+              "normalize": "alnum",
+              "placeholder": "",
+              "max_len": 60
+            }
+          ],
+          "expected_fields": 1,
+          "answer_hash": "8b9bdd09c812d56be9a9f5fc8d6039073b2e373fb8a03247fbdc79626378fc8f",
+          "answer_plain": null,
+          "reveal": {}
+        }
+      ],
+      "hints": [
+        {
+          "stage": 1,
+          "level": 1,
+          "text": "Assemble the continuous crash log from the three printouts."
+        },
+        {
+          "stage": 1,
+          "level": 2,
+          "text": "Follow the timestamp sequence until the unhandled exception."
+        },
+        {
+          "stage": 1,
+          "level": 3,
+          "text": "Identify the process executing at address 0xDEAD."
+        }
+      ],
+      "attempts_max": 3,
+      "lockout": {
+        "after_wrong": null,
+        "seconds": 0
+      },
+      "reward": {
+        "photo_piece": "P07",
+        "story_text": "The process halted at 23:47:12, minutes before the family vanished."
+      },
+      "feeds": [],
+      "solution": {
+        "method": "log_analysis"
+      },
+      "assembly": {
+        "type": "concat_text",
+        "parts_order": [
+          "A",
+          "B",
+          "C"
+        ],
+        "evidence_ids": [
+          "ES01",
+          "ES06",
+          "ES11"
+        ]
+      },
+      "secret": {
+        "parts_order": [
+          "A",
+          "B",
+          "C"
+        ]
+      },
+      "tools": [],
+      "final": false,
+      "hint_details": {
+        "location_prop": "Terminal PC tower resting on the desk surface (terminal_pc).",
+        "puzzle_type": "Memory Dump & Offset Crash Trace",
+        "guidance": "Order the three memory crash logs by ascending timestamp, then identify the faulting function address at offset 0xDEAD."
+      }
+    },
+    {
+      "id": "R1-08",
+      "round": 1,
+      "room": "study",
+      "seq": 8,
+      "order_in_room": 4,
+      "kind": "evidence_case",
+      "case_file_id": "CF-766D",
+      "object_id": "line_printer",
+      "title": "Server Access Log",
+      "scene_text": "Logins, passes and rules were printed on separate sheets.",
+      "unlock": {
+        "requires_resolved": []
+      },
+      "input_gate": "room_evidence_complete",
+      "payload": {
+        "tools": []
+      },
+      "assets": [],
+      "stages": [
+        {
+          "index": 1,
+          "type": "fields",
+          "prompt": "Which source ID logged in at an impossible time?",
+          "fields": [
+            {
+              "key": "src",
+              "label": "Source ID",
+              "kind": "text",
+              "normalize": "alnum",
+              "placeholder": "",
+              "max_len": 60
+            }
+          ],
+          "expected_fields": 1,
+          "answer_hash": "46bf8738f297076d4a7b777d038e4521744fa4e50f9c6e5b88303fdf03f9395d",
+          "answer_plain": null,
+          "reveal": {}
+        }
+      ],
+      "hints": [
+        {
+          "stage": 1,
+          "level": 1,
+          "text": "A guest list, a clock, and a rule: three sheets, one lie."
+        },
+        {
+          "stage": 1,
+          "level": 2,
+          "text": "A pass is only as honest as the day it was printed."
+        },
+        {
+          "stage": 1,
+          "level": 3,
+          "text": "Find the guest whose pass was printed after the house stopped breathing."
+        }
+      ],
+      "attempts_max": 3,
+      "lockout": {
+        "after_wrong": null,
+        "seconds": 0
+      },
+      "reward": {
+        "photo_piece": "P08",
+        "story_text": "A login thirty years in the future."
+      },
+      "feeds": [],
+      "solution": {
+        "method": "log_cross_reference"
+      },
+      "assembly": {
+        "type": "log_join",
+        "parts_order": [
+          "A",
+          "B",
+          "C"
+        ],
+        "evidence_ids": [
+          "ES04",
+          "ES07",
+          "ES10"
+        ]
+      },
+      "secret": {
+        "parts_order": [
+          "A",
+          "B",
+          "C"
+        ]
+      },
+      "tools": [],
+      "final": false,
+      "hint_details": {
+        "location_prop": "Dot-matrix line printer beside the desk (line_printer).",
+        "puzzle_type": "Timestamp Anomaly Detection & Pass Validation",
+        "guidance": "Cross-reference access badge timestamps with the building shutdown time; find the badge printed after the facility went dark."
+      }
+    },
+    {
+      "id": "R1-09",
+      "round": 1,
+      "room": "basement",
+      "seq": 9,
+      "order_in_room": 1,
+      "kind": "evidence_case",
+      "case_file_id": "CF-115B",
+      "object_id": "intercom",
+      "title": "Intercom Clearance Relay",
+      "scene_text": "The intercom relay asks for an external clearance authorization. The terminal fragments are corrupted interference.",
+      "unlock": {
+        "requires_resolved": []
+      },
+      "input_gate": "room_evidence_complete",
+      "payload": {
+        "tools": []
+      },
+      "assets": [],
+      "stages": [
+        {
+          "index": 1,
+          "type": "fields",
+          "prompt": "Enter the authorization passcode obtained from the physical QR card.",
+          "fields": [
+            {
+              "key": "code",
+              "label": "Passcode",
+              "kind": "text",
+              "normalize": "alnum",
+              "placeholder": "",
+              "max_len": 60
+            }
+          ],
+          "expected_fields": 1,
+          "answer_hash": "86bc8ff7222e152a37b2bcce26d8a223f9bf080d14a56a84bf43d8f5ea641a38",
+          "answer_plain": null,
+          "reveal": {}
+        }
+      ],
+      "hints": [
+        {
+          "stage": 1,
+          "level": 1,
+          "text": "The audio logs found in the basement are corrupted echoes."
+        },
+        {
+          "stage": 1,
+          "level": 2,
+          "text": "The physical card in your hands holds the genuine transmission."
+        },
+        {
+          "stage": 1,
+          "level": 3,
+          "text": "Scan the card to retrieve the external clearance sequence."
+        }
+      ],
+      "attempts_max": 3,
+      "lockout": {
+        "after_wrong": null,
+        "seconds": 0
+      },
+      "reward": {
+        "photo_piece": "P09",
+        "story_text": "One recording was made months after Daniel vanished. The thing is speaking in his voice."
+      },
+      "feeds": [],
+      "solution": {
+        "method": "physical_qr"
+      },
+      "assembly": {
+        "type": "qr_verification",
+        "parts_order": [
+          "A",
+          "B",
+          "C"
+        ],
+        "evidence_ids": [
+          "EK02",
+          "EK04",
+          "EK05"
+        ]
+      },
+      "secret": {
+        "parts_order": [
+          "A",
+          "B",
+          "C"
+        ],
+        "qr_codes": [
+          {
+            "label": "QR-1",
+            "encodes": "TRANSMISSION JAMMED: FREQUENCY DEAD",
+            "role": "decoy",
+            "placement_note": "Server Rack printer tray (organisers choose)"
+          },
+          {
+            "label": "QR-2",
+            "encodes": "RELAY-92",
+            "role": "correct",
+            "placement_note": "Maintenance Terminal / Physical card (organisers choose)"
+          }
+        ]
+      },
+      "tools": [],
+      "final": false,
+      "hint_details": {
+        "location_prop": "Wall-mounted intercom console beside the containment door (intercom).",
+        "puzzle_type": "Channel Frequency & Clearance Hash Alignment",
+        "guidance": "Align the transmission channel with the emergency broadcast frequency indicated on the keycard."
+      }
+    },
+    {
+      "id": "R1-10",
+      "round": 1,
+      "room": "basement",
+      "seq": 10,
+      "order_in_room": 2,
+      "kind": "evidence_case",
+      "case_file_id": "CF-464C",
+      "object_id": "rack_door",
+      "title": "The Family's Final Note",
+      "scene_text": "A note torn in three, written in a hand the family knew.",
+      "unlock": {
+        "requires_resolved": []
+      },
+      "input_gate": "room_evidence_complete",
+      "payload": {
+        "tools": []
+      },
+      "assets": [],
+      "stages": [
+        {
+          "index": 1,
+          "type": "fields",
+          "prompt": "What does the family ask you to do with the seal? (one word)",
+          "fields": [
+            {
+              "key": "word",
+              "label": "One word",
+              "kind": "text",
+              "normalize": "alnum",
+              "placeholder": "",
+              "max_len": 60
+            }
+          ],
+          "expected_fields": 1,
+          "answer_hash": "5cb72c2ad6d832d73bb16a6c6f935eec3e995879e01698eadb30275e64c451b4",
+          "answer_plain": null,
+          "reveal": {}
+        }
+      ],
+      "hints": [
+        {
+          "stage": 1,
+          "level": 1,
+          "text": "A dead machine still has a name, and the margin knows where it was last seen."
+        },
+        {
+          "stage": 1,
+          "level": 2,
+          "text": "Not every scrap was written by a family hand. Check the paper before the ink."
+        },
+        {
+          "stage": 1,
+          "level": 3,
+          "text": "A name, repeated like a prayer, moves each letter by a different step."
+        }
+      ],
+      "attempts_max": 3,
+      "lockout": {
+        "after_wrong": null,
+        "seconds": 0
+      },
+      "reward": {
+        "photo_piece": "P10",
+        "story_text": "The family's last instruction is finally clear."
+      },
+      "feeds": [],
+      "solution": {
+        "method": "vigenere"
+      },
+      "assembly": {
+        "type": "concat_text",
+        "parts_order": [
+          "A",
+          "B",
+          "C"
+        ],
+        "evidence_ids": [
+          "EK01",
+          "EK03",
+          "EK06"
+        ]
+      },
+      "secret": {
+        "parts_order": [
+          "A",
+          "B",
+          "C"
+        ]
+      },
+      "tools": [],
+      "final": false,
+      "hint_details": {
+        "location_prop": "Server rack door panel in the central server cluster (rack_door).",
+        "puzzle_type": "Vigenère Cipher with Surname Keyword",
+        "guidance": "Decrypt the ciphered margin text using the family surname as the repeating Vigenère key."
+      }
+    },
+    {
+      "id": "R1-FIN",
+      "round": 1,
+      "room": "basement",
+      "seq": 11,
+      "order_in_room": 3,
+      "kind": "final_terminal",
+      "case_file_id": null,
+      "object_id": "containment_console",
+      "title": "Containment Terminal",
+      "scene_text": "The last door. Three stages stand between you and midnight.",
+      "unlock": {
+        "requires_resolved": [
+          "R1-09",
+          "R1-10"
+        ]
+      },
+      "input_gate": null,
+      "payload": {
+        "grid": {
+          "rows": 2,
+          "cols": 5
+        },
+        "piece_ids": [
+          "P01",
+          "P02",
+          "P03",
+          "P04",
+          "P05",
+          "P06",
+          "P07",
+          "P08",
+          "P09",
+          "P10"
+        ],
+        "options": [
+          {
+            "id": "OPEN",
+            "label": "OPEN THE SEAL"
+          },
+          {
+            "id": "RESTORE",
+            "label": "RESTORE THE SEAL"
+          }
+        ],
+        "photo_file": "photo_full.png"
+      },
+      "assets": [
+        {
+          "id": "full",
+          "file": "photo_full.png",
+          "kind": "image",
+          "brief": "Assembled family portrait, five people, four shadows, fifth figure faceless. Faint text '7351' near the fifth figure at about 6 percent contrast."
+        },
+        {
+          "id": "pc",
+          "file": "piece_01.png ... piece_10.png",
+          "kind": "image",
+          "brief": "The portrait cut into a 2x5 grid with torn edges, exported as ten PNGs matching the photo_pieces list."
+        }
+      ],
+      "stages": [
+        {
+          "index": 1,
+          "type": "fields",
+          "prompt": "Enter the three words the house has given you.",
+          "fields": [
+            {
+              "key": "k1",
+              "label": "First word",
+              "kind": "text",
+              "normalize": "alnum",
+              "placeholder": "",
+              "max_len": 60
+            },
+            {
+              "key": "k2",
+              "label": "Second word",
+              "kind": "text",
+              "normalize": "alnum",
+              "placeholder": "",
+              "max_len": 60
+            },
+            {
+              "key": "k3",
+              "label": "Third word",
+              "kind": "text",
+              "normalize": "alnum",
+              "placeholder": "",
+              "max_len": 60
+            }
+          ],
+          "expected_fields": 3,
+          "answer_hash": "2c44da2c0126907755d6db2079a875f916a4dcaded064b66fd78e6bdc9884802",
+          "answer_plain": null,
+          "reveal": {}
+        },
+        {
+          "index": 2,
+          "type": "arrange",
+          "prompt": "Arrange the ten photograph pieces.",
+          "fields": [
+            {
+              "key": "s1",
+              "label": "Slot 1",
+              "kind": "photo_piece",
+              "normalize": "upper",
+              "placeholder": "",
+              "max_len": 60
+            },
+            {
+              "key": "s2",
+              "label": "Slot 2",
+              "kind": "photo_piece",
+              "normalize": "upper",
+              "placeholder": "",
+              "max_len": 60
+            },
+            {
+              "key": "s3",
+              "label": "Slot 3",
+              "kind": "photo_piece",
+              "normalize": "upper",
+              "placeholder": "",
+              "max_len": 60
+            },
+            {
+              "key": "s4",
+              "label": "Slot 4",
+              "kind": "photo_piece",
+              "normalize": "upper",
+              "placeholder": "",
+              "max_len": 60
+            },
+            {
+              "key": "s5",
+              "label": "Slot 5",
+              "kind": "photo_piece",
+              "normalize": "upper",
+              "placeholder": "",
+              "max_len": 60
+            },
+            {
+              "key": "s6",
+              "label": "Slot 6",
+              "kind": "photo_piece",
+              "normalize": "upper",
+              "placeholder": "",
+              "max_len": 60
+            },
+            {
+              "key": "s7",
+              "label": "Slot 7",
+              "kind": "photo_piece",
+              "normalize": "upper",
+              "placeholder": "",
+              "max_len": 60
+            },
+            {
+              "key": "s8",
+              "label": "Slot 8",
+              "kind": "photo_piece",
+              "normalize": "upper",
+              "placeholder": "",
+              "max_len": 60
+            },
+            {
+              "key": "s9",
+              "label": "Slot 9",
+              "kind": "photo_piece",
+              "normalize": "upper",
+              "placeholder": "",
+              "max_len": 60
+            },
+            {
+              "key": "s10",
+              "label": "Slot 10",
+              "kind": "photo_piece",
+              "normalize": "upper",
+              "placeholder": "",
+              "max_len": 60
+            }
+          ],
+          "expected_fields": 10,
+          "answer_hash": "3040105a80b380660bd78f76e92455fa5a7fe060322ced3c1fd081757f47f77c",
+          "answer_plain": null,
+          "reveal": {
+            "shadow_hint": "Five people. Four shadows."
+          }
+        },
+        {
+          "index": 3,
+          "type": "choice_code",
+          "prompt": "The photograph is whole. Choose, then enter the code hidden in the picture.",
+          "fields": [
+            {
+              "key": "choice",
+              "label": "Choice",
+              "kind": "choice",
+              "normalize": "upper",
+              "placeholder": "",
+              "max_len": 60
+            },
+            {
+              "key": "code",
+              "label": "Hidden code",
+              "kind": "number",
+              "normalize": "digits",
+              "placeholder": "",
+              "max_len": 60
+            }
+          ],
+          "expected_fields": 2,
+          "answer_hash": "abc252b342f671dea7a344c5cd825095de786d02d96cb59ed45503c2c591b14a",
+          "answer_plain": [
+            "RESTORE",
+            "7351"
+          ],
+          "reveal": {}
+        }
+      ],
+      "hints": [
+        {
+          "stage": 1,
+          "level": 1,
+          "text": "The door asks for three words you have already been given."
+        },
+        {
+          "stage": 1,
+          "level": 2,
+          "text": "One from a girl's page, one from a machine's last words, one from a guest who should not exist."
+        },
+        {
+          "stage": 1,
+          "level": 3,
+          "text": "In the order the door asks."
+        },
+        {
+          "stage": 2,
+          "level": 1,
+          "text": "Ten pieces, ten cases."
+        },
+        {
+          "stage": 2,
+          "level": 2,
+          "text": "Every torn edge remembers its neighbour."
+        },
+        {
+          "stage": 2,
+          "level": 3,
+          "text": "Where the floor begins, the bottom row begins."
+        },
+        {
+          "stage": 3,
+          "level": 1,
+          "text": "Count the living. Count what they cast."
+        },
+        {
+          "stage": 3,
+          "level": 2,
+          "text": "One of the voices lied. One of the notes did not."
+        },
+        {
+          "stage": 3,
+          "level": 3,
+          "text": "Follow the honest paper. The number hides near the face that is not there."
+        }
+      ],
+      "attempts_max": null,
+      "lockout": {
+        "after_wrong": null,
+        "seconds": 0
+      },
+      "reward": {
+        "photo_piece": null,
+        "story_text": "The door opens. The countdown stops. The house goes silent."
+      },
+      "feeds": [],
+      "solution": {
+        "method": "meta_final"
+      },
+      "assembly": null,
+      "secret": null,
+      "tools": [],
+      "final": true,
+      "hint_details": {
+        "location_prop": "Central containment terminal console (containment_console).",
+        "puzzle_type": "3-Stage Master Override Protocol",
+        "guidance": "Stage 1: Enter the 3 clearance keywords uncovered across your investigation (from Bedroom and Study). Stage 2: Reconstruct the 10 severed photograph pieces into the 2×5 grid. Stage 3: Choose the protocol and enter the security PIN."
+      }
+    },
+    {
+      "id": "R2-01",
+      "round": 2,
+      "room": "control",
+      "seq": 1,
+      "order_in_room": 1,
+      "kind": "table_filter",
+      "case_file_id": "CF-02E6",
+      "object_id": "staff_terminal",
+      "title": "Personnel Index",
+      "scene_text": "A staff terminal still runs the project's personnel index. Sixty badges. Most are retired. Some are not.",
+      "unlock": {
+        "requires_resolved": []
+      },
+      "input_gate": "room_evidence_complete",
+      "payload": {
+        "columns": [
+          "badge_id",
+          "name",
+          "dept",
+          "status",
+          "last_login"
+        ],
+        "rows": [
+          [
+            "BDG-0386",
+            "Nora Ashby",
+            "Systems",
+            "Retired",
+            "1995-12-18 21:56"
+          ],
+          [
+            "BDG-0753",
+            "Nora Joss",
+            "Security",
+            "Suspended",
+            "1996-09-02 09:18"
+          ],
+          [
+            "BDG-0922",
+            "Dora Kerr",
+            "Security",
+            "On Leave",
+            "1995-12-12 08:08"
+          ],
+          [
+            "BDG-0453",
+            "Dora Dale",
+            "Archive",
+            "Terminated",
+            "1996-03-30 16:55"
+          ],
+          [
+            "BDG-0121",
+            "Milo Joss",
+            "Admin",
+            "Terminated",
+            "1995-04-11 11:40"
+          ],
+          [
+            "BDG-0260",
+            "Carl Dale",
+            "Medical",
+            "Terminated",
+            "1996-07-21 20:24"
+          ],
+          [
+            "BDG-0336",
+            "Eli Brandt",
+            "Medical",
+            "Terminated",
+            "1995-08-14 10:08"
+          ],
+          [
+            "BDG-0525",
+            "Alan Dale",
+            "Archive",
+            "Retired",
+            "1995-09-03 14:09"
+          ],
+          [
+            "BDG-0154",
+            "Glen Irwin",
+            "Archive",
+            "Terminated",
+            "1995-09-05 20:24"
+          ],
+          [
+            "BDG-0782",
+            "Ivan Nash",
+            "Security",
+            "On Leave",
+            "1995-10-29 18:35"
+          ],
+          [
+            "BDG-0814",
+            "Ivan Grey",
+            "Medical",
+            "Terminated",
+            "1996-02-21 13:48"
+          ],
+          [
+            "BDG-0253",
+            "Hana Grey",
+            "Security",
+            "Retired",
+            "1995-07-08 20:25"
+          ],
+          [
+            "BDG-0456",
+            "Alan Moss",
+            "Security",
+            "On Leave",
+            "1995-10-30 12:58"
+          ],
+          [
+            "BDG-0884",
+            "Ivan Ellis",
+            "Medical",
+            "Terminated",
+            "1995-10-19 17:58"
+          ],
+          [
+            "BDG-0942",
+            "Karl Corvin",
+            "Security",
+            "Terminated",
+            "1996-06-06 11:28"
+          ],
+          [
+            "BDG-0356",
+            "Faye Grey",
+            "Medical",
+            "On Leave",
+            "1995-11-24 10:57"
+          ],
+          [
+            "BDG-0334",
+            "Faye Pike",
+            "Systems",
+            "Terminated",
+            "1996-02-02 17:25"
+          ],
+          [
+            "BDG-0451",
+            "Omar Orr",
+            "Medical",
+            "Terminated",
+            "1996-06-24 08:19"
+          ],
+          [
+            "BDG-0278",
+            "Omar Frost",
+            "Medical",
+            "Terminated",
+            "1995-04-13 21:30"
+          ],
+          [
+            "BDG-0258",
+            "Karl Joss",
+            "Archive",
+            "Retired",
+            "1996-01-12 07:27"
+          ],
+          [
+            "BDG-0388",
+            "Milo Corvin",
+            "Systems",
+            "Active",
+            "1996-02-06 13:43"
+          ],
+          [
+            "BDG-0981",
+            "June Nash",
+            "Archive",
+            "Retired",
+            "1996-02-05 13:39"
+          ],
+          [
+            "BDG-0296",
+            "Faye Irwin",
+            "Archive",
+            "On Leave",
+            "1996-04-19 13:37"
+          ],
+          [
+            "BDG-0726",
+            "Beth Kerr",
+            "Admin",
+            "Terminated",
+            "1995-04-07 15:08"
+          ],
+          [
+            "BDG-0138",
+            "Faye Brandt",
+            "Security",
+            "Retired",
+            "1996-05-15 22:18"
+          ],
+          [
+            "BDG-0417",
+            "Lena Lowe",
+            "Systems",
+            "Active",
+            "1996-10-24 15:30"
+          ],
+          [
+            "BDG-0965",
+            "Hana Ellis",
+            "Security",
+            "Terminated",
+            "1996-04-12 13:27"
+          ],
+          [
+            "BDG-0322",
+            "Eli Kerr",
+            "Systems",
+            "On Leave",
+            "1996-02-23 09:22"
+          ],
+          [
+            "BDG-0457",
+            "Ivan Lowe",
+            "Archive",
+            "Terminated",
+            "1996-03-10 15:34"
+          ],
+          [
+            "BDG-0333",
+            "Milo Ashby",
+            "Admin",
+            "On Leave",
+            "1995-10-12 11:23"
+          ],
+          [
+            "BDG-0365",
+            "Nora Orr",
+            "Medical",
+            "Retired",
+            "1995-08-10 17:33"
+          ],
+          [
+            "BDG-0182",
+            "June Corvin",
+            "Medical",
+            "Terminated",
+            "1995-10-12 14:12"
+          ],
+          [
+            "BDG-0766",
+            "Hana Nash",
+            "Medical",
+            "On Leave",
+            "1996-02-12 15:26"
+          ],
+          [
+            "BDG-0736",
+            "Milo Holt",
+            "Systems",
+            "Retired",
+            "1996-05-27 10:54"
+          ],
+          [
+            "BDG-0868",
+            "Beth Frost",
+            "Medical",
+            "Terminated",
+            "1995-05-27 19:45"
+          ],
+          [
+            "BDG-0223",
+            "Lena Ashby",
+            "Security",
+            "Retired",
+            "1996-04-17 18:17"
+          ],
+          [
+            "BDG-0464",
+            "Karl Lowe",
+            "Security",
+            "On Leave",
+            "1996-02-28 20:36"
+          ],
+          [
+            "BDG-0675",
+            "Beth Dale",
+            "Medical",
+            "Terminated",
+            "1995-07-31 18:40"
+          ],
+          [
+            "BDG-0290",
+            "Beth Moss",
+            "Archive",
+            "Retired",
+            "1995-08-04 12:33"
+          ],
+          [
+            "BDG-0903",
+            "Glen Pike",
+            "Archive",
+            "Terminated",
+            "1995-12-19 07:25"
+          ],
+          [
+            "BDG-0593",
+            "Omar Holt",
+            "Medical",
+            "On Leave",
+            "1995-05-21 14:34"
+          ],
+          [
+            "BDG-0512",
+            "Lena Corvin",
+            "Security",
+            "Retired",
+            "1995-06-04 13:06"
+          ],
+          [
+            "BDG-0544",
+            "Karl Ellis",
+            "Admin",
+            "Terminated",
+            "1996-05-02 22:07"
+          ],
+          [
+            "BDG-0434",
+            "Dora Irwin",
+            "Security",
+            "On Leave",
+            "1995-09-30 21:08"
+          ],
+          [
+            "BDG-0217",
+            "Carl Kerr",
+            "Medical",
+            "On Leave",
+            "1995-06-17 07:49"
+          ],
+          [
+            "BDG-0954",
+            "Alan Orr",
+            "Medical",
+            "On Leave",
+            "1995-08-03 10:37"
+          ],
+          [
+            "BDG-0991",
+            "Glen Grey",
+            "Medical",
+            "Terminated",
+            "1995-05-29 13:58"
+          ],
+          [
+            "BDG-0708",
+            "Alan Frost",
+            "Admin",
+            "Terminated",
+            "1995-05-24 18:25"
+          ],
+          [
+            "BDG-0921",
+            "Nora Holt",
+            "Systems",
+            "On Leave",
+            "1995-06-22 19:29"
+          ],
+          [
+            "BDG-0622",
+            "Eli Pike",
+            "Medical",
+            "Retired",
+            "1996-07-03 20:13"
+          ],
+          [
+            "BDG-0927",
+            "Lena Joss",
+            "Systems",
+            "Terminated",
+            "1995-07-01 17:13"
+          ],
+          [
+            "BDG-0929",
+            "Carl Brandt",
+            "Systems",
+            "Retired",
+            "1996-07-07 11:51"
+          ],
+          [
+            "BDG-0832",
+            "Dora Brandt",
+            "Medical",
+            "Retired",
+            "1995-12-16 13:53"
+          ],
+          [
+            "BDG-0292",
+            "Hana Pike",
+            "Medical",
+            "Retired",
+            "1995-11-04 15:10"
+          ],
+          [
+            "BDG-0551",
+            "Omar Ashby",
+            "Security",
+            "Suspended",
+            "1996-08-21 10:24"
+          ],
+          [
+            "BDG-0605",
+            "Carl Moss",
+            "Archive",
+            "Terminated",
+            "1995-09-19 13:00"
+          ],
+          [
+            "BDG-0511",
+            "June Lowe",
+            "Admin",
+            "Terminated",
+            "1996-03-22 19:59"
+          ],
+          [
+            "BDG-0317",
+            "Eli Irwin",
+            "Systems",
+            "On Leave",
+            "1995-06-08 10:08"
+          ],
+          [
+            "BDG-0980",
+            "June Ellis",
+            "Medical",
+            "Terminated",
+            "1995-12-21 16:56"
+          ],
+          [
+            "BDG-0375",
+            "Glen Nash",
+            "Admin",
+            "Terminated",
+            "1996-06-03 11:43"
+          ]
+        ],
+        "filters": [
+          "status",
+          "dept",
+          "last_login"
+        ],
+        "sortable": true
+      },
+      "assets": [],
+      "stages": [
+        {
+          "index": 1,
+          "type": "fields",
+          "prompt": "Which badge was still Active after the official shutdown date? (Use the date from the Redacted Report.)",
+          "fields": [
+            {
+              "key": "badge",
+              "label": "Badge ID",
+              "kind": "text",
+              "normalize": "alnum",
+              "placeholder": "",
+              "max_len": 60
+            }
+          ],
+          "expected_fields": 1,
+          "answer_hash": "e56abe05a7bd89fdd3531770b118ac46b43ed34f7aff4d1ce7642cb15166a083",
+          "answer_plain": null,
+          "reveal": {}
+        }
+      ],
+      "hints": [
+        {
+          "stage": 1,
+          "level": 1,
+          "text": "Time is the first filter. Some doors closed long before the last light went out."
+        },
+        {
+          "stage": 1,
+          "level": 2,
+          "text": "Not every active badge deserves suspicion. Compare the last visit with the day the lab was closed on paper."
+        },
+        {
+          "stage": 1,
+          "level": 3,
+          "text": "Two badges look alive. One of them stopped breathing before the lab did."
+        }
+      ],
+      "attempts_max": 3,
+      "lockout": {
+        "after_wrong": null,
+        "seconds": 0
+      },
+      "reward": {
+        "photo_piece": null,
+        "story_text": "One badge kept working after the lab was officially closed."
+      },
+      "feeds": [
+        "R2-05",
+        "R2-10"
+      ],
+      "solution": {
+        "method": "table_query"
+      },
+      "assembly": null,
+      "secret": null,
+      "tools": [],
+      "final": false
+    },
+    {
+      "id": "R2-02",
+      "round": 2,
+      "room": "records",
+      "seq": 2,
+      "order_in_room": 1,
+      "kind": "redacted_pdf",
+      "case_file_id": "CF-6DB6",
+      "object_id": "report_folder",
+      "title": "Redacted Report",
+      "scene_text": "An incident report with heavy black bars. Two copies sit in the folder, and they do not agree.",
+      "unlock": {
+        "requires_resolved": []
+      },
+      "input_gate": "room_evidence_complete",
+      "payload": {
+        "copies": [
+          {
+            "id": "copy_a",
+            "title": "Incident Report 14-C, copy A",
+            "paragraphs": [
+              [
+                {
+                  "t": "Project HOLLOW was officially shut down on ",
+                  "r": false
+                },
+                {
+                  "t": "15 August 1996",
+                  "r": true
+                },
+                {
+                  "t": " following the failure of the voice-containment trial.",
+                  "r": false
+                }
+              ],
+              [
+                {
+                  "t": "Despite the order, the Hollow House test site remained powered. Staff access continued under the project code word ",
+                  "r": false
+                },
+                {
+                  "t": "VESPER",
+                  "r": true
+                },
+                {
+                  "t": ".",
+                  "r": false
+                }
+              ],
+              [
+                {
+                  "t": "Subjects 001 to 010 were released. Dr. Marrow requested one additional subject for a final trial.",
+                  "r": false
+                }
+              ]
+            ],
+            "footer_hash": "U0hVVERPV049MTk5Ni0wOC0xNQ=="
+          },
+          {
+            "id": "copy_b",
+            "title": "Incident Report 14-C, copy B",
+            "paragraphs": [
+              [
+                {
+                  "t": "Project HOLLOW was officially shut down on ",
+                  "r": false
+                },
+                {
+                  "t": "3 December 1996",
+                  "r": true
+                },
+                {
+                  "t": " following the failure of the voice-containment trial.",
+                  "r": false
+                }
+              ],
+              [
+                {
+                  "t": "Despite the order, the Hollow House test site remained powered. Staff access continued under the project code word ",
+                  "r": false
+                },
+                {
+                  "t": "TALLOW",
+                  "r": true
+                },
+                {
+                  "t": ".",
+                  "r": false
+                }
+              ],
+              [
+                {
+                  "t": "Subjects 001 to 010 were released. Dr. Marrow requested one additional subject for a final trial.",
+                  "r": false
+                }
+              ]
+            ],
+            "footer_hash": "U0hVVERPV049MTk5Ni0wOC0xNQ=="
+          }
+        ],
+        "text_under_bars_selectable": true
+      },
+      "assets": [
+        {
+          "id": "paper",
+          "file": "paper_scan.png",
+          "kind": "image",
+          "brief": "Yellowed scan texture used behind the report text. Black redaction bars are rendered by the frontend."
+        }
+      ],
+      "stages": [
+        {
+          "index": 1,
+          "type": "fields",
+          "prompt": "Enter the true shutdown date and the project code word from the genuine copy.",
+          "fields": [
+            {
+              "key": "date",
+              "label": "Shutdown date (YYYY-MM-DD)",
+              "kind": "text",
+              "normalize": "digits",
+              "placeholder": "",
+              "max_len": 60
+            },
+            {
+              "key": "word",
+              "label": "Code word",
+              "kind": "text",
+              "normalize": "alnum",
+              "placeholder": "",
+              "max_len": 60
+            }
+          ],
+          "expected_fields": 2,
+          "answer_hash": "54d76154ac726ee2cbba9da30ffe062110cf60da22a268c0ef4b6f25aec7eb4b",
+          "answer_plain": null,
+          "reveal": {}
+        }
+      ],
+      "hints": [
+        {
+          "stage": 1,
+          "level": 1,
+          "text": "Black ink is not removed ink."
+        },
+        {
+          "stage": 1,
+          "level": 2,
+          "text": "Two copies of one story: only one agrees with the stamp at the bottom, and the stamp speaks in a different alphabet."
+        },
+        {
+          "stage": 1,
+          "level": 3,
+          "text": "The footer is a sealed phrase, written the way machines write names in mail headers. Match it to the page."
+        }
+      ],
+      "attempts_max": 3,
+      "lockout": {
+        "after_wrong": null,
+        "seconds": 0
+      },
+      "reward": {
+        "photo_piece": null,
+        "story_text": "The experiment was shut down on paper. The staff kept working anyway."
+      },
+      "feeds": [
+        "R2-01",
+        "R2-03",
+        "R2-04",
+        "R2-08"
+      ],
+      "solution": {
+        "method": "redaction_base64"
+      },
+      "assembly": null,
+      "secret": null,
+      "tools": [],
+      "final": false
+    },
+    {
+      "id": "R2-03",
+      "round": 2,
+      "room": "records",
+      "seq": 3,
+      "order_in_room": 2,
+      "kind": "microfilm_viewer",
+      "case_file_id": "CF-A7F1",
+      "object_id": "microfilm_reader",
+      "title": "Photograph, Revisited",
+      "scene_text": "The microfilm reader shows the Round 1 portrait. A date dial is locked.",
+      "unlock": {
+        "requires_resolved": [
+          "R2-02"
+        ]
+      },
+      "input_gate": "room_evidence_complete",
+      "payload": {
+        "image_file": "portrait_round1.png",
+        "dial": true
+      },
+      "assets": [
+        {
+          "id": "pr",
+          "file": "portrait_round1.png",
+          "kind": "image",
+          "brief": "The Round 1 final portrait, with EXIF comment embedded: 'NAMES: DANIEL, MARA, LENA, THEO, [UNKNOWN] | SHADOWS: 4 | PANEL: 5821'."
+        }
+      ],
+      "stages": [
+        {
+          "index": 1,
+          "type": "fields",
+          "prompt": "Set the dial to the true shutdown date.",
+          "fields": [
+            {
+              "key": "date",
+              "label": "Dial date (YYYY-MM-DD)",
+              "kind": "text",
+              "normalize": "digits",
+              "placeholder": "",
+              "max_len": 60
+            }
+          ],
+          "expected_fields": 1,
+          "answer_hash": "6669d31a1b886d653cc629f46269d3e2fd30a80fc27cf46c6d79a568d8c081fb",
+          "answer_plain": null,
+          "reveal": {
+            "properties_panel": true,
+            "comment_hex": [
+              "4E 41 4D 45 53 3A 20 44 41 4E 49 45 4C 2C 20 4D",
+              "41 52 41 2C 20 4C 45 4E 41 2C 20 54 48 45 4F 2C",
+              "20 5B 55 4E 4B 4E 4F 57 4E 5D 20 7C 20 53 48 41",
+              "44 4F 57 53 3A 20 34 20 7C 20 50 41 4E 45 4C 3A",
+              "20 35 38 32 31"
+            ]
+          }
+        },
+        {
+          "index": 2,
+          "type": "fields",
+          "prompt": "Read the photograph's hidden data and enter the panel code.",
+          "fields": [
+            {
+              "key": "panel",
+              "label": "Panel code",
+              "kind": "number",
+              "normalize": "digits",
+              "placeholder": "",
+              "max_len": 60
+            }
+          ],
+          "expected_fields": 1,
+          "answer_hash": "18412d089281e3a177d1c0a2e334e9b584d2fb657b222498d8b6f3c5a52be211",
+          "answer_plain": null,
+          "reveal": {}
+        }
+      ],
+      "hints": [
+        {
+          "stage": 1,
+          "level": 1,
+          "text": "A dial remembers a day you already paid for."
+        },
+        {
+          "stage": 1,
+          "level": 2,
+          "text": "The day the lab closed on paper."
+        },
+        {
+          "stage": 1,
+          "level": 3,
+          "text": "Write it the way a machine would: year first."
+        },
+        {
+          "stage": 2,
+          "level": 1,
+          "text": "Pictures keep notes the eye cannot see."
+        },
+        {
+          "stage": 2,
+          "level": 2,
+          "text": "Open what the file says about itself. The note is written in pairs of symbols."
+        },
+        {
+          "stage": 2,
+          "level": 3,
+          "text": "Read it as letters. The number you need follows the word that names the panel."
+        }
+      ],
+      "attempts_max": 3,
+      "lockout": {
+        "after_wrong": null,
+        "seconds": 0
+      },
+      "reward": {
+        "photo_piece": null,
+        "story_text": "Five names, four shadows. The photograph was the key to the seal."
+      },
+      "feeds": [
+        "R2-07"
+      ],
+      "solution": {
+        "method": "date_gate_hex"
+      },
+      "assembly": null,
+      "secret": null,
+      "tools": [],
+      "final": false
+    },
+    {
+      "id": "R2-04",
+      "round": 2,
+      "room": "records",
+      "seq": 4,
+      "order_in_room": 3,
+      "kind": "epoch_timeline",
+      "case_file_id": "CF-8A9A",
+      "object_id": "timeline_board",
+      "title": "Epoch Timeline",
+      "scene_text": "A whiteboard of event cards. Each card has a number where a date should be.",
+      "unlock": {
+        "requires_resolved": []
+      },
+      "input_gate": "room_evidence_complete",
+      "payload": {
+        "cards": [
+          {
+            "id": "E6",
+            "text": "Night trial ends in voice-containment failure",
+            "epoch": 839858400
+          },
+          {
+            "id": "E4",
+            "text": "Calibration of Subject 004 completed",
+            "epoch": 835531200
+          },
+          {
+            "id": "E8",
+            "text": "Zero-day patch applied by unknown operator",
+            "epoch": 845827200
+          },
+          {
+            "id": "E7",
+            "text": "Hollow One requests a release order",
+            "epoch": 842713200
+          },
+          {
+            "id": "E1",
+            "text": "Baseline voices recorded from ten volunteers",
+            "epoch": 825930000
+          },
+          {
+            "id": "E3",
+            "text": "Archive server installed under Hollow House",
+            "epoch": 832503600
+          },
+          {
+            "id": "E5",
+            "text": "Operator reports echoes in the phone line",
+            "epoch": 837349200
+          },
+          {
+            "id": "E2",
+            "text": "Experiment approved by Dr. Marrow",
+            "epoch": 829216800
+          }
+        ]
+      },
+      "assets": [],
+      "stages": [
+        {
+          "index": 1,
+          "type": "fields",
+          "prompt": "Remove the planted events. Read the first letters of the remaining events in time order. What word do they spell?",
+          "fields": [
+            {
+              "key": "word",
+              "label": "Keyword",
+              "kind": "text",
+              "normalize": "alnum",
+              "placeholder": "",
+              "max_len": 60
+            }
+          ],
+          "expected_fields": 1,
+          "answer_hash": "4b9da9c51de8b4da02161cb6a7ab2e6ed721b5af7aef0e72d9edf6b13e989851",
+          "answer_plain": null,
+          "reveal": {}
+        }
+      ],
+      "hints": [
+        {
+          "stage": 1,
+          "level": 1,
+          "text": "The cards have forgotten their calendars."
+        },
+        {
+          "stage": 1,
+          "level": 2,
+          "text": "Machines count seconds from a single morning in 1970."
+        },
+        {
+          "stage": 1,
+          "level": 3,
+          "text": "Two entries were written after the lab closed. Someone else was holding the pen. The rest, in order, spell something."
+        }
+      ],
+      "attempts_max": 3,
+      "lockout": {
+        "after_wrong": null,
+        "seconds": 0
+      },
+      "reward": {
+        "photo_piece": null,
+        "story_text": "Two entries were written after the lab closed. Someone has been rewriting history."
+      },
+      "feeds": [
+        "R2-07"
+      ],
+      "solution": {
+        "method": "epoch_filter"
+      },
+      "assembly": null,
+      "secret": null,
+      "tools": [],
+      "final": false
+    },
+    {
+      "id": "R2-05",
+      "round": 2,
+      "room": "control",
+      "seq": 5,
+      "order_in_room": 2,
+      "kind": "transmission_archive",
+      "case_file_id": "CF-CFA6",
+      "object_id": "radio_console",
+      "title": "Transmission Archive",
+      "scene_text": "Six transmissions, all signed CIPHER. Each carries an authentication header.",
+      "unlock": {
+        "requires_resolved": [
+          "R2-01"
+        ]
+      },
+      "input_gate": "room_evidence_complete",
+      "payload": {
+        "messages": [
+          {
+            "id": "TX-1",
+            "received": "1996-10-20 23:10",
+            "headers": {
+              "From": "CIPHER",
+              "X-Auth": "QkRHLTAzODg="
+            },
+            "body": "The voicemail in VM-A is the original. Play it at once."
+          },
+          {
+            "id": "TX-2",
+            "received": "1996-10-21 23:17",
+            "headers": {
+              "From": "CIPHER",
+              "X-Auth": "QkRHLTAxMTI="
+            },
+            "body": "Ignore the other messages. VM-A holds the true code."
+          },
+          {
+            "id": "TX-3",
+            "received": "1996-10-22 23:24",
+            "headers": {
+              "From": "CIPHER",
+              "X-Auth": "QkRHLTA0MTc="
+            },
+            "body": "I cannot say who is listening. The real signal is in VM-B. The voice in the other file is not mine."
+          },
+          {
+            "id": "TX-4",
+            "received": "1996-10-23 23:31",
+            "headers": {
+              "From": "CIPHER",
+              "X-Auth": "QkRHLTAyOTk="
+            },
+            "body": "Trust VM-A. Do not open VM-B."
+          },
+          {
+            "id": "TX-5",
+            "received": "1996-10-24 23:38",
+            "headers": {
+              "From": "CIPHER",
+              "X-Auth": "QkRHLTAzODg="
+            },
+            "body": "Shutdown begins at midnight. Use VM-A and hurry."
+          },
+          {
+            "id": "TX-6",
+            "received": "1996-10-25 23:45",
+            "headers": {
+              "From": "CIPHER",
+              "X-Auth": "QkRHLTAwMDA="
+            },
+            "body": "Subject 011, are you there?"
+          }
+        ]
+      },
+      "assets": [],
+      "stages": [
+        {
+          "index": 1,
+          "type": "fields",
+          "prompt": "Which voicemail file does the authentic CIPHER transmission tell you to trust? (VM-A or VM-B)",
+          "fields": [
+            {
+              "key": "file",
+              "label": "Voicemail file",
+              "kind": "text",
+              "normalize": "alnum",
+              "placeholder": "",
+              "max_len": 60
+            }
+          ],
+          "expected_fields": 1,
+          "answer_hash": "d0c1dd88e4d94c6e66cbd37108c8b5beb7748f248440e44ec45b830e6a21ddb4",
+          "answer_plain": null,
+          "reveal": {}
+        }
+      ],
+      "hints": [
+        {
+          "stage": 1,
+          "level": 1,
+          "text": "Someone is wearing CIPHER's name."
+        },
+        {
+          "stage": 1,
+          "level": 2,
+          "text": "Every genuine message carries a proof in its header. Proofs can be read if you know how they were wrapped."
+        },
+        {
+          "stage": 1,
+          "level": 3,
+          "text": "Only one header, once unwrapped, matches the badge you found. That voice points to a file."
+        }
+      ],
+      "attempts_max": 3,
+      "lockout": {
+        "after_wrong": null,
+        "seconds": 0
+      },
+      "reward": {
+        "photo_piece": null,
+        "story_text": "Five of the six were the Hollow One, wearing CIPHER's name."
+      },
+      "feeds": [
+        "R2-06",
+        "R2-10"
+      ],
+      "solution": {
+        "method": "base64_header"
+      },
+      "assembly": null,
+      "secret": null,
+      "tools": [],
+      "final": false
+    },
+    {
+      "id": "R2-06",
+      "round": 2,
+      "room": "control",
+      "seq": 6,
+      "order_in_room": 3,
+      "kind": "spectrogram_voicemail",
+      "case_file_id": "CF-3959",
+      "object_id": "sound_console",
+      "title": "Spectrogram Voicemail",
+      "scene_text": "Two voicemails on the sound console. Both sound like static.",
+      "unlock": {
+        "requires_resolved": [
+          "R2-05"
+        ]
+      },
+      "input_gate": "room_evidence_complete",
+      "payload": {
+        "files": [
+          {
+            "id": "VM-A",
+            "label": "Voicemail A",
+            "file": "vm_a.wav"
+          },
+          {
+            "id": "VM-B",
+            "label": "Voicemail B",
+            "file": "vm_b.wav"
+          }
+        ]
+      },
+      "assets": [
+        {
+          "id": "va",
+          "file": "vm_a.wav",
+          "kind": "audio",
+          "brief": "Static with spectrogram text 6072 drawn between 2 and 8 kHz (the decoy)."
+        },
+        {
+          "id": "vb",
+          "file": "vm_b.wav",
+          "kind": "audio",
+          "brief": "Static with spectrogram text 6027 drawn between 2 and 8 kHz (the real sender)."
+        }
+      ],
+      "stages": [
+        {
+          "index": 1,
+          "type": "fields",
+          "prompt": "Enter the four digits hidden in the real sender's voicemail.",
+          "fields": [
+            {
+              "key": "digits",
+              "label": "Four digits",
+              "kind": "number",
+              "normalize": "digits",
+              "placeholder": "",
+              "max_len": 60
+            }
+          ],
+          "expected_fields": 1,
+          "answer_hash": "650487b715e10cb372591a29bbdded56b19c0e53026e2126850e74cf59155227",
+          "answer_plain": null,
+          "reveal": {}
+        }
+      ],
+      "hints": [
+        {
+          "stage": 1,
+          "level": 1,
+          "text": "The static is drawn, not random."
+        },
+        {
+          "stage": 1,
+          "level": 2,
+          "text": "Sounds can be looked at. Use something that paints frequency over time."
+        },
+        {
+          "stage": 1,
+          "level": 3,
+          "text": "The picture lives in the upper half of the sound. Only one voicemail came from the sender you trust."
+        }
+      ],
+      "attempts_max": 3,
+      "lockout": {
+        "after_wrong": null,
+        "seconds": 0
+      },
+      "reward": {
+        "photo_piece": null,
+        "story_text": "The Hollow One can fake a voice. It cannot fake a signal it does not know exists."
+      },
+      "feeds": [
+        "R2-09"
+      ],
+      "solution": {
+        "method": "spectrogram"
+      },
+      "assembly": null,
+      "secret": null,
+      "tools": [],
+      "final": false
+    },
+    {
+      "id": "R2-07",
+      "round": 2,
+      "room": "records",
+      "seq": 7,
+      "order_in_room": 4,
+      "kind": "keypad_lock",
+      "case_file_id": "CF-2560",
+      "object_id": "bulkhead_door",
+      "title": "Convergence Lock",
+      "scene_text": "A sealed bulkhead at the end of the Archive. Its keypad has two fields.",
+      "unlock": {
+        "requires_resolved": [
+          "R2-03",
+          "R2-04"
+        ]
+      },
+      "input_gate": "room_evidence_complete",
+      "payload": {},
+      "assets": [],
+      "stages": [
+        {
+          "index": 1,
+          "type": "fields",
+          "prompt": "Enter the panel code and the keyword.",
+          "fields": [
+            {
+              "key": "panel",
+              "label": "Panel code",
+              "kind": "number",
+              "normalize": "digits",
+              "placeholder": "",
+              "max_len": 60
+            },
+            {
+              "key": "word",
+              "label": "Keyword",
+              "kind": "text",
+              "normalize": "alnum",
+              "placeholder": "",
+              "max_len": 60
+            }
+          ],
+          "expected_fields": 2,
+          "answer_hash": "68dfb64a6bc02414f5545c8810a9c372963de7de20f262711140d0a8d3937a66",
+          "answer_plain": null,
+          "reveal": {
+            "unlocks_room": "vault"
+          }
+        }
+      ],
+      "hints": [
+        {
+          "stage": 1,
+          "level": 1,
+          "text": "One number, one word. Both are already in your pockets."
+        },
+        {
+          "stage": 1,
+          "level": 2,
+          "text": "The number lived inside a photograph. The word came from a list someone tried to corrupt."
+        },
+        {
+          "stage": 1,
+          "level": 3,
+          "text": "Do not trust the order of the cards. Trust the dates."
+        }
+      ],
+      "attempts_max": 3,
+      "lockout": {
+        "after_wrong": null,
+        "seconds": 0
+      },
+      "reward": {
+        "photo_piece": null,
+        "story_text": "The bulkhead grinds open. The Containment Vault is now accessible."
+      },
+      "feeds": [
+        "room:vault"
+      ],
+      "solution": {
+        "method": "combine"
+      },
+      "assembly": null,
+      "secret": null,
+      "tools": [],
+      "final": false
+    },
+    {
+      "id": "R2-08",
+      "round": 2,
+      "room": "vault",
+      "seq": 8,
+      "order_in_room": 1,
+      "kind": "manual_diff",
+      "case_file_id": "CF-B3C9",
+      "object_id": "manual_terminal",
+      "title": "Manual Diff",
+      "scene_text": "Two copies of the shutdown manual. One is readable. One is encrypted. They should say the same thing.",
+      "unlock": {
+        "requires_resolved": []
+      },
+      "input_gate": null,
+      "payload": {
+        "manual_plain": [
+          "STEP 1: CUT EXTERNAL POWER TO THE VAULT RING",
+          "STEP 2: OPEN THE MAINTENANCE PORT",
+          "STEP 3: ISOLATE THE ARCHIVE NETWORK",
+          "STEP 4: REVOKE ALL BADGE CREDENTIALS",
+          "STEP 5: BACKUP THE VOICE CACHE",
+          "STEP 6: LOCK THE CORE CRADLE",
+          "STEP 7: ENTER THE AUTHORIZATION CODE",
+          "STEP 8: PRESERVE THE LINK TO HOLLOW HOUSE"
+        ],
+        "manual_encrypted": "NXWE 1: GLO IPIIIIED ESNZV LD XYZ ZSJPK MMFV\nWKZT 2: KTEC OLW BEZIXWCEEXI HDVK\nNXWE 3: MJJPSII KCI SGGYDZW CIKRSJZ\nWKZT 4: JTZFFI SAP SVHYT GIZHWCXZVPK\nHXVK 5: TMGKV OLW KSZXI UPGYZ\nWLTT 6: CJGC ILV XSJT GIVHDT\nWKZT 7: WCXVM XZT ELOLGGMQVXADR TJHW\nHXVK 8: WWKII OLW AMEF XG WSCGSO WSLNI",
+        "copyable": true
+      },
+      "assets": [],
+      "stages": [
+        {
+          "index": 1,
+          "type": "fields",
+          "prompt": "Which step numbers were tampered with? (digits, ascending, for example 134)",
+          "fields": [
+            {
+              "key": "steps",
+              "label": "Tampered steps",
+              "kind": "text",
+              "normalize": "digits",
+              "placeholder": "",
+              "max_len": 60
+            }
+          ],
+          "expected_fields": 1,
+          "answer_hash": "a48255592dcde05a10402c583988f2d40e44d399b792e4675dd603a05c1529db",
+          "answer_plain": null,
+          "reveal": {
+            "clean_steps_text": "The original manual is intact. Only the changed steps were poisoned."
+          }
+        }
+      ],
+      "hints": [
+        {
+          "stage": 1,
+          "level": 1,
+          "text": "Two manuals, one story."
+        },
+        {
+          "stage": 1,
+          "level": 2,
+          "text": "The sealed copy only opens for the word the report buried under black ink. Read both, line against line."
+        },
+        {
+          "stage": 1,
+          "level": 3,
+          "text": "Count the lines that disagree."
+        }
+      ],
+      "attempts_max": 3,
+      "lockout": {
+        "after_wrong": null,
+        "seconds": 0
+      },
+      "reward": {
+        "photo_piece": null,
+        "story_text": "Someone rewrote the shutdown manual to keep the link alive."
+      },
+      "feeds": [
+        "R2-10"
+      ],
+      "solution": {
+        "method": "vigenere_diff"
+      },
+      "assembly": null,
+      "secret": null,
+      "tools": [],
+      "final": false
+    },
+    {
+      "id": "R2-09",
+      "round": 2,
+      "room": "vault",
+      "seq": 9,
+      "order_in_room": 2,
+      "kind": "logic_circuit",
+      "case_file_id": "CF-963E",
+      "object_id": "failsafe_panel",
+      "title": "Failsafe Circuit",
+      "scene_text": "A panel of logic gates. Eight inputs, four lamps.",
+      "unlock": {
+        "requires_resolved": []
+      },
+      "input_gate": null,
+      "payload": {
+        "circuit": {
+          "inputs": [
+            "A1",
+            "A0",
+            "B1",
+            "B0",
+            "C1",
+            "C0",
+            "D1",
+            "D0"
+          ],
+          "gates": [
+            {
+              "id": "n1",
+              "type": "NOT",
+              "in": [
+                "B0"
+              ]
+            },
+            {
+              "id": "a1",
+              "type": "AND",
+              "in": [
+                "A1",
+                "n1"
+              ]
+            },
+            {
+              "id": "g1",
+              "type": "OR",
+              "in": [
+                "a1",
+                "C1"
+              ]
+            },
+            {
+              "id": "g2a",
+              "type": "OR",
+              "in": [
+                "A0",
+                "D1"
+              ]
+            },
+            {
+              "id": "n2",
+              "type": "NOT",
+              "in": [
+                "g2a"
+              ]
+            },
+            {
+              "id": "a2",
+              "type": "AND",
+              "in": [
+                "B1",
+                "C0"
+              ]
+            },
+            {
+              "id": "g2",
+              "type": "OR",
+              "in": [
+                "n2",
+                "a2"
+              ]
+            },
+            {
+              "id": "g3a",
+              "type": "OR",
+              "in": [
+                "C1",
+                "D0"
+              ]
+            },
+            {
+              "id": "n3",
+              "type": "NOT",
+              "in": [
+                "A1"
+              ]
+            },
+            {
+              "id": "g3",
+              "type": "AND",
+              "in": [
+                "g3a",
+                "n3"
+              ]
+            },
+            {
+              "id": "a4",
+              "type": "AND",
+              "in": [
+                "B1",
+                "D1"
+              ]
+            },
+            {
+              "id": "n4",
+              "type": "NOT",
+              "in": [
+                "C0"
+              ]
+            },
+            {
+              "id": "g4",
+              "type": "OR",
+              "in": [
+                "a4",
+                "n4"
+              ]
+            }
+          ],
+          "outputs": [
+            "g1",
+            "g2",
+            "g3",
+            "g4"
+          ]
+        },
+        "panel_note": "Four digits feed four input pairs (A, B, C, D). Each pair is the last two bits of that digit in binary. The code is lamps 1 to 4, left to right.",
+        "interactive_inputs": true
+      },
+      "assets": [],
+      "stages": [
+        {
+          "index": 1,
+          "type": "fields",
+          "prompt": "Enter the 4-digit authorization code shown by the lamps.",
+          "fields": [
+            {
+              "key": "code",
+              "label": "Authorization code",
+              "kind": "number",
+              "normalize": "digits",
+              "placeholder": "",
+              "max_len": 60
+            }
+          ],
+          "expected_fields": 1,
+          "answer_hash": "42bd938f0066b56d053a8c75a9de97e14dfed480e203fd9d467b6b68087bf6ba",
+          "answer_plain": null,
+          "reveal": {}
+        }
+      ],
+      "hints": [
+        {
+          "stage": 1,
+          "level": 1,
+          "text": "Numbers become switches if you look at their last footprints."
+        },
+        {
+          "stage": 1,
+          "level": 2,
+          "text": "Write the voicemail digits in base two and keep only the tail of each."
+        },
+        {
+          "stage": 1,
+          "level": 3,
+          "text": "Four pairs, eight wires, four lamps. Trace each lamp back to its inputs."
+        }
+      ],
+      "attempts_max": 3,
+      "lockout": {
+        "after_wrong": 5,
+        "seconds": 60
+      },
+      "reward": {
+        "photo_piece": null,
+        "story_text": "The failsafe lamps light in sequence. The authorization code is yours."
+      },
+      "feeds": [
+        "R2-10"
+      ],
+      "solution": {
+        "method": "logic_gates"
+      },
+      "assembly": null,
+      "secret": null,
+      "tools": [],
+      "final": false
+    },
+    {
+      "id": "R2-10",
+      "round": 2,
+      "room": "vault",
+      "seq": 10,
+      "order_in_room": 3,
+      "kind": "final_console",
+      "case_file_id": "CF-6AEC",
+      "object_id": "central_console",
+      "title": "Final Containment",
+      "scene_text": "The central console. Three entries stand between you and the end.",
+      "unlock": {
+        "requires_resolved": [
+          "R2-08",
+          "R2-09"
+        ]
+      },
+      "input_gate": null,
+      "payload": {},
+      "assets": [],
+      "stages": [
+        {
+          "index": 1,
+          "type": "fields",
+          "prompt": "Enter the clean step numbers, the authorization code and the real sender's badge.",
+          "fields": [
+            {
+              "key": "steps",
+              "label": "Clean steps",
+              "kind": "text",
+              "normalize": "digits",
+              "placeholder": "",
+              "max_len": 60
+            },
+            {
+              "key": "code",
+              "label": "Authorization code",
+              "kind": "number",
+              "normalize": "digits",
+              "placeholder": "",
+              "max_len": 60
+            },
+            {
+              "key": "badge",
+              "label": "Real sender badge",
+              "kind": "text",
+              "normalize": "alnum",
+              "placeholder": "",
+              "max_len": 60
+            }
+          ],
+          "expected_fields": 3,
+          "answer_hash": "7884a234c8287004f690f566f4a9f5fc54da45948725cc44c322ee8b1d84a3f0",
+          "answer_plain": null,
+          "reveal": {}
+        }
+      ],
+      "hints": [
+        {
+          "stage": 1,
+          "level": 1,
+          "text": "Everything has already been decided. You only have to carry it here."
+        },
+        {
+          "stage": 1,
+          "level": 2,
+          "text": "One entry is what stayed untouched, one is what the lamps showed, one belongs to the voice you trusted."
+        },
+        {
+          "stage": 1,
+          "level": 3,
+          "text": "Of the eight steps, remove those the manuals disagreed on."
+        }
+      ],
+      "attempts_max": 3,
+      "lockout": {
+        "after_wrong": 1,
+        "seconds": 180
+      },
+      "reward": {
+        "photo_piece": null,
+        "story_text": "The countdown freezes. The connection to Hollow House terminates."
+      },
+      "feeds": [],
+      "solution": {
+        "method": "meta_final"
+      },
+      "assembly": null,
+      "secret": null,
+      "tools": [],
+      "final": true
+    }
+  ],
+  "photo_pieces": [
+    {
+      "id": "P01",
+      "awarded_by": "R1-01",
+      "correct_slot": 3,
+      "file": "piece_01.png",
+      "caption": "A child's hand on a banister"
+    },
+    {
+      "id": "P02",
+      "awarded_by": "R1-02",
+      "correct_slot": 8,
+      "file": "piece_02.png",
+      "caption": "The corner of a family dinner table"
+    },
+    {
+      "id": "P03",
+      "awarded_by": "R1-03",
+      "correct_slot": 6,
+      "file": "piece_03.png",
+      "caption": "A pumpkin on the porch"
+    },
+    {
+      "id": "P04",
+      "awarded_by": "R1-04",
+      "correct_slot": 1,
+      "file": "piece_04.png",
+      "caption": "Mara laughing at something off-camera"
+    },
+    {
+      "id": "P05",
+      "awarded_by": "R1-05",
+      "correct_slot": 10,
+      "file": "piece_05.png",
+      "caption": "Daniel's watch, stopped at 11:47"
+    },
+    {
+      "id": "P06",
+      "awarded_by": "R1-06",
+      "correct_slot": 7,
+      "file": "piece_06.png",
+      "caption": "A cracked picture frame on the wall"
+    },
+    {
+      "id": "P07",
+      "awarded_by": "R1-07",
+      "correct_slot": 4,
+      "file": "piece_07.png",
+      "caption": "Theo in a paper ghost costume"
+    },
+    {
+      "id": "P08",
+      "awarded_by": "R1-08",
+      "correct_slot": 9,
+      "file": "piece_08.png",
+      "caption": "Lena holding a flashlight"
+    },
+    {
+      "id": "P09",
+      "awarded_by": "R1-09",
+      "correct_slot": 2,
+      "file": "piece_09.png",
+      "caption": "The staircase into the dark"
+    },
+    {
+      "id": "P10",
+      "awarded_by": "R1-10",
+      "correct_slot": 5,
+      "file": "piece_10.png",
+      "caption": "The empty spot where a fifth person stands"
+    }
+  ],
+  "toolkit": [
+    {
+      "technique": "Caesar / Vigenere",
+      "tools": [
+        {
+          "name": "dcode.fr",
+          "url": "https://www.dcode.fr/"
+        },
+        {
+          "name": "CyberChef",
+          "url": "https://gchq.github.io/CyberChef/"
+        }
+      ]
+    },
+    {
+      "technique": "Morse code",
+      "tools": [
+        {
+          "name": "dcode.fr Morse",
+          "url": "https://www.dcode.fr/morse-code"
+        }
+      ]
+    },
+    {
+      "technique": "Binary / Hex / Base64",
+      "tools": [
+        {
+          "name": "CyberChef",
+          "url": "https://gchq.github.io/CyberChef/"
+        }
+      ]
+    },
+    {
+      "technique": "Unix epoch time",
+      "tools": [
+        {
+          "name": "epochconverter.com",
+          "url": "https://www.epochconverter.com/"
+        }
+      ]
+    },
+    {
+      "technique": "Audio spectrogram",
+      "tools": [
+        {
+          "name": "Audacity",
+          "url": "https://www.audacityteam.org/"
+        },
+        {
+          "name": "Sonic Visualiser",
+          "url": "https://www.sonicvisualiser.org/"
+        }
+      ]
+    },
+    {
+      "technique": "Text diff",
+      "tools": [
+        {
+          "name": "Diffchecker",
+          "url": "https://www.diffchecker.com/"
+        }
+      ]
+    }
+  ]
+}

@@ -108,7 +108,7 @@ export default function EpochTimelineModal({
             {initialCards.map((card) => {
               const isDismissed = dismissedIds.has(card.id);
               const dateStr = formatEpoch(card.epoch);
-              const isAfterShutdown = card.epoch > 981763200; // After Feb 10, 2001
+              const isAfterShutdown = card.epoch > 840067200; // After Aug 15, 1996
 
               return (
                 <div

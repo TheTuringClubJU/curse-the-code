@@ -5,31 +5,22 @@
     <rect width="580" height="440" fill="url(#paperV)" rx="5"/>
     <rect width="564" height="424" x="8" y="8" fill="none" stroke="#7a6a4a" stroke-width="1.5" opacity="0.4" rx="4"/>
 
-    <!-- Handwritten note feel -->
-    <text x="60" y="52" font-family="Georgia, serif" font-size="16" font-weight="bold" fill="#2b1e0f">[ Found under operator chair cushion ]</text>
-    <line x1="60" y1="62" x2="520" y2="62" stroke="#7a6a4a" stroke-width="1" opacity="0.4"/>
+    <!-- Header -->
+    <text x="60" y="52" font-family="Georgia, serif" font-size="14" font-style="italic" fill="#5a4a30">[Handwritten on a folded piece of notepaper]</text>
+    <line x1="60" y1="64" x2="520" y2="64" stroke="#7a6a4a" stroke-width="1" opacity="0.4"/>
 
-    <!-- Handwritten content -->
-    <text x="60" y="96" font-family="Georgia, serif" font-size="13" fill="#1a1206">If you're reading this — the protocol failed.</text>
-    <text x="60" y="118" font-family="Georgia, serif" font-size="13" fill="#1a1206">I stayed behind. BDG-9001. The others left Aug 14.</text>
-    <text x="60" y="140" font-family="Georgia, serif" font-size="13" fill="#1a1206">I continued monitoring per standing order 7-C.</text>
-    <text x="60" y="162" font-family="Georgia, serif" font-size="13" fill="#1a1206">The transmissions on 7.420 MHz are real.</text>
-    <text x="60" y="184" font-family="Georgia, serif" font-size="13" fill="#1a1206">Don't be misled by VM-B. It was swapped out.</text>
-    <text x="60" y="206" font-family="Georgia, serif" font-size="13" fill="#2a1e0f" font-weight="bold">VM-A contains the operational record. Play VM-A.</text>
-    <text x="60" y="240" font-family="Georgia, serif" font-size="13" fill="#1a1206">The spectrogram will show you the code.</text>
-    <text x="60" y="262" font-family="Georgia, serif" font-size="13" fill="#1a1206">HIGH band. Scrub to the anomaly section.</text>
-    <text x="60" y="284" font-family="Georgia, serif" font-size="13" fill="#1a1206">You'll see it. Four digits. That's the key.</text>
+    <!-- Handwritten lines -->
+    <text x="60" y="110" font-family="Georgia, serif" font-size="15" fill="#1a1206">"Monitor 6 is showing again."</text>
+    <text x="60" y="145" font-family="Georgia, serif" font-size="14" fill="#1a1206">"Same figure in the east corridor. Same posture. Same place."</text>
+    <text x="60" y="180" font-family="Georgia, serif" font-size="14" fill="#1a1206">"I ran the tape back. It's not on any recording."</text>
+    <text x="60" y="215" font-family="Georgia, serif" font-size="15" font-weight="bold" fill="#a31818">"It's only live."</text>
+    <text x="60" y="255" font-family="Georgia, serif" font-size="14" fill="#1a1206">"I'm not logging this. I want to go home."</text>
 
-    <!-- Signature -->
-    <text x="300" y="338" font-family="Georgia, serif" font-size="14" fill="#2a1e0f" text-anchor="middle" font-style="italic">— M.C.</text>
-    <line x1="240" y1="346" x2="340" y2="346" stroke="#2a1e0f" stroke-width="0.8" opacity="0.6"/>
-
-    <!-- Date smudge -->
-    <text x="60" y="338" font-family="Courier, monospace" font-size="10" fill="#7a6a4a">Date: AUG 23 1983</text>
+    <!-- Signoff -->
+    <text x="420" y="320" font-family="Georgia, serif" font-size="13" fill="#5a4a30" font-style="italic">— [no signature]</text>
 
     <!-- Footer -->
     <line x1="60" y1="385" x2="520" y2="385" stroke="#7a6a4a" stroke-width="0.8" opacity="0.4"/>
-    <text x="60" y="405" font-family="Courier, monospace" font-size="10" fill="#7a6a4a">RECORD ID: EC04 — OPERATOR CHAIR NOTE</text>
-    <text x="520" y="405" font-family="Courier, monospace" font-size="9" fill="#9a8a6a" text-anchor="end">SUBSTATION DELTA // CTRL-04</text>
+    <text x="60" y="405" font-family="Courier, monospace" font-size="10" fill="#7a6a4a">RECORD ID: EC04 — OPERATOR FOLDED NOTEPAPER</text>
+    <text x="520" y="405" font-family="Courier, monospace" font-size="9" fill="#9a8a6a" text-anchor="end">SUBSTATION DELTA // CTRL-05</text>
 </svg>
-

@@ -70,52 +70,52 @@ const FALLBACK_META = {
 const FALLBACK_ANSWERS = {
   'R2-01': {
     label: 'Active Operator Badge',
-    value: 'BDG-9001',
+    value: 'BDG-0417',
     details: 'Clearance: Systems Department · Sub-basement Access',
   },
   'R2-02': {
     label: 'Incident Codename & Date',
-    value: 'COMET · 2001-02-10',
-    details: 'Containment protocol revision codename: COMET',
+    value: '1996-08-15 | VESPER',
+    details: 'Containment protocol revision codename: VESPER',
   },
   'R2-03': {
     label: 'Keypad Passcode',
-    value: '1357',
-    details: 'Surveillance timestamp confirmed: 2001-02-10',
+    value: '5821',
+    details: 'Surveillance timestamp confirmed: 1996-08-15',
   },
   'R2-04': {
     label: 'Chronology Keyword',
-    value: 'PLANET',
+    value: 'BEACON',
     details: 'Chronological facility log sequence verified',
   },
   'R2-05': {
     label: 'Authentic Carrier Channel',
-    value: 'VM-A (7.455 MHz)',
+    value: 'VM-B (7.455 MHz)',
     details: 'Transmission channel verified legitimate',
   },
   'R2-06': {
     label: 'Voicemail Pin Code',
-    value: '8140',
+    value: '6027',
     details: 'Spectrogram audio frequency verified',
   },
   'R2-07': {
     label: 'Bulkhead Security Lock',
-    value: 'Passcode: 1357 | Keyword: PLANET',
+    value: 'Passcode: 5821 | Keyword: BEACON',
     details: 'Records-to-Vault lower bulkhead bypassed',
   },
   'R2-08': {
     label: 'Tampered Protocol Steps',
-    value: '2, 6',
-    details: 'Clean steps remain intact in original manual',
+    value: '258',
+    details: 'Clean steps remain intact in original manual: 1, 3, 4, 6, 7',
   },
   'R2-09': {
     label: 'Circuit Authorization Code',
-    value: '1101',
+    value: '1001',
     details: 'East switchgear logic bus latched',
   },
   'R2-10': {
     label: 'Containment Status',
-    value: 'STABILIZED & VERIFIED',
+    value: '13467 | 1001 | BDG-0417',
     details: 'Biological core dormant · Round 2 complete',
   },
 };

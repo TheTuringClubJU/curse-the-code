@@ -188,8 +188,8 @@ export default function RedactedReportModal({
                   {p.map((seg, sIdx) => {
                     if (seg.r) {
                       const fallbackText = currentCopy.id === 'copy_b'
-                        ? (pIdx === 0 ? '21 June 2001' : 'TUNDRA')
-                        : (pIdx === 0 ? '10 February 2001' : 'COMET');
+                        ? (pIdx === 0 ? '3 December 1996' : 'TALLOW')
+                        : (pIdx === 0 ? '15 August 1996' : 'VESPER');
                       const inkText = (typeof seg.t === 'string' && seg.t.trim().length > 0) ? seg.t : fallbackText;
                       return (
                         <span

@@ -14,9 +14,9 @@ export default function LinePrinterModal({
   const [feedback, setFeedback] = useState(null);
 
   // 3 Fanfold Continuous Sheets reordering state
-  // Index 0: Page 1 (ES04: Logins directory -> SRC-TEST9 assigned token TK-07)
-  // Index 1: Page 2 (ES07: Token timestamp ledger -> TK-07 issued 2031-07-04 23:47:09)
-  // Index 2: Page 3 (ES10: Facility policy -> HOUSE SEALED 2001-07-04 23:59:59)
+  // Index 0: Page 1 (ES04: Logins directory -> SRC-0477 assigned token TK-07)
+  // Index 1: Page 2 (ES07: Token timestamp ledger -> TK-07 issued 2026-10-31 23:47:09)
+  // Index 2: Page 3 (ES10: Facility policy -> HOUSE SEALED 1996-10-31 23:59:59)
   const [pageOrder, setPageOrder] = useState([2, 0, 1]); // Starts scrambled (Policy, Logins, Tokens)
 
   if (!isOpen || !clue) return null;
@@ -27,10 +27,13 @@ export default function LinePrinterModal({
       label: 'Fanfold Leaf 1 (Filing Cabinet)',
       title: 'LOGINS DISPATCH',
       lines: [
-        '2001-09-12 04:12:00 [SRC-TEST1] AUTH_PASS USER=analyst01 STATUS=OK',
-        '2001-09-12 04:18:22 [SRC-TEST2] AUTH_PASS USER=guard_station_e STATUS=OK',
-        '2001-09-12 04:25:10 [SRC-TEST3] AUTH_PASS USER=sys_maintenance STATUS=OK',
-        '2001-09-12 04:99:99 [SRC-TEST9] ERR_IMPOSSIBLE_TIME ANOMALOUS_TIMESTAMP',
+        'LOGIN src=WS-DANIEL token=TK-01',
+        'LOGIN src=WS-MARA token=TK-02',
+        'LOGIN src=TABLET-01 token=TK-03',
+        'LOGIN src=SRC-0311 token=TK-04',
+        'LOGIN src=HOUSE-CORE token=TK-05',
+        'LOGIN src=TABLET-02 token=TK-06',
+        'LOGIN src=SRC-0477 token=TK-07',
       ],
       isAnomaly: true,
     },
@@ -39,10 +42,13 @@ export default function LinePrinterModal({
       label: 'Fanfold Leaf 2 (Reel Recorder)',
       title: 'TOKEN TIMESTAMP LEDGER',
       lines: [
-        'TK-01 issued 2001-07-04 16:12:44 [SRC-TEST1]',
-        'TK-02 issued 2001-07-04 17:03:10 [SRC-TEST2]',
-        'TK-03 issued 2001-07-04 18:40:27 [SRC-TEST3]',
-        'TK-07 issued 2031-07-04 23:47:09 [SRC-TEST7 - POST-SEAL]',
+        'TK-01 issued 1996-10-31 16:12:44',
+        'TK-02 issued 1996-10-31 17:03:10',
+        'TK-03 issued 1996-10-31 18:40:27',
+        'TK-04 issued 1996-10-31 20:31:05',
+        'TK-05 issued 1996-10-31 21:15:52',
+        'TK-06 issued 1996-10-31 22:09:33',
+        'TK-07 issued 2026-10-31 23:47:09 [POST-SEAL INVALID]',
       ],
       isAnomaly: false,
     },
@@ -51,9 +57,9 @@ export default function LinePrinterModal({
       label: 'Fanfold Leaf 3 (Archive Drawer 4)',
       title: 'SECURITY DIRECTIVE',
       lines: [
-        'SECURITY POLICY: ALL TOKENS EXPIRE UPON FACILITY LOCKDOWN',
-        'HOUSE SEALED: 2001-07-04 23:59:59',
-        'CRITICAL: ANY TOKEN ISSUED AFTER SEALING YEAR 2001 IS IMPOSSIBLE & FORGED',
+        'AUTHORISED SOURCES: WS-DANIEL, WS-MARA, TABLET-01, TABLET-02, HOUSE-CORE',
+        'HOUSE SEALED: 1996-10-31 23:59:59',
+        'CRITICAL: ANY TOKEN ISSUED AFTER SEALING 1996-10-31 IS INVALID',
       ],
       isAnomaly: false,
     },
@@ -210,7 +216,7 @@ export default function LinePrinterModal({
             <div className="space-y-1.5 text-xs">
               {filteredLines.length > 0 ? (
                 filteredLines.map((line, idx) => {
-                  const isAnomaly = line.includes('ERR_IMPOSSIBLE_TIME') || line.includes('SRC-TEST9');
+                  const isAnomaly = line.includes('SRC-0477') || line.includes('POST-SEAL');
                   return (
                     <div
                       key={idx}
@@ -235,7 +241,7 @@ export default function LinePrinterModal({
           {/* Submission Section */}
           <div className="p-4 rounded-lg bg-[#071a0f] border border-[#1b3d27]">
             <h3 className="text-sm font-bold text-[#b6ffd1] mb-2">
-              {clue.stages?.[0]?.prompt || "Which source ID logged in at an impossible time?"}
+              {clue.stages?.[0]?.prompt || "Which source machine requested the invalid token? (id only)"}
             </h3>
 
             {clue.solved ? (

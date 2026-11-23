@@ -15,19 +15,19 @@ export default function TabletPasscodeModal({
   const [feedback, setFeedback] = useState(null);
 
   // Scraps reordering state on back of tablet
-  // 0 = Scrap A (ES03: 01000001 01001100 -> 'AL')
-  // 1 = Scrap B (ES08: 01010000 01001000 01000001 -> 'PHA')
+  // 0 = Scrap A (ES03: 01010100 01001000 -> 'TH')
+  // 1 = Scrap B (ES08: 01000101 01001111 -> 'EO')
   const [scrapOrder, setScrapOrder] = useState([1, 0]); // Starts scrambled (B, A)
 
   if (!isOpen || !clue) return null;
 
   const scraps = [
-    { id: 0, label: 'Scrap A (Torn Slip)', binary: '01000001 01001100', char: 'AL' },
-    { id: 1, label: 'Scrap B (Cable Tag)', binary: '01010000 01001000 01000001', char: 'PHA' },
+    { id: 0, label: 'Scrap A (Torn Slip)', binary: '01010100 01001000', char: 'TH' },
+    { id: 1, label: 'Scrap B (Cable Tag)', binary: '01000101 01001111', char: 'EO' },
   ];
 
   const isAligned = scrapOrder[0] === 0 && scrapOrder[1] === 1;
-  const currentBinary = isAligned ? "01000001 01001100 01010000 01001000 01000001" : "[MISALIGNED TAPE - REARRANGE POSITIONS]";
+  const currentBinary = isAligned ? "01010100 01001000 01000101 01001111" : "[MISALIGNED TAPE - REARRANGE POSITIONS]";
 
   const handleSwap = () => {
     setScrapOrder(prev => [prev[1], prev[0]]);
@@ -111,7 +111,7 @@ export default function TabletPasscodeModal({
                     {clue.stages?.[0]?.prompt || "Enter the tablet passcode (a word)."}
                   </h3>
                   <p className="text-xs text-[#52996e] mt-2">
-                    5-letter alphanumeric key required. Flip to the back chassis to reassemble the recovered binary scraps.
+                    4-letter alphanumeric key required. Flip to the back chassis to reassemble the recovered binary scraps.
                   </p>
                 </div>
               </div>
@@ -236,7 +236,7 @@ export default function TabletPasscodeModal({
               {/* Context Scrap Note (From Wastebin) */}
               <div className="p-3 bg-[#1c1c0e] rounded-lg border border-[#4d4a1b] text-xs text-[#e8dfa2] leading-relaxed">
                 <span className="font-bold text-[#fff9b0] block mb-1">RECOVERED NOTE • CONTEXT RIDDLE:</span>
-                "Test passcode: the first Greek letter. Five letters."
+                "Passcode: the name of the youngest one. Four letters."
               </div>
 
             </div>

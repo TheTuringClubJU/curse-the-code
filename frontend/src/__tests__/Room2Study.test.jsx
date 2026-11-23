@@ -234,7 +234,7 @@ describe('Room 2 (Daniel\'s Study) Comprehensive Test Suite (50 Tests)', () => {
     expect(screen.getByText(/INVESTIGATION BASKET/i)).toBeInTheDocument();
     fireEvent.keyDown(window, { key: 'b', code: 'KeyB' });
 
-    // 5. Open and solve R1-05 (tablet_drawer -> ALPHA)
+    // 5. Open and solve R1-05 (tablet_drawer -> THEO)
     initialStudyState.basket_unlocked = true;
     act(() => {
       activeEngineInstance.callbacks.onInteract('tablet_drawer');
@@ -245,7 +245,7 @@ describe('Room 2 (Daniel\'s Study) Comprehensive Test Suite (50 Tests)', () => {
     });
 
     const input1 = screen.getByPlaceholderText(/Enter deduced answer/i);
-    fireEvent.change(input1, { target: { value: 'ALPHA' } });
+    fireEvent.change(input1, { target: { value: 'THEO' } });
     fireEvent.click(screen.getByRole('button', { name: /Submit/i }));
 
     await waitFor(() => {
@@ -511,7 +511,7 @@ describe('Room 2 (Daniel\'s Study) Comprehensive Test Suite (50 Tests)', () => {
     expect(screen.getByText(/Flip to Back/i)).toBeInTheDocument();
     fireEvent.click(screen.getByText(/Flip to Back/i));
     expect(screen.getByText(/STICKY NOTE • DANIEL'S SCRAWL/i)).toBeInTheDocument();
-    expect(screen.getByText(/01000001 01001100/i)).toBeInTheDocument();
+    expect(screen.getByText(/01010100 01001000/i)).toBeInTheDocument();
   });
 
   it('QA-R2-FE-24: test_room2_tablet_modal_copy_button_copies_binary_text', () => {
@@ -531,10 +531,10 @@ describe('Room 2 (Daniel\'s Study) Comprehensive Test Suite (50 Tests)', () => {
     render(<TabletPasscodeModal isOpen={true} onClose={vi.fn()} clue={clue} onSubmitAnswer={mockSubmit} />);
 
     const input = screen.getByPlaceholderText(/Enter deduced answer/i);
-    fireEvent.change(input, { target: { value: 'ALPHA' } });
+    fireEvent.change(input, { target: { value: 'THEO' } });
     fireEvent.click(screen.getByRole('button', { name: /Submit/i }));
 
-    expect(mockSubmit).toHaveBeenCalledWith('R1-05', 'ALPHA');
+    expect(mockSubmit).toHaveBeenCalledWith('R1-05', 'THEO');
   });
 
   // ==========================================================================
@@ -562,7 +562,7 @@ describe('Room 2 (Daniel\'s Study) Comprehensive Test Suite (50 Tests)', () => {
     const clue = initialStudyState.clues[1];
     render(<CrtEmailModal isOpen={true} onClose={vi.fn()} clue={clue} onSubmitAnswer={vi.fn()} />);
 
-    expect(screen.getByText(/U0lHTkFM/i)).toBeInTheDocument();
+    expect(screen.getByText(/RE9PUg==/i)).toBeInTheDocument();
     expect(screen.getByText(/daniel.vance@vance-corp.internal/i)).toBeInTheDocument();
   });
 
@@ -573,10 +573,10 @@ describe('Room 2 (Daniel\'s Study) Comprehensive Test Suite (50 Tests)', () => {
     render(<CrtEmailModal isOpen={true} onClose={vi.fn()} clue={clue} onSubmitAnswer={mockSubmit} />);
 
     const input = screen.getByPlaceholderText(/Enter deduced answer/i);
-    fireEvent.change(input, { target: { value: 'SIGNAL' } });
+    fireEvent.change(input, { target: { value: 'DOOR' } });
     fireEvent.click(screen.getByRole('button', { name: /Submit/i }));
 
-    expect(mockSubmit).toHaveBeenCalledWith('R1-06', 'SIGNAL');
+    expect(mockSubmit).toHaveBeenCalledWith('R1-06', 'DOOR');
   });
 
   // ==========================================================================
@@ -605,7 +605,7 @@ describe('Room 2 (Daniel\'s Study) Comprehensive Test Suite (50 Tests)', () => {
     render(<CrashDumpModal isOpen={true} onClose={vi.fn()} clue={clue} onSubmitAnswer={vi.fn()} />);
 
     expect(screen.getByText(/0x00000000/i)).toBeInTheDocument();
-    expect(screen.getByText(/ORBIT.SYS HALTED/i)).toBeInTheDocument();
+    expect(screen.getByText(/W.SYS HALTED/i)).toBeInTheDocument();
   });
 
   it('QA-R2-FE-31: test_room2_crash_dump_modal_submits_ORBIT_successfully', async () => {
@@ -615,10 +615,10 @@ describe('Room 2 (Daniel\'s Study) Comprehensive Test Suite (50 Tests)', () => {
     render(<CrashDumpModal isOpen={true} onClose={vi.fn()} clue={clue} onSubmitAnswer={mockSubmit} />);
 
     const input = screen.getByPlaceholderText(/Enter deduced process name/i);
-    fireEvent.change(input, { target: { value: 'ORBIT' } });
+    fireEvent.change(input, { target: { value: 'HOLLOW' } });
     fireEvent.click(screen.getByRole('button', { name: /Submit/i }));
 
-    expect(mockSubmit).toHaveBeenCalledWith('R1-07', 'ORBIT');
+    expect(mockSubmit).toHaveBeenCalledWith('R1-07', 'HOLLOW');
   });
 
   // ==========================================================================
@@ -646,14 +646,14 @@ describe('Room 2 (Daniel\'s Study) Comprehensive Test Suite (50 Tests)', () => {
     const clue = initialStudyState.clues[3];
     render(<LinePrinterModal isOpen={true} onClose={vi.fn()} clue={clue} onSubmitAnswer={vi.fn()} />);
 
-    expect(screen.getAllByText(/SRC-TEST1/i).length).toBeGreaterThan(0);
-    expect(screen.getByText(/SRC-TEST9/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/WS-DANIEL/i).length).toBeGreaterThan(0);
+    expect(screen.getByText(/SRC-0477/i)).toBeInTheDocument();
 
     const searchInput = screen.getByPlaceholderText(/Filter access log lines/i);
-    fireEvent.change(searchInput, { target: { value: 'IMPOSSIBLE' } });
+    fireEvent.change(searchInput, { target: { value: 'POST-SEAL' } });
 
     expect(screen.queryByText(/USER=analyst01/i)).not.toBeInTheDocument();
-    expect(screen.getByText(/ERR_IMPOSSIBLE_TIME/i)).toBeInTheDocument();
+    expect(screen.getByText(/POST-SEAL INVALID/i)).toBeInTheDocument();
   });
 
   it('QA-R2-FE-34: test_room2_access_log_modal_submits_SRC_TEST9_successfully', async () => {
@@ -663,10 +663,10 @@ describe('Room 2 (Daniel\'s Study) Comprehensive Test Suite (50 Tests)', () => {
     render(<LinePrinterModal isOpen={true} onClose={vi.fn()} clue={clue} onSubmitAnswer={mockSubmit} />);
 
     const input = screen.getByPlaceholderText(/Enter deduced source ID/i);
-    fireEvent.change(input, { target: { value: 'SRC-TEST9' } });
+    fireEvent.change(input, { target: { value: 'SRC-0477' } });
     fireEvent.click(screen.getByRole('button', { name: /Submit/i }));
 
-    expect(mockSubmit).toHaveBeenCalledWith('R1-08', 'SRC-TEST9');
+    expect(mockSubmit).toHaveBeenCalledWith('R1-08', 'SRC-0477');
   });
 
   // ==========================================================================
@@ -712,7 +712,7 @@ describe('Room 2 (Daniel\'s Study) Comprehensive Test Suite (50 Tests)', () => {
     });
 
     const input = screen.getByPlaceholderText(/Enter deduced source ID/i);
-    fireEvent.change(input, { target: { value: 'SRC-TEST9' } });
+    fireEvent.change(input, { target: { value: 'SRC-0477' } });
     fireEvent.click(screen.getByRole('button', { name: /Submit/i }));
 
     await waitFor(() => {
@@ -759,7 +759,7 @@ describe('Room 2 (Daniel\'s Study) Comprehensive Test Suite (50 Tests)', () => {
     });
 
     const input = screen.getByPlaceholderText(/Enter deduced source ID/i);
-    fireEvent.change(input, { target: { value: 'SRC-TEST9' } });
+    fireEvent.change(input, { target: { value: 'SRC-0477' } });
     fireEvent.click(screen.getByRole('button', { name: /Submit/i }));
 
     await waitFor(() => {

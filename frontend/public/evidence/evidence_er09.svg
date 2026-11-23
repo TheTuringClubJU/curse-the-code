@@ -34,7 +34,7 @@
     <!-- Schematic Diagram Bus Lines -->
     <text x="20" y="60" font-family="Courier, monospace" font-size="12" fill="#bce8c2">PRIMARY HARDWARE BUS REGISTER:</text>
     <rect x="290" y="44" width="90" height="24" fill="#0d120c" stroke="#4ade80" stroke-width="1.5" rx="3"/>
-    <text x="335" y="61" font-family="Courier, monospace" font-size="13" font-weight="bold" fill="#4ade80" text-anchor="middle">0x054D</text>
+    <text x="335" y="61" font-family="Courier, monospace" font-size="13" font-weight="bold" fill="#4ade80" text-anchor="middle">0x16BD</text>
 
     <text x="20" y="90" font-family="Courier, monospace" font-size="11" fill="#789c7d">SECONDARY CONTROLLER TRANSLATION:</text>
     <text x="290" y="90" font-family="Courier, monospace" font-size="11" fill="#bce8c2">BASE-10 / DECIMAL BUS MAPPING</text>
