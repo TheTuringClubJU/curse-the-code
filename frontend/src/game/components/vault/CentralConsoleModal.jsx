@@ -54,8 +54,10 @@ export default function CentralConsoleModal({
   const isLocked = Boolean(clue?.locked);
   const isExhausted = attemptsRemaining === 0 && !clue?.solved;
   const clueId = clue?.id || clue?.clue_id || 'R2-10';
-  const r08Solved = Boolean((vaultClues || []).find((c) => (c.id || c.clue_id) === 'R2-08')?.solved);
-  const r09Solved = Boolean((vaultClues || []).find((c) => (c.id || c.clue_id) === 'R2-09')?.solved);
+  const r08Clue = (vaultClues || []).find((c) => (c.id || c.clue_id) === 'R2-08');
+  const r09Clue = (vaultClues || []).find((c) => (c.id || c.clue_id) === 'R2-09');
+  const r08Solved = Boolean(r08Clue?.solved || (r08Clue?.attempts >= (r08Clue?.attempts_max || 3)));
+  const r09Solved = Boolean(r09Clue?.solved || (r09Clue?.attempts >= (r09Clue?.attempts_max || 3)));
 
   const handleSubmit = async (e) => {
     e.preventDefault();

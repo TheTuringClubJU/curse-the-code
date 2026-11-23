@@ -59,7 +59,7 @@ export default function ControlDossierModal({
     const ib = RECOMMENDED_ORDER.indexOf(b.id);
     return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
   });
-  const solvedCount = displayClues.filter((c) => c.solved).length;
+  const solvedCount = displayClues.filter((c) => Boolean(c.solved || (c.attempts >= (c.attempts_max || 3)))).length;
 
   const buildDossierText = () => [
     '============================================================',
@@ -152,7 +152,8 @@ export default function ControlDossierModal({
               orderIdx > 0
                 ? displayClues.find((item) => item.id === RECOMMENDED_ORDER[orderIdx - 1])
                 : null;
-            const prevPending = Boolean(prevClue && !prevClue.solved);
+            const prevMax = prevClue?.attempts_max || 3;
+            const prevPending = Boolean(prevClue && !prevClue.solved && (prevClue.attempts || 0) < prevMax);
             const tilts = ['-rotate-[1deg]', 'rotate-[0.6deg]', 'rotate-[1.1deg]'];
             const tiltClass = tilts[idx % tilts.length];
 

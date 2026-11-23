@@ -647,7 +647,9 @@ export default function Room5Control({ team, onLogout }) {
 
       // ── Vault / exit door -> Opens Fork 2 modal once clues solved ──
       if (objectId === 'vault_door' || objectId === 'exit_door') {
-        if (currentData?.is_completed) {
+        const roomClues = currentData?.clues || [];
+        const allResolved = roomClues.length >= 3 && roomClues.every((c) => Boolean(c.solved || (c.attempts >= (c.attempts_max || 3))));
+        if (currentData?.is_completed || allResolved) {
           setIsFork2Open(true);
           engineRef.current?.unlock?.();
           engineRef.current?.openDoor?.();
@@ -746,7 +748,8 @@ export default function Room5Control({ team, onLogout }) {
         if (clueIndex > 0) {
           const prevClueId = clueOrder[clueIndex - 1];
           const prevClue = currentData?.clues?.find((c) => c.id === prevClueId);
-          if (!prevClue?.solved) {
+          const prevResolved = Boolean(prevClue?.solved || (prevClue?.attempts >= (prevClue?.attempts_max || 3)));
+          if (!prevResolved) {
             audioRef.current?.bad?.();
             const prevName =
               prevClueId === 'R2-01'
@@ -754,7 +757,7 @@ export default function Room5Control({ team, onLogout }) {
                 : prevClueId === 'R2-05'
                 ? 'Radio Console (R2-05)'
                 : prevClueId;
-            showNotification(`This terminal is locked. Solve the ${prevName} first.`);
+            showNotification(`This terminal is locked. Resolve the ${prevName} first.`);
             return;
           }
         }
@@ -954,7 +957,7 @@ export default function Room5Control({ team, onLogout }) {
     : roomData?.evidence || [];
 
   const roomClues = roomData?.clues || [];
-  const cluesSolvedCount = roomClues.filter((c) => c.solved).length;
+  const cluesSolvedCount = roomClues.filter((c) => Boolean(c.solved || (c.attempts >= (c.attempts_max || 3)))).length;
   const totalCluesCount = roomClues.length || 3;
 
   const getClueState = (id) => {
