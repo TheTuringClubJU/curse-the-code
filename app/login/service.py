@@ -444,10 +444,16 @@ class LoginService:
                             "contact": row["contact"],
                             "is_active": row["is_active"]
                         }
+                        cur.execute(
+                            "SELECT COUNT(*) as active_cnt FROM team_sessions WHERE team_id = %s AND ended_at IS NULL AND expires_at > now()",
+                            (row["team_id"],)
+                        )
+                        cnt_row = cur.fetchone()
+                        active_cnt = cnt_row["active_cnt"] if cnt_row else 1
                         return {
                             "team": team_dict,
                             "session": dict(row),
-                            "active_sessions": len(cls.get_active_sessions(row["team_id"]))
+                            "active_sessions": active_cnt
                         }
             except Exception as e:
                 print("Error looking up session from DB:", e)

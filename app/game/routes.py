@@ -980,21 +980,6 @@ def submit_clue_answer(clue_id: str, payload: Dict[str, Any], request: Request):
                         """,
                         (round_num, team["id"], round_num, pts_awarded)
                     )
-
-                # Unlock next clue in sequence
-                seq = ["R1-01", "R1-02", "R1-03", "R1-04"]
-                if clue_id in seq:
-                    idx = seq.index(clue_id)
-                    if idx + 1 < len(seq):
-                        next_id = seq[idx + 1]
-                        cur.execute(
-                            """
-                            INSERT INTO team_clues (team_id, round, clue_id, room_id, is_unlocked, unlocked_at)
-                            VALUES (%s, %s, %s, %s, TRUE, NOW())
-                            ON CONFLICT (team_id, clue_id) DO UPDATE SET is_unlocked = TRUE, unlocked_at = COALESCE(team_clues.unlocked_at, NOW())
-                            """,
-                            (team["id"], target_clue.get("round", 1), next_id, room_id)
-                        )
             else:
                 round_num = target_clue.get("round", 1)
                 if attempts_max is not None and curr_attempts < attempts_max and new_attempts >= attempts_max:
@@ -1014,6 +999,23 @@ def submit_clue_answer(clue_id: str, payload: Dict[str, Any], request: Request):
                         """,
                         (round_num, team["id"], round_num)
                     )
+
+            # Unlock next clue in sequence upon resolution (solved or attempts exhausted)
+            is_resolved_seq = bool(clue_solved or (attempts_max is not None and new_attempts >= attempts_max))
+            if is_resolved_seq:
+                seq = ["R1-01", "R1-02", "R1-03", "R1-04"]
+                if clue_id in seq:
+                    idx = seq.index(clue_id)
+                    if idx + 1 < len(seq):
+                        next_id = seq[idx + 1]
+                        cur.execute(
+                            """
+                            INSERT INTO team_clues (team_id, round, clue_id, room_id, is_unlocked, unlocked_at)
+                            VALUES (%s, %s, %s, %s, TRUE, NOW())
+                            ON CONFLICT (team_id, clue_id) DO UPDATE SET is_unlocked = TRUE, unlocked_at = COALESCE(team_clues.unlocked_at, NOW())
+                            """,
+                            (team["id"], target_clue.get("round", 1), next_id, room_id)
+                        )
             
             # Check if all clues in this room are now resolved (solved or exhausted)
             cur.execute(

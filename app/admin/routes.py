@@ -1,4 +1,6 @@
 import os
+import time
+import threading
 from fastapi import APIRouter, Request, Response, HTTPException, Depends
 from typing import Optional, Dict, Any
 from datetime import datetime, timezone
@@ -61,78 +63,92 @@ async def admin_logout(request: Request, response: Response):
 async def admin_me(admin: Dict[str, Any] = Depends(get_admin_user)):
     return {"ok": True, "admin": admin}
 
+_dashboard_cache = {"data": None, "ts": 0.0}
+_dashboard_lock = threading.Lock()
+
 @admin_router.get("/dashboard")
 async def get_dashboard_data(admin: Dict[str, Any] = Depends(get_admin_user)):
     """
     Returns:
     1. Status of Round 1 & Round 2
     2. Active teams vs logged out teams summary
+    Cached for 1.5 seconds.
     """
-    conn = get_db_connection()
-    rounds = {1: {"status": ROUNDS_STATUS.get(1, "pending"), "starts_at": None, "ends_at": None}, 
-              2: {"status": ROUNDS_STATUS.get(2, "pending"), "starts_at": None, "ends_at": None}}
-    teams_list = []
+    now = time.monotonic()
+    if _dashboard_cache["data"] is not None and now - _dashboard_cache["ts"] < 1.5:
+        return _dashboard_cache["data"]
 
-    if conn:
-        try:
-            with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                cur.execute("SELECT round, status, starts_at, ends_at FROM rounds ORDER BY round;")
-                for r in cur.fetchall():
-                    rounds[r["round"]] = dict(r)
+    with _dashboard_lock:
+        if _dashboard_cache["data"] is not None and time.monotonic() - _dashboard_cache["ts"] < 1.5:
+            return _dashboard_cache["data"]
 
-                cur.execute(
-                    """
-                    SELECT t.id, t.name, t.is_active,
-                           COUNT(s.id) as active_sessions_count
-                    FROM teams t
-                    LEFT JOIN team_sessions s 
-                           ON s.team_id = t.id 
-                          AND s.ended_at IS NULL 
-                          AND s.expires_at > now()
-                    GROUP BY t.id, t.name, t.is_active
-                    ORDER BY t.name ASC;
-                    """
+        conn = get_db_connection()
+        rounds = {1: {"status": ROUNDS_STATUS.get(1, "pending"), "starts_at": None, "ends_at": None}, 
+                  2: {"status": ROUNDS_STATUS.get(2, "pending"), "starts_at": None, "ends_at": None}}
+        teams_list = []
+
+        if conn:
+            try:
+                with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                    cur.execute("SELECT round, status, starts_at, ends_at FROM rounds ORDER BY round;")
+                    for r in cur.fetchall():
+                        rounds[r["round"]] = dict(r)
+
+                    cur.execute(
+                        """
+                        SELECT t.id, t.name, t.is_active,
+                               COUNT(s.id) as active_sessions_count
+                        FROM teams t
+                        LEFT JOIN team_sessions s 
+                               ON s.team_id = t.id 
+                              AND s.ended_at IS NULL 
+                              AND s.expires_at > now()
+                        GROUP BY t.id, t.name, t.is_active
+                        ORDER BY t.name ASC;
+                        """
+                    )
+                    for t in cur.fetchall():
+                        teams_list.append({
+                            "id": t["id"],
+                            "name": t["name"],
+                            "is_active": t["is_active"],
+                            "is_logged_in": t["active_sessions_count"] > 0,
+                            "active_devices": t["active_sessions_count"]
+                        })
+            except Exception as e:
+                print("Error loading dashboard data:", e)
+            finally:
+                conn.close()
+        else:
+            now_dt = datetime.now(timezone.utc)
+            for t in TEAMS_DB.values():
+                active_count = sum(
+                    1 for s in SESSIONS_DB.values()
+                    if s["team_id"] == t["id"] and s["ended_at"] is None and s["expires_at"] > now_dt
                 )
-                for t in cur.fetchall():
-                    teams_list.append({
-                        "id": t["id"],
-                        "name": t["name"],
-                        "is_active": t["is_active"],
-                        "is_logged_in": t["active_sessions_count"] > 0,
-                        "active_devices": t["active_sessions_count"]
-                    })
-        except Exception as e:
-            print("Error loading dashboard data:", e)
-        finally:
-            conn.close()
-    else:
-        now = datetime.now(timezone.utc)
-        for t in TEAMS_DB.values():
-            active_count = sum(
-                1 for s in SESSIONS_DB.values()
-                if s["team_id"] == t["id"] and s["ended_at"] is None and s["expires_at"] > now
-            )
-            teams_list.append({
-                "id": t["id"],
-                "name": t["name"],
-                "is_active": t.get("is_active", True),
-                "is_logged_in": active_count > 0,
-                "active_devices": active_count
-            })
+                teams_list.append({
+                    "id": t["id"],
+                    "name": t["name"],
+                    "is_active": t.get("is_active", True),
+                    "is_logged_in": active_count > 0,
+                    "active_devices": active_count
+                })
 
-    logged_in_count = sum(1 for t in teams_list if t["is_logged_in"])
-    logged_out_count = len(teams_list) - logged_in_count
+        logged_in_count = sum(1 for t in teams_list if t["is_logged_in"])
+        logged_out_count = len(teams_list) - logged_in_count
 
-    return {
-        "ok": True,
-        "rounds": rounds,
-        "teams": teams_list,
-        "presence": {
-            "total_teams": len(teams_list),
-            "logged_in": logged_in_count,
-            "logged_out": logged_out_count
+        result = {
+            "ok": True,
+            "rounds": rounds,
+            "teams": teams_list,
+            "presence": {
+                "total_teams": len(teams_list),
+                "logged_in": logged_in_count,
+                "logged_out": logged_out_count
+            }
         }
-    }
+        _dashboard_cache.update(data=result, ts=time.monotonic())
+        return result
 
 @admin_router.post("/rounds/control")
 async def control_round(req: RoundControlRequest, admin: Dict[str, Any] = Depends(get_admin_user)):
@@ -190,6 +206,16 @@ async def control_round(req: RoundControlRequest, admin: Dict[str, Any] = Depend
         finally:
             conn.close()
 
+    # Invalidate dashboard, leaderboard, and lobby caches
+    _dashboard_cache["data"] = None
+    _leaderboard_cache.clear()
+    try:
+        from app.lobby.routes import _rounds_cache, _lobby_cache
+        _rounds_cache["data"] = None
+        _lobby_cache.clear()
+    except Exception:
+        pass
+
     return {
         "ok": True,
         "action": action,
@@ -211,89 +237,106 @@ async def admin_logout_team(team_id: int, admin: Dict[str, Any] = Depends(get_ad
         "message": f"Terminated {sessions_terminated} session(s) for team #{team_id}"
     }
 
+_leaderboard_cache: Dict[int, Any] = {}
+_leaderboard_lock = threading.Lock()
+
 @admin_router.get("/leaderboard")
 async def get_leaderboard(round_num: int = 1, admin: Dict[str, Any] = Depends(get_admin_user)):
     """
     Fetch exact scores and finish times with tie-breaking for Round 1 or Round 2.
     Tie-breaker formula: Adjusted Elapsed Time = (last_solved_at - starts_at) + penalty_seconds
+    Cached for 1.5 seconds.
     """
-    conn = get_db_connection()
-    leaderboard = []
-    if conn:
-        try:
-            with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                cur.execute(
-                    """
-                    SELECT 
-                        t.id as team_id,
-                        t.name as team_name,
-                        COALESCE(tr.clues_solved, 0) as clues_solved,
-                        COALESCE(tr.total_score, 0)::float as total_score,
-                        COALESCE(tr.penalty_seconds, 0) as penalty_seconds,
-                        tr.last_solved_at,
-                        tr.finished_at,
-                        tr.qualified_at,
-                        tr.qualified_rank,
-                        r.starts_at as round_starts_at,
-                        CASE 
-                            WHEN tr.last_solved_at IS NOT NULL AND r.starts_at IS NOT NULL THEN
-                                GREATEST(0, FLOOR(EXTRACT(EPOCH FROM (tr.last_solved_at - r.starts_at))))::int + COALESCE(tr.penalty_seconds, 0)
-                            WHEN tr.last_solved_at IS NOT NULL THEN
-                                GREATEST(0, FLOOR(EXTRACT(EPOCH FROM (tr.last_solved_at - tr.created_at))))::int + COALESCE(tr.penalty_seconds, 0)
-                            WHEN tr.finished_at IS NOT NULL AND r.starts_at IS NOT NULL THEN
-                                GREATEST(0, FLOOR(EXTRACT(EPOCH FROM (tr.finished_at - r.starts_at))))::int + COALESCE(tr.penalty_seconds, 0)
-                            WHEN tr.finished_at IS NOT NULL THEN
-                                GREATEST(0, FLOOR(EXTRACT(EPOCH FROM (tr.finished_at - tr.created_at))))::int + COALESCE(tr.penalty_seconds, 0)
-                            WHEN COALESCE(tr.penalty_seconds, 0) > 0 AND r.starts_at IS NOT NULL THEN
-                                GREATEST(0, FLOOR(EXTRACT(EPOCH FROM (NOW() - r.starts_at))))::int + COALESCE(tr.penalty_seconds, 0)
-                            ELSE NULL
-                        END as adjusted_elapsed_seconds,
-                        EXISTS(SELECT 1 FROM team_rounds tr2 WHERE tr2.team_id = t.id AND tr2.round = 2) as is_qualified_r2
-                    FROM teams t
-                    LEFT JOIN rounds r ON r.round = %s
-                    LEFT JOIN team_rounds tr ON tr.team_id = t.id AND tr.round = %s
-                    WHERE t.is_active = true
-                    ORDER BY 
-                        COALESCE(tr.clues_solved, 0) DESC,
-                        COALESCE(tr.total_score, 0) DESC,
-                        adjusted_elapsed_seconds ASC NULLS LAST,
-                        t.name ASC;
-                    """,
-                    (round_num, round_num)
-                )
-                rows = cur.fetchall()
-                for idx, r in enumerate(rows, start=1):
-                    item = dict(r)
-                    item["rank"] = idx
-                    if item.get("last_solved_at"):
-                        item["last_solved_at"] = item["last_solved_at"].isoformat()
-                    if item.get("finished_at"):
-                        item["finished_at"] = item["finished_at"].isoformat()
-                    if item.get("qualified_at"):
-                        item["qualified_at"] = item["qualified_at"].isoformat()
-                    if item.get("round_starts_at"):
-                        item["round_starts_at"] = item["round_starts_at"].isoformat()
+    now_m = time.monotonic()
+    cached = _leaderboard_cache.get(round_num)
+    if cached and now_m - cached["ts"] < 1.5:
+        return cached["data"]
 
-                    adj_sec = item.get("adjusted_elapsed_seconds")
-                    if adj_sec is not None:
-                        mins = adj_sec // 60
-                        secs = adj_sec % 60
-                        item["adjusted_time_str"] = f"{mins:02d}:{secs:02d}"
-                    else:
-                        item["adjusted_time_str"] = "--:--"
+    with _leaderboard_lock:
+        cached = _leaderboard_cache.get(round_num)
+        if cached and time.monotonic() - cached["ts"] < 1.5:
+            return cached["data"]
 
-                    leaderboard.append(item)
-        except Exception as e:
-            print("Error querying leaderboard:", e)
-            raise HTTPException(status_code=500, detail="Database leaderboard query failed")
-        finally:
-            conn.close()
+        conn = get_db_connection()
+        leaderboard = []
+        if conn:
+            try:
+                with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                    cur.execute(
+                        """
+                        SELECT 
+                            t.id as team_id,
+                            t.name as team_name,
+                            COALESCE(tr.clues_solved, 0) as clues_solved,
+                            COALESCE(tr.total_score, 0)::float as total_score,
+                            COALESCE(tr.penalty_seconds, 0) as penalty_seconds,
+                            tr.last_solved_at,
+                            tr.finished_at,
+                            tr.qualified_at,
+                            tr.qualified_rank,
+                            r.starts_at as round_starts_at,
+                            CASE 
+                                WHEN tr.last_solved_at IS NOT NULL AND r.starts_at IS NOT NULL THEN
+                                    GREATEST(0, FLOOR(EXTRACT(EPOCH FROM (tr.last_solved_at - r.starts_at))))::int + COALESCE(tr.penalty_seconds, 0)
+                                WHEN tr.last_solved_at IS NOT NULL THEN
+                                    GREATEST(0, FLOOR(EXTRACT(EPOCH FROM (tr.last_solved_at - tr.created_at))))::int + COALESCE(tr.penalty_seconds, 0)
+                                WHEN tr.finished_at IS NOT NULL AND r.starts_at IS NOT NULL THEN
+                                    GREATEST(0, FLOOR(EXTRACT(EPOCH FROM (tr.finished_at - r.starts_at))))::int + COALESCE(tr.penalty_seconds, 0)
+                                WHEN tr.finished_at IS NOT NULL THEN
+                                    GREATEST(0, FLOOR(EXTRACT(EPOCH FROM (tr.finished_at - tr.created_at))))::int + COALESCE(tr.penalty_seconds, 0)
+                                WHEN COALESCE(tr.penalty_seconds, 0) > 0 AND r.starts_at IS NOT NULL THEN
+                                    GREATEST(0, FLOOR(EXTRACT(EPOCH FROM (NOW() - r.starts_at))))::int + COALESCE(tr.penalty_seconds, 0)
+                                ELSE NULL
+                            END as adjusted_elapsed_seconds,
+                            EXISTS(SELECT 1 FROM team_rounds tr2 WHERE tr2.team_id = t.id AND tr2.round = 2) as is_qualified_r2
+                        FROM teams t
+                        LEFT JOIN rounds r ON r.round = %s
+                        LEFT JOIN team_rounds tr ON tr.team_id = t.id AND tr.round = %s
+                        WHERE t.is_active = true
+                        ORDER BY 
+                            COALESCE(tr.clues_solved, 0) DESC,
+                            COALESCE(tr.total_score, 0) DESC,
+                            adjusted_elapsed_seconds ASC NULLS LAST,
+                            t.name ASC;
+                        """,
+                        (round_num, round_num)
+                    )
+                    rows = cur.fetchall()
+                    for idx, r in enumerate(rows, start=1):
+                        item = dict(r)
+                        item["rank"] = idx
+                        if item.get("last_solved_at"):
+                            item["last_solved_at"] = item["last_solved_at"].isoformat()
+                        if item.get("finished_at"):
+                            item["finished_at"] = item["finished_at"].isoformat()
+                        if item.get("qualified_at"):
+                            item["qualified_at"] = item["qualified_at"].isoformat()
+                        if item.get("round_starts_at"):
+                            item["round_starts_at"] = item["round_starts_at"].isoformat()
 
-    return {
-        "ok": True,
-        "round": round_num,
-        "leaderboard": leaderboard
-    }
+                        adj_sec = item.get("adjusted_elapsed_seconds")
+                        if adj_sec is not None:
+                            mins = adj_sec // 60
+                            secs = adj_sec % 60
+                            item["adjusted_time_str"] = f"{mins:02d}:{secs:02d}"
+                        else:
+                            item["adjusted_time_str"] = "--:--"
+
+                        leaderboard.append(item)
+            except Exception as e:
+                print("Error querying leaderboard:", e)
+                raise HTTPException(status_code=500, detail="Database leaderboard query failed")
+            finally:
+                conn.close()
+
+        result = {
+            "ok": True,
+            "round": round_num,
+            "count": len(leaderboard),
+            "leaderboard": leaderboard
+        }
+        _leaderboard_cache[round_num] = {"data": result, "ts": time.monotonic()}
+        return result
 
 @admin_router.get("/qualification/preview")
 async def preview_qualification(count: int = 5, admin: Dict[str, Any] = Depends(get_admin_user)):
@@ -464,6 +507,16 @@ async def qualify_top_n_teams(req: QualifyTeamsRequest, admin: Dict[str, Any] = 
             raise HTTPException(status_code=500, detail="Database qualification failed")
         finally:
             conn.close()
+
+    # Invalidate dashboard, leaderboard, and lobby caches
+    _dashboard_cache["data"] = None
+    _leaderboard_cache.clear()
+    try:
+        from app.lobby.routes import _rounds_cache, _lobby_cache
+        _rounds_cache["data"] = None
+        _lobby_cache.clear()
+    except Exception:
+        pass
 
     return {
         "ok": True,

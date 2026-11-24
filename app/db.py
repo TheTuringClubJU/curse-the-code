@@ -1,4 +1,5 @@
 import os
+import time
 import logging
 from typing import Optional
 import psycopg2
@@ -9,6 +10,12 @@ from app.config import DATABASE_URL
 logger = logging.getLogger("uvicorn.error")
 
 _db_pool: Optional[pool.ThreadedConnectionPool] = None
+
+# Per-WORKER pool size. Total DB connections = workers * POOL_MAX.
+POOL_MIN = int(os.getenv("DB_POOL_MIN", "2"))
+POOL_MAX = int(os.getenv("DB_POOL_MAX", "10"))
+POOL_WAIT_SECONDS = float(os.getenv("DB_POOL_WAIT", "8"))
+
 
 def ensure_schema_updates(conn=None):
     """Ensures Round 2 columns and tables exist in PostgreSQL."""
@@ -55,11 +62,11 @@ def ensure_schema_updates(conn=None):
             if close_at_end:
                 conn.close()
 
-def init_pool(minconn: int = 5, maxconn: int = 60) -> Optional[pool.ThreadedConnectionPool]:
+
+def init_pool(minconn: int = POOL_MIN, maxconn: int = POOL_MAX) -> Optional[pool.ThreadedConnectionPool]:
     global _db_pool
     if _db_pool is None and DATABASE_URL:
         try:
-            # Persistent connection pool with TCP keepalives and 5s connect timeout
             _db_pool = pool.ThreadedConnectionPool(
                 minconn=minconn,
                 maxconn=maxconn,
@@ -68,13 +75,14 @@ def init_pool(minconn: int = 5, maxconn: int = 60) -> Optional[pool.ThreadedConn
                 keepalives=1,
                 keepalives_idle=30,
                 keepalives_interval=10,
-                keepalives_count=5
+                keepalives_count=5,
             )
-            logger.info("Initialized PostgreSQL ThreadedConnectionPool (pool size 5-60)")
+            logger.info(f"Initialized PostgreSQL ThreadedConnectionPool (pool size {minconn}-{maxconn})")
         except Exception as e:
             logger.error(f"Failed to initialize ThreadedConnectionPool: {e}")
             _db_pool = None
     return _db_pool
+
 
 def get_pool() -> Optional[pool.ThreadedConnectionPool]:
     global _db_pool
@@ -82,11 +90,11 @@ def get_pool() -> Optional[pool.ThreadedConnectionPool]:
         init_pool()
     return _db_pool
 
+
 class PooledConnectionProxy:
     """
-    Wraps a pooled psycopg2 connection so that calling .close()
-    automatically returns the connection back to the ThreadedConnectionPool
-    rather than severing the underlying socket.
+    Wraps a pooled psycopg2 connection so .close() returns it to the pool.
+    Idempotent, and a safety-net __del__ returns leaked connections.
     """
     def __init__(self, raw_conn, connection_pool: pool.ThreadedConnectionPool):
         self._conn = raw_conn
@@ -94,18 +102,37 @@ class PooledConnectionProxy:
         self._closed = False
 
     def close(self):
-        if not self._closed:
-            self._closed = True
+        if self._closed:
+            return
+        self._closed = True
+        conn, self._conn = self._conn, None
+        if conn is None:
+            return
+        broken = False
+        try:
+            if conn.closed:
+                broken = True
+            else:
+                conn.rollback()
+        except Exception:
+            broken = True
+        try:
+            # close=True discards broken connections instead of recycling them
+            self._pool.putconn(conn, close=broken)
+        except Exception:
             try:
-                if self._conn and not self._conn.closed:
-                    self._conn.rollback()
+                conn.close()
             except Exception:
                 pass
-            if self._pool and self._conn:
-                try:
-                    self._pool.putconn(self._conn)
-                except Exception:
-                    pass
+
+    def __del__(self):
+        # Safety net for code paths that forgot to call close()
+        try:
+            if not self._closed:
+                logger.warning("DB connection was never closed explicitly; returning to pool")
+                self.close()
+        except Exception:
+            pass
 
     def cursor(self, *args, **kwargs):
         return self._conn.cursor(*args, **kwargs)
@@ -120,51 +147,52 @@ class PooledConnectionProxy:
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        if exc_type is not None:
-            try:
-                if self._conn and not self._conn.closed:
-                    self._conn.rollback()
-            except Exception:
-                pass
         self.close()
 
     def __getattr__(self, name):
         return getattr(self._conn, name)
 
-def get_db_connection():
-    """
-    Returns a warm connection from the ThreadedConnectionPool.
-    Calling .close() on the returned connection safely returns it to the pool.
-    """
-    p = get_pool()
-    if p:
+
+def _checkout(p: pool.ThreadedConnectionPool):
+    """Borrow a healthy connection, waiting up to POOL_WAIT_SECONDS if the pool is busy."""
+    deadline = time.monotonic() + POOL_WAIT_SECONDS
+    while True:
         try:
             raw = p.getconn()
-            # If the borrowed connection was unexpectedly closed or broken, test or retry
-            needs_recycle = False
-            if raw.closed != 0:
-                needs_recycle = True
-            else:
-                try:
-                    with raw.cursor() as test_cur:
-                        test_cur.execute("SELECT 1")
-                except Exception:
-                    needs_recycle = True
+        except pool.PoolError:
+            if time.monotonic() >= deadline:
+                logger.error(f"Pool exhausted for {POOL_WAIT_SECONDS}s (max={POOL_MAX})")
+                return None
+            time.sleep(0.05)
+            continue
 
-            if needs_recycle:
-                try:
-                    p.putconn(raw, close=True)
-                except Exception:
-                    pass
-                raw = p.getconn()
-            return PooledConnectionProxy(raw, p)
-        except Exception as e:
-            logger.warning(f"Connection pool getconn failed, falling back to direct connect: {e}")
-
-    # Fallback to direct connect if pool is unavailable
-    if DATABASE_URL:
+        # Health check
         try:
-            return psycopg2.connect(DATABASE_URL, connect_timeout=5)
-        except Exception as e:
-            logger.error(f"Direct DB connection failed: {e}")
-    return None
+            if raw.closed:
+                raise psycopg2.OperationalError("closed")
+            with raw.cursor() as c:
+                c.execute("SELECT 1")
+            raw.rollback()  # end the implicit transaction so it isn't left idle-in-transaction
+            return raw
+        except Exception:
+            try:
+                p.putconn(raw, close=True)
+            except Exception:
+                pass
+            if time.monotonic() >= deadline:
+                return None
+            # loop and try again with a fresh connection
+
+
+def get_db_connection():
+    """
+    Returns a pooled connection. Always call .close() (or use `with`) to return it.
+    Returns None if the pool is unavailable or stays exhausted. NO direct-connect fallback.
+    """
+    p = get_pool()
+    if not p:
+        return None
+    raw = _checkout(p)
+    if raw is None:
+        return None
+    return PooledConnectionProxy(raw, p)
