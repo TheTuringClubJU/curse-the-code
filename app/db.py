@@ -12,9 +12,9 @@ logger = logging.getLogger("uvicorn.error")
 _db_pool: Optional[pool.ThreadedConnectionPool] = None
 
 # Per-WORKER pool size. Total DB connections = workers * POOL_MAX.
-POOL_MIN = int(os.getenv("DB_POOL_MIN", "2"))
-POOL_MAX = int(os.getenv("DB_POOL_MAX", "10"))
-POOL_WAIT_SECONDS = float(os.getenv("DB_POOL_WAIT", "8"))
+POOL_MIN = int(os.getenv("DB_POOL_MIN", "5"))
+POOL_MAX = int(os.getenv("DB_POOL_MAX", "50"))
+POOL_WAIT_SECONDS = float(os.getenv("DB_POOL_WAIT", "5"))
 
 
 def ensure_schema_updates(conn=None):

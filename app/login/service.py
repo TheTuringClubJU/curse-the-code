@@ -2,11 +2,17 @@ import bcrypt
 import hashlib
 import secrets
 import json
+import time
+import threading
 from datetime import datetime, timedelta, timezone
 from typing import Dict, Any, List, Optional
 import psycopg2
 from psycopg2.extras import RealDictCursor
 from app.config import MAX_SESSIONS_PER_TEAM, DATABASE_URL
+
+# Fast in-memory token cache to prevent repetitive DB lookups on high-frequency polling
+_token_cache: Dict[str, tuple[float, Dict[str, Any]]] = {}
+_token_cache_lock = threading.Lock()
 
 # Fallback in-memory store if DATABASE_URL is not set
 TEAMS_DB: Dict[str, Dict[str, Any]] = {}
@@ -368,6 +374,9 @@ class LoginService:
                 s["ended_at"] = now
                 s["ended_reason"] = "forced_logout"
 
+        with _token_cache_lock:
+            _token_cache.clear()
+
         cls.record_event(team["id"], "forced_logout", {"sessions_ended": count, "ip": ip})
         return {
             "ok": True,
@@ -404,6 +413,9 @@ class LoginService:
                 if not conn:
                     count += 1
 
+        with _token_cache_lock:
+            _token_cache.clear()
+
         cls.record_event(team_id, "admin_forced_logout", {"sessions_ended": count, "admin": admin_handle})
         return count
 
@@ -412,6 +424,14 @@ class LoginService:
         if not raw_token:
             return None
         t_hash = hash_token(raw_token)
+        now_m = time.monotonic()
+
+        # Fast in-memory token verification cache (2.5s TTL)
+        with _token_cache_lock:
+            cached = _token_cache.get(t_hash)
+            if cached and (now_m - cached[0]) < 2.5:
+                return cached[1]
+
         now = datetime.now(timezone.utc)
 
         conn = get_db_connection()
@@ -430,13 +450,19 @@ class LoginService:
                     row = cur.fetchone()
                     if row:
                         if row["ended_at"] is not None or row["expires_at"] <= now or not row["is_active"]:
+                            with _token_cache_lock:
+                                _token_cache.pop(t_hash, None)
                             return None
 
-                        cur.execute(
-                            "UPDATE team_sessions SET last_seen_at = %s, expires_at = %s WHERE id = %s",
-                            (now, now + timedelta(hours=12), row["id"])
-                        )
-                        conn.commit()
+                        # Throttle last_seen writes: only write if last_seen_at is older than 60s
+                        last_seen = row.get("last_seen_at")
+                        if not last_seen or (now - last_seen).total_seconds() > 60:
+                            cur.execute(
+                                "UPDATE team_sessions SET last_seen_at = %s, expires_at = %s WHERE id = %s",
+                                (now, now + timedelta(hours=12), row["id"])
+                            )
+                            conn.commit()
+
                         team_dict = {
                             "id": row["t_id"],
                             "name": row["t_name"],
@@ -450,11 +476,16 @@ class LoginService:
                         )
                         cnt_row = cur.fetchone()
                         active_cnt = cnt_row["active_cnt"] if cnt_row else 1
-                        return {
+                        result = {
                             "team": team_dict,
                             "session": dict(row),
                             "active_sessions": active_cnt
                         }
+                        with _token_cache_lock:
+                            if len(_token_cache) > 500:
+                                _token_cache.clear()
+                            _token_cache[t_hash] = (time.monotonic(), result)
+                        return result
             except Exception as e:
                 print("Error looking up session from DB:", e)
             finally:
@@ -481,6 +512,8 @@ class LoginService:
         if not raw_token:
             return False
         t_hash = hash_token(raw_token)
+        with _token_cache_lock:
+            _token_cache.pop(t_hash, None)
         now = datetime.now(timezone.utc)
 
         conn = get_db_connection()

@@ -7,6 +7,8 @@ sequential evidence discovery, atomic database concurrency, and leaderboard/time
 
 import hmac
 import hashlib
+import time
+import threading
 from datetime import datetime, timezone
 from typing import Dict, Any, List, Optional
 from fastapi import HTTPException, Request
@@ -15,12 +17,24 @@ from app.login.service import get_db_connection
 from app.lobby.routes import get_content_data
 from app.game import hint_service
 
+_room2_completed_cache: Dict[int, tuple[float, bool]] = {}
+_room2_cache_lock = threading.Lock()
+
 def check_room2_completed(team_id: int) -> bool:
     """
     Verifies that the team has successfully completed Room 2 (Daniel's Study).
     The basement is locked until study completion is verified in team_rooms.
+    Cached for 2.0s to prevent connection exhaustion from continuous room sync polling.
     """
+    now_m = time.monotonic()
+    with _room2_cache_lock:
+        cached = _room2_completed_cache.get(team_id)
+        if cached and (now_m - cached[0]) < 2.0:
+            return cached[1]
+
     conn = get_db_connection()
+    if not conn:
+        return False
     try:
         with conn.cursor() as cur:
             cur.execute(
@@ -28,7 +42,10 @@ def check_room2_completed(team_id: int) -> bool:
                 (team_id,)
             )
             row = cur.fetchone()
-            return bool(row and row[0])
+            completed = bool(row and row[0])
+            with _room2_cache_lock:
+                _room2_completed_cache[team_id] = (time.monotonic(), completed)
+            return completed
     finally:
         conn.close()
 

@@ -9,6 +9,8 @@ import hashlib
 import hmac
 import logging
 import math
+import time
+import threading
 from contextlib import contextmanager
 from pathlib import Path
 
@@ -23,6 +25,9 @@ from app.game import hint_service
 logger = logging.getLogger(__name__)
 ROOM_ID = "study"
 SUBMISSIONS_PER_MINUTE = 30
+
+_study_access_cache: dict = {}
+_study_access_lock = threading.Lock()
 
 FAILURE_MESSAGES = {
     "tablet_drawer": "Incorrect passcode. Check your binary byte groups.",
@@ -42,16 +47,22 @@ def _rollback(conn):
 
 
 @contextmanager
-def _transaction(team_id):
+def _transaction(team_id, for_update=True):
     conn = get_db_connection()
     if conn is None:
         raise HTTPException(503, "Game storage is temporarily unavailable.")
     try:
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
-            cur.execute(
-                "SELECT id FROM teams WHERE id = %s AND is_active = TRUE FOR UPDATE",
-                (team_id,),
-            )
+            if for_update:
+                cur.execute(
+                    "SELECT id FROM teams WHERE id = %s AND is_active = TRUE FOR UPDATE",
+                    (team_id,),
+                )
+            else:
+                cur.execute(
+                    "SELECT id FROM teams WHERE id = %s AND is_active = TRUE",
+                    (team_id,),
+                )
             if cur.fetchone() is None:
                 raise HTTPException(401, "Invalid team session.")
             yield cur
@@ -94,9 +105,47 @@ def _require_access(cur, team_id, room):
 
 
 def check_room_access(team_id, room):
-    """Enforce the Study exit prerequisite on the existing Basement routes too."""
-    with _transaction(team_id) as cur:
-        _require_access(cur, team_id, room)
+    """Enforce the Study exit prerequisite on the existing Basement routes too. Cached for 2.0s."""
+    required = room.get("unlock", {}).get("all_clues_resolved", [])
+    if not required:
+        return
+    now_m = time.monotonic()
+    with _study_access_lock:
+        cached = _study_access_cache.get(team_id)
+        if cached and (now_m - cached[0]) < 2.0:
+            if not cached[1]:
+                raise HTTPException(
+                    403,
+                    detail={
+                        "code": "ROOM_LOCKED",
+                        "message": "Complete the previous room first.",
+                    },
+                )
+            return
+
+    conn = get_db_connection()
+    if conn is None:
+        raise HTTPException(503, "Game storage is temporarily unavailable.")
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute(
+                "SELECT room_id FROM team_rooms WHERE team_id = %s AND is_completed = TRUE",
+                (team_id,),
+            )
+            completed = {row["room_id"] for row in cur.fetchall()}
+            has_access = set(required).issubset(completed)
+            with _study_access_lock:
+                _study_access_cache[team_id] = (time.monotonic(), has_access)
+            if not has_access:
+                raise HTTPException(
+                    403,
+                    detail={
+                        "code": "ROOM_LOCKED",
+                        "message": "Complete the previous room first.",
+                    },
+                )
+    finally:
+        conn.close()
 
 
 def _fragments(cur, team_id):
@@ -150,8 +199,8 @@ def _photo_pieces(content, solved_ids):
 
 def get_room_state(team_id, content):
     room = _room(content)
-    with _transaction(team_id) as cur:
-        _require_access(cur, team_id, room)
+    check_room_access(team_id, room)
+    with _transaction(team_id, for_update=False) as cur:
         collected = {
             f["fragment_id"]
             for f in _fragments(cur, team_id)

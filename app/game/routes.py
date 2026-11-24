@@ -1,3 +1,5 @@
+import time
+import threading
 from datetime import datetime, timezone
 from app.game import basement_service
 import psycopg2
@@ -15,6 +17,18 @@ import hmac
 import hashlib
 
 router = APIRouter(prefix="/api/game", tags=["game"])
+
+_room_state_cache: Dict[tuple, tuple[float, Dict[str, Any]]] = {}
+_room_state_lock = threading.Lock()
+
+def invalidate_room_cache(team_id: Optional[int] = None):
+    with _room_state_lock:
+        if team_id is None:
+            _room_state_cache.clear()
+        else:
+            keys_to_del = [k for k in _room_state_cache if k[0] == team_id]
+            for k in keys_to_del:
+                _room_state_cache.pop(k, None)
 
 def verify_team_auth(request: Request):
     token = (
@@ -59,9 +73,19 @@ def check_round2_access(team_id: int):
 @router.get("/room/{room_id}/state")
 def get_room_state(room_id: str, request: Request):
     team = verify_team_auth(request)
+    cache_key = (team["id"], room_id)
+    now_m = time.monotonic()
+    with _room_state_lock:
+        cached = _room_state_cache.get(cache_key)
+        if cached and (now_m - cached[0]) < 1.5:
+            return cached[1]
+
     content = get_content_data()
     if room_id == "basement":
-        return basement_service.get_room_state(team["id"], content, request)
+        res = basement_service.get_room_state(team["id"], content, request)
+        with _room_state_lock:
+            _room_state_cache[cache_key] = (time.monotonic(), res)
+        return res
     
     # Locate room metadata in content
     target_room = None
@@ -77,7 +101,10 @@ def get_room_state(room_id: str, request: Request):
         check_round2_access(team["id"])
 
     if room_id == "study":
-        return study_service.get_room_state(team["id"], content)
+        res = study_service.get_room_state(team["id"], content)
+        with _room_state_lock:
+            _room_state_cache[cache_key] = (time.monotonic(), res)
+        return res
     if "study" in target_room.get("unlock", {}).get("all_clues_resolved", []):
         study_service.check_room_access(team["id"], target_room)
         
@@ -275,7 +302,7 @@ def get_room_state(room_id: str, request: Request):
                     }
                 })
 
-    return {
+    res = {
         "ok": True,
         "room_id": room_id,
         "title": target_room.get("title", ""),
@@ -291,6 +318,11 @@ def get_room_state(room_id: str, request: Request):
         "photo_pieces_collected": photo_pieces_count,
         "hint_sync": hint_sync
     }
+    with _room_state_lock:
+        if len(_room_state_cache) > 200:
+            _room_state_cache.clear()
+        _room_state_cache[cache_key] = (time.monotonic(), res)
+    return res
 
 @router.get("/room/{room_id}/basket")
 def get_room_basket(room_id: str, request: Request):
@@ -722,6 +754,7 @@ def search_object(room_id: str, payload: Dict[str, Any], request: Request):
             }
     finally:
         conn.close()
+        invalidate_room_cache(team["id"])
 
 
 @router.post("/clue/{clue_id}/submit")
@@ -1088,6 +1121,7 @@ def submit_clue_answer(clue_id: str, payload: Dict[str, Any], request: Request):
             return resp_data
     finally:
         conn.close()
+        invalidate_room_cache(team["id"])
 
 @router.get("/clue/{clue_id}/hints")
 def get_clue_hints(clue_id: str, request: Request):
@@ -1414,6 +1448,7 @@ def choose_fork_path(fork_id: str, payload: Dict[str, Any], request: Request):
                 }
     finally:
         conn.close()
+        invalidate_room_cache(team["id"])
 
 @router.get("/hint/status")
 def get_hint_status(request: Request, room_id: Optional[str] = None):
@@ -1427,6 +1462,7 @@ def request_hint_endpoint(request: Request, body: Optional[Dict[str, Any]] = Non
     body = body or {}
     room_id = body.get("room_id")
     target_id = body.get("target_id")
+    invalidate_room_cache(team["id"])
     return hint_service.request_hint(team["id"], room_id=room_id, target_id=target_id)
 
 @router.post("/round/{round_num}/fork/{fork_id}/choose")
